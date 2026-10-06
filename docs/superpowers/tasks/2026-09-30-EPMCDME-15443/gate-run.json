@@ -1,0 +1,156 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15443_fix-chats-sidebar-options-tab",
+  "head": "7ecf8cd4d1d6af2ee99304d9fde340672f3ff9fd",
+  "runner": "npm",
+  "started_at": "2026-10-01T15:47:57.740999+00:00",
+  "completed_at": "2026-10-01T15:55:17.575500+00:00",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "license",
+      "command": "npm run license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "No dependency added, removed, or moved; literal guide skip condition."
+    },
+    {
+      "id": "lint-staged",
+      "command": "npx lint-staged",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "notes": "Passed in precommit for HEAD 7ecf8cd4d; no source changes since. Not repeated without staged files."
+    },
+    {
+      "id": "license-headers",
+      "command": "npm run license-headers:check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "notes": "Passed in precommit for HEAD 7ecf8cd4d; no source changes since."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision. User selected manual verification."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "MR handoff requirement; no MR requested, and user explicitly elected manual browser verification."
+    },
+    {
+      "id": "ci-guards",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "GitLab includes remote pre-ci-guard template and waits for ci-pipeline/compliance-report MR contexts; require server-side MR infrastructure."
+    },
+    {
+      "id": "lint",
+      "command": "npm run lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 14408,
+      "exit_code": 0,
+      "log": "docs/superpowers/tasks/2026-09-30-EPMCDME-15443/gate-logs.local/lint.log",
+      "notes": "ESLint exited 0 with no lint findings; emitted configuration warning: React version not specified in eslint-plugin-react settings."
+    },
+    {
+      "id": "typecheck",
+      "command": "npm run typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9882,
+      "exit_code": 0,
+      "log": "docs/superpowers/tasks/2026-09-30-EPMCDME-15443/gate-logs.local/typecheck.log"
+    },
+    {
+      "id": "secrets",
+      "command": "npm run secrets:check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 4592,
+      "exit_code": 0,
+      "log": "docs/superpowers/tasks/2026-09-30-EPMCDME-15443/gate-logs.local/secrets.log",
+      "notes": "Passed with escalated container-daemon access after sandbox-only attempt reported Docker daemon is not running.",
+      "attempts": [
+        {
+          "status": "SKIPPED",
+          "exit_code": 1,
+          "duration_ms": 1055
+        },
+        {
+          "status": "PASS",
+          "exit_code": 0,
+          "duration_ms": 4592
+        }
+      ]
+    },
+    {
+      "id": "unit",
+      "command": "npm run test:unit:slnt",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 165801,
+      "exit_code": 0,
+      "log": "docs/superpowers/tasks/2026-09-30-EPMCDME-15443/gate-logs.local/unit.log",
+      "summary": [
+        "Test Files  633 passed (633)",
+        "Tests  6538 passed | 1 skipped (6539)"
+      ]
+    },
+    {
+      "id": "integration",
+      "command": "npm run test:integration:slnt",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 61174,
+      "exit_code": 0,
+      "log": "docs/superpowers/tasks/2026-09-30-EPMCDME-15443/gate-logs.local/integration.log",
+      "summary": [
+        "Test Files  48 passed (48)",
+        "Tests  550 passed | 1 skipped (551)"
+      ]
+    },
+    {
+      "id": "build",
+      "command": "npm run build",
+      "source": "guide",
+      "notes": "Supplemental artifact validation passed; Vite emitted existing chunk-size warning (chunks over 500 kB).",
+      "status": "PASS",
+      "duration_ms": 21429,
+      "exit_code": 0,
+      "log": "docs/superpowers/tasks/2026-09-30-EPMCDME-15443/gate-logs.local/build.log"
+    },
+    {
+      "id": "sonar",
+      "command": "npm run sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 123,
+      "exit_code": 0,
+      "log": "docs/superpowers/tasks/2026-09-30-EPMCDME-15443/gate-logs.local/sonar.log",
+      "notes": "[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set. Export SONAR_TOKEN and reach configured SonarQube server to run analysis."
+    }
+  ],
+  "failures": {},
+  "install_provenance": "npm ci completed successfully in this invocation before focused tests and commit; no manifest or source change since.",
+  "validated_head_unchanged": true
+}

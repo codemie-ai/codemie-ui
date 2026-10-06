@@ -24,6 +24,7 @@ import {
   useClick,
   useMergeRefs,
   FloatingPortal,
+  FloatingFocusManager,
   Alignment,
   Placement,
 } from '@floating-ui/react'
@@ -144,104 +145,108 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   }
 
   const menu = (
-    <div
-      ref={refs.setFloating}
-      className="z-50"
-      style={floatingStyles}
-      onClick={handleClickInside}
-      {...getFloatingProps()}
-    >
+    <FloatingFocusManager context={context} modal={false} initialFocus={0}>
       <div
-        id={menuId}
-        className="z-50 flex w-max min-w-44 max-w-[calc(100vw-1rem)] flex-col rounded-lg border border-border-structural bg-surface-base-secondary px-2 py-2"
-        role="menu"
-        aria-label="Options"
+        ref={refs.setFloating}
+        className="z-50"
+        style={floatingStyles}
+        onClick={handleClickInside}
+        {...getFloatingProps()}
       >
-        {childrenFirst && children}
-        {visibleItems && visibleItems.length > 0 && (
-          <ul role="none">
-            {visibleItems.map((item) => {
-              if (isNavigationDivider(item)) {
-                return (
-                  <li key={item.title} role="none">
-                    <hr className="my-1 border-t border-border-structural" />
-                  </li>
+        <div
+          id={menuId}
+          className="z-50 flex w-max min-w-44 max-w-[calc(100vw-1rem)] flex-col rounded-lg border border-border-structural bg-surface-base-secondary px-2 py-2"
+          role="menu"
+          aria-label="Options"
+        >
+          {childrenFirst && children}
+          {visibleItems && visibleItems.length > 0 && (
+            <ul role="none">
+              {visibleItems.map((item) => {
+                if (isNavigationDivider(item)) {
+                  return (
+                    <li key={item.title} role="none">
+                      <hr className="my-1 border-t border-border-structural" />
+                    </li>
+                  )
+                }
+
+                const itemClassName = cn(
+                  'flex items-center gap-3 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed',
+                  !item.disabled &&
+                    'hover:bg-surface-specific-dropdown-hover hover:text-text-accent',
+                  'hover:no-underline',
+                  'focus:outline-none focus:ring-2 focus:ring-primary-500',
+                  item.href && item.disabled && 'pointer-events-none opacity-50'
                 )
-              }
 
-              const itemClassName = cn(
-                'flex items-center gap-3 px-1 py-2 text-xs w-full font-medium rounded-md outline-none text-text-primary leading-4 tracking-tight disabled:opacity-50 disabled:cursor-not-allowed',
-                !item.disabled && 'hover:bg-surface-specific-dropdown-hover hover:text-text-accent',
-                'hover:no-underline',
-                'focus:outline-none focus:ring-2 focus:ring-primary-500',
-                item.href && item.disabled && 'pointer-events-none opacity-50'
-              )
+                const itemContent = (
+                  <>
+                    <span
+                      className="flex size-5 shrink-0 items-center justify-center"
+                      aria-hidden="true"
+                    >
+                      {item.icon}
+                    </span>
+                    <span className="min-w-0 grow truncate text-left">{item.title}</span>
+                  </>
+                )
 
-              const itemContent = (
-                <>
-                  <span
-                    className="flex size-5 shrink-0 items-center justify-center"
-                    aria-hidden="true"
-                  >
-                    {item.icon}
-                  </span>
-                  <span className="min-w-0 grow truncate text-left">{item.title}</span>
-                </>
-              )
+                if (item.href) {
+                  return (
+                    <li key={item.title} role="none">
+                      <Link
+                        to={item.href}
+                        role="menuitem"
+                        tabIndex={item.disabled ? -1 : undefined}
+                        className={itemClassName}
+                        aria-disabled={item.disabled}
+                        aria-label={item.title}
+                        data-tooltip-id="react-tooltip"
+                        data-tooltip-content={item.tooltip}
+                        onClick={(e) => {
+                          if (item.disabled) {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            return
+                          }
+                          item.onClick?.(e as never)
+                          if (hideOnClickInside) handleOpenChange(false)
+                        }}
+                      >
+                        {itemContent}
+                      </Link>
+                    </li>
+                  )
+                }
 
-              if (item.href) {
                 return (
                   <li key={item.title} role="none">
-                    <Link
-                      to={item.href}
+                    <button
+                      type="button"
                       role="menuitem"
                       className={itemClassName}
-                      aria-disabled={item.disabled}
+                      onClick={(e) => {
+                        if (!item.disabled) item.onClick?.(e)
+                        if (hideOnClickInside) handleOpenChange(false)
+                      }}
+                      disabled={item.disabled}
                       aria-label={item.title}
                       data-tooltip-id="react-tooltip"
                       data-tooltip-content={item.tooltip}
-                      onClick={(e) => {
-                        if (item.disabled) {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          return
-                        }
-                        item.onClick?.(e as never)
-                        if (hideOnClickInside) handleOpenChange(false)
-                      }}
                     >
                       {itemContent}
-                    </Link>
+                    </button>
                   </li>
                 )
-              }
+              })}
+            </ul>
+          )}
 
-              return (
-                <li key={item.title} role="none">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className={itemClassName}
-                    onClick={(e) => {
-                      if (!item.disabled) item.onClick?.(e)
-                      if (hideOnClickInside) handleOpenChange(false)
-                    }}
-                    disabled={item.disabled}
-                    aria-label={item.title}
-                    data-tooltip-id="react-tooltip"
-                    data-tooltip-content={item.tooltip}
-                  >
-                    {itemContent}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-
-        {!childrenFirst && children}
+          {!childrenFirst && children}
+        </div>
       </div>
-    </div>
+    </FloatingFocusManager>
   )
 
   return (

@@ -13,7 +13,8 @@
 // limitations under the License.
 //
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -292,5 +293,142 @@ describe('NavigationMore accessibility attributes', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
 
     expect(trigger).toHaveFocus()
+  })
+})
+
+describe('NavigationMore keyboard focus', () => {
+  it('moves focus to the first enabled item when the popup opens', async () => {
+    const user = userEvent.setup()
+    render(<NavigationMore items={makeItems()} />)
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+
+    const [firstItem] = screen.getAllByRole('menuitem')
+    await waitFor(() => expect(firstItem).toHaveFocus())
+  })
+
+  it('moves focus through all enabled items in DOM order via Tab', async () => {
+    const user = userEvent.setup()
+    render(<NavigationMore items={makeItems()} />)
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+
+    const [first, second] = screen.getAllByRole('menuitem')
+    await waitFor(() => expect(first).toHaveFocus())
+
+    await user.tab()
+    expect(second).toHaveFocus()
+  })
+
+  it('skips a disabled item when tabbing', async () => {
+    const user = userEvent.setup()
+    const items = [
+      { title: 'Pin', onClick: vi.fn() },
+      { title: 'Rename', onClick: vi.fn(), disabled: true },
+      { title: 'Delete', onClick: vi.fn() },
+    ]
+    render(<NavigationMore items={items} />)
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+
+    const [pin, , deleteItem] = screen.getAllByRole('menuitem')
+    await waitFor(() => expect(pin).toHaveFocus())
+
+    await user.tab()
+    expect(deleteItem).toHaveFocus()
+  })
+
+  it.each([false, true])(
+    'closes the popup and preserves the next Tab destination with renderInRoot=%s',
+    async (renderInRoot) => {
+      const user = userEvent.setup()
+      render(
+        <div>
+          <NavigationMore items={makeItems()} renderInRoot={renderInRoot} />
+          <button type="button">After</button>
+        </div>
+      )
+      await user.click(screen.getByRole('button', { name: 'More options' }))
+
+      const [first, second] = screen.getAllByRole('menuitem')
+      await waitFor(() => expect(first).toHaveFocus())
+
+      await user.tab()
+      expect(second).toHaveFocus()
+
+      await user.tab()
+      const after = screen.getByRole('button', { name: 'After' })
+      await waitFor(() => {
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+        expect(after).toHaveFocus()
+      })
+      expect(screen.getByRole('button', { name: 'More options' })).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+    }
+  )
+
+  it('returns focus to the trigger when Escape dismisses a focused menu item', async () => {
+    const user = userEvent.setup()
+    render(<NavigationMore items={makeItems()} />)
+    const trigger = screen.getByRole('button', { name: 'More options' })
+    trigger.focus()
+    await user.keyboard('{Enter}')
+
+    await waitFor(() => expect(screen.getAllByRole('menuitem')[0]).toHaveFocus())
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+      expect(trigger).toHaveFocus()
+    })
+  })
+
+  it('activates the focused item with Enter', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+    render(<NavigationMore items={[{ title: 'Pin', onClick }]} />)
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+
+    await waitFor(() => expect(screen.getByRole('menuitem')).toHaveFocus())
+    await user.keyboard('{Enter}')
+    expect(onClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips a disabled href item as the first item and focuses the next enabled item', async () => {
+    const user = userEvent.setup()
+    const items = [
+      { title: 'View', href: '/x', onClick: vi.fn(), disabled: true },
+      { title: 'Pin', onClick: vi.fn() },
+      { title: 'Disabled details', href: '/details', disabled: true },
+      { title: 'Delete', onClick: vi.fn() },
+    ]
+    render(
+      <MemoryRouter>
+        <NavigationMore items={items} />
+      </MemoryRouter>
+    )
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+
+    const [disabledLink, pin, , deleteItem] = screen.getAllByRole('menuitem')
+    expect(disabledLink).toHaveAttribute('tabIndex', '-1')
+    await waitFor(() => expect(pin).toHaveFocus())
+    await user.tab()
+    expect(deleteItem).toHaveFocus()
+  })
+
+  it('renders children with initial focus still landing on a focusable element when childrenFirst is set', async () => {
+    const user = userEvent.setup()
+    render(
+      <NavigationMore items={makeItems()} childrenFirst>
+        <button type="button">Custom action</button>
+      </NavigationMore>
+    )
+    await user.click(screen.getByRole('button', { name: 'More options' }))
+
+    const customAction = screen.getByRole('button', { name: 'Custom action' })
+    await waitFor(() => expect(customAction).toHaveFocus())
+    await user.tab()
+    expect(screen.getAllByRole('menuitem')[0]).toHaveFocus()
+    await user.tab({ shift: true })
+    expect(customAction).toHaveFocus()
   })
 })

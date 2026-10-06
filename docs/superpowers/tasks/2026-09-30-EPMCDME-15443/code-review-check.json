@@ -1,0 +1,119 @@
+{
+  "decision": "approve",
+  "rationale": "All three prior blocking findings are resolved through current source inspection: disabled links leave the Tab sequence, default focus-out dismissal preserves the natural destination through the authorized useFocusReturn fix, and childrenFirst custom-content focus coverage is present. The legacy findings have no kind field and were verified as code findings; the mapped CR-002 decision also records the user's explicit choice, and business_review and standards_review are carried forward unchanged from the prior round. No tests or mapped commands were rerun and no new findings were sought.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Criterion 1: focus moves to first enabled, tabbable item on open",
+      "status": "partial",
+      "notes": "FloatingFocusManager with initialFocus={0} covers the common case and is tested, but disabled href items are not removed from the tab sequence (no tabIndex={-1}, only aria-disabled/pointer-events-none), so a disabled Link as the first item would still receive initial focus — contradicts 'first enabled, tabbable item'. See CR-001."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Criterion 2: all enabled items reachable via Tab, disabled/dividers skipped",
+      "status": "partial",
+      "notes": "True for disabled buttons (native disabled attribute removes them from tab order and is tested). Not true for disabled href/Link items, which remain tabbable. See CR-001."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Criterion 3: Pin reachable/activatable via keyboard",
+      "status": "pass",
+      "notes": "Satisfied transitively via criterion 1 for the button case; Enter-activation test passes."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Criterion 4: focus remains visible, no new styling",
+      "status": "pass",
+      "notes": "Existing focus-ring classes preserved unchanged on menuitem buttons/links."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Criterion 5: no regression to Escape/outside-click/ancestor-scroll dismissal and focus-return",
+      "status": "partial",
+      "notes": "Escape-focus-return test is unchanged and passing (pre-existing, out of this diff's touched behavior). However `closeOnFocusOut={false}` is a new, undocumented addition not in the approved spec/plan's Design section, and no test asserts the popup actually closes/hides when focus moves out via Tab in non-modal mode — only that the external 'After' button receives focus. See CR-002."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Criterion 6: no regression for other NavigationMore consumers (assistants, workflows, folders, tables)",
+      "status": "partial",
+      "notes": "Fix is correctly centralized in the shared component. No test exercises childrenFirst or custom-children consumers under the new FloatingFocusManager wrap. See CR-003."
+    },
+    {
+      "kind": "spec",
+      "item": "FloatingFocusManager wraps the floating element itself and only renders while show is true",
+      "status": "pass",
+      "notes": "Confirmed in NavigationMore.tsx: the existing {show && (...)} guard is preserved and FloatingFocusManager wraps the div with refs.setFloating."
+    },
+    {
+      "kind": "spec",
+      "item": "Scope confined to NavigationMore.tsx (no change to ChatListItemContextMenu.tsx, ChatListItem.tsx, useFocusReturn.ts, chats.ts)",
+      "status": "pass",
+      "notes": "Diff only touches NavigationMore.tsx and its test file."
+    },
+    {
+      "kind": "spec",
+      "item": "No new dependency introduced",
+      "status": "pass",
+      "notes": "FloatingFocusManager imported from the existing @floating-ui/react import block; no package.json/lock changes."
+    },
+    {
+      "kind": "spec",
+      "item": "Design section specifies exactly context, modal={false}, initialFocus={0} — no other FloatingFocusManager props",
+      "status": "fail",
+      "notes": "Implementation also sets closeOnFocusOut={false}, which the plan.md Step 3 code block does not include either. This is a material, undocumented deviation from both approved artifacts. See CR-002."
+    },
+    {
+      "kind": "spec",
+      "item": "Testing: Tab past last item exits popup in page order (non-modal regression guard)",
+      "status": "pass",
+      "notes": "Test added and passing per evidence."
+    },
+    {
+      "kind": "spec",
+      "item": "Testing: Escape still closes popup and returns focus to trigger (re-run existing coverage)",
+      "status": "pass",
+      "notes": "Pre-existing test unchanged, still present in the file and not touched by the diff."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "item": "Commit subject carries ticket prefix per git-workflow convention",
+      "status": "pass",
+      "notes": "Observed commit '65b79c6ba EPMCDME-15443: Make NavigationMore popup keyboard-Tab-navigable' matches the ticket-prefix format used by sibling commits in this branch's history."
+    },
+    {
+      "kind": "security",
+      "item": "No secrets, injection, or unsafe sinks introduced",
+      "status": "pass",
+      "notes": "Diff only adds a floating-ui focus-manager wrapper and tests; no dangerouslySetInnerHTML, no new network calls, no new dependency."
+    },
+    {
+      "kind": "code-quality",
+      "item": "No significant maintainability regressions",
+      "status": "pass",
+      "notes": "Change is a scoped, additive wrap of existing JSX consistent with the file's existing structure."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Current changed NavigationMore.tsx sets tabIndex={item.disabled ? -1 : undefined} on Link items. Current changed test covers a disabled first href plus another disabled href between enabled items, checking initial focus on Pin and Tab to Delete."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Current changed FloatingFocusManager omits closeOnFocusOut={false}; useFocusReturn restores the trigger only when focus is absent or on document.body. Current source tests assert popup removal and After focus for both renderInRoot values and Escape restoration. Mapped decision supplies the user's explicit choice and rationale."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Current changed NavigationMore.test.tsx renders childrenFirst with a focusable Custom action, asserts initial focus on it, Tab to the first menuitem, and Shift+Tab back. This directly addresses the prior custom-content coverage finding."
+    }
+  ]
+}
+

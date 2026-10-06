@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "task": "Fix EPMCDME-15443 by focusing and enabling visible Tab navigation and keyboard activation in the chat sidebar options popup while preserving dismissal and action-specific focus destinations.",
+  "generated": "2026-09-30T16:01:07.384Z",
+  "dimensions": {
+    "component_scope": { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk": { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 1, "label": "XS" }
+  },
+  "total": 13,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "technical_risk",
+      "reason": "The closest pattern is NavigationMore's useFocusReturn with FloatingPortal and native action buttons. It covers Escape restoration but not popup entry or portal Tab ordering; no existing focus-manager usage or defensive traversal test template covers disabled/custom content and competing Rename, modal, and post-pin focus destinations. Baseline M risk is bumped to L for the explicitly required no-regression focus cases."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "The defect is localized to the shared NavigationMore UI interaction path, with possible useFocusReturn or chat-menu adjustments and focused existing test-file updates. Scope is bumped from S to M because the control also serves assistant, workflow, folder, and table workflows. No API, service, persistence, or infrastructure change is indicated."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The user supplied explicit focus-entry, Tab traversal, Pin activation, visible-focus, and dismissal acceptance criteria. Only minor details such as tabbing past the popup boundary and retaining action-specific focus need to be specified."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Estimate 3–4 existing files across the shared popup, a focus hook or chat consumer if necessary, and focused regression coverage; no new runtime dependency or configuration is needed. Calibration remains S like bundled epmcdme-10102-add-validation-to-form-field, but with higher interaction risk and fewer affected layers. The adjacent M endpoint example epmcdme-10203-add-rest-endpoint-with-business-logic has broader layer and file scope than this localized UI fix."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: shared NavigationMore affects multiple product workflows.",
+    "Technical Risk bumped from M to L: required focus edge and dismissal cases have no existing defensive portal-traversal test template."
+  ],
+  "split_recommendation": null
+}

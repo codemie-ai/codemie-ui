@@ -13,9 +13,9 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { useRef } from 'react'
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect } from 'vitest'
 
 import { useFocusReturn } from '../useFocusReturn'
 
@@ -25,10 +25,43 @@ const TestComponent = ({ isOpen }: { isOpen: boolean }) => {
   return <button ref={triggerRef}>Trigger</button>
 }
 
+afterEach(cleanup)
+
 describe('useFocusReturn', () => {
   it('focuses trigger when isOpen transitions true → false', () => {
     const { rerender } = render(<TestComponent isOpen={true} />)
     rerender(<TestComponent isOpen={false} />)
+    expect(screen.getByRole('button', { name: 'Trigger' })).toHaveFocus()
+  })
+
+  it('preserves focus on another element when the popup closes', () => {
+    const renderContent = (isOpen: boolean) => (
+      <div>
+        <TestComponent isOpen={isOpen} />
+        <button type="button">After</button>
+      </div>
+    )
+    const { rerender } = render(renderContent(true))
+    const after = screen.getByRole('button', { name: 'After' })
+    after.focus()
+
+    rerender(renderContent(false))
+
+    expect(after).toHaveFocus()
+  })
+
+  it('returns focus when the focused popup content is removed on close', () => {
+    const renderContent = (isOpen: boolean) => (
+      <div>
+        <TestComponent isOpen={isOpen} />
+        {isOpen && <button type="button">Popup action</button>}
+      </div>
+    )
+    const { rerender } = render(renderContent(true))
+    screen.getByRole('button', { name: 'Popup action' }).focus()
+
+    rerender(renderContent(false))
+
     expect(screen.getByRole('button', { name: 'Trigger' })).toHaveFocus()
   })
 

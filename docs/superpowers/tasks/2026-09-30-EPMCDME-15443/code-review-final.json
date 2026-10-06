@@ -1,0 +1,60 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two confirmed defects block approval: (1) disabled href items stay in the Tab sequence (CR-001), which can break AC1's 'first enabled, tabbable item' guarantee; (2) `closeOnFocusOut={false}` was added to `FloatingFocusManager` but is not part of the approved spec/plan and is untested, risking a dismissal regression under AC5 (CR-002). A third gap (CR-003) leaves other NavigationMore consumers using `childrenFirst`/custom children untested against the new focus manager, which the acceptance lens scored 'partial' for AC6. Three additional points raised by the blind/edge-case lenses were reviewed and dismissed: the ARIA role=menu-vs-Tab-navigation semantic question is the spec's deliberate, already-approved design choice, not a new defect; Escape-to-close/focus-return is pre-existing, unchanged, and already covered by a passing test; and the edge-case lens's 'items shrink to empty while open' finding cited a `useEffect` guard that does not exist anywhere in the diff or the current file — treated as unverifiable/hallucinated and discarded. Missing Shift+Tab test coverage is noted as a deferred coverage gap, not a blocking defect. All three lenses ran successfully (blind, edge-case, acceptance); confidence is low because of the open decision_needed item (CR-002) and the partial AC5/AC6 acceptance results.",
+  "follow_ups": [
+    "Add `tabIndex={-1}` (or an equivalent means of removal from the tab sequence) to disabled href/Link items so they are skipped by Tab/initialFocus the same way disabled buttons are",
+    "Confirm the intent of `closeOnFocusOut={false}` against the approved spec (which specifies only `context`, `modal={false}`, `initialFocus={0}`) — either justify and document it with a test proving the popup still becomes non-interactive/hidden when focus moves out via Tab, or remove it to match the approved design",
+    "Add at least one test exercising `childrenFirst` / custom-children consumers with the new `FloatingFocusManager` wrap to close the AC6 coverage gap",
+    "Consider adding Shift+Tab backward-navigation coverage (non-blocking, deferred)"
+  ],
+  "confidence": "low",
+  "risk_flags": ["accessibility", "spec-deviation"],
+  "business_review": [
+    {"kind": "story-ac", "item": "Criterion 1: focus moves to first enabled, tabbable item on open", "status": "partial", "notes": "FloatingFocusManager with initialFocus={0} covers the common case and is tested, but disabled href items are not removed from the tab sequence (no tabIndex={-1}, only aria-disabled/pointer-events-none), so a disabled Link as the first item would still receive initial focus — contradicts 'first enabled, tabbable item'. See CR-001."},
+    {"kind": "story-ac", "item": "Criterion 2: all enabled items reachable via Tab, disabled/dividers skipped", "status": "partial", "notes": "True for disabled buttons (native disabled attribute removes them from tab order and is tested). Not true for disabled href/Link items, which remain tabbable. See CR-001."},
+    {"kind": "story-ac", "item": "Criterion 3: Pin reachable/activatable via keyboard", "status": "pass", "notes": "Satisfied transitively via criterion 1 for the button case; Enter-activation test passes."},
+    {"kind": "story-ac", "item": "Criterion 4: focus remains visible, no new styling", "status": "pass", "notes": "Existing focus-ring classes preserved unchanged on menuitem buttons/links."},
+    {"kind": "story-ac", "item": "Criterion 5: no regression to Escape/outside-click/ancestor-scroll dismissal and focus-return", "status": "partial", "notes": "Escape-focus-return test is unchanged and passing (pre-existing, out of this diff's touched behavior). However `closeOnFocusOut={false}` is a new, undocumented addition not in the approved spec/plan's Design section, and no test asserts the popup actually closes/hides when focus moves out via Tab in non-modal mode — only that the external 'After' button receives focus. See CR-002."},
+    {"kind": "story-ac", "item": "Criterion 6: no regression for other NavigationMore consumers (assistants, workflows, folders, tables)", "status": "partial", "notes": "Fix is correctly centralized in the shared component. No test exercises childrenFirst or custom-children consumers under the new FloatingFocusManager wrap. See CR-003."},
+    {"kind": "spec", "item": "FloatingFocusManager wraps the floating element itself and only renders while show is true", "status": "pass", "notes": "Confirmed in NavigationMore.tsx: the existing {show && (...)} guard is preserved and FloatingFocusManager wraps the div with refs.setFloating."},
+    {"kind": "spec", "item": "Scope confined to NavigationMore.tsx (no change to ChatListItemContextMenu.tsx, ChatListItem.tsx, useFocusReturn.ts, chats.ts)", "status": "pass", "notes": "Diff only touches NavigationMore.tsx and its test file."},
+    {"kind": "spec", "item": "No new dependency introduced", "status": "pass", "notes": "FloatingFocusManager imported from the existing @floating-ui/react import block; no package.json/lock changes."},
+    {"kind": "spec", "item": "Design section specifies exactly context, modal={false}, initialFocus={0} — no other FloatingFocusManager props", "status": "fail", "notes": "Implementation also sets closeOnFocusOut={false}, which the plan.md Step 3 code block does not include either. This is a material, undocumented deviation from both approved artifacts. See CR-002."},
+    {"kind": "spec", "item": "Testing: Tab past last item exits popup in page order (non-modal regression guard)", "status": "pass", "notes": "Test added and passing per evidence."},
+    {"kind": "spec", "item": "Testing: Escape still closes popup and returns focus to trigger (re-run existing coverage)", "status": "pass", "notes": "Pre-existing test unchanged, still present in the file and not touched by the diff."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "item": "Commit subject carries ticket prefix per git-workflow convention", "status": "pass", "notes": "Observed commit '65b79c6ba EPMCDME-15443: Make NavigationMore popup keyboard-Tab-navigable' matches the ticket-prefix format used by sibling commits in this branch's history."},
+    {"kind": "security", "item": "No secrets, injection, or unsafe sinks introduced", "status": "pass", "notes": "Diff only adds a floating-ui focus-manager wrapper and tests; no dangerouslySetInnerHTML, no new network calls, no new dependency."},
+    {"kind": "code-quality", "item": "No significant maintainability regressions", "status": "pass", "notes": "Change is a scoped, additive wrap of existing JSX consistent with the file's existing structure."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "summary": "Disabled href/Link menu items remain in the Tab sequence, unlike disabled buttons.",
+      "evidence": "NavigationMore.tsx:190-215 — the href branch sets aria-disabled, pointer-events-none, and opacity-50 on a disabled item but never sets tabIndex={-1} (contrast with the button branch at line 227, which uses the native `disabled` attribute to remove it from the tab order). With FloatingFocusManager's initialFocus={0} and modal={false} relying on actual tabbable DOM nodes, a disabled Link as the first menu entry would still receive initial focus or remain reachable via Tab.",
+      "impact": "Breaks AC1 ('focus moves to the first enabled, tabbable item') and AC2 ('disabled items... skipped') whenever a disabled href item is present, especially as the first item. No existing or new test covers Tab/initial-focus against a disabled href item in that position — the only disabled-href test (NavigationMore.test.tsx:135-149) checks click behavior, not focus/tab order.",
+      "recommendation": "Add tabIndex={-1} (and keep aria-disabled) to disabled href items so they are excluded from the tab sequence the same way disabled buttons are, then add a test asserting Tab/initialFocus skip a disabled href item."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "decision_needed",
+      "summary": "`closeOnFocusOut={false}` was added to FloatingFocusManager without appearing in the approved spec or plan, and is untested.",
+      "evidence": "NavigationMore.tsx:143 sets `closeOnFocusOut={false}` on FloatingFocusManager. spec.md's Design section and plan.md Step 3's code block both specify only `context={context} modal={false} initialFocus={0}` — closeOnFocusOut is absent from both approved artifacts. The only test touching this path (NavigationMore.test.tsx:338-356, 'moves focus out of the popup when tabbing past the last item (non-modal)') asserts only that focus lands on the external 'After' button; it never asserts the popup itself closes, hides, or becomes non-interactive.",
+      "impact": "Potential AC5 regression: a sighted keyboard user who tabs past the last item moves focus away, but the floating panel may remain visibly rendered and interactive-looking with no indication it is stale, since closeOnFocusOut normally drives FloatingFocusManager's own close-on-blur behavior and this disables it. Whether useDismiss's own focus-outside handling fully substitutes for this is not evidenced by the diff or tests.",
+      "recommendation": "Either (a) remove `closeOnFocusOut={false}` to match the approved design exactly, or (b) if intentionally needed to avoid a conflict with `useDismiss`, document the reason in the spec/plan and add a test proving the popup closes or becomes non-interactive once focus leaves it via Tab."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "summary": "No test coverage for `childrenFirst` or custom-children NavigationMore consumers under the new FloatingFocusManager wrap.",
+      "evidence": "NavigationMore.tsx:142-158 — `childrenFirst` can render `children` before `visibleItems` inside the FloatingFocusManager-wrapped panel, and `hasMenuContent` can be true from `children` alone with no `items`. NavigationMore.test.tsx only exercises `makeItems()`-based scenarios; no test renders `childrenFirst` or passes non-trivial custom `children`.",
+      "impact": "AC6 ('no regression for other NavigationMore consumers') cannot be confirmed for consumers that rely on childrenFirst or custom children (acceptance lens scored this criterion 'partial' for the same reason) — if such content is non-focusable or absent, initialFocus={0} has no tabbable target and focus could land outside the intended trap.",
+      "recommendation": "Add at least one test rendering NavigationMore with childrenFirst and/or non-trivial custom children, asserting initial focus still lands on a sensible, focusable element."
+    }
+  ]
+}

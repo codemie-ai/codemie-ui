@@ -23,7 +23,10 @@ export const useFocusReturn = (
 
   useEffect(() => {
     if (prevOpenRef.current && !isOpen) {
-      triggerRef.current?.focus()
+      const { activeElement } = document
+      if (!activeElement || activeElement === document.body) {
+        triggerRef.current?.focus()
+      }
     }
     prevOpenRef.current = isOpen
   }, [isOpen, triggerRef])

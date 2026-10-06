@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "generated": "2026-10-01T15:56:35Z",
+  "dimensions": {
+    "component_scope": { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk": { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "NavigationMore's non-modal popup now uses FloatingFocusManager; its existing shared useFocusReturn hook preserves a destination that already owns focus. The production change is localized to one UI component and one shared hook, with existing tests expanded. Shared-hook impact raises the self-contained component score from S to M."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The closest existing pattern is NavigationMore's useFloating/useClick/useDismiss integration plus useFocusReturn's open-to-closed effect. Adding focus management introduces coordination between initial focus, focus-out dismissal, and trigger restoration. Real user-event regression cases cover inline and portal Tab exit, disabled links, custom children, and focused-item Escape dismissal; hook tests cover preserving external focus and returning focus after content removal. No security or performance surface is added."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "The committed diff modifies four existing files: NavigationMore, useFocusReturn, and their two existing test files. Actual-mode file-count mapping assigns four files M. No dependency manifests, migrations, API calls, or new files are present. Calibration remains in the S band alongside epmcdme-10102-add-validation-to-form-field (11); unlike adjacent M example epmcdme-10203-add-rest-endpoint-with-business-logic (15), this change stays in the UI layer with no open requirements."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: changes the shared useFocusReturn utility."
+  ],
+  "split_recommendation": null
+}
