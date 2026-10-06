@@ -268,10 +268,7 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
     if (!keySpendingData) return {}
 
     const { data } = keySpendingData
-    const customColumns: Record<
-      string,
-      (item: Record<string, MetricValue>) => ReactElement
-    > = {}
+    const customColumns: Record<string, (item: Record<string, MetricValue>) => ReactElement> = {}
 
     data.columns.filter(isTotalPercentageColumn).forEach((col) => {
       customColumns[col.id] = (item) => renderSpendCell(col.id, data, item)

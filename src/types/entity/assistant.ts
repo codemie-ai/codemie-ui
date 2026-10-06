@@ -350,6 +350,7 @@ export interface SubAssistantInfo {
   id: string
   name: string
   description: string
+  // Assumption (EPMCDME-15428): true means already available on Marketplace
   is_global: boolean
   icon_url?: string
   categories?: string[]

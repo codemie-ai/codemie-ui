@@ -116,15 +116,11 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
       setValidationData(response)
 
       // Initialize sub-assistants settings with default values from validation response
-      if (response.sub_assistants && response.sub_assistants.length > 0) {
-        const initialSettings: SubAssistantPublishSettings[] = response.sub_assistants.map(
-          (sa) => ({
-            assistant_id: sa.id,
-            is_global: sa.is_global,
-          })
-        )
-        setSubAssistantsSettings(initialSettings)
-      }
+      // Only unpublished ones are offered; they start unchecked (is_global: false) as before
+      const initialSettings: SubAssistantPublishSettings[] = (response.sub_assistants ?? [])
+        .filter((sa) => !sa.is_global)
+        .map((sa) => ({ assistant_id: sa.id, is_global: false }))
+      if (initialSettings.length > 0) setSubAssistantsSettings(initialSettings)
     } catch (error: any) {
       console.error('Failed to validate assistant:', error)
       displayError(error?.error, 'Failed to validate assistant for publishing')
@@ -274,8 +270,10 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
 
   const hasInlineCredentials =
     validationData?.inline_credentials && validationData.inline_credentials.length > 0
-  const hasSubAssistants =
-    validationData?.sub_assistants && validationData.sub_assistants.length > 0
+  const unpublishedSubAssistants =
+    validationData?.sub_assistants?.filter((sa) => !sa.is_global) ?? []
+  const publishedSubAssistants = validationData?.sub_assistants?.filter((sa) => sa.is_global) ?? []
+  const hasSubAssistants = unpublishedSubAssistants.length > 0
   const hasPromptVariables =
     validationData?.prompt_variables && validationData.prompt_variables.length > 0
 
@@ -313,9 +311,16 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
                 hint="Choose up to 3 categories that best describe what your assistant does. This will help users find your assistant more easily in the marketplace."
               />
 
+              {publishedSubAssistants.length > 0 && (
+                <p className="text-sm text-text-quaternary">
+                  Already on Marketplace, no action needed:{' '}
+                  {publishedSubAssistants.map((sa) => sa.name).join(', ')}
+                </p>
+              )}
+
               {hasSubAssistants && validationData && (
                 <SubAssistantSettings
-                  subAssistants={validationData.sub_assistants || []}
+                  subAssistants={unpublishedSubAssistants}
                   settings={subAssistantsSettings}
                   onSettingsChange={setSubAssistantsSettings}
                 />

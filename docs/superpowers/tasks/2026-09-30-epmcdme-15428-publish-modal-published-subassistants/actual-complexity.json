@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-09-30T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 3,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "PublishToMarketplaceModal and SubAssistantSettings in one UI feature area, plus a type tweak in assistant.ts." },
+    { "dimension": "file_change_estimate", "reason": "3 modified files, 0 new, 21 insertions / 16 deletions, two directories." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

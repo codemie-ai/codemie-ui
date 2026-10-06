@@ -34,31 +34,23 @@ beforeEach(() => {
 })
 
 describe('workflowRoutes - WOKRFLOW_EXECUTIONS optional executionId', () => {
-  it(
-    'matches the bare executions-list path with no executionId param',
-    async () => {
-      const { routes } = await import('@/router')
-      const matches = matchRoutes(routes, '/workflows/wf-123/workflow-executions')
+  it('matches the bare executions-list path with no executionId param', async () => {
+    const { routes } = await import('@/router')
+    const matches = matchRoutes(routes, '/workflows/wf-123/workflow-executions')
 
-      expect(matches?.at(-1)?.route.id).toBe(WOKRFLOW_EXECUTIONS)
-      expect(matches?.at(-1)?.params.workflowId).toBe('wf-123')
-      expect(matches?.at(-1)?.params.executionId).toBeUndefined()
-    },
-    30000
-  )
+    expect(matches?.at(-1)?.route.id).toBe(WOKRFLOW_EXECUTIONS)
+    expect(matches?.at(-1)?.params.workflowId).toBe('wf-123')
+    expect(matches?.at(-1)?.params.executionId).toBeUndefined()
+  }, 30000)
 
-  it(
-    'still matches the path with an executionId param',
-    async () => {
-      const { routes } = await import('@/router')
-      const matches = matchRoutes(routes, '/workflows/wf-123/workflow-executions/exec-1')
+  it('still matches the path with an executionId param', async () => {
+    const { routes } = await import('@/router')
+    const matches = matchRoutes(routes, '/workflows/wf-123/workflow-executions/exec-1')
 
-      expect(matches?.at(-1)?.route.id).toBe(WOKRFLOW_EXECUTIONS)
-      expect(matches?.at(-1)?.params.workflowId).toBe('wf-123')
-      expect(matches?.at(-1)?.params.executionId).toBe('exec-1')
-    },
-    30000
-  )
+    expect(matches?.at(-1)?.route.id).toBe(WOKRFLOW_EXECUTIONS)
+    expect(matches?.at(-1)?.params.workflowId).toBe('wf-123')
+    expect(matches?.at(-1)?.params.executionId).toBe('exec-1')
+  }, 30000)
 })
 
 describe('router', () => {

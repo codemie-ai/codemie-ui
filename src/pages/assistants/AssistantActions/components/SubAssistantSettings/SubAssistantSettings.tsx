@@ -41,7 +41,7 @@ const SubAssistantSettings: React.FC<SubAssistantSettingsProps> = ({
     subAssistants.forEach((sa) => {
       // Expand if sub-assistant is marked for marketplace publishing (is_global)
       const setting = settings.find((s) => s.assistant_id === sa.id)
-      const isGlobal = setting?.is_global ?? sa.is_global ?? true
+      const isGlobal = setting?.is_global ?? true
       if (isGlobal) {
         initialExpanded.add(sa.id)
       }
@@ -127,8 +127,7 @@ const SubAssistantSettings: React.FC<SubAssistantSettingsProps> = ({
       return setting.is_global
     }
     // Default to true (publish to marketplace) if no setting exists
-    const subAssistant = subAssistants.find((sa) => sa.id === assistantId)
-    return subAssistant?.is_global ?? true
+    return true
   }
 
   const getCategories = (assistantId: string): string[] => {
@@ -168,7 +167,7 @@ const SubAssistantSettings: React.FC<SubAssistantSettingsProps> = ({
 
       <InfoWarning
         type={InfoWarningType.INFO}
-        message="Please, select sub-assistant(s) that will be published to Marketplace with assistant"
+        message="These sub-assistants are not on Marketplace yet. Select the ones to publish together with this assistant."
       />
 
       <div className="mt-1">

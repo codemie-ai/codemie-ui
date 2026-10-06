@@ -1,0 +1,11 @@
+{"schema":1,"branch":"EPMCDME-15428-publish-modal-published-subassistants","head":"407011a76899316aa450cd65f41a4a5f8a58f0e4","runner":"npm","started_at":"2026-09-30T13:00:00Z","completed_at":"2026-09-30T14:00:00Z","status":"BLOCKED","drift_detected":false,
+"gates":[
+{"id":"lint","source":"guide","status":"PASS","duration_ms":93000,"command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":45000,"command":"npm run typecheck","exit_code":0},
+{"id":"license-check","source":"guide","status":"SKIPPED","duration_ms":0,"command":"npm run license-check","exit_code":null,"notes":"Skip if: no dependency added/removed/moved."},
+{"id":"secrets","source":"guide","status":"PASS","duration_ms":27000,"command":"npm run secrets:check","exit_code":0,"notes":"no leaks found"},
+{"id":"unit","source":"guide","status":"FAIL","duration_ms":1112000,"command":"npm run test:unit:slnt","exit_code":1,"notes":"9 files / 23 tests failed, none in changed files; all locale (decimal comma, e.g. '$0,00' vs '$0.00') or CRLF (a2ui manifest, license_headers test SyntaxError) environment failures on this Windows host. Reproduced twice."},
+{"id":"integration","source":"guide","status":"FAIL","duration_ms":0,"command":"npm run test:integration:slnt","exit_code":1,"notes":"1 failed (UsersManagementSpending.integration, unrelated spending/locale area), 548 passed."},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":0,"command":"npm run license-headers:check","exit_code":0},
+{"id":"sonar-local","source":"hook","status":"N/A","duration_ms":0,"command":"npm run sonar-local","exit_code":null,"notes":"Needs SonarQube infra; owed to CI. .gitlab-ci.yml only includes external templates."}],
+"failures":{"unit":"See notes: Test Files 9 failed | 624 passed (633); Tests 23 failed | 6457 passed. Failing: check_license_headers.test.js, a2ui manifest.test.ts, SpendingAmount, ProjectMembersSpending, UserProjectSpendingTable, SkillInstructions, WorkflowExecutionInfoPopup, analyticsFormatters, currency.","integration":"UsersManagementSpending.integration.test.tsx > renders one nested row per project when a user row is expanded. Test Files 1 failed | 47 passed (48)."}}
