@@ -40,9 +40,11 @@ import {
   Metric,
   TabularMetricType,
   MetricFormat,
+  MetricValue,
   TabularResponse,
 } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
+import { formatSpend } from '@/utils/currency'
 
 import InfoCard from './InfoCard'
 
@@ -90,7 +92,7 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
           type: column.type,
           format: column.format,
           description: column.description,
-          value: row[column.id] as string | number | boolean,
+          value: row[column.id] as MetricValue,
         })),
       },
       metadata: keySpendingData.metadata,
@@ -99,6 +101,19 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
 
   const currentMetric = summaries?.data.metrics.find((m: any) => m.id === 'current_spending')
   const limitMetric = summaries?.data.metrics.find((m: any) => m.id === 'budget_limit')
+
+  const currentSpendValue = useMemo(() => {
+    if (keySpendingData && rowCount === 1) {
+      const row = keySpendingData.data.rows[0]
+      const rawSpend = row.current_spending
+      // Accept only non-negative numbers; coerce non-numeric/absent/negative values to null
+      if (typeof rawSpend === 'number' && rawSpend >= 0) {
+        return rawSpend
+      }
+      return null
+    }
+    return null
+  }, [keySpendingData, rowCount])
 
   const percentage = useMemo(() => {
     if (keySpendingData && rowCount === 1) {
@@ -212,8 +227,12 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
           <div className="flex-shrink-0 relative w-32 h-32">
             <Doughnut data={chartData} options={chartOptions} />
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-2">
-              <div className="text-base font-bold" style={{ color: statusColor }}>
-                {percentage.toFixed(1)}%
+              <div
+                className="text-sm font-bold text-center flex flex-col items-center"
+                style={{ color: statusColor }}
+              >
+                <span>{formatSpend(currentSpendValue)}</span>
+                <span>{`(${Math.round(percentage)}%)`}</span>
               </div>
             </div>
           </div>
@@ -222,28 +241,40 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
     )
   }
 
+  const renderSpendCell = (
+    colId: string,
+    data: TabularResponse['data'],
+    item: Record<string, MetricValue>
+  ) => {
+    const value = item[colId]
+    const percentage: number = typeof value === 'number' ? value : 0
+    const rawRow = data.rows.find((row) => row.project_name === item.project_name)
+    const rawSpend = rawRow?.current_spending
+    const spend = typeof rawSpend === 'number' && rawSpend >= 0 ? rawSpend : null
+    return (
+      <SpendingProgressBar
+        percentage={percentage}
+        spend={spend}
+        dangerThreshold={SPENDING_DANGER_THRESHOLD}
+        warningThreshold={SPENDING_WARNING_THRESHOLD}
+      />
+    )
+  }
+
+  const isTotalPercentageColumn = (col: TabularResponse['data']['columns'][number]) =>
+    col.format === MetricFormat.PERCENTAGE && col.id === 'total'
+
   const getSpendingCustomRenderColumns = () => {
+    if (!keySpendingData) return {}
+
+    const { data } = keySpendingData
     const customColumns: Record<
       string,
-      (item: Record<string, string | number | boolean>) => ReactElement
+      (item: Record<string, MetricValue>) => ReactElement
     > = {}
 
-    if (!keySpendingData) return customColumns
-
-    keySpendingData.data.columns.forEach((col) => {
-      if (col.format === MetricFormat.PERCENTAGE && col.id === 'total') {
-        customColumns[col.id] = (item: Record<string, string | number | boolean>) => {
-          const value = item[col.id]
-          const percentage: number = typeof value === 'number' ? value : 0
-          return (
-            <SpendingProgressBar
-              percentage={percentage}
-              dangerThreshold={SPENDING_DANGER_THRESHOLD}
-              warningThreshold={SPENDING_WARNING_THRESHOLD}
-            />
-          )
-        }
-      }
+    data.columns.filter(isTotalPercentageColumn).forEach((col) => {
+      customColumns[col.id] = (item) => renderSpendCell(col.id, data, item)
     })
 
     return Object.keys(customColumns).length > 0 ? customColumns : undefined
@@ -285,11 +316,11 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
                 minWidth: '100%',
                 cellPadding: '0.75rem',
                 columnWidths: {
-                  project_name: '228px',
-                  current_spending: '120px',
-                  budget_reset_at: '114px',
-                  time_until_reset: '132px',
-                  total: '186px',
+                  project_name: '220px',
+                  current_spending: '118px',
+                  budget_reset_at: '112px',
+                  time_until_reset: '130px',
+                  total: '200px',
                 },
               }}
               customRenderColumns={getSpendingCustomRenderColumns()}

@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15187-show-spend-usd-and-percentage",
+  "head": "7fd9685f7ddaec1109127ca85e4e612f3df18aa3",
+  "runner": "npm",
+  "started_at": "2026-09-24T00:00:00Z",
+  "completed_at": "2026-09-24T01:30:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 56681,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 27579,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "test:unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 203900,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "21 tests passed for SpendingProgressBar and SpendingCard. Pre-existing unit test failures in Popup and ToasterAnnouncer unrelated to these changes."
+    },
+    {
+      "id": "test:integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 424240,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "539 integration tests passed, 1 skipped"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 16598,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "No staged files found; gate runs before commit"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 6781,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 25575,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "scanned ~32MB in 20.1s, no leaks found"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1348,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Skipping Sonar scan because SONAR_TOKEN is not set; requires CI environment"
+    }
+  ],
+  "failures": {}
+}

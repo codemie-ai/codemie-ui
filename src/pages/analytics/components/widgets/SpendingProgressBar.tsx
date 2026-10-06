@@ -19,10 +19,12 @@ import {
   getStatusColor,
   getStatusColorWithOpacity,
 } from '@/pages/analytics/components/widgets/RatioWidget/utils'
+import { formatSpend } from '@/utils/currency'
 import { cn } from '@/utils/utils'
 
 interface SpendingProgressBarProps {
   percentage: number
+  spend?: number | null
   className?: string
   dangerThreshold?: number
   warningThreshold?: number
@@ -30,6 +32,7 @@ interface SpendingProgressBarProps {
 
 const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
   percentage,
+  spend,
   className,
   dangerThreshold = 90,
   warningThreshold = 75,
@@ -46,8 +49,15 @@ const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
     [normalizedPercentage, dangerThreshold, warningThreshold]
   )
 
+  // Validate spend: accept only finite, non-negative numbers
+  const label = useMemo(() => {
+    const validatedSpend =
+      typeof spend === 'number' && Number.isFinite(spend) && spend >= 0 ? spend : null
+    return `${formatSpend(validatedSpend)} (${Math.round(normalizedPercentage)}%)`
+  }, [spend, normalizedPercentage])
+
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <div className={cn('flex items-center gap-2 min-w-0', className)}>
       <div className="relative h-2 w-[110px] rounded-[99px]" style={{ backgroundColor: bgColor }}>
         <div
           className="absolute top-0 left-0 h-full rounded-[99px] transition-all"
@@ -58,10 +68,10 @@ const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
         />
       </div>
       <span
-        className="text-sm font-semibold leading-none whitespace-nowrap w-12 text-right"
+        className="text-sm font-semibold leading-none whitespace-nowrap text-right"
         style={{ color: barColor }}
       >
-        {normalizedPercentage.toFixed(1)}%
+        {label}
       </span>
     </div>
   )
