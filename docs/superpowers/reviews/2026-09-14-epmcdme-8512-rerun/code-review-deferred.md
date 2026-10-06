@@ -1,0 +1,3 @@
+# Deferred from code review — 2026-09-14-epmcdme-8512-rerun (2026-09-14)
+
+- **Cursor conflict on disabled + isLoading** — `src/components/Button/Button.tsx:108-109` — `cursor-not-allowed opacity-50` and `cursor-wait` are applied as independent conditions; when a caller passes both `disabled={true}` and `isLoading={true}`, both cursor classes are present simultaneously and the browser applies one arbitrarily. The guard would be `'cursor-not-allowed': !isLoading && disabled`. Pre-existing: the cursor class logic predates this WCAG contrast fix; the PR scope is the magical button hover brightness class and tailwind gradient stop updates, not the disabled/loading state implementation.

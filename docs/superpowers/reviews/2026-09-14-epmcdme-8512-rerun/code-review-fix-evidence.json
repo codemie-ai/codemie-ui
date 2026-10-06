@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "reviewed_head": "b8d369f778fbbcd862830017bee02e96afce47ef",
+  "findings": {
+    "CR-001": {
+      "artifacts": [
+        {"path": "tailwind.config.ts", "signature": "be08ffb35fcd7c9d74a47b7b40d1105a4f059a57c4bf69aa1e30c7d9a7cdd889"}
+      ],
+      "commands": [
+        {"command": "git show 591c669ec13c06de2660787f674d3147edce85aa:tailwind.config.ts | grep -n \"action-accent-hover\"", "exit_code": 0, "head": "591c669ec13c06de2660787f674d3147edce85aa"}
+      ]
+    }
+  }
+}

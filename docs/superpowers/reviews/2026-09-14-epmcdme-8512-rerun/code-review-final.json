@@ -1,0 +1,38 @@
+{
+  "decision": "request-changes",
+  "rationale": "One major regression: action-accent-hover was changed from a CSS-variable reference to a hardcoded gradient, breaking the custom appearance system for ACTION button hover in themed deployments (bg-action-accent-hover at Button.tsx:79; --backgroundImage-action-accent-hover is still computed by rules.ts §6 but has no consumer). No spec present; acceptance was not verified (confidence: low). 1 deferred (pre-existing cursor-not-allowed/cursor-wait conflict at Button.tsx:108-109). 2 dismissed as noise (purple-radial-hover has no live consumers in JSX; variant-only test path is already covered at Button.test.tsx:24).",
+  "confidence": "low",
+  "risk_flags": ["breaking-change"],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 4 subjects match the documented EPMCDME-XXXX: Capital sentence format; ticket EPMCDME-8512 with non-zero ID, first word capitalised (Add/Fix), no trailing period"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md does not exist in the repository and no ArtifactRef was passed; absent standard, not a coverage gap"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Changed files (Button.tsx, Button.test.tsx, tailwind.config.ts, docs review artifacts) introduce no dangerouslySetInnerHTML sinks, no navigation from untrusted input, no cross-window postMessage usage, no credentials or secrets, and no Sonar suppressions; guide checklist items do not apply to these styling and test changes"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "tailwind.config.ts",
+      "line": 621,
+      "title": "ACTION hover gradient ignores custom brand color",
+      "problem": "action-accent-hover now hardcodes linear-gradient(90deg,#672D92 0%,#5677C8 100%) instead of var(--backgroundImage-action-accent-hover), so the CSS variable computed by rules.ts §6 via deriveAlternateOklchLightness on primaryButtonBackground has no consumer in the dark theme.",
+      "impact": "In any deployment with an active custom appearance theme, hovering an ACTION-type button shows the wrong brand gradient; the computed hover color is silently discarded. bg-action-accent-hover is applied at Button.tsx:79 for ButtonType.ACTION.",
+      "recommendation": "Restore 'action-accent-hover': 'var(--backgroundImage-action-accent-hover)' in the dark-theme backgroundImage block of tailwind.config.ts. If a WCAG-compliant stop value is needed, update the oklch derivation in rules.ts §6 to produce the target color rather than hardcoding it in the Tailwind config."
+    }
+  ]
+}

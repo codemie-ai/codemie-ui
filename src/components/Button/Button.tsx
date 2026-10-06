@@ -92,7 +92,7 @@ const Button: React.FC<ButtonProps> = ({
             displayType === ButtonType.TERTIARY,
 
           // Magical type
-          'bg-magical-button border-border-specific-button-service text-text-inverse border-1 hover:brightness-110 transition-all duration-100':
+          'bg-magical-button border-border-specific-button-service text-text-inverse border-1 hover:brightness-90 transition-all duration-100':
             displayType === 'magical',
 
           // Size-specific styles

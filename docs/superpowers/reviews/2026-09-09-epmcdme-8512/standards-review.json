@@ -1,0 +1,16 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "fail", "notes": "3 commits in range; 1 matches the documented EPMCDME-XXXX: Capital sentence format (EPMCDME-8512: Fix WCAG 1.4.3 contrast on magical button by lowering hover brightness and updating gradient stops). 2 do not match the Tekton-enforced regex: 'Merge branch 'main' of https://gitbud.epam.com/epm-cdme/codemie-ui' (appears twice) — the merge strategy is squash-merge with rebasing, and intermediate merge-from-origin commits are not an accepted form in the documented regex."},
+    {"kind": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md is absent from the repository; no code-quality standard to adjudicate against."},
+    {"kind": "security", "status": "pass", "notes": "Changed files (src/components/Button/Button.tsx, src/components/Button/__tests__/Button.test.tsx, tailwind.config.ts) are a WCAG contrast styling fix. Button.tsx uses no dangerouslySetInnerHTML, no navigation from untrusted input, no cross-window messaging, no config or secret exposure. No security checklist items triggered."}
+  ],
+  "blocking_findings": [
+    {
+      "location": "commit subject: \"Merge branch 'main' of https://gitbud.epam.com/epm-cdme/codemie-ui\" (2 occurrences in review range)",
+      "violation": "git-workflow.md documents the enforced regex ^((EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.*|Generate release notes for version \\d+\\.\\d+\\.\\d+|Revert \"(EPMCDME)-(?!0+)\\d+:\\s[A-Z][a-z]*.*\")$ for all commit subjects; both merge-from-origin subjects match none of the three accepted forms",
+      "why_blocking": "The guide states the regex is enforced by Tekton CI and the pipeline blocks on violations; non-conforming subjects in the review range would cause CI to reject the branch",
+      "remedy": "Remove the merge commits by rebasing the feature branch onto origin/main (git fetch origin && git rebase origin/main) instead of merging; the guide's Troubleshooting table prescribes this exact approach"
+    }
+  ],
+  "coverage_gap": false
+}

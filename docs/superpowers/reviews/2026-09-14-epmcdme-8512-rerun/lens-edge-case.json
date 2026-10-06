@@ -1,0 +1,28 @@
+[
+  {
+    "location": "tailwind.config.ts:363 (action-accent-hover, removed var() reference)",
+    "trigger_condition": "custom appearance theme active; user hovers ACTION-type button",
+    "guard_snippet": "restore 'action-accent-hover': 'var(--backgroundImage-action-accent-hover)' or add '--backgroundImage-action-accent-hover': magicalButton to rules.ts §5",
+    "potential_consequence": "ACTION button hover gradient ignores custom brand colors; themed deployments show wrong gradient",
+    "kind": "deletion",
+    "confidence": "high"
+  },
+  {
+    "location": "src/components/Button/Button.tsx:108-109",
+    "trigger_condition": "caller passes both disabled={true} and isLoading={true} simultaneously",
+    "guard_snippet": "'cursor-not-allowed': !isLoading && disabled, 'cursor-wait': isLoading",
+    "potential_consequence": "cursor-not-allowed and cursor-wait both present; browser applies one arbitrarily"
+  },
+  {
+    "location": "tailwind.config.ts:357-358 (purple-radial-hover end-stop changed to #5373C2)",
+    "trigger_condition": "any component outside Button using bg-purple-radial-hover class rendered",
+    "guard_snippet": "grep for bg-purple-radial-hover consumers; add assertions for each",
+    "potential_consequence": "unreviewed components silently change gradient; regression outside WCAG scope"
+  },
+  {
+    "location": "src/components/Button/__tests__/Button.test.tsx:278-288",
+    "trigger_condition": "variant prop passed without type prop; displayType resolves to variant alone",
+    "guard_snippet": "render(<Button variant=\"magical\">) without type prop; assert all magical classes present",
+    "potential_consequence": "variant-only invocation path exercised only with type override; pure-variant path untested"
+  }
+]

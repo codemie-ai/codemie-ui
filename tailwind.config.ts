@@ -612,14 +612,15 @@ export default {
             gradient5: 'linear-gradient(180deg, #9E00FF 0%, #55137D 100%)',
             'gradient-switch-off': 'linear-gradient(to right, #BBB, #666)',
             'gradient-switch-on': 'linear-gradient(to right, #672C92, #547CCC)',
-            'magical-button': 'linear-gradient(90deg, #672D92 0%, #5677C8 100%);',
+            'magical-button': 'linear-gradient(90deg, #672D92 0%, #5373C2 100%);',
             'purple-radial':
               'radial-gradient(271.77% 163.1% at 50% -10.71%, #200E32 0%, #9E00FF 75.14%, #EC56FF 100%)',
-            'purple-radial-hover': 'linear-gradient(90deg, #672D92 0%, #5677C8 100%);',
+            'purple-radial-hover': 'linear-gradient(90deg, #672D92 0%, #5373C2 100%);',
             'sidebar-gradient': 'linear-gradient(#00000033)',
             'menu-gradient': 'linear-gradient(#000000, #00000066)',
             'action-accent-btn': 'linear-gradient(#212224)',
-            'action-accent-hover': 'var(--backgroundImage-purple-radial-hover)',
+            'action-accent-hover':
+              'var(--backgroundImage-action-accent-hover, linear-gradient(90deg, #672D92 0%, #5677C8 100%))',
           },
           backdropBlur: {
             menu: '40px',
@@ -654,7 +655,7 @@ export default {
               'gradient-switch-off': 'linear-gradient(to right, #fff, #fff)',
               'gradient-switch-on': 'linear-gradient(to right, #007AFF, #007AFF)',
               'purple-radial': 'radial-gradient(#007AFF)',
-              'magical-button': 'linear-gradient(90deg, #3676f7 0%, #cc22f2 100%);',
+              'magical-button': 'linear-gradient(90deg, #336FE8 0%, #C020E3 100%);',
               'sidebar-gradient': 'linear-gradient(#F8F8F8AA)',
               'purple-radial-hover': 'linear-gradient(#d9ebff)',
               'menu-gradient': 'linear-gradient()',

@@ -1,0 +1,26 @@
+[
+  {
+    "location": "src/components/Button/Button.tsx:52,96",
+    "trigger_condition": "caller passes variant=\"magical\" instead of type=\"magical\"",
+    "guard_snippet": "render(<Button variant=\"magical\">...</Button>); expect(button).toHaveClass('hover:brightness-90')",
+    "potential_consequence": "variant path activates magical styles but is unverified; regression invisible"
+  },
+  {
+    "location": "src/components/Button/__tests__/Button.test.tsx:43-68",
+    "trigger_condition": "magical button rendered with isLoading={true}",
+    "guard_snippet": "render(<Button type=\"magical\" isLoading>...</Button>); expect(button).toHaveClass('bg-magical-button')",
+    "potential_consequence": "shimmer overlay + gradient interaction untested; class presence unconfirmed under loading"
+  },
+  {
+    "location": "src/components/Button/__tests__/Button.test.tsx:43-68",
+    "trigger_condition": "magical button rendered with disabled={true}",
+    "guard_snippet": "render(<Button type=\"magical\" disabled>...</Button>); expect(button).toHaveClass('bg-magical-button')",
+    "potential_consequence": "opacity-50 over gradient background untested; disabled magical style unverified"
+  },
+  {
+    "location": "tailwind.config.ts:617 (dark theme, purple-radial-hover)",
+    "trigger_condition": "dark-theme ACTION button hovered; no custom appearance override active",
+    "guard_snippet": "verify action-accent-hover resolves via var(--backgroundImage-purple-radial-hover) intentionally",
+    "potential_consequence": "ACTION button hover gradient silently changed; no test guards the regression"
+  }
+]

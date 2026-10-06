@@ -1,0 +1,9 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "All 4 subjects match the documented EPMCDME-XXXX: Capital sentence format; ticket EPMCDME-8512 with non-zero ID, first word capitalised (Add/Fix), no trailing period"},
+    {"kind": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md does not exist in the repository and no ArtifactRef was passed; absent standard, not a coverage gap"},
+    {"kind": "security", "status": "pass", "notes": "Changed files (Button.tsx, Button.test.tsx, tailwind.config.ts, docs review artifacts) introduce no dangerouslySetInnerHTML sinks, no navigation from untrusted input, no cross-window postMessage usage, no credentials or secrets, and no Sonar suppressions; guide checklist items do not apply to these styling and test changes"}
+  ],
+  "blocking_findings": [],
+  "coverage_gap": false
+}
