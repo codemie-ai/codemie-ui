@@ -22,13 +22,14 @@ import { isConfigItemEnabled } from '@/utils/settings'
 
 interface FeatureGuardProps {
   featureFlags: FeatureFlag | FeatureFlag[]
+  match?: 'all' | 'any'
   children: ReactNode
 }
 
 /**
  * Component that guards route access based on feature flags.
  * Throws 404 Response if the feature is disabled, triggering ErrorBoundary.
- * When given an array, every flag must be enabled.
+ * When given an array, every flag must be enabled unless match is set to "any".
  *
  * @example
  * ```tsx
@@ -42,12 +43,18 @@ interface FeatureGuardProps {
  * />
  * ```
  */
-export const FeatureGuard: FC<FeatureGuardProps> = ({ featureFlags, children }) => {
+export const FeatureGuard: FC<FeatureGuardProps> = ({ featureFlags, match = 'all', children }) => {
   const { configs } = useSnapshot(appInfoStore)
 
-  const isEnabled = Array.isArray(featureFlags)
-    ? featureFlags.every((flag) => isConfigItemEnabled(configs, flag))
-    : isConfigItemEnabled(configs, featureFlags)
+  let isEnabled: boolean
+  if (Array.isArray(featureFlags)) {
+    isEnabled =
+      match === 'all'
+        ? featureFlags.every((flag) => isConfigItemEnabled(configs, flag))
+        : featureFlags.some((flag) => isConfigItemEnabled(configs, flag))
+  } else {
+    isEnabled = isConfigItemEnabled(configs, featureFlags)
+  }
   if (!isEnabled) {
     const error = new Error('Not Found')
 

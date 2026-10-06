@@ -1,0 +1,40 @@
+{
+  "findings": [
+    {
+      "id": "CR-002",
+      "status": "fixed",
+      "fix": "Removed the module-level `isDataSourcesSurfaceEnabled` const in src/router.tsx (was evaluated at import time via isFeatureEnabled(), before appInfoStore.fetchCustomerConfig() resolves, so it was always false in the real app). dataSourceRoutes is now spread unconditionally into the route table (src/router.tsx:710), matching the existing precedent used for cost-centers-management/analytics routes. Each of the 4 dataSourceRoutes route elements is now wrapped in `<FeatureGuard featureFlag={dataSourcesSurfaceFlags}>` (src/router.tsx:279-317), which re-evaluates reactively against live config on every render via useSnapshot(appInfoStore) instead of freezing a decision at import time.",
+      "evidence": {
+        "changed_files": ["src/router.tsx", "src/components/FeatureGuard.tsx"],
+        "tests": [
+          "src/__tests__/router.test.tsx :: 'always registers dataSourceRoutes in the route table regardless of config fetch timing' — asserts all 4 dataSourceRoutes ids are present when isConfigFetched=false, the real app's state at router import time; this is the exact scenario CR-002 identified as broken",
+          "src/__tests__/router.test.tsx :: 'still registers dataSourceRoutes when no retrieval flag is enabled'",
+          "src/__tests__/router.test.tsx :: 'registers dataSourceRoutes when one retrieval flag is enabled'",
+          "src/components/__tests__/FeatureGuard.test.tsx :: 'should render children when featureFlag is an array and one of the flags is enabled'",
+          "src/components/__tests__/FeatureGuard.test.tsx :: 'should throw error with 404 properties when featureFlag is an array and none of the flags is enabled'"
+        ],
+        "test_command": "npx vitest run src/__tests__/router.test.tsx src/components/__tests__/FeatureGuard.test.tsx",
+        "result": "EXIT=0, 8 tests passed"
+      }
+    },
+    {
+      "id": "CR-001",
+      "status": "fixed",
+      "fix": "Direct consequence of the CR-002 fix: because dataSourceRoutes is now always present in the static route table (never conditionally omitted), router.resolve({ name: 'data-sources' }) in Navigation.tsx:130 always finds a registered route id and no longer throws 'Route with ID \\\"data-sources\\\" was not found.' Navigation.tsx itself required no change — its reactive isDataSourcesSurfaceEnabled gate (useFeatureFlag-based, lines 71-75) was already correct per the review; only the router-side route existence was broken.",
+      "evidence": {
+        "changed_files": ["src/router.tsx"],
+        "tests": [
+          "src/components/Navigation/__tests__/Navigation.test.tsx (full suite, 10 tests) — confirms Navigation continues to resolve routes and push/omit the Data Sources nav item correctly under the fixed router",
+          "src/__tests__/router.test.tsx :: 'always registers dataSourceRoutes in the route table regardless of config fetch timing' — proves the route id Navigation resolves against exists before config fetch completes"
+        ],
+        "test_command": "npx vitest run src/components/Navigation/__tests__/Navigation.test.tsx src/__tests__/router.test.tsx",
+        "result": "EXIT=0, 13 tests passed"
+      }
+    }
+  ],
+  "regression_check": {
+    "typecheck": "npx tsc --noEmit -p tsconfig.json — EXIT=0",
+    "lint": "npx eslint src/router.tsx src/components/FeatureGuard.tsx src/components/__tests__/FeatureGuard.test.tsx src/__tests__/router.test.tsx — EXIT=0",
+    "full_target_suite": "npx vitest run src/components/Navigation/__tests__/Navigation.test.tsx src/components/__tests__/FeatureGuard.test.tsx src/__tests__/router.test.tsx — 3 files, 18 tests passed"
+  }
+}

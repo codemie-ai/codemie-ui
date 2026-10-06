@@ -1,0 +1,46 @@
+{
+  "decision": "approve",
+  "rationale": "Both prior blocking findings verified resolved by direct source inspection: router.tsx no longer excludes dataSourceRoutes from the route table at import time (now spread unconditionally at line 710) and each route is gated reactively by FeatureGuard, which re-evaluates via useSnapshot(appInfoStore) on every render instead of a frozen module-level const (CR-002); consequently Navigation.tsx's router.resolve({ name: 'data-sources' }) at line 130 can no longer throw, since the route id is now always registered regardless of config-fetch timing (CR-001). No new findings surfaced during this targeted verification.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/components/Navigation/Navigation.tsx",
+      "line": 130,
+      "title": "Navigation crashes when Data Sources flag enabled",
+      "problem": "router.resolve({ name: 'data-sources' }) throws because router.tsx's static route table never registers the 'data-sources' route id.",
+      "impact": "Whenever any of the three retrieval flags is genuinely enabled, Navigation throws during render, crashing the nav bar.",
+      "recommendation": "Fix the router-side gating (CR-002) so the route always exists whenever the flag is live."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/router.tsx",
+      "line": 677,
+      "title": "Data Sources routes permanently excluded from router",
+      "problem": "isDataSourcesSurfaceEnabled is a module-level const evaluated synchronously at import time, before appInfoStore.fetchCustomerConfig() resolves, so isFeatureEnabled() always returns false at that point.",
+      "impact": "dataSourceRoutes is excluded from the route table on every real page load regardless of actual flag state.",
+      "recommendation": "Gate the route inclusion reactively instead of a frozen module-level boolean — wrap each dataSourceRoutes entry in the existing FeatureGuard component."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Route id 'data-sources' is now always registered (CR-002 fix), so Navigation.tsx:130's router.resolve no longer throws. Navigation.tsx itself unchanged; verified against current source."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "dataSourceRoutes spread unconditionally into the route table (router.tsx:710); each of its 4 route elements wrapped in FeatureGuard, which re-evaluates reactively via useSnapshot(appInfoStore). Verified against current source and router.test.tsx."
+    }
+  ]
+}

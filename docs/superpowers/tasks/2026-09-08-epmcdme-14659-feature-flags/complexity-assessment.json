@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Gate Knowledge Bases, Datasources and Code Indexing UI surfaces (nav, routes) behind three new backend-driven feature flags so they are fully absent from the UI when retrieval is unavailable.",
+  "generated": "2026-09-08T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 20,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Three distinct product concepts (Knowledge Bases, Datasources, Code Indexing) named by the ticket currently converge into one route family (data-sources) and one nav entry, differentiated only by index_type inside DataSourcesPage.tsx. Gating three independent backend flags onto this merged surface likely requires touching constants (featureFlags.ts), router.tsx (route-level gating), Navigation.tsx (nav-item gating), and DataSourcesPage.tsx itself (to hide/filter sub-surfaces by index_type when only some flags are enabled) — a new reconciliation pattern, not a drop-in repeat of the Cost Centers/Analytics precedent." },
+    { "dimension": "requirements_clarity", "reason": "Core intent is clear (hide these three capabilities from every entry point), but technical-analysis surfaces an unresolved design question the spec/plan phase must answer: how do three independently-toggleable flags map onto one existing merged page/route/nav-item, whether the separate AWS Bedrock 'Knowledge Bases' page (VendorEntityType.knowledgebases) is in scope, and whether discoverability surfaces beyond nav/routes (global search, quick actions) named in AC29's corollary even exist in this app." },
+    { "dimension": "technical_risk", "reason": "Closest existing pattern is FeatureGuard plus conditional nav-item construction (used for Cost Centers, Analytics, AI Adoption Config, Skills/Favorites) — a well-established mechanism for gating a whole, distinct surface. It does not cover reconciling three independent flags against one merged surface. AC29's corollary enumerates specific entry-point variants (nav, routes, deep links, search, quick actions) and none of the affected files (Navigation.tsx, DataSourcesPage.tsx, router.tsx's gating composition) have any existing test coverage, so this is a defensive-pattern gap per the guide's bump criterion." },
+    { "dimension": "file_change_estimate", "reason": "Expected modified files: src/constants/featureFlags.ts, src/router.tsx, src/components/Navigation/Navigation.tsx, src/pages/dataSources/DataSourcesPage.tsx, possibly src/utils/indexing.ts and src/utils/settings.ts (credential-picker filtering). Expected new files: test coverage for Navigation.tsx, DataSourcesPage.tsx and router gating composition, none of which exist today. Spans 3+ directories (constants/, components/Navigation/, pages/dataSources/, plus their __tests__ subdirectories)." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: 'Affects multiple workflows' — the ticket gates three distinct product workflows (Knowledge Bases, Datasources, Code Indexing) that must each independently disappear, despite converging on shared route/nav/page surfaces today.",
+    "Technical Risk bumped from M to L: acceptance criteria (AC29 corollary) enumerate specific entry-point variants (nav, routes, deep links, search, quick actions) and no existing test template covers any of the affected surfaces (Navigation.tsx, DataSourcesPage.tsx, router.tsx gating composition) — a defensive-pattern coverage gap per the guide."
+  ],
+  "split_recommendation": null
+}

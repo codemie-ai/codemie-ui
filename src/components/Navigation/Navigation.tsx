@@ -16,6 +16,7 @@
 import React, { useCallback, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { MOBILE_OVERLAY_CLASS_NAME } from '@/constants/mobileLayout'
 import { ANALYTICS, SCHEDULERS } from '@/constants/routes'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
@@ -32,7 +33,6 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { applicationsStore } from '@/store/applications'
 import { chatsStore } from '@/store/chats'
-import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 import { isNestedLayerFocused } from '@/utils/mobileOverlay'
 import { cn } from '@/utils/utils'
 
@@ -82,7 +82,11 @@ const Navigation: React.FC<NavigationProps> = () => {
   const [isFavoritesPageEnabled] = useFavoritesPageEnabled()
   const [isPinnedAssistantsEnabled] = usePinnedAssistantsEnabled()
   const [isSchedulersViewEnabled] = useSchedulersViewEnabled()
-
+  const [isKnowledgeBasesEnabled] = useFeatureFlag(FEATURE_FLAGS.KNOWLEDGE_BASES)
+  const [isDatasourcesEnabled] = useFeatureFlag(FEATURE_FLAGS.DATASOURCES)
+  const [isCodeIndexingEnabled] = useFeatureFlag(FEATURE_FLAGS.CODE_INDEXING)
+  const isDataSourcesSurfaceEnabled =
+    isKnowledgeBasesEnabled || isDatasourcesEnabled || isCodeIndexingEnabled
   const upperItems = useMemo(() => {
     const items: NavigationLinkItem[] = [
       {
@@ -129,17 +133,21 @@ const Navigation: React.FC<NavigationProps> = () => {
         icon: IconType.INTEGRATION,
         route: router.resolve({ name: 'integrations', query: { tab: 'integrations' } }).fullPath,
       },
-      {
+    ]
+
+    if (isDataSourcesSurfaceEnabled) {
+      items.push({
         label: 'Data Sources',
         icon: IconType.DATASOURCE,
         route: router.resolve({ name: 'data-sources' }).fullPath,
-      },
-      {
-        label: 'AI Katas',
-        icon: IconType.KATA,
-        route: router.resolve({ name: 'katas' }).fullPath,
-      },
-    ]
+      })
+    }
+
+    items.push({
+      label: 'AI Katas',
+      icon: IconType.KATA,
+      route: router.resolve({ name: 'katas' }).fullPath,
+    })
 
     if (isSchedulersViewEnabled) {
       items.splice(2, 0, {
@@ -150,16 +158,14 @@ const Navigation: React.FC<NavigationProps> = () => {
       })
     }
 
-    if (isEnterpriseEdition()) {
-      items.push({
-        label: 'Analytics',
-        icon: IconType.ANALYTICS,
-        route: router.resolve({ name: ANALYTICS }).fullPath,
-      })
-    }
+    items.push({
+      label: 'Analytics',
+      icon: IconType.ANALYTICS,
+      route: router.resolve({ name: ANALYTICS }).fullPath,
+    })
 
     return items
-  }, [router, isSchedulersViewEnabled])
+  }, [router, isSchedulersViewEnabled, isDataSourcesSurfaceEnabled])
 
   const favoritesItems: NavigationLinkItem[] = useMemo(
     () =>

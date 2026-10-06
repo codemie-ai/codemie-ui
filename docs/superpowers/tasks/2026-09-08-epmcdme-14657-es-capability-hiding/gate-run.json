@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14657-frontend-es-capability-hiding",
+  "head": "420897440e61fdc59b506931a906b86da1e5c220",
+  "runner": "npm",
+  "started_at": "2026-09-08T16:00:00.000Z",
+  "completed_at": "2026-09-08T16:12:00.000Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29590,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16950,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide Skip if: no dependency was added, removed, or moved. No package.json or lockfile changes in this diff."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9549,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 268915,
+      "command": "npm run test:unit",
+      "exit_code": 1
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 119783,
+      "command": "npm run test:integration",
+      "exit_code": 0
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1175,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 837,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN in .env.local to enable local SonarQube analysis; CI will run this check."
+    }
+  ],
+  "failures": {
+    "unit": "FAIL |unit| scripts/license_headers/__tests__/check_license_headers.test.js [ scripts/license_headers/__tests__/check_license_headers.test.js ]\nSyntaxError: Invalid or unexpected token\n  at new Script node:vm:117:7\n  at createScript node:vm:269:10\n  at Object.runInThisContext node:vm:317:10\n  at scripts/license_headers/__tests__/check_license_headers.test.js:3:31\n  Line 3: // Licensed under the Apache License, Version 2.0 (the \"License\");\n                                 ^ (token error at position 31)\n\nFAIL |unit| src/a2ui/__tests__/manifest.test.ts > a2ui manifest file contract > is serialized exactly as the generator writes it (stable diffs)\nAssertionError: a2ui-manifest.json is out of date — run npm run a2ui:manifest\n  at src/a2ui/__tests__/manifest.test.ts:74:51\n  expect(committedManifestRaw, REGENERATE_HINT).toBe(`${JSON.stringify(getManifest(), null, 2)}\\n`)\n  Expected: current generated output\n  Received: stale committed file (CRLF vs LF line ending difference also present)\n\nFAIL |unit| src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts > modal surfaces host the live region > recognises the surfaces that already carry the host\nAssertionError: expected [ …(2) ] to include 'components/Popup/Popup.tsx'\n  at src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts:73:23\n  expect(declaring).toContain('components/Popup/Popup.tsx')\n\nTest Files  3 failed | 507 passed (510)\n      Tests  2 failed | 5284 passed | 1 skipped (5287)"
+  }
+}

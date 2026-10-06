@@ -41,6 +41,11 @@ export const FEATURE_FLAGS = {
   CONFLUENCE_OAUTH: 'features:confluenceOauth',
   SCHEDULERS_VIEW: 'features:schedulersView',
   ROUTING_ANALYTICS: 'features:routingAnalytics',
+  KNOWLEDGE_BASES: 'features:knowledgeBases',
+  DATASOURCES: 'features:datasources',
+  CODE_INDEXING: 'features:codeIndexing',
+  AI_CHAMPIONS_LEADERBOARD: 'aiChampionsLeaderboard',
+  CLI_ANALYTICS: 'features:cliAnalytics',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

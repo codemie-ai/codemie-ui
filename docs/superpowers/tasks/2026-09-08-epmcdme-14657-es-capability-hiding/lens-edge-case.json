@@ -1,0 +1,46 @@
+[
+  {
+    "location": "scripts/validate-secrets.mjs:26",
+    "trigger_condition": "Windows shell arg value ends with a backslash and contains a space",
+    "guard_snippet": "value = value.replace(/\\\\+$/, m => m + m) before wrapping in quotes",
+    "potential_consequence": "cmd.exe reads trailing \\\" as escaped quote; argument unclosed, gitleaks receives malformed path"
+  },
+  {
+    "location": "src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx:479-485",
+    "trigger_condition": "Workflow message with executionStatus=null, no response, no thoughts, not in-progress",
+    "guard_snippet": "add !!message.executionId to showRestoreFailed conditions, or treat null executionStatus as non-triggering",
+    "potential_consequence": "False-positive restore-failed banner shown for queued or executionStatus-absent workflow turns"
+  },
+  {
+    "location": "src/store/chatGeneration.ts:779-781",
+    "trigger_condition": "Stop pressed between stream-finish (inProgress=false, stream=null) and refreshWorkflowExecutionIds returning",
+    "guard_snippet": "also include message.executionStatus === WORKFLOW_STATUSES.RUNNING in the loop continue condition",
+    "potential_consequence": "generationStopped never set; poll resumes after Stop, showing ongoing backend progress the user dismissed"
+  },
+  {
+    "location": "src/utils/chatHelpers.ts:806",
+    "trigger_condition": "Non-workflow backend message carries executionStatus='In Progress' in the history payload",
+    "guard_snippet": "prefix first branch: if (isWorkflow && assistantItem.executionStatus === WORKFLOW_STATUSES.RUNNING) return true",
+    "potential_consequence": "Non-workflow message hydrates with inProgress=true; polling and refreshWorkflowExecutionIds fire on a regular chat"
+  },
+  {
+    "location": "src/pages/chat/hooks/useWorkflowExecutionPoll.ts:27-36",
+    "trigger_condition": "currentChat is not a workflow but has a message with executionStatus=RUNNING or in_progress thought",
+    "guard_snippet": "add !chat.isWorkflow early-return guard inside hasInProgressExecution",
+    "potential_consequence": "refreshWorkflowExecutionIds called for non-workflow chat; thoughts and response overwritten, corrupting chat state"
+  },
+  {
+    "location": "src/pages/analytics/components/AnalyticsDashboard.tsx:261-272",
+    "trigger_condition": "isMetricsAnalyticsEnabled=false, isLeaderboardEnabled=false, isAdoptionEnabled=false; tabs array empty",
+    "guard_snippet": "handle tabs.length===0: skip alwaysShowTabs render or remove stale tab param via setSearchParams",
+    "potential_consequence": "Empty tab bar rendered with alwaysShowTabs=true; stale tab URL param never cleared; content area blank"
+  },
+  {
+    "location": "src/utils/chatHelpers.ts:162-164 (removed interrupted=in_progress mapping)",
+    "trigger_condition": "Non-workflow history message has backend in_progress:true thought (nginx timeout, proxy cut)",
+    "guard_snippet": "Confirm ChatAiMessage.tsx:262 (thought.interrupted reconnect button) and ChatPrompt.tsx:145 (interrupted check) intentionally retired for this class",
+    "potential_consequence": "Reconnect-thought UI and ChatPrompt interrupted-thought gate silently disabled for nginx-cut non-workflow thoughts",
+    "kind": "deletion",
+    "confidence": "low"
+  }
+]

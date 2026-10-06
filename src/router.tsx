@@ -282,26 +282,48 @@ const integrationRoutes: RouteObject[] = [
   },
 ]
 
+const dataSourcesSurfaceFlags = [
+  FEATURE_FLAGS.KNOWLEDGE_BASES,
+  FEATURE_FLAGS.DATASOURCES,
+  FEATURE_FLAGS.CODE_INDEXING,
+]
+
 const dataSourceRoutes: RouteObject[] = [
   {
     id: 'data-sources',
     path: 'data-sources',
-    Component: DataSourcesPage,
+    element: (
+      <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
+        <DataSourcesPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: 'data-source-details',
     path: 'data-sources/:id',
-    Component: DataSourceDetailsPage,
+    element: (
+      <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
+        <DataSourceDetailsPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: 'edit-data-source',
     path: 'data-sources/:id/edit',
-    Component: DataSourceEditPage,
+    element: (
+      <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
+        <DataSourceEditPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: 'create-data-source',
     path: 'data-sources/create',
-    Component: DataSourceCreatePage,
+    element: (
+      <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
+        <DataSourceCreatePage />
+      </FeatureGuard>
+    ),
   },
 ]
 
@@ -557,22 +579,38 @@ const settingsRoutes: RouteObject[] = [
   {
     id: 'providers-management',
     path: '/settings/administration/providers',
-    Component: ProvidersManagementPage,
+    element: (
+      <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
+        <ProvidersManagementPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: 'providers-create',
     path: '/settings/administration/providers/new',
-    Component: ProvidersCreatePage,
+    element: (
+      <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
+        <ProvidersCreatePage />
+      </FeatureGuard>
+    ),
   },
   {
     id: 'providers-view',
     path: '/settings/administration/providers/:id',
-    Component: ProvidersViewPage,
+    element: (
+      <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
+        <ProvidersViewPage />
+      </FeatureGuard>
+    ),
   },
   {
     id: 'providers-edit',
     path: '/settings/administration/providers/:id/edit',
-    Component: ProvidersEditPage,
+    element: (
+      <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
+        <ProvidersEditPage />
+      </FeatureGuard>
+    ),
   },
 ]
 
@@ -657,28 +695,27 @@ const awsSettingsRoutes: RouteObject[] = [
 
 const analyticsRoutes: RouteObject[] = [
   {
+    id: ANALYTICS,
+    path: 'analytics',
+    Component: AnalyticsPage,
+  },
+  {
+    id: ANALYTICS_NEW_DASHBOARD,
+    path: 'analytics/dashboards/new',
     element: (
       <FeatureGuard featureFlags={FEATURE_FLAGS.ENTERPRISE_EDITION}>
-        <Outlet />
+        <AnalyticsDashboardFormPage />
       </FeatureGuard>
     ),
-    children: [
-      {
-        id: ANALYTICS,
-        path: 'analytics',
-        Component: AnalyticsPage,
-      },
-      {
-        id: ANALYTICS_NEW_DASHBOARD,
-        path: 'analytics/dashboards/new',
-        Component: AnalyticsDashboardFormPage,
-      },
-      {
-        id: ANALYTICS_EDIT_DASHBOARD,
-        path: 'analytics/dashboards/:dashboardId/edit',
-        element: <AnalyticsDashboardFormPage isEditing />,
-      },
-    ],
+  },
+  {
+    id: ANALYTICS_EDIT_DASHBOARD,
+    path: 'analytics/dashboards/:dashboardId/edit',
+    element: (
+      <FeatureGuard featureFlags={FEATURE_FLAGS.ENTERPRISE_EDITION}>
+        <AnalyticsDashboardFormPage isEditing />
+      </FeatureGuard>
+    ),
   },
 ]
 

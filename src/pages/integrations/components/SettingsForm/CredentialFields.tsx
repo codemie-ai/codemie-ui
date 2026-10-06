@@ -26,6 +26,8 @@ import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import Link from '@/components/Link'
 import InfoMessage from '@/components/Message/Message'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import ConfigAccordion from '@/pages/workflows/editor/configPanels/components/ConfigAccordion'
 import {
   CredentialComponentType,
@@ -127,6 +129,12 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
   const [passwordVisibility, setPasswordVisibility] = useState<Record<string, boolean>>({})
   const resourceType = String(formValues.resource_type ?? '')
 
+  const [isKnowledgeBasesEnabled] = useFeatureFlag(FEATURE_FLAGS.KNOWLEDGE_BASES)
+  const [isDatasourcesEnabled] = useFeatureFlag(FEATURE_FLAGS.DATASOURCES)
+  const [isCodeIndexingEnabled] = useFeatureFlag(FEATURE_FLAGS.CODE_INDEXING)
+  const isDataSourcesSurfaceEnabled =
+    isKnowledgeBasesEnabled || isDatasourcesEnabled || isCodeIndexingEnabled
+
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleSearchFilter = (value: string) => {
@@ -176,7 +184,7 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
       label,
       placeholder,
       type = CredentialComponentType.input,
-      options = [],
+      options: rawOptions = [],
       help,
       note,
       shouldShow,
@@ -190,6 +198,11 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
 
     if (fieldPosition !== position) return null
     if (shouldShow && !shouldShow(formValues)) return null
+
+    const options =
+      name === 'resource_type' && !isDataSourcesSurfaceEnabled
+        ? rawOptions.filter((option) => option.value !== 'datasource')
+        : rawOptions
 
     if (type === CredentialComponentType.message && message) {
       return <SettingFormMessage key={name} message={message} />

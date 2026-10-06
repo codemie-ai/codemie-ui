@@ -17,6 +17,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, it, expect } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 
 describe('DataSourcesPage - Pagination', () => {
@@ -32,6 +33,15 @@ describe('DataSourcesPage - Pagination', () => {
   let pendingTimeoutIds: NodeJS.Timeout[] = []
 
   beforeEach(() => {
+    // FeatureGuard reads appInfoStore.configs to gate the Data Sources route. Enable one of
+    // the retrieval flags so FeatureGuard renders <DataSourcesPage /> instead of throwing a 404.
+    // isConfigFetched = true also prevents fetchCustomerConfig() from fetching GET:v1/config
+    // and overwriting configs with [] after the initial render.
+    appInfoStore.configs = [
+      { id: 'features:datasources', settings: { enabled: true } },
+    ] as typeof appInfoStore.configs
+    appInfoStore.isConfigFetched = true
+
     pendingTimeoutIds = []
     global.setTimeout = ((
       handler: Parameters<typeof setTimeout>[0],

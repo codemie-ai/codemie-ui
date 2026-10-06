@@ -235,6 +235,11 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     const [showRefineModal, setShowRefineModal] = useState(false)
     const [refineFields, setRefineFields] = useState<AssistantAIRefineFields>({})
     const [isSkillsEnabled] = useFeatureFlag('skills')
+    const [isKnowledgeBasesEnabled] = useFeatureFlag(FEATURE_FLAGS.KNOWLEDGE_BASES)
+    const [isDatasourcesEnabled] = useFeatureFlag(FEATURE_FLAGS.DATASOURCES)
+    const [isCodeIndexingEnabled] = useFeatureFlag(FEATURE_FLAGS.CODE_INDEXING)
+    const isDataSourcesSurfaceEnabled =
+      isKnowledgeBasesEnabled || isDatasourcesEnabled || isCodeIndexingEnabled
     const [aiGeneratedFieldMarkers, setAiGeneratedFieldMarkers] = useState<AssistantAIFieldMarkers>(
       {
         name: false,
@@ -648,8 +653,12 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
 
           <div data-onboarding="assistant-context-datasources-accordion">
             <Accordion
-              title="Context & Data Sources"
-              description="Connect your assistant to relevant data, documents, or supporting agents."
+              title={isDataSourcesSurfaceEnabled ? 'Context & Data Sources' : 'Context'}
+              description={
+                isDataSourcesSurfaceEnabled
+                  ? 'Connect your assistant to relevant data, documents, or supporting agents.'
+                  : 'Connect your assistant to supporting agents.'
+              }
               defaultOpen={false}
             >
               <div className="px-4 pb-4 flex flex-col gap-6">

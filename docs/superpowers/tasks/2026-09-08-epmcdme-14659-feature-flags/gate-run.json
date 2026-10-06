@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14659_gate-retrieval-features-frontend",
+  "head": "e3b822880746d413d652afbd15dd332a1fe55e5d",
+  "runner": "npm",
+  "started_at": "2026-09-08T14:00:00Z",
+  "completed_at": "2026-09-08T18:56:44Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    { "id": "lint", "source": "guide", "status": "PASS", "command": "npm run lint", "exit_code": 0 },
+    { "id": "typecheck", "source": "guide", "status": "PASS", "command": "npm run typecheck", "exit_code": 0 },
+    { "id": "license", "source": "guide", "status": "PASS", "command": "npm run license-check", "exit_code": 0 },
+    { "id": "secrets", "source": "guide", "status": "PASS", "command": "npm run secrets:check", "exit_code": 0 },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "command": "npm run test:unit",
+      "exit_code": 1,
+      "notes": "2 failing tests, both confirmed pre-existing on the branch base commit (1a30a1f9f), unrelated to this diff: src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts ('recognises the surfaces that already carry the host' — Popup.tsx no longer matches the guard's modal marker regex) and src/a2ui/__tests__/manifest.test.ts ('is serialized exactly as the generator writes it' — committed manifest snapshot drifted from the generator). Verified by running both files against the base commit in an isolated worktree; identical failures reproduce with no code from this branch present."
+    },
+    { "id": "integration", "source": "guide", "status": "PASS", "command": "npm run test:integration", "exit_code": 0 }
+  ],
+  "failures": {
+    "unit": "2 pre-existing, unrelated failures — see notes on the unit gate entry above."
+  }
+}

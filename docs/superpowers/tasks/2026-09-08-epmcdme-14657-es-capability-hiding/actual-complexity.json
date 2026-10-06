@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-09-08T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 27,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "3 components touched: featureFlags constants, AnalyticsPage, AnalyticsDashboard. Clear, established useFeatureFlag pattern. Scores M (3) rather than S because 3 components cross a constants-to-UI boundary, though all changes are additive."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Diffstat reports 27 files changed, but 22 files are pre-existing EPMCDME-14075 work carried on the same shared branch. Actual task scope is 5 files (featureFlags.ts, AnalyticsPage.tsx, AnalyticsDashboard.tsx + 2 test files). Scored M (3) for 4-6 files. files_changed field carries the raw 27 from diffstat."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

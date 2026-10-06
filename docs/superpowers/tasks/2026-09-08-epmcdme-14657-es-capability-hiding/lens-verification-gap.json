@@ -1,0 +1,11 @@
+[
+  {
+    "location": "src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx:183-191 — showRestoreFailed condition",
+    "trigger_condition": "After stopChatGeneration on a live-streaming workflow turn, executionStatus is null (never set during stream), generationStopped is true, inProgress is false, thoughts is [] — showRestoreFailed evaluates true and the restore-failed banner appears when the user explicitly stopped the execution",
+    "guard_snippet": "expect(screen.getByTestId('markdown')).not.toHaveTextContent('Workflow progress could not be restored.') — for a message with generationStopped:true, inProgress:false, thoughts:[], response:'', executionStatus:null on an isWorkflow chat",
+    "potential_consequence": "After the user clicks Stop on a workflow that is mid-stream (executionStatus not yet written back from the polling path), the message shows 'Workflow progress could not be restored.' instead of staying silent. The four existing tests in the 'workflow restore-failed copy' describe block do not exercise generationStopped:true at all — the only 'after-stop' verification lives in chatGeneration.test.ts which checks historyItem fields but never renders ChatAiMessage.",
+    "gap_shape": "regression-gap",
+    "consumer": "ChatAiMessage rendered after chatGenerationStore.stopChatGeneration fires on a workflow turn — src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx:183",
+    "evidence": "Read ChatAiMessage.tsx lines 178-191: showRestoreFailed has no generationStopped guard. Read ChatAiMessage.test.tsx lines 509-571: four negative tests cover inProgress:true, non-workflow, and terminal executionStatus, but none sets generationStopped:true. Read chatGeneration.ts lines 1586-1609: _handleGenerationAbort sets generationStopped:true and clears thoughts but does not set executionStatus, so executionStatus stays null for a turn that was aborted before the first poll response arrived."
+  }
+]

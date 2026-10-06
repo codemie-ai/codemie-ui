@@ -35,7 +35,7 @@ const {
     mockAppInfoStore: {
       navigationExpanded: false,
       toggleNavigationExpanded: vi.fn(),
-      configs: [],
+      configs: [] as any[],
       isConfigFetched: true,
       mobileNavigationOpen: false,
       setMobileNavigationOpen: vi.fn(),
@@ -116,6 +116,7 @@ describe('Navigation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAppInfoStore.navigationExpanded = false
+    mockAppInfoStore.configs = []
     mockApplicationsStore.applications = []
     mockRouter.resolve.mockImplementation(({ path, name }: any) => {
       const routes: Record<string, string> = {
@@ -314,5 +315,19 @@ describe('Navigation on mobile', () => {
     fireEvent.keyDown(window, { key: 'Escape' })
 
     expect(mockAppInfoStore.setMobileNavigationOpen).not.toHaveBeenCalled()
+  })
+
+  it('hides Data Sources nav link when no retrieval flag is enabled', () => {
+    mockAppInfoStore.mobileNavigationOpen = true
+    mockAppInfoStore.configs = []
+    renderWithRouter(<Navigation />)
+    expect(screen.queryByRole('link', { name: 'Data Sources' })).not.toBeInTheDocument()
+  })
+
+  it('shows Data Sources nav link when one retrieval flag is enabled', () => {
+    mockAppInfoStore.mobileNavigationOpen = true
+    mockAppInfoStore.configs = [{ id: 'features:codeIndexing', settings: { enabled: true } }]
+    renderWithRouter(<Navigation />)
+    expect(screen.getByRole('link', { name: 'Data Sources' })).toBeInTheDocument()
   })
 })

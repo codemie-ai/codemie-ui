@@ -97,4 +97,54 @@ describe('FeatureGuard', () => {
       })
     )
   })
+
+  it('should render children when match is any and one of the feature flags is enabled', () => {
+    mockAppInfoStore.configs = [{ id: FEATURE_FLAGS.DATASOURCES, settings: { enabled: true } }]
+
+    render(
+      <FeatureGuard
+        featureFlags={[
+          FEATURE_FLAGS.KNOWLEDGE_BASES,
+          FEATURE_FLAGS.DATASOURCES,
+          FEATURE_FLAGS.CODE_INDEXING,
+        ]}
+        match="any"
+      >
+        <div>Test Content</div>
+      </FeatureGuard>
+    )
+
+    expect(screen.getByText('Test Content')).toBeInTheDocument()
+  })
+
+  it('should throw error with 404 properties when match is any and none of the feature flags is enabled', () => {
+    mockAppInfoStore.configs = [
+      { id: FEATURE_FLAGS.KNOWLEDGE_BASES, settings: { enabled: false } },
+      { id: FEATURE_FLAGS.DATASOURCES, settings: { enabled: false } },
+      { id: FEATURE_FLAGS.CODE_INDEXING, settings: { enabled: false } },
+    ]
+
+    expect(() => {
+      render(
+        <FeatureGuard
+          featureFlags={[
+            FEATURE_FLAGS.KNOWLEDGE_BASES,
+            FEATURE_FLAGS.DATASOURCES,
+            FEATURE_FLAGS.CODE_INDEXING,
+          ]}
+          match="any"
+        >
+          <div>Test Content</div>
+        </FeatureGuard>
+      )
+    }).toThrow(
+      expect.objectContaining({
+        message: 'Not Found',
+        status: 404,
+        statusText: 'Not Found',
+        internal: false,
+        data: null,
+      })
+    )
+  })
 })

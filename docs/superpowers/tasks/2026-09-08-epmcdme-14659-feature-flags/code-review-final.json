@@ -1,0 +1,54 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two critical, code-verified defects: router.tsx's isDataSourcesSurfaceEnabled (line 677) is a module-level const evaluated at import time, before appInfoStore.fetchCustomerConfig() ever resolves, so isFeatureEnabled() always sees isConfigFetched=false and dataSourceRoutes is permanently excluded from the route table regardless of the real backend flag values (CR-002); consequently Navigation.tsx crashes with a route-not-found error whenever a flag genuinely enables the surface, because router.resolve({name:'data-sources'}) targets a route id the static table never registers (CR-001). router.test.tsx's passing tests mask this because they set isConfigFetched=true before importing the router module, an ordering the real app never uses. Both lenses and the standards audit ran cleanly with no coverage gap (0 deferred, 0 dismissed); acceptance's AC 'unfiltered when a flag is enabled' is corrected from pass to fail given this evidence.",
+  "confidence": "high",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    { "kind": "story-ac", "item": "Data Sources nav entry hidden when no retrieval flag enabled", "status": "pass", "notes": "Navigation.tsx:75-101 computes flag via useFeatureFlag; nav item only pushed when true. Covered by Navigation.test.tsx." },
+    { "kind": "story-ac", "item": "No dataSourceRoutes reachable when no retrieval flag enabled", "status": "pass", "notes": "router.tsx:677-694 omits all 4 route ids when disabled. Covered by router.test.tsx." },
+    { "kind": "story-ac", "item": "Data Sources page/routes/nav unfiltered when a retrieval flag is enabled", "status": "fail", "notes": "Module-level flag eval at import time predates config fetch; routes always excluded in production regardless of real flag state — see CR-002/CR-001." },
+    { "kind": "story-ac", "item": "Gating reads only existing useFeatureFlag/isFeatureEnabled mechanism, no new detection logic", "status": "pass", "notes": "Navigation.tsx uses useFeatureFlag; router.tsx uses isFeatureEnabled; both keyed by new FEATURE_FLAGS ids." },
+    { "kind": "story-ac", "item": "Non-retrieval functionality (chat, assistants) unaffected", "status": "pass", "notes": "Diff limited to featureFlags.ts, Navigation.tsx, router.tsx and their tests." },
+    { "kind": "story-ac", "item": "AWS Bedrock Knowledge Bases page/routes/nav unaffected", "status": "pass", "notes": "No files under aws/dataSources in diff or changed_files." },
+    { "kind": "story-ac", "item": "Generic Settings/Integrations credential pickers unaffected", "status": "pass", "notes": "src/utils/settings.ts absent from diff and changed_files." },
+    { "kind": "spec", "item": "Add three FEATURE_FLAGS entries following existing convention", "status": "pass", "notes": "featureFlags.ts:167-169 adds KNOWLEDGE_BASES/DATASOURCES/CODE_INDEXING." },
+    { "kind": "spec", "item": "Route gating uses isFeatureEnabled at router.tsx, mirroring existing precedent", "status": "pass", "notes": "router.tsx computes predicate with isFeatureEnabled at module scope, matching other conditional arrays — but see CR-002 for the timing defect this introduces." },
+    { "kind": "spec", "item": "Nav gating uses useFeatureFlag inside Navigation.tsx, mirroring existing idiom", "status": "pass", "notes": "Navigation.tsx:72-76 calls useFeatureFlag three times; conditional push matches existing pattern." },
+    { "kind": "spec", "item": "Whole dataSourceRoutes family gated via array-omission, no per-route FeatureGuard", "status": "pass", "notes": "router.tsx:694 spreads whole array conditionally; no FeatureGuard added — this choice is the root cause of CR-002." },
+    { "kind": "spec", "item": "Nav gating wraps Data Sources push in same conditional pattern as Skills/Favorites/Analytics", "status": "pass", "notes": "Navigation.tsx:126-131 wraps push in if(isDataSourcesSurfaceEnabled); deps array updated." },
+    { "kind": "spec", "item": "No other files change: DataSourcesPage internals, AWS Bedrock KB, settings.ts untouched", "status": "pass", "notes": "changed_files limited to router.test.tsx, Navigation.tsx, Navigation.test.tsx, featureFlags.ts, router.tsx." },
+    { "kind": "spec", "item": "No sub-filtering within Data Sources page by index_type", "status": "pass", "notes": "No changes to DataSourcesPage.tsx or index_type logic." },
+    { "kind": "spec", "item": "New tests cover nav entry and composed route table for enabled/disabled states", "status": "pass", "notes": "router.test.tsx/Navigation.test.tsx add omit/include and hide/show cases; tests mock config as already fetched, masking the CR-002 timing defect." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 3 commit subjects match the documented EPMCDME-XXXX: Capital sentence format in git-workflow.md (no zero ID, no lowercase first word)." },
+    { "kind": "code-quality", "status": "na", "notes": "code-quality.md guide does not exist in the repo and no ArtifactRef was passed for it, so there is no documented blocking standard to adjudicate against." },
+    { "kind": "security", "status": "pass", "notes": "No security-patterns.md category applies: change only adds feature-flag constants and gates a nav entry/route array behind useFeatureFlag/isFeatureEnabled against already-public config." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/components/Navigation/Navigation.tsx",
+      "line": 130,
+      "title": "Navigation crashes when Data Sources flag enabled",
+      "problem": "Navigation.tsx computes isDataSourcesSurfaceEnabled reactively via useFeatureFlag (lines 71-75), and once true, the upperSecondaryItems useMemo (lines 126-131) calls router.resolve({ name: 'data-sources' }). Because router.tsx's static route table never registers the 'data-sources' route id (see CR-002), useVueRouter's findRouteObject throws 'Route with ID \"data-sources\" was not found.'",
+      "impact": "Whenever any of the three retrieval flags is genuinely enabled on the backend, Navigation throws during render, crashing the nav bar/app shell for that user instead of surfacing Data Sources — the opposite of the required 'behaves exactly as today' outcome for enabled customers.",
+      "recommendation": "Fix the router-side gating (CR-002) so the route always exists whenever the flag is live; additionally guard upperSecondaryItems construction so it never resolves a route name absent from the live route table."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/router.tsx",
+      "line": 677,
+      "title": "Data Sources routes permanently excluded from router",
+      "problem": "isDataSourcesSurfaceEnabled (router.tsx:677-680) is a module-level const evaluated synchronously when router.tsx is imported, calling isFeatureEnabled() (utils/featureFlags.ts:44-51) which returns false whenever appInfoStore.isConfigFetched is false. appInfoStore.fetchCustomerConfig() only runs inside useInitialDataFetch's post-mount useEffect (src/hooks/appLevel/useInitialDataFetch.tsx:29), which fires after router.tsx has already been imported and its module-level routes/router consts (lines 682-722) already built. isConfigFetched is therefore guaranteed false at evaluation time.",
+      "impact": "dataSourceRoutes is excluded from the route table on every real page load regardless of what the three flags actually resolve to on the backend — confirmed by router.test.tsx passing only because it sets mockAppInfoStore.isConfigFetched = true and calls vi.resetModules() before importing router.tsx, an ordering the real app never uses. This breaks the requirement that Data Sources stay reachable and behave exactly as today when at least one flag is enabled.",
+      "recommendation": "Gate the route inclusion reactively instead of a frozen module-level boolean — e.g. wrap each dataSourceRoutes entry in the existing FeatureGuard component (as used for other flag-gated routes) so the check re-evaluates against live config instead of a snapshot taken at import time."
+    }
+  ]
+}

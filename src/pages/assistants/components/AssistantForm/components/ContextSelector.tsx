@@ -29,6 +29,8 @@ import PlusSvg from '@/assets/icons/plus.svg?react'
 import Button from '@/components/Button'
 import InfoBox from '@/components/form/InfoBox'
 import MultiSelect from '@/components/form/MultiSelect'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import EditIndexPopup from '@/pages/dataSources/components/DataSourceForm/EditIndexPopup'
 import { assistantsStore } from '@/store'
@@ -225,7 +227,13 @@ const ContextSelector = forwardRef<
       onChange(fullObjects)
     }
 
-    const shouldShowAddButton = !hideHeader && !hideAddButton
+    const [isKnowledgeBasesEnabled] = useFeatureFlag(FEATURE_FLAGS.KNOWLEDGE_BASES)
+    const [isDatasourcesEnabled] = useFeatureFlag(FEATURE_FLAGS.DATASOURCES)
+    const [isCodeIndexingEnabled] = useFeatureFlag(FEATURE_FLAGS.CODE_INDEXING)
+    const isDataSourcesSurfaceEnabled =
+      isKnowledgeBasesEnabled || isDatasourcesEnabled || isCodeIndexingEnabled
+
+    const shouldShowAddButton = !hideHeader && !hideAddButton && isDataSourcesSurfaceEnabled
 
     const preparedSelectedItemTemplate = useMemo(() => {
       if (display === 'chip') {
@@ -233,6 +241,10 @@ const ContextSelector = forwardRef<
       }
       return null
     }, [display, value])
+
+    if (!isDataSourcesSurfaceEnabled) {
+      return null
+    }
 
     return (
       <div className={className}>

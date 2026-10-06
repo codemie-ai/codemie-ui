@@ -19,6 +19,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { routes } from '@/router'
+import { appInfoStore } from '@/store/appInfo'
 import { userSettingsStore } from '@/store/userSettings'
 import {
   getAutocomplete,
@@ -52,6 +53,17 @@ const suppressUnhandledRejection = () => {
     }
   }
 }
+
+// FeatureGuard reads appInfoStore.configs to gate the Data Sources route. Enable one of the
+// retrieval flags so FeatureGuard renders <DataSourceCreatePage /> instead of throwing a 404.
+// isConfigFetched = true also prevents fetchCustomerConfig() from fetching GET:v1/config and
+// overwriting configs with [] after the initial render. Applies to every describe block below.
+beforeEach(() => {
+  appInfoStore.configs = [
+    { id: 'features:datasources', settings: { enabled: true } },
+  ] as typeof appInfoStore.configs
+  appInfoStore.isConfigFetched = true
+})
 
 const mockFormInitAPIs = () => {
   mockAPI('GET', 'v1/providers/datasource_schemas', [])

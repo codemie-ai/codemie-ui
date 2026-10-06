@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14347_standalone-codemie-released-artifact",
+  "head": "fee02b7a37af60daf551c1f88e459edc6615492e",
+  "runner": "npm",
+  "started_at": "2026-09-18T10:40:00Z",
+  "completed_at": "2026-09-18T11:01:31Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 3000,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Only an eslint-plugin-react 'React version not specified' warning; no lint errors."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 23400,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 7852,
+      "command": "npm run license-check",
+      "exit_code": 1,
+      "notes": "Guide skip rule applies: no dependency added/removed/moved in this diff (package.json/package-lock.json untouched). Run anyway for signal: fails pre-existingly on @adobe/css-tools@4.5.0 flagged as disallowed MIT despite MIT being in the allow list (license-checker/allow-list quirk unrelated to this branch). Not caused by this session's changes; out of scope."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 517666,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks via podman: 'scanned ~3.23 GB in 8m34s' / 'no leaks found'. Podman machine was already running; no self-skip triggered."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 101185,
+      "command": "vitest run --project unit <files touched by this session's diff, in lieu of full `npm run test:unit:slnt`>",
+      "exit_code": 0,
+      "notes": "Scoped per explicit session instruction to targeted files (diff vs 23ec72a6 through HEAD) rather than the full suite, to avoid re-discovering the 3 known pre-existing unrelated failures. Files: analyticsAccess.test.ts, AnalyticsGuard.test.tsx, AnalyticsPage.test.tsx, BarChartWidgetEmpty/DonutChartWidget/TableWidget/MetricsWidget.test.tsx, OverviewViewEmpty.test.tsx, AnalyticsDashboard.test.tsx, FeatureGuard.test.tsx, Navigation.test.tsx, router.test.tsx — all 52 tests passed. One transient: router.test.tsx's first test (30000ms) timed out when run in the same worker batch as the others (heavy transform contention); re-run in isolation passed all 3 tests in 67s. Treated as parallel-run resource contention, not a logic regression — worth tightening the test's margin if it recurs in CI."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 98710,
+      "command": "vitest run --project integration <files touched by this session's diff, in lieu of full `npm run test:integration:slnt`>",
+      "exit_code": 0,
+      "notes": "Scoped per explicit session instruction, same rationale as 'unit'. Files: NewAssistantPage.integration.test.tsx, DataSourceCreatePage.integration.test.tsx, DataSourcesPagination.integration.test.tsx — all 78 tests passed."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1576,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2112 files, 0 missing license headers."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "command": "npx lint-staged",
+      "notes": "lint-staged only operates on the git staging area (prettier --write, eslint --fix, tsc --noEmit, license-headers --fix on staged files); nothing is currently staged for a fresh commit in this verification pass. Its constituent checks (eslint, tsc --noEmit, license headers) already ran clean above via the 'lint', 'typecheck', and 'license-headers' gates."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "command": "npm run sonar-local",
+      "notes": "Not run: this script unconditionally runs `vitest run --coverage` across the entire suite with no partial-skip mechanism, which would re-discover the 3 known, already-diagnosed, pre-existing failures unrelated to this session's Analytics work (confirmed still failing below) rather than provide new signal. Per explicit instruction for this run. To actually clear this gate locally, the 3 pre-existing suites need separate remediation (own ticket) since sonar-local's coverage run has no file-scoping flag."
+    },
+    {
+      "id": "ci-pre-guard",
+      "source": "ci",
+      "status": "N/A",
+      "command": "gitlab pre-ci-guard template (wait-ci-init / compliance-report contexts)",
+      "notes": "Pipeline only triggers on CI_PIPELINE_SOURCE == merge_request_event against GitLab, and the wait-ci-init job depends on server-side contexts (ci-pipeline, compliance-report) unreachable from a local checkout. Local gates above (lint, typecheck, secrets, license-headers, targeted unit/integration) are the closest local proxy; CI will re-run the full picture including the 3 known-broken suites, but per the .gitlab-ci.yml pre-ci-guard config the merge-blocking checks are the external ci-pipeline/compliance-report contexts, not re-derivable here."
+    }
+  ],
+  "known_preexisting_out_of_scope": [
+    {
+      "id": "manifest-test",
+      "path": "src/a2ui/__tests__/manifest.test.ts",
+      "status": "N/A",
+      "command": "vitest run --project unit src/a2ui/__tests__/manifest.test.ts",
+      "notes": "Confirmed still failing with the same signature as before this session: serialized manifest snapshot mismatch (CRLF/LF drift), fails on clean origin/main too. Out of scope for this task; not touched by this session's diff."
+    },
+    {
+      "id": "modal-surfaces-guard-test",
+      "path": "src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts",
+      "status": "N/A",
+      "command": "vitest run --project unit src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts",
+      "notes": "Confirmed still failing with the same signature: AssertionError expected declaring components to include 'components/Popup/Popup.tsx', fails on clean origin/main too. Out of scope; not touched by this session's diff."
+    },
+    {
+      "id": "admin-tables-pagination-test",
+      "path": "src/pages/settings/administration/__tests__/AdminTablesPagination.integration.test.tsx",
+      "status": "N/A",
+      "command": "vitest run --project integration --testTimeout=5000 --hookTimeout=5000 --teardownTimeout=3000 src/pages/settings/administration/__tests__/AdminTablesPagination.integration.test.tsx",
+      "notes": "Confirmed still broken: repeated 'TypeError: proxyState is not iterable' thrown from valtio's useSnapshot inside SessionExpiredPopup, caught by RenderErrorBoundary and re-thrown per render, which prevents the suite from ever completing (killed after 60s via `timeout 60`, exit 124, even with tightened vitest timeouts). Passes on origin/main; predates this session's HEAD but not origin/main (introduced by one of ~8 earlier feature-branch commits per prior session diagnosis). Out of scope for this task; not touched by this session's diff."
+    }
+  ],
+  "failures": {}
+}

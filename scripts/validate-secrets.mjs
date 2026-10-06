@@ -124,10 +124,18 @@ args.push('/workspace')
 
 console.log('Checking for secrets with Gitleaks...')
 
-const spawnBin = isWindows && engineBin.includes(' ') ? `"${engineBin}"` : engineBin
-const gitleaks = spawn(spawnBin, args, {
+// With `shell: true` Node concatenates argv without escaping, so anything containing a space
+// (a project path such as "C:\Codemie Development\...") would be split into separate arguments.
+function quoteForShell(value) {
+  return /[\s"]/.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value
+}
+
+const useShell = isWindows
+const spawnBin = useShell ? quoteForShell(engineBin) : engineBin
+const spawnArgs = useShell ? args.map(quoteForShell) : args
+const gitleaks = spawn(spawnBin, spawnArgs, {
   stdio: 'inherit',
-  shell: isWindows,
+  shell: useShell,
 })
 
 gitleaks.on('close', (code) => {

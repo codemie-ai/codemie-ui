@@ -1462,6 +1462,7 @@ describe('NewAssistantPage - Integration', () => {
     it('renders Datasource Context selector with correct placeholder', async () => {
       mockAPI('GET', 'v1/user', userWithProject)
       mockAPI('GET', 'v1/assistants/context', [])
+      mockAPI('GET', 'v1/config', [{ id: 'features:datasources', settings: { enabled: true } }])
 
       renderPage('/assistants/new')
 

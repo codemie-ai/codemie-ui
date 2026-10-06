@@ -55,6 +55,7 @@ bmad/*
 /.env_local
 /.codegraph/
 /.serena/
+.mcp.json
 
 # SDLC Factory: keep the durable record, ignore the machine state.
 # Prose is durable by shape (*.md), so a new Factory artifact needs no rule here;

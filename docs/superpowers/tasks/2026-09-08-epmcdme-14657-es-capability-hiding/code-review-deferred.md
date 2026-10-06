@@ -1,0 +1,3 @@
+# Deferred from code review — 2026-09-08-epmcdme-14657-es-capability-hiding (2026-09-08)
+
+- **hasInProgressExecution has no isWorkflow guard** — `src/pages/chat/hooks/useWorkflowExecutionPoll.ts:27` — `hasInProgressExecution` checks `executionStatus === WORKFLOW_STATUSES.RUNNING` and `thought.in_progress` for every chat without a `chat.isWorkflow` guard; the hook is called from `ChatPage.tsx` for all chats unconditionally. Pre-existing: the guard was always absent; EPMCDME-14075 added the `!message.generationStopped` check in the same function body without introducing or removing the isWorkflow check, so this concern predates the current diff.

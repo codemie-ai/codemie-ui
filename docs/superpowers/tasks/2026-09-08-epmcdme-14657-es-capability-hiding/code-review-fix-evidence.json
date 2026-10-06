@@ -1,0 +1,19 @@
+{
+  "findings": [
+    {
+      "id": "CR-002",
+      "outcome": "fixed",
+      "evidence": [
+        {
+          "file": "src/pages/analytics/components/AnalyticsDashboard.tsx",
+          "description": "Captured searchParams from useSearchParams; added else-if branch: when tabs.length===0 and searchParams.has('tab'), delete the tab param with replace:true. Loop prevention: the guard on searchParams.has('tab') is false once the param is cleared, so the effect does not re-fire."
+        },
+        {
+          "file": "src/pages/analytics/components/__tests__/AnalyticsDashboard.test.tsx",
+          "description": "Added regression test 'clears stale tab param when config is loaded and no tabs are available': renders with all ES-gated flags off (empty tabs), asserts setSearchParams called with a replace updater that deletes the tab key while preserving unrelated params."
+        }
+      ],
+      "test_result": "7/7 pass — npx vitest run --project unit src/pages/analytics/components/__tests__/AnalyticsDashboard.test.tsx"
+    }
+  ]
+}

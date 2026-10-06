@@ -22,6 +22,7 @@ import EditSvg from '@/assets/icons/edit.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { ANALYTICS_EDIT_DASHBOARD } from '@/constants/routes'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
@@ -47,7 +48,7 @@ const AnalyticsPage: FC = () => {
   const [isCustomizationEnabled] = useFeatureFlag('feature:dashboardCustomization')
   const [isLeaderboardConfigEnabled] = useFeatureFlag('aiChampionsLeaderboard')
   const isLeaderboardEnabled = (isAdmin || isAuditor) && isLeaderboardConfigEnabled
-  const [isCliAnalyticsConfigEnabled] = useFeatureFlag('features:cliAnalytics')
+  const [isCliAnalyticsConfigEnabled] = useFeatureFlag(FEATURE_FLAGS.CLI_ANALYTICS)
   const isCliAnalyticsEnabled = (isAdmin || isProjectAdmin) && isCliAnalyticsConfigEnabled
 
   const [searchParams, setSearchParams] = useSearchParams()
