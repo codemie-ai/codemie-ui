@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "generated": "2026-09-28T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 7,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 7 files changed (maps to L under the actual-mode file-count table), but 4 of the 7 are test files and only 3 are production files: WorkflowYamlHeaderActions (optional onExpand prop plus button), YamlPanel (isExpanded state, modal wiring) and the new YamlExpandedModal. All sit under src/pages/workflows. 442 insertions are mostly tests." },
+    { "dimension": "component_scope", "reason": "One self-contained UI feature: the new YamlExpandedModal composes the existing Popup and AceEditor components, and YamlPanel passes its existing value, validationError and handleYamlChange into it. No layer boundary is crossed." },
+    { "dimension": "technical_risk", "reason": "Well-established pattern. It reuses Popup isFullWidth, AceEditor and the expand/collapse icons, and Execution History already had an equivalent expand. No security, performance or persistence implications, and rollback is trivial. The only subtlety is that the inline and expanded editors share one value/validation state, and YamlPanel owns that state." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

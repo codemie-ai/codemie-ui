@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
+import ExpandSvg from '@/assets/icons/expand.svg?react'
 import ExternalSvg from '@/assets/icons/external.svg?react'
 import HistorySVG from '@/assets/icons/history.svg?react'
 import Button from '@/components/Button'
 import { ButtonType } from '@/constants'
+import { cn } from '@/utils/utils'
 
 export interface WorkflowYamlHeaderActionsProps {
   documentationUrl?: string | null
@@ -24,6 +26,9 @@ export interface WorkflowYamlHeaderActionsProps {
   onShowVersionHistory?: (visibleYaml: string) => void
   getVisibleYaml?: () => string
   versionHistoryAriaLabel?: string
+  onExpand?: () => void
+  expandAriaLabel?: string
+  className?: string
 }
 
 const WorkflowYamlHeaderActions = ({
@@ -32,9 +37,12 @@ const WorkflowYamlHeaderActions = ({
   onShowVersionHistory,
   getVisibleYaml,
   versionHistoryAriaLabel = 'Version History',
+  onExpand,
+  expandAriaLabel = 'Expand YAML editor',
+  className,
 }: WorkflowYamlHeaderActionsProps) => {
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-2">
+    <div className={cn('ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2', className)}>
       {showDocumentation && documentationUrl ? (
         <a
           href={documentationUrl}
@@ -58,6 +66,18 @@ const WorkflowYamlHeaderActions = ({
         >
           <HistorySVG />
           Version History
+        </Button>
+      ) : null}
+
+      {onExpand ? (
+        <Button
+          variant={ButtonType.SECONDARY}
+          size="medium"
+          onClick={onExpand}
+          aria-label={expandAriaLabel}
+        >
+          <ExpandSvg />
+          Expand
         </Button>
       ) : null}
     </div>

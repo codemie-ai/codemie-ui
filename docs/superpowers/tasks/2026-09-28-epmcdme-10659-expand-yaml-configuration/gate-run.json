@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-10659_expand-yaml-configuration",
+  "head": "e8a881c61bf5c056cacd045253a8802a2903f126",
+  "runner": "npm",
+  "started_at": "2026-09-28T11:21:03Z",
+  "completed_at": "2026-09-28T11:29:35Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 37236,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Only output: eslint-plugin-react 'React version not specified' settings warning; no lint findings. Auto-fix not triggered."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 20464,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide Skip-if met: no dependency added/removed/moved (package.json and package-lock.json not in merge_base...HEAD diff)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12344,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks ran: 'scanned ~46610159 bytes (46.61 MB) in 9.28s' / 'no leaks found'. Working tree only, not git history."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 249661,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "3 files failed / 617 passed; 2 tests failed / 6284 passed. Failing: scripts/license_headers/__tests__/check_license_headers.test.js (SyntaxError: Invalid or unexpected token), src/a2ui/__tests__/manifest.test.ts (CRLF vs LF in a2ui-manifest.json), src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts. None of these files are in the branch diff; failures look Windows-checkout (line-ending) sensitive - caller should compare against merge_base."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 112567,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "48 files / 547 tests passed, 1 skipped."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "",
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1945,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: '→ No staged files found.' Hook runs prettier --write, eslint --fix, tsc on staged files; eslint/tsc covered by lint/typecheck gates, prettier covered by prettier-changed gate. Guide documents hook gates as automatic but does not list them as gates to run (mismatch)."
+    },
+    {
+      "id": "prettier-changed",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1774,
+      "command": "npx prettier --check src/pages/workflows/components/WorkflowYamlHeaderActions.tsx src/pages/workflows/components/__tests__/WorkflowYamlHeaderActions.test.tsx src/pages/workflows/details/configuration/__tests__/WorkflowExecutionConfigYaml.test.tsx src/pages/workflows/editor/configPanels/YamlPanel.tsx src/pages/workflows/editor/configPanels/__tests__/YamlPanel.test.tsx src/pages/workflows/editor/configPanels/components/YamlExpandedModal.tsx src/pages/workflows/editor/configPanels/components/__tests__/YamlExpandedModal.test.tsx",
+      "exit_code": 0,
+      "notes": "Non-mutating --check equivalent of lint-staged 'prettier --write' applied to the 7 files in merge_base...HEAD diff: 'All matched files use Prettier code style!'"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1761,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2214 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1395,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN (e.g. in .env.local) to run locally; still owed to CI."
+    },
+    {
+      "id": "ci-wait-init",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(GitLab pre-ci-guard wait-ci-init)",
+      "exit_code": null,
+      "notes": ".gitlab-ci.yml only waits on external status contexts 'ci-pipeline' and 'compliance-report' (remote infra, not runnable locally). Server-side gitleaks-scan is mirrored by the secrets gate."
+    }
+  ],
+  "failures": {
+    "unit": "+       \"variant\",\r\n+       \"weight\"\r\n+     ],\r\n+     \"TextField\": [\r\n+       \"accessibility\",\r\n+       \"checks\",\r\n+       \"label\",\r\n+       \"validationRegexp\",\r\n+       \"value\",\r\n+       \"variant\",\r\n+       \"weight\"\r\n+     ],\r\n+     \"Video\": [\r\n+       \"accessibility\",\r\n+       \"url\",\r\n+       \"weight\"\r\n+     ]\r\n+   },\r\n+   \"compositionHash\": \"20dfeb7b\"\r\n+ }\r\n\n\n ❯ src/a2ui/__tests__/manifest.test.ts:74:51\n     72| \n     73|   it('is serialized exactly as the generator writes it (stable diffs)'…\n     74|     expect(committedManifestRaw, REGENERATE_HINT).toBe(\n       |                                                   ^\n     75|       `${JSON.stringify(getManifest(), null, 2)}\\n`\n     76|     )\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯\n\n FAIL  |unit| src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts > modal surfaces host the live region > recognises the surfaces that already carry the host\n FAIL  |unit| src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts > modal surfaces host the live region > recognises the surfaces that already carry the host\nAssertionError: expected [ …(2) ] to include 'components/Popup/Popup.tsx'\n ❯ src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts:73:23\n     71|       .map(({ path }) => path)\n     72| \n     73|     expect(declaring).toContain('components/Popup/Popup.tsx')\n       |                       ^\n     74|     expect(declaring).toContain('components/Navigation/NavigationProfi…\n     75|   })\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯\n\n Test Files  3 failed | 617 passed (620)\n      Tests  2 failed | 6284 passed | 1 skipped (6287)\n   Start at  13:22:39\n   Duration  242.25s (transform 62.21s, setup 234.40s, collect 2238.47s, tests 292.14s, environment 545.35s, prepare 122.60s)\n\n"
+  }
+}

@@ -27,6 +27,7 @@ import { cn } from '@/utils/utils'
 import WorkflowYamlHeaderActions from '../../components/WorkflowYamlHeaderActions'
 import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import TabFooter from './components/TabFooter'
+import YamlExpandedModal from './components/YamlExpandedModal'
 
 interface YamlPanelProps {
   yaml: string
@@ -49,6 +50,8 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
     const aceEditorRef = useRef<AceEditorRef>(null)
     const [value, setValue] = useState(yaml)
     const [validationError, setValidationError] = useState<string | null>(null)
+    // ConfigPanel remounts YamlPanel on a committed YAML change, which also closes this modal.
+    const [isExpanded, setIsExpanded] = useState(false)
 
     const isDocumentationEnabled = isConfigItemEnabled(configs, 'workflowYamlDocumentation')
     const documentationUrl = getConfigItemSettings(configs, 'workflowYamlDocumentation')?.url
@@ -154,8 +157,11 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
     return (
       <>
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="shrink-0 whitespace-nowrap text-sm text-text-quaternary">
+          <div className="flex flex-col items-start gap-2">
+            <span
+              className="max-w-full truncate text-sm text-text-quaternary"
+              title="YAML Configuration"
+            >
               YAML Configuration
             </span>
             <WorkflowYamlHeaderActions
@@ -164,6 +170,8 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
               onShowVersionHistory={onShowVersionHistory}
               getVisibleYaml={() => value}
               versionHistoryAriaLabel="Version History (YAML)"
+              onExpand={() => setIsExpanded(true)}
+              className="ml-0 justify-start"
             />
           </div>
 
@@ -191,6 +199,14 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
         </div>
 
         <TabFooter onCancel={handleCancel} onSave={handleSave} saveDisabled={!!validationError} />
+
+        <YamlExpandedModal
+          visible={isExpanded}
+          value={value}
+          validationError={validationError}
+          onChange={handleYamlChange}
+          onCollapse={() => setIsExpanded(false)}
+        />
       </>
     )
   }

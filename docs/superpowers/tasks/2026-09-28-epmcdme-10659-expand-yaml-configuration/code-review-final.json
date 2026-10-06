@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Compact profile: only the edge-case lens ran, and acceptance was skipped because there was no spec/story artifact (no-spec, so confidence is low); the standards audit was not expected. Both edge-case candidates were dismissed after reading the source: jump-to-issue cannot fire while the modal Popup (mask plus focus trap) covers the issue list, and Ace stops propagation of Escape when it handles it for its own widgets, so plain Escape collapsing the modal keeps edits in YamlPanel state. 0 deferred, 2 dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of the compact profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of the compact profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of the compact profile." }
+  ],
+  "findings": []
+}
