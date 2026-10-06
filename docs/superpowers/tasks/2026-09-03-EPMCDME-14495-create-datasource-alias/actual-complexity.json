@@ -1,0 +1,15 @@
+{
+  "score": 7,
+  "size": "XS",
+  "routing": "sdlc-light",
+  "breakdown": {
+    "files_changed": 2,
+    "lines_changed": 15,
+    "test_cases": 2,
+    "complexity_factors": [
+      "No architectural changes",
+      "Surgical UI logic removal",
+      "Surgical integration test updates"
+    ]
+  }
+}

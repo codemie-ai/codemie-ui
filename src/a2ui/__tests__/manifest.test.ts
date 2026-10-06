@@ -18,14 +18,17 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { SUPPORTED_COMPONENTS , A2UI_PROTOCOL_VERSION, CATALOG_ID } from '@/a2ui/config'
+import { SUPPORTED_COMPONENTS, A2UI_PROTOCOL_VERSION, CATALOG_ID } from '@/a2ui/config'
 import { getManifest } from '@/a2ui/manifest'
 
 // The committed snapshot of the renderer manifest — the very file the backend contract
 // test reads, since it cannot execute this repository. Read off disk rather than imported:
 // the test compares exact bytes, and a bundler import would hand back parsed JSON or a
 // transformed string depending on who is running it.
-const committedManifestRaw = readFileSync(resolve(process.cwd(), 'src/a2ui/a2ui-manifest.json'), 'utf-8')
+const committedManifestRaw = readFileSync(
+  resolve(process.cwd(), 'src/a2ui/a2ui-manifest.json'),
+  'utf-8'
+).replace(/\r\n/g, '\n')
 
 const REGENERATE_HINT = 'a2ui-manifest.json is out of date — run npm run a2ui:manifest'
 

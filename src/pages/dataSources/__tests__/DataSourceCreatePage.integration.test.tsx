@@ -200,9 +200,6 @@ describe('DataSourceCreatePage — Unsaved Changes Guard', () => {
   })
 
   it('does not show unsaved-changes popup when navigating away from an untouched form', async () => {
-    // The form defaults indexType to GIT and auto-generates a name on mount.
-    // Before the fix, the auto-generated name made the form appear dirty even
-    // though the user had not typed anything (regression: EPMCDME-14129).
     const router = createMemoryRouter(routes, {
       initialEntries: ['/data-sources/create'],
     })
@@ -210,13 +207,7 @@ describe('DataSourceCreatePage — Unsaved Changes Guard', () => {
 
     await waitForFormReady()
 
-    // Wait for the auto-generated name — signals name-fill is complete
-    await waitFor(
-      () => {
-        expect(screen.getByRole('textbox', { name: 'Name' })).not.toHaveValue('')
-      },
-      { timeout: 10000 }
-    )
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('')
 
     // Navigate away without touching any form field
     await act(async () => {
@@ -247,6 +238,27 @@ describe('DataSourceCreatePage — Unsaved Changes Guard', () => {
 
     // The "Unsaved Changes" popup MUST have appeared
     expect(screen.queryByRole('heading', { name: 'Unsaved Changes' })).toBeInTheDocument()
+  })
+})
+
+describe('DataSourceCreatePage - Datasource Name', () => {
+  beforeEach(() => {
+    mockFormInitAPIs()
+    mockAPI('GET', 'v1/settings/user/available', [])
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('keeps datasource Name empty after selecting Confluence', async () => {
+    const user = userEvent.setup()
+    renderPage('/data-sources/create')
+    await waitForFormReady()
+
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('')
+    await selectConfluenceType(user)
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(''))
   })
 })
 

@@ -57,7 +57,6 @@ import { userSettingsStore } from '@/store/userSettings'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { registerIndexTypeCallback } from '@/utils/onboarding'
-import { generateDefaultAlias } from '@/utils/settings'
 import { cn } from '@/utils/utils'
 
 import Divider from './Divider'
@@ -262,11 +261,6 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
   const repoIndexType = watch('repoIndexType')
   const indexType = watch('indexType') as IndexType
 
-  useEffect(() => {
-    if (isEditing || nameManuallyEdited.current || !indexType) return
-    const defaultName = generateDefaultAlias(indexType)
-    if (defaultName) setValue('name', defaultName)
-  }, [indexType])
   const sharepointAuthType = watch('sharepointAuthType')
 
   const providerId = index?.provider_fields?.provider_id
