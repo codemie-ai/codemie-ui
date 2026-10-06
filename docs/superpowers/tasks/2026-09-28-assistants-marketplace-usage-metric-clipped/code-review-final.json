@@ -1,0 +1,38 @@
+{
+  "decision": "request-changes",
+  "rationale": "Edge-case lens (the only applicable lens under the compact profile plus the no-spec acceptance skip) surfaced two real defects in the new formatting code: StatusLabel.tsx's '=== 1' singular check breaks for a string-typed unique_users_count (CR-001), and helpers.ts's formatExactCount can render literal 'NaN' for a non-numeric value because it lacks the guard already present in the sibling formatMetricCount (CR-002). Two other candidates were dismissed as unreachable: the tooltip-target id/slug collapse (both fields are non-optional strings) and the unclamped negative-count path (mirrors the pre-existing, unclamped formatCompactCount; counts cannot legitimately go negative). No story/spec exists for this ticket, so acceptance did not run (genuine no-spec) and confidence is capped low; the compact profile does not expect a standards audit, so its three rows are recorded na with no coverage gap.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for the compact review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for the compact review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for the compact review profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantList/AssistantCard/StatusLabel.tsx",
+      "line": 55,
+      "title": "Pluralization breaks for string count values",
+      "problem": "`const count = assistant.unique_users_count ?? 0` keeps the raw value even though `Assistant.unique_users_count` is typed `string | number`. The strict `count === 1` checks at lines 65 and 78 compare against the number 1, so a string count of `'1'` never matches.",
+      "impact": "A GLOBAL assistant with exactly one recorded use shows the grammatically incorrect 'uses'/'total uses' whenever the backend returns unique_users_count as a numeric string, which the field's own declared type permits and which the code never normalizes.",
+      "recommendation": "Coerce once at the source: `const count = Number(assistant.unique_users_count ?? 0)` at line 55, so formatMetricCount/formatExactCount and both `=== 1` checks operate on a consistent number."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/helpers.ts",
+      "line": 385,
+      "title": "formatExactCount can render literal 'NaN'",
+      "problem": "`Number(value || 0).toLocaleString('en-US')` only falls back to 0 when `value` itself is falsy. A non-numeric truthy string (or anything where `Number(value)` is NaN) is passed straight to `.toLocaleString`, which formats NaN as the literal text 'NaN'.",
+      "impact": "The GLOBAL row's tooltip and aria-label ('{count} total use(s)') would display 'NaN total use(s)' to sighted and screen-reader users, unlike the sibling formatMetricCount, which already guards this exact case with `Number(value) || 0`.",
+      "recommendation": "Mirror formatMetricCount's guard: compute `const n = Number(value) || 0` first, then call `.toLocaleString('en-US')` on `n`."
+    }
+  ]
+}

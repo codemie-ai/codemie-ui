@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14284_fix-marketplace-usage-metric-clipping",
+  "head": "c5eab0d66b02c35c6afde06a384cb18d971e19ba",
+  "runner": "npm",
+  "started_at": "2026-09-28T14:37:24Z",
+  "completed_at": "2026-09-28T14:43:33Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 22066,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17748,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency added, removed, or moved in this diff (package.json/package-lock.json unchanged) — matches guide's Skip if criteria."
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 6589,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 146612,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 617 passed (617); Tests 6325 passed | 1 skipped (6326)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 64445,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 48 passed (48); Tests 547 passed | 1 skipped (548)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (AssistantCard.tsx, StatusLabel.tsx match ui_globs) but no configured UI test script (no test:ui in package.json); browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 492,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2210 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 307,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: \"[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.\" Set SONAR_TOKEN (and reachable SonarQube host from .sonarlint/connectedMode.json) to run this locally; server-side pre-commit hook and CI would still run it for real."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "No files are staged in this run (git status clean aside from the run_dir); fully superseded by the broader `npm run lint` guide gate already run against all files, which is a superset of what lint-staged would cover."
+    }
+  ],
+  "failures": {}
+}

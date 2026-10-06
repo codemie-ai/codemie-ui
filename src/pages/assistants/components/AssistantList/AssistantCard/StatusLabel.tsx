@@ -13,12 +13,14 @@
 // limitations under the License.
 //
 
-import React from 'react'
+import React, { useMemo } from 'react'
 
 import DiagramSvg from '@/assets/icons/diagram.svg?react'
 import NotSharedSvg from '@/assets/icons/shared-no.svg?react'
 import SharedSvg from '@/assets/icons/shared-yes.svg?react'
+import Tooltip from '@/components/Tooltip'
 import { Assistant } from '@/types/entity/assistant'
+import { formatExactCount, formatMetricCount } from '@/utils/helpers'
 
 interface StatusLabelProps {
   assistant: Assistant
@@ -27,7 +29,6 @@ interface StatusLabelProps {
 }
 
 const STATUS_TEXT = {
-  GLOBAL: 'total uses',
   SHARED: 'Shared with Project',
   OWNED: 'Visible only for me',
   NOT_SHARED: 'Not shared',
@@ -51,11 +52,17 @@ const StatusLabel: React.FC<StatusLabelProps> = ({ assistant, isShared, isOwned 
   }
 
   const statusType = getStatusType()
+  const count = Number(assistant.unique_users_count ?? 0)
+
+  const tooltipTargetClass = useMemo(() => {
+    const id = assistant.id || assistant.slug
+    return 'status-tooltip-target-' + id
+  }, [assistant.id, assistant.slug])
 
   const getStatusText = (type: StatusType): string => {
     switch (type) {
       case StatusType.GLOBAL:
-        return `${assistant.unique_users_count ?? 0} ${STATUS_TEXT.GLOBAL}`
+        return `${formatMetricCount(count)} ${count === 1 ? 'use' : 'uses'}`
       case StatusType.SHARED:
         return STATUS_TEXT.SHARED
       case StatusType.OWNED:
@@ -64,6 +71,13 @@ const StatusLabel: React.FC<StatusLabelProps> = ({ assistant, isShared, isOwned 
       default:
         return STATUS_TEXT.UNKNOWN
     }
+  }
+
+  const getExactStatusText = (type: StatusType): string => {
+    if (type === StatusType.GLOBAL) {
+      return `${formatExactCount(count)} ${count === 1 ? 'total use' : 'total uses'}`
+    }
+    return getStatusText(type)
   }
 
   const getStatusIcon = () => {
@@ -77,15 +91,20 @@ const StatusLabel: React.FC<StatusLabelProps> = ({ assistant, isShared, isOwned 
     return <NotSharedSvg />
   }
 
+  const isGlobal = statusType === StatusType.GLOBAL
+
   return (
-    <div
-      role="status"
-      aria-label={getStatusText(statusType)}
-      className="flex flex-row items-center text-xs gap-3 whitespace-nowrap"
+    <output
+      aria-label={getExactStatusText(statusType)}
+      className={`flex flex-row items-center text-xs ${
+        isGlobal ? 'gap-1' : 'gap-3'
+      } whitespace-nowrap ${isGlobal ? tooltipTargetClass : ''}`}
+      data-pr-tooltip={isGlobal ? getExactStatusText(statusType) : undefined}
     >
       {getStatusIcon()}
       {getStatusText(statusType)}
-    </div>
+      {isGlobal && <Tooltip target={'.' + tooltipTargetClass} position="top" showDelay={100} />}
+    </output>
   )
 }
 

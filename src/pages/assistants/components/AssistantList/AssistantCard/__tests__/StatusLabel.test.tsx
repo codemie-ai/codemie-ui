@@ -14,11 +14,15 @@
 //
 
 import { render, screen } from '@testing-library/react'
-import { expect, describe, it } from 'vitest'
+import { expect, describe, it, vi } from 'vitest'
 
 import { Assistant } from '@/types/entity/assistant'
 
 import StatusLabel from '../StatusLabel'
+
+vi.mock('@/components/Tooltip', () => ({
+  default: () => null,
+}))
 
 describe('StatusLabel', () => {
   const createMockAssistant = (isGlobal = false): Assistant =>
@@ -36,10 +40,64 @@ describe('StatusLabel', () => {
     render(<StatusLabel assistant={mockAssistant} />)
 
     const statusElement = screen.getByRole('status')
-    expect(statusElement).toHaveTextContent('42 total uses')
+    expect(statusElement).toHaveTextContent('42 uses')
     // Check for SVG icon
     const svgElement = statusElement.querySelector('svg')
     expect(svgElement).toBeInTheDocument()
+  })
+
+  it('renders singular "use" and "total use" wording when unique_users_count is 1', () => {
+    const mockAssistant = createMockAssistant(true)
+    mockAssistant.unique_users_count = 1
+
+    render(<StatusLabel assistant={mockAssistant} />)
+
+    const statusElement = screen.getByRole('status')
+    expect(statusElement).toHaveTextContent('1 use')
+    expect(statusElement).toHaveAttribute('aria-label', '1 total use')
+  })
+
+  it('renders singular "use" and "total use" wording when unique_users_count is the string "1"', () => {
+    const mockAssistant = createMockAssistant(true)
+    mockAssistant.unique_users_count = '1' as unknown as number
+
+    render(<StatusLabel assistant={mockAssistant} />)
+
+    const statusElement = screen.getByRole('status')
+    expect(statusElement).toHaveTextContent('1 use')
+    expect(statusElement).toHaveAttribute('aria-label', '1 total use')
+  })
+
+  it('renders "0 uses" when unique_users_count is 0', () => {
+    const mockAssistant = createMockAssistant(true)
+    mockAssistant.unique_users_count = 0
+
+    render(<StatusLabel assistant={mockAssistant} />)
+
+    const statusElement = screen.getByRole('status')
+    expect(statusElement).toHaveTextContent('0 uses')
+  })
+
+  it('renders compact label and exact tooltip/aria wording for large counts', () => {
+    const mockAssistant = createMockAssistant(true)
+    mockAssistant.unique_users_count = 20900
+
+    render(<StatusLabel assistant={mockAssistant} />)
+
+    const statusElement = screen.getByRole('status')
+    expect(statusElement).toHaveTextContent('20.9K uses')
+    expect(statusElement).toHaveAttribute('aria-label', '20,900 total uses')
+    expect(statusElement).toHaveAttribute('data-pr-tooltip', '20,900 total uses')
+  })
+
+  it('has a 4px gap between icon and value for the GLOBAL status', () => {
+    const mockAssistant = createMockAssistant(true)
+
+    render(<StatusLabel assistant={mockAssistant} />)
+
+    const statusElement = screen.getByRole('status')
+    expect(statusElement).toHaveClass('gap-1')
+    expect(statusElement).not.toHaveClass('gap-3')
   })
 
   it('renders Shared with Project status when isShared is true', () => {
@@ -90,7 +148,7 @@ describe('StatusLabel', () => {
     render(<StatusLabel assistant={mockAssistant} isShared={true} isOwned={true} />)
 
     const statusElement = screen.getByRole('status')
-    expect(statusElement).toHaveTextContent('42 total uses')
+    expect(statusElement).toHaveTextContent('42 uses')
   })
 
   it('prioritizes shared status over owned status', () => {

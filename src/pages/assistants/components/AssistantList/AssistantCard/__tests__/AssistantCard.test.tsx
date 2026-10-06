@@ -20,12 +20,21 @@ import { Assistant } from '@/types/entity/assistant'
 
 import AssistantCard from '../AssistantCard'
 
+type CountValue = number | string | null
+
 vi.mock('@/utils/helpers', () => ({
   createdBy: (user) => user?.name || 'Unknown',
-  formatCompactCount: (value?: number | string | null) =>
+  formatCompactCount: (value?: CountValue) =>
     Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short' })
       .format(Number(value) || 0)
       .toLocaleLowerCase(),
+  formatMetricCount: (value?: CountValue) =>
+    Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      compactDisplay: 'short',
+      maximumFractionDigits: 1,
+    }).format(Number(value) || 0),
+  formatExactCount: (value?: CountValue) => Number(value || 0).toLocaleString('en-US'),
 }))
 
 vi.mock('@/assets/images/ai-avatar.png', () => ({
@@ -231,5 +240,26 @@ describe('AssistantCard', () => {
     const chatButton = screen.getByLabelText(`Start chat with ${globalAssistant.name}`)
     expect(chatButton).toBeInTheDocument()
     expect(chatButton).toHaveClass('shrink-0')
+  })
+
+  it('shrinks the reaction buttons to content width so they do not push the metric off the card', () => {
+    const globalAssistant: Assistant = {
+      ...mockAssistant,
+      is_global: true,
+      unique_likes_count: 3,
+      unique_dislikes_count: 1,
+      clone_count: 7,
+    }
+
+    render(<AssistantCard assistant={globalAssistant} onViewAssistant={() => {}} />)
+
+    const likeButton = screen.getByLabelText(`Like ${globalAssistant.name}, 3`)
+    const dislikeButton = screen.getByLabelText(`Dislike ${globalAssistant.name}, 1`)
+    const cloneButton = screen.getByLabelText(`Clone ${globalAssistant.name}, 7`)
+
+    for (const button of [likeButton, dislikeButton, cloneButton]) {
+      expect(button).toHaveClass('min-w-0')
+      expect(button).toHaveClass('px-1.5')
+    }
   })
 })

@@ -188,7 +188,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
           <div className="flex h-full pl-4 gap-1 items-center justify-center">
             <Button
               type="tertiary"
-              className={tooltipClass}
+              className={classNames(tooltipClass, 'min-w-0', 'px-1.5')}
               data-pr-tooltip={assistant.is_liked ? 'Remove like' : 'Like this assistant'}
               aria-label={
                 assistant.is_liked
@@ -211,7 +211,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
 
             <Button
               type="tertiary"
-              className={tooltipClass}
+              className={classNames(tooltipClass, 'min-w-0', 'px-1.5')}
               data-pr-tooltip={assistant.is_disliked ? 'Remove dislike' : 'Dislike this assistant'}
               aria-label={
                 assistant.is_disliked
@@ -237,7 +237,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
 
             <Button
               type="tertiary"
-              className={tooltipClass}
+              className={classNames(tooltipClass, 'min-w-0', 'px-1.5')}
               data-pr-tooltip="Clone this assistant"
               aria-label={`Clone ${assistant.name}, ${assistant.clone_count ?? 0}`}
               onClick={handleClone}

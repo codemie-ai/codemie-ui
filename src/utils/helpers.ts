@@ -362,13 +362,27 @@ export const isNumberValue = (num: any): boolean => {
   return isNumber(num)
 }
 
-export const formatCompactCount = (value?: number | string | null): string => {
+export type CountValue = number | string | null
+
+export const formatCompactCount = (value?: CountValue): string => {
   return Intl.NumberFormat('en-US', {
     notation: 'compact',
     compactDisplay: 'short',
   })
     .format(Number(value) || 0)
     .toLocaleLowerCase()
+}
+
+export const formatMetricCount = (value?: CountValue): string => {
+  return Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    compactDisplay: 'short',
+    maximumFractionDigits: 1,
+  }).format(Number(value) || 0)
+}
+
+export const formatExactCount = (value?: CountValue): string => {
+  return (Number(value) || 0).toLocaleString('en-US')
 }
 
 // 308px matches CHAT_SIDEBAR_DEFAULT_WIDTH in

@@ -20,6 +20,8 @@ import {
   getRootPath,
   formatScheduleDate,
   formatCompactCount,
+  formatMetricCount,
+  formatExactCount,
   humanize,
 } from '@/utils/helpers'
 
@@ -43,6 +45,57 @@ describe('formatCompactCount', () => {
     expect(formatCompactCount(null)).toBe('0')
     expect(formatCompactCount(undefined)).toBe('0')
     expect(formatCompactCount('not-a-number')).toBe('0')
+  })
+})
+
+describe('formatMetricCount', () => {
+  it('renders 0-999 as an exact integer', () => {
+    expect(formatMetricCount(0)).toBe('0')
+    expect(formatMetricCount(1)).toBe('1')
+    expect(formatMetricCount(35)).toBe('35')
+    expect(formatMetricCount(567)).toBe('567')
+    expect(formatMetricCount(999)).toBe('999')
+  })
+
+  it('renders >=1000 as compact with uppercase K/M and no space before the unit', () => {
+    expect(formatMetricCount(1000)).toBe('1K')
+    expect(formatMetricCount(1200)).toBe('1.2K')
+    expect(formatMetricCount(20000)).toBe('20K')
+    expect(formatMetricCount(20900)).toBe('20.9K')
+    expect(formatMetricCount(22432)).toBe('22.4K')
+    expect(formatMetricCount(999900)).toBe('999.9K')
+    expect(formatMetricCount(1000000)).toBe('1M')
+  })
+
+  it('rounds half-up to at most 1 decimal and drops trailing .0 on whole thousands', () => {
+    expect(formatMetricCount(1249)).toBe('1.2K')
+    expect(formatMetricCount(1250)).toBe('1.3K')
+  })
+
+  it('defaults to 0 for null, undefined, and NaN input', () => {
+    expect(formatMetricCount(null)).toBe('0')
+    expect(formatMetricCount(undefined)).toBe('0')
+    expect(formatMetricCount('42')).toBe('42')
+    expect(formatMetricCount('abc')).toBe('0')
+  })
+})
+
+describe('formatExactCount', () => {
+  it('renders exact comma-grouped counts', () => {
+    expect(formatExactCount(0)).toBe('0')
+    expect(formatExactCount(1)).toBe('1')
+    expect(formatExactCount(22432)).toBe('22,432')
+    expect(formatExactCount(1000000)).toBe('1,000,000')
+  })
+
+  it('defaults to 0 for null, undefined input and accepts numeric strings', () => {
+    expect(formatExactCount(null)).toBe('0')
+    expect(formatExactCount(undefined)).toBe('0')
+    expect(formatExactCount('42')).toBe('42')
+  })
+
+  it('defaults to 0 instead of rendering "NaN" for a non-numeric string', () => {
+    expect(formatExactCount('abc')).toBe('0')
   })
 })
 
