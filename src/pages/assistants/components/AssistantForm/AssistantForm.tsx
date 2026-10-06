@@ -844,6 +844,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
                       <SkillSelector
                         {...field}
                         project={project}
+                        knownSkills={assistant?.skills}
                         error={fieldState.error?.message}
                       />
                     )}

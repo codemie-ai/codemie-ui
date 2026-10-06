@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-13280_fix-null-skill-name",
+  "head": "fa7074b66d9880a5273d1ba9d0575bdba59d5080",
+  "runner": "npm",
+  "started_at": "2026-10-04T14:03:57Z",
+  "completed_at": "2026-10-04T14:17:40Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25898,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Only output was an eslint-plugin-react version warning; no errors."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 22202,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 7161,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Guide Skip if: no dependency added, removed or moved (package.json and package-lock.json not in branch diff vs origin/main). Ran anyway for verification; exited 0 with full license summary, no disallowed licence."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 18810,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks output: 'no leaks found'."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 377530,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 641 passed (641); Tests 6640 passed | 1 skipped (6641). Run under Vite 8 / Vitest 5 (EPMCDME-15243)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 116030,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 48 passed (48); Tests 551 passed | 1 skipped (552). Run under Vite 8 / Vitest 5 (EPMCDME-15243)."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "notes": "Working tree is clean (no staged files); nothing for lint-staged to act on. Its per-file commands (prettier, eslint --fix, tsc --noEmit, license-header fix) are covered on the full tree by the lint, typecheck and license-headers gates above."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 748,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2254 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 508,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Sonar host (https://sonar.core.kuberocketci.io) is reachable, but no credential is configured in this environment. Set SONAR_TOKEN to run locally; only CI/Sonar can settle this check otherwise."
+    }
+  ],
+  "failures": {}
+}

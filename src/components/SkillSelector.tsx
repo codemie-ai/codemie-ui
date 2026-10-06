@@ -26,6 +26,8 @@ import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { SelectOption, useSkillSelector } from '@/hooks/useSkillSelector'
 import { Skill } from '@/types/entity/skill'
 
+import { resolveSkillOptions } from './SkillSelector.utils'
+
 interface SkillOptionProps {
   option: { label: string; value: string }
   options: SelectOption[]
@@ -60,10 +62,11 @@ export interface SkillSelectorProps {
   onChange?: (value: string[]) => void
   project: string
   error?: string
+  knownSkills?: { id: string; name: string; description?: string }[]
 }
 
 const SkillSelector = forwardRef<PrimeMultiselect, SkillSelectorProps>(
-  ({ value, onChange, project, error: externalError }, ref) => {
+  ({ value, onChange, project, error: externalError, knownSkills }, ref) => {
     const { options, loading, refetch } = useSkillSelector(project)
     const [error, setError] = useState('')
     const [isCreatePopupVisible, setIsCreatePopupVisible] = useState(false)
@@ -73,6 +76,11 @@ const SkillSelector = forwardRef<PrimeMultiselect, SkillSelectorProps>(
     const cleanValue = useMemo(
       () => (value ?? []).filter((v): v is string => v !== undefined),
       [value]
+    )
+
+    const resolvedOptions = useMemo(
+      () => resolveSkillOptions(options, cleanValue, knownSkills),
+      [options, cleanValue, knownSkills]
     )
 
     // Use refs to avoid stale closures in async callback
@@ -130,7 +138,7 @@ const SkillSelector = forwardRef<PrimeMultiselect, SkillSelectorProps>(
           onFilter={() => {}}
           label=""
           placeholder={loading ? 'Loading skills...' : 'Select skills'}
-          options={options.map((opt) => ({ label: opt.label, value: opt.value }))}
+          options={resolvedOptions.map((opt) => ({ label: opt.label, value: opt.value }))}
           value={cleanValue}
           error={error || externalError}
           loading={loading}
@@ -139,7 +147,7 @@ const SkillSelector = forwardRef<PrimeMultiselect, SkillSelectorProps>(
           virtualScrollerOptions={{ itemSize: 50 }}
           onChange={(e) => handleChange(e.value)}
           renderOption={(option) => (
-            <SkillOption option={option as SelectOption} options={options} />
+            <SkillOption option={option as SelectOption} options={resolvedOptions} />
           )}
         />
 

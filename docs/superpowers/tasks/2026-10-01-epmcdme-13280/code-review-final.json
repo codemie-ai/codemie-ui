@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Compact profile: edge-case lens ran; acceptance skipped (no spec), so confidence is low. No blocking findings after reachability checks. 1 deferred (workflow VirtualAssistantForm passes no knownSkills; its config carries only skill ids, outside this task's scope), 5 dismissed as noise (loading flash, empty-name, duplicate ids, unknown-id label, deselected hidden option). Deferred backlog written to code-review-deferred.md.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for this profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for this profile." }
+  ],
+  "findings": []
+}

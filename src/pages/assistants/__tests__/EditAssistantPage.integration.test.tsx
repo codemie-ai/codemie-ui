@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
@@ -89,6 +89,35 @@ describe('EditAssistantPage - Integration', () => {
 
       // Verify at least the back button exists (full form may still be loading)
       expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
+    })
+  })
+
+  describe('Skills field', () => {
+    it('renders a skill name correctly even when the skill is outside the loaded catalog scope', async () => {
+      const assistant = createAssistantFixture({
+        skills: [
+          { id: 'sk-known', name: 'epam-pptx-template' },
+          { id: 'sk-hidden', name: 'codemie-speech-presentation-content' },
+        ],
+      })
+
+      mockAPI('GET', 'v1/config', [{ id: 'skills', settings: { enabled: true } }])
+      mockAPI('GET', 'v1/assistants/id/asst-123', assistant)
+      mockAPI('GET', 'v1/llm/models', [])
+      // Catalog scope omits sk-hidden — reproduces the reported defect condition.
+      mockAPI('GET', 'v1/skills', [{ id: 'sk-known', name: 'epam-pptx-template' }])
+
+      renderPage('/assistants/asst-123/edit')
+
+      await screen.findByText(/epam-pptx-template/)
+      // Scope to the Skills accordion — the unrelated LLM model select renders "null" with no models
+      const skillsSection = document.querySelector<HTMLElement>(
+        '[data-onboarding="assistant-skills-accordion"]'
+      ) as HTMLElement
+      expect(
+        within(skillsSection).getByText(/codemie-speech-presentation-content/)
+      ).toBeInTheDocument()
+      expect(within(skillsSection).queryByText(/^null$/)).not.toBeInTheDocument()
     })
   })
 })
