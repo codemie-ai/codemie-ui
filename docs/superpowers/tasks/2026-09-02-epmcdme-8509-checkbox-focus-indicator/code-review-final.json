@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "All three lenses ran cleanly. All 12 acceptance criteria pass. Edge-case lens verified DOM order (input before box) and confirmed no global PT collision for RadioButton. One defer finding: RadioButton box ring classes are unconditional while the Checkbox lara preset guards with !props.disabled — not a runtime defect (CSS :focus-visible cannot fire on a disabled input in any browser) but a parity gap worth a follow-up. One dismissed finding: the blind lens suggested ring-offset-* which is explicitly banned by project constraints (white halo in dark mode). Commit subjects match EPMCDME-XXXX: Capital sentence format. No security concerns. 1 deferred finding (disabled-state guard parity), 1 dismissed finding (ring-offset suggestion contradicted by project constraint).",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "Token: ring-border-accent used exactly", "status": "pass", "notes": "Checkbox preset changes ring-border-subtle/20 → ring-border-accent; RadioButton adds peer-focus-visible:ring-border-accent — correct token in both places." },
+    { "criterion": "Ring size: ring-2 for both Checkbox and RadioButton", "status": "pass", "notes": "Checkbox preset retains peer-focus-visible:ring-2; RadioButton adds peer-focus-visible:ring-2 alongside the color token." },
+    { "criterion": "Variant: peer-focus-visible: only, never bare focus:", "status": "pass", "notes": "Both changes exclusively use peer-focus-visible: — no bare focus: variant appears anywhere in the diff." },
+    { "criterion": "No ring-offset-* anywhere in changes", "status": "pass", "notes": "The string ring-offset does not appear in any line of the diff." },
+    { "criterion": "No call-site edits", "status": "pass", "notes": "Only the preset file and RadioButton component are modified; no call-site files appear in the diff." },
+    { "criterion": "No edits to other presets (inputswitch, tag, dropdown)", "status": "pass", "notes": "Only src/styles/presets/lara/checkbox/index.ts is touched; no other preset files appear in the diff." },
+    { "criterion": "No edits to tailwind.config.ts", "status": "pass", "notes": "tailwind.config.ts is absent from the diff, confirming it was not modified." },
+    { "criterion": "No edits to NavigationMore.tsx", "status": "pass", "notes": "NavigationMore.tsx is absent from the diff, confirming it was not modified." },
+    { "criterion": "Checkbox fix via lara preset box pass-through", "status": "pass", "notes": "Single-line change in src/styles/presets/lara/checkbox/index.ts replaces the buggy token on the box conditional class map; all Checkbox instances inherit via PrimeReact PT concatenation." },
+    { "criterion": "RadioButton fix: peer on input, peer-focus-visible ring on box", "status": "pass", "notes": "peer added to input className; peer-focus-visible:ring-2 peer-focus-visible:ring-border-accent appended to box twMerge call." },
+    { "criterion": "Tests: PrimeReactProvider, box query, ring-border-accent assert, sibling-order guard, Checkbox negative assert", "status": "pass", "notes": "Both test files wrap in PrimeReactProvider value={primeReactPtOptions}, query [data-pc-section=\"box\"], assert toContain ring-border-accent, assert input?.nextElementSibling === box; Checkbox test additionally asserts not.toContain ring-border-subtle/20." },
+    { "criterion": "Commit format: EPMCDME-XXXX: Capital sentence", "status": "pass", "notes": "Both commits match the required format exactly." }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow commit format", "status": "pass", "notes": "Both commit subjects match EPMCDME-XXXX: Capital sentence as required by CI regex." },
+    { "standard": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md does not exist in this repo." },
+    { "standard": "security-patterns", "status": "pass", "notes": "No HTML sinks, no navigation from untrusted input, no secrets in diff. Pure CSS class changes and test files." }
+  ],
+  "findings": []
+}

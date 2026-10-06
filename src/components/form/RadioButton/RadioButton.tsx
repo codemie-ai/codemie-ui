@@ -44,7 +44,7 @@ const RadioButton: React.FC<RadioButtonProps> = ({
       className: twMerge('flex items-center text-sm', className),
     },
     input: {
-      className: 'absolute opacity-0 cursor-pointer z-10 w-full h-full left-0 top-0',
+      className: 'peer absolute opacity-0 cursor-pointer z-10 w-full h-full left-0 top-0',
     },
     box: {
       className: twMerge(
@@ -54,7 +54,8 @@ const RadioButton: React.FC<RadioButtonProps> = ({
         'after:scale-0 after:transition-transform after:duration-100 after:ease-in',
         'border-text-primary after:bg-text-primary',
         props.checked && 'after:scale-100 border-text-primary after:!bg-border-accent',
-        'group-hover:border-border-accent group-hover:after:bg-border-accent'
+        'group-hover:border-border-accent group-hover:after:bg-border-accent',
+        'peer-focus-visible:ring-2 peer-focus-visible:ring-border-accent'
       ),
     },
   }

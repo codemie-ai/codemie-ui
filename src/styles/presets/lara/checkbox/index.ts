@@ -63,7 +63,7 @@ const preset: PrimeReactPTOptions['checkbox'] = {
         'peer-hover:border-border-accent': !props.disabled && !context.checked && !props.invalid,
         'peer-hover:bg-border-accent peer-hover:border-border-accent':
           !props.disabled && context.checked,
-        'peer-focus-visible:ring-2 peer-focus-visible:ring-border-subtle/20': !props.disabled,
+        'peer-focus-visible:ring-2 peer-focus-visible:ring-border-accent': !props.disabled,
         'cursor-default opacity-60': props.disabled,
       },
 

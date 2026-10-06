@@ -1,0 +1,22 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: the fix-up adds 'peer-focus-visible:ring-2 peer-focus-visible:ring-border-accent' directly to checkboxPT.box in Checkbox.tsx. That override is the winning value under PrimeReact's plain-spread merge, so the focus ring classes are now guaranteed to be present on every Checkbox rendered via Checkbox.tsx — the root cause of CR-001 is addressed. The 1-line fix-up diff introduces no new issues. Round is still no-spec (no story/spec ArtifactRef available), so confidence remains low per protocol.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow commit format",
+      "status": "pass",
+      "notes": "Fix-up commit 'EPMCDME-8509: Add focus ring to Checkbox.tsx checkboxPT to fix PT override' matches EPMCDME-XXXX: Capital sentence format."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Added 'peer-focus-visible:ring-2 peer-focus-visible:ring-border-accent' to the box array in checkboxPT inside Checkbox.tsx. The component-level pt.box override now carries the focus ring classes directly, independent of the global lara preset merge path."
+    }
+  ]
+}
