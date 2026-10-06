@@ -1,0 +1,34 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two findings require fixes before approval. (1) Tailwind preflight applies list-style:none which causes Safari+VoiceOver to strip the list role — add role=\"list\" to both <ul> elements. (2) In OnboardingToursSection the <li> becomes the grid item, breaking the align-self:stretch that previously made cards in the same row share height — add className=\"flex\" to <li> so OnboardingFlowCard stretches via flex child behaviour. All four acceptance criteria pass.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "AI Assistants / Learning Resources / Product Updates groups div → ul/li (WCAG 2.1 H48)", "status": "pass", "notes": "HelpSection.tsx wrapping div replaced with ul; each HelpItem wrapped in li." },
+    { "criterion": "Interactive Tours (OnboardingToursSection) div → ul/li", "status": "pass", "notes": "OnboardingToursSection.tsx wrapping div replaced with ul; each OnboardingFlowCard wrapped in li." },
+    { "criterion": "key prop moved from child component to the li wrapper", "status": "pass", "notes": "Both files: key removed from child component, placed on li element." },
+    { "criterion": "Tailwind classes preserved on the ul element", "status": "pass", "notes": "flex flex-col gap-2 and grid sm:grid-cols-2 gap-3 carried over unchanged." }
+  ],
+  "standards_review": [
+    { "standard": "Commit format (EPMCDME-XXXX: Capital sentence)", "status": "pass", "notes": "Commit message matches required pattern." },
+    { "standard": "Security patterns", "status": "pass", "notes": "No HTML sinks, redirects, or secrets involved." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "Tailwind preflight sets list-style:none on <ul>. Safari + VoiceOver removes the list role when list-style:none is present without an explicit role attribute, silently voiding the accessibility fix on Apple devices.",
+      "impact": "Screen reader users on Safari/iOS do not hear \"list, N items\" — the primary goal of this ticket is not achieved on those platforms.",
+      "recommendation": "Add role=\"list\" to both <ul> elements in HelpSection.tsx and OnboardingToursSection.tsx."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "problem": "In OnboardingToursSection the <li> is now the grid item. Previously OnboardingFlowCard received align-self:stretch directly from the grid and matched height with its row partner. Now the <li> stretches but OnboardingFlowCard inside it sizes to content, so cards with unequal content no longer share row height.",
+      "impact": "Visual regression: in a 2-column row where one card has more text than the other, card heights diverge.",
+      "recommendation": "Add className=\"flex\" to the <li> so OnboardingFlowCard stretches as a flex child to fill the <li> height."
+    }
+  ]
+}

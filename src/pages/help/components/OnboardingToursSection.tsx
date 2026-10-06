@@ -42,20 +42,24 @@ const OnboardingToursSection: FC = () => {
         </p>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-3">
+      <ul // NOSONAR: Tailwind preflight sets list-style:none on ul, which strips the implicit list role in Safari/VoiceOver
+        role="list"
+        className="grid sm:grid-cols-2 gap-3"
+      >
         {flows.map((flow) => (
-          <OnboardingFlowCard
-            key={flow.id}
-            flowId={flow.id}
-            name={flow.name}
-            description={flow.description}
-            emoji={flow.emoji}
-            duration={flow.duration}
-            isCompleted={onboardingStore.isFlowCompleted(flow.id)}
-            showChevron
-          />
+          <li key={flow.id} className="flex">
+            <OnboardingFlowCard
+              flowId={flow.id}
+              name={flow.name}
+              description={flow.description}
+              emoji={flow.emoji}
+              duration={flow.duration}
+              isCompleted={onboardingStore.isFlowCompleted(flow.id)}
+              showChevron
+            />
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   )
 }

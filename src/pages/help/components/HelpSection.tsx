@@ -34,21 +34,25 @@ const HelpSection: FC<HelpSectionProps> = ({ title, description, items, ...rest 
         <h2 className="text-lg font-semibold">{title}</h2>
         <p className="text-xs text-text-quaternary min-h-4">{description || ''}</p>
       </div>
-      <div className="flex flex-col gap-2">
+      <ul // NOSONAR: Tailwind preflight sets list-style:none on ul, which strips the implicit list role in Safari/VoiceOver
+        role="list"
+        className="flex flex-col gap-2"
+      >
         {items.map((item) => (
-          <HelpItem
-            key={item.name}
-            name={item.name}
-            description={item.description}
-            link={item.link}
-            type={item.type}
-            icon={item.icon}
-            iconUrl={item.iconUrl}
-            buttonText={item.buttonText}
-            isExternal={item.isExternal}
-          />
+          <li key={item.name}>
+            <HelpItem
+              name={item.name}
+              description={item.description}
+              link={item.link}
+              type={item.type}
+              icon={item.icon}
+              iconUrl={item.iconUrl}
+              buttonText={item.buttonText}
+              isExternal={item.isExternal}
+            />
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   )
 }
