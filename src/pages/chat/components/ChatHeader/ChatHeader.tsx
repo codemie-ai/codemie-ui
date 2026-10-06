@@ -34,7 +34,7 @@ import { cn } from '@/utils/utils'
 
 import ChatHeaderBrowseFilesButton from './ChatHeaderBrowseFilesButton'
 import ChatHeaderClearButton from './ChatHeaderClearButton'
-import ChatHeaderDownloadConversationButton from './ChatHeaderDownloadConversationButton'
+import ChatHeaderDownloadConversationButton from './ChatHeaderDownloadConversationButton/ChatHeaderDownloadConversationButton'
 import ChatHeaderShareButton from './ChatHeaderShareButton/ChatHeaderShareButton'
 import { useChatContext } from '../../hooks/useChatContext'
 

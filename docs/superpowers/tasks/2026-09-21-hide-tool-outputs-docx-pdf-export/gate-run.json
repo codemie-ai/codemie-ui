@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "branch": "hide-tool-outputs-docx-pdf-export",
+  "head": "4eefab7180a6a8aea30d2190a625c75945b303a1",
+  "runner": "npm",
+  "started_at": "2026-09-21T14:31:29Z",
+  "completed_at": "2026-09-21T14:40:54Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 21522,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16195,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency was added, removed, or moved on this branch (package.json and package-lock.json unchanged vs origin/main); guide's Skip if applies."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16207,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks output: 'no leaks found'."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 177692,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "572 test files / 5829 tests passed."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 83470,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "47 test files / 541 passed, 1 skipped."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (diff touches ChatHeaderDownloadConversationButton.tsx matching ui_globs \\.(tsx|jsx|css|html|vue|svelte)$) but no configured UI test script exists in package.json or the quality-gates guide; browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 525,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Pre-commit hook step not listed as its own gate in quality-gates.md. Checked 2116 files, 0 missing license headers."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 605,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skipped: 'No staged files found.' No files are currently staged in this checkout; the broader guide-defined lint/typecheck gates already cover the full source tree."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 197,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Sonar host https://sonar.core.kuberocketci.io was reachable, but no local run happened. To enable locally: export a valid SONAR_TOKEN for that server and re-run 'npm run sonar-local'. This check is still owed and only CI/a token-bearing run can settle it."
+    },
+    {
+      "id": "gitlab-mr-status-checks",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "GitLab pre-ci-guard (.gitlab-ci.yml) waits for external commit-status contexts: ci-pipeline, compliance-report",
+      "exit_code": null,
+      "notes": "Requires a live GitLab merge request pipeline and an external CI template (epm-cdme/codemie-gitlab-templates); these status checks are populated by infrastructure unreachable from this local checkout. Only opening the MR and letting the server-side pipeline run will settle this."
+    }
+  ],
+  "failures": {}
+}

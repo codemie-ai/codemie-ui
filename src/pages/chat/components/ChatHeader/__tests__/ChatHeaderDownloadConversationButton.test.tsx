@@ -14,43 +14,13 @@
 //
 
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect } from 'vitest'
 
-import ChatHeaderDownloadConversationButton from '../ChatHeaderDownloadConversationButton'
-
-const { mockToaster, mockChatsStore } = vi.hoisted(() => {
-  return {
-    mockToaster: {
-      info: vi.fn(),
-      error: vi.fn(),
-      success: vi.fn(),
-      warning: vi.fn(),
-    },
-    mockChatsStore: {
-      currentChat: {
-        id: 'chat-123',
-        name: 'Test Chat',
-      },
-      exportChat: vi.fn(),
-    },
-  }
-})
-
-vi.mock('@/utils/toaster', () => ({
-  default: mockToaster,
-}))
-
-vi.mock('@/store/chats', () => ({
-  chatsStore: mockChatsStore,
-}))
+import ChatHeaderDownloadConversationButton from '../ChatHeaderDownloadConversationButton/ChatHeaderDownloadConversationButton'
 
 describe('ChatHeaderDownloadConversationButton', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockChatsStore.exportChat.mockResolvedValue(true)
-  })
-
-  it('renders the export button', () => {
+  it('renders the export trigger button', () => {
     render(<ChatHeaderDownloadConversationButton />)
 
     const button = screen.getByLabelText('Export Conversation')
@@ -64,18 +34,16 @@ describe('ChatHeaderDownloadConversationButton', () => {
     expect(button).toBeInTheDocument()
   })
 
-  it('component renders without errors', () => {
-    const { container } = render(<ChatHeaderDownloadConversationButton />)
-    expect(container.firstChild).toBeInTheDocument()
+  it('does not render the export dialog until opened', () => {
+    render(<ChatHeaderDownloadConversationButton />)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('export button has correct accessibility attributes', () => {
+  it('opens the export dialog when clicked', async () => {
     render(<ChatHeaderDownloadConversationButton />)
+    await userEvent.click(screen.getByLabelText('Export Conversation'))
 
-    const button = screen.getByLabelText('Export Conversation')
-
-    expect(button).toHaveAttribute('aria-label', 'Export Conversation')
-    expect(button).toHaveAttribute('data-tooltip-content', 'Export Conversation')
-    expect(button).toHaveAttribute('type', 'button')
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText('Export Conversation')).toBeInTheDocument()
   })
 })

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Add DOCX/PDF export options in codemie-ui to hide tool outputs by default (with a separate 'include tool outputs' variant), plus loading and duplicate-click UI state for the export action.",
+  "generated": "2026-09-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 5, "label": "XL" },
+    "technical_risk":       { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 22,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "3-4 components across 2-3 layers with shared-utility involvement: ChatHeaderDownloadConversationButton.tsx (menu items + UI state), chats.ts store methods (exportChat, possibly exportConversationAIMessage), and the shared api.ts downloadFileStream helper reused by five unrelated download flows (dataSources, files, workflowExecutions, agentWorkspace)." },
+    { "dimension": "requirements_clarity", "reason": "Technical-analysis flags an unresolved architectural question: the core AC (default tool-output filtering, formatting preservation) is implemented server-side in the separate codemie backend, not in codemie-ui, so it is undecided whether this ticket needs a coordinated backend change this repo cannot deliver alone. Additional open design decisions: menu-item extension vs. popup pattern (WorkflowExecutionExportPopup precedent), and whether exportConversationAIMessage is in scope for consistency." },
+    { "dimension": "technical_risk", "reason": "No exact precedent for a tool-output export toggle exists (the similarly-named hideToolOutputs chat-display toggle is a structurally separate, unrelated feature, risking confusion during implementation); UI patterns needed (loading state, duplicate-click guard, spinner) do have direct precedent. Performance/stability is the ticket's explicit primary concern (failed exports for large payloads), which is the Step 5 red flag for Technical Risk." },
+    { "dimension": "file_change_estimate", "reason": "Estimated 5-7 modified files (ChatHeaderDownloadConversationButton.tsx, chats.ts, possibly ChatAiMessageActions.tsx, types/chats.ts, two existing test files) plus new/extended test coverage for menu-item clicks, loading state, and duplicate-click prevention, spanning 3+ directories (ChatHeader, ChatHeader/__tests__, store, store/__tests__, possibly ChatHistory/ChatAiMessage)." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from L to XL: 'Performance/Scalability as primary concern' — the ticket's stated motivation is export stability/performance for large tool-output payloads.",
+    "Requirements Clarity bumped from L to XL: architectural decision unmade — whether the core filtering/formatting behavior requires a coordinated backend (codemie repo) change that codemie-ui alone cannot deliver is explicitly unresolved in the technical analysis."
+  ],
+  "split_recommendation": null
+}

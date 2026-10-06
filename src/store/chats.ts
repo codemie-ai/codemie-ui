@@ -213,7 +213,7 @@ export interface ChatsStoreType {
   updateChat(id: string, data: Partial<Conversation>): Promise<any>
   updateChatWithAssistantData(assistant: any): void
   deleteChat(id: string): Promise<any>
-  exportChat(format: ChatExportFormat): any
+  exportChat(format: ChatExportFormat, includeToolOutputs?: boolean): any
   shareChat(chatId: string): Promise<string | null>
   clearChatHistory(chatId: string): Promise<void>
   deleteAllConversations(): Promise<void>
@@ -688,14 +688,20 @@ export const chatsStore = proxy<ChatsStoreType>({
     })
   },
 
-  exportChat: (format) => {
+  exportChat: (format, includeToolOutputs) => {
     const chat = chatsStore.currentChat
     if (!chat) return null
     const name = sanitizeFileName(chat.name) || 'chat_export'
+    const includesToolOutputs =
+      Boolean(includeToolOutputs) && (format === 'docx' || format === 'pdf')
+    const toolOutputsParam = includesToolOutputs ? '&include_tool_outputs=true' : ''
+    const fileName = includesToolOutputs
+      ? `${name}_with_tool_outputs.${format}`
+      : `${name}.${format}`
     return api.downloadFileStream(
-      `v1/conversations/${chat.id}/export?export_format=${format}`,
+      `v1/conversations/${chat.id}/export?export_format=${format}${toolOutputsParam}`,
       undefined,
-      `${name}.${format}`
+      fileName
     )
   },
 

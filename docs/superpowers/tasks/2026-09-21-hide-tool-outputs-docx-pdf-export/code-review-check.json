@@ -1,0 +1,45 @@
+{
+  "decision": "approve",
+  "rationale": "The fix-up derives an includesToolOutputs flag (includeToolOutputs && format is docx/pdf) and, when true, appends `_with_tool_outputs` to the filename before the extension, so a with-tool-outputs export and the default export of the same conversation/format now resolve to distinct filenames — resolving CR-001, the sole prior blocking finding. Confirmed against current source (src/store/chats.ts:466-478) and the updated test assertions (src/store/__tests__/chats.export.test.ts:88,95), including that the json/non-docx-pdf path still gets no suffix. No other blocking findings existed in the prior verdict to verify; the pre-existing currentChat-falsy gap remains deferred and out of this round's scope.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Export to DOCX/PDF without the tool-outputs variant omits include_tool_outputs", "status": "pass", "notes": "handleExport(format) with no second arg; store leaves toolOutputsParam empty when falsy" },
+    { "kind": "spec", "item": "Export to DOCX/PDF (with tool outputs) sends include_tool_outputs=true", "status": "pass", "notes": "new menu items call handleExport(format, true); URL appends &include_tool_outputs=true; covered by tests" },
+    { "kind": "spec", "item": "Export to JSON sends no include_tool_outputs and is unchanged", "status": "pass", "notes": "JSON menu item unmodified; store guards the param to docx/pdf only; verified even when true is forced" },
+    { "kind": "spec", "item": "All five menu items have distinct, accurate visible labels and aria-labels", "status": "pass", "notes": "new items pass an explicit ariaLabel overriding the label-derived fallback" },
+    { "kind": "spec", "item": "Menu order is JSON, DOCX, DOCX (with tool outputs), PDF, PDF (with tool outputs)", "status": "pass", "notes": "order matches spec; asserted in component test" },
+    { "kind": "spec", "item": "Trigger button shows loading/disabled state while an export request is in flight", "status": "pass", "notes": "isExporting set before the call, passed as Button isLoading; covered by component test" },
+    { "kind": "spec", "item": "Success toast names format and variant; failure path and loading-state clearing unaffected", "status": "pass", "notes": "toast appends a tool-outputs suffix; setIsExporting(false) runs in finally regardless of outcome" },
+    { "kind": "spec", "item": "api.downloadFileStream signature and its other call sites are unaffected", "status": "pass", "notes": "diff touches only the export button, its test, chats.export.test.ts and chats.ts" },
+    { "kind": "spec", "item": "exportConversationAIMessage and its call site are unchanged", "status": "pass", "notes": "not present in the diff" },
+    { "kind": "spec", "item": "ChatExportFormat type stays docx/pdf/pptx/json; no new type for the variant", "status": "pass", "notes": "variant carried via a new optional includeToolOutputs param, not a new type" },
+    { "kind": "spec", "item": "No new feature flag or environment variable is introduced", "status": "pass", "notes": "no references to import.meta.env or window._env_ in the diff" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "Both commit subjects match the documented EPMCDME-XXXX: Capital sentence format, no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality guide exists in the repo and no code_quality ArtifactRef was passed; absent standard" },
+    { "kind": "security", "status": "pass", "notes": "No HTML sinks, untrusted-input navigation, secrets or config touched; export URL built from a closed format union, not arbitrary input" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chats.ts",
+      "line": 469,
+      "title": "Export filename ignores tool-outputs variant",
+      "problem": "exportChat builds the download filename as `${name}.${format}` regardless of includeToolOutputs, so a with-tool-outputs export and a default export of the same conversation and format resolve to the identical filename.",
+      "impact": "A user who downloads both variants in one session gets indistinguishable files on disk (browser auto-rename or overwrite), defeating the point of offering the two variants this change introduces.",
+      "recommendation": "Append a suffix (e.g. `_with_tool_outputs`) to `name` when includeToolOutputs is true, before building the filename passed to api.downloadFileStream."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "chats.ts now computes includesToolOutputs = Boolean(includeToolOutputs) && format is docx/pdf, and builds fileName as `${name}_with_tool_outputs.${format}` when true, else `${name}.${format}`. Confirmed at chats.ts:470-472 and in updated test assertions asserting 'Notes_with_tool_outputs.docx'/'.pdf' for the true case and unchanged 'Notes.json' for the json/true case."
+    }
+  ]
+}

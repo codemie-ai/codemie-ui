@@ -70,6 +70,49 @@ describe('chatsStore export methods', () => {
         'chat_export.pdf'
       )
     })
+
+    it('appends include_tool_outputs=true for docx/pdf when requested', async () => {
+      const spy = vi.spyOn(api, 'downloadFileStream').mockResolvedValue(true)
+      chatsStore.currentChat = {
+        id: 'c1',
+        name: 'Notes',
+        assistantIds: [],
+        assistantData: [],
+        history: [],
+      }
+
+      await chatsStore.exportChat('docx', true)
+      expect(spy).toHaveBeenCalledWith(
+        'v1/conversations/c1/export?export_format=docx&include_tool_outputs=true',
+        undefined,
+        'Notes_with_tool_outputs.docx'
+      )
+
+      await chatsStore.exportChat('pdf', true)
+      expect(spy).toHaveBeenCalledWith(
+        'v1/conversations/c1/export?export_format=pdf&include_tool_outputs=true',
+        undefined,
+        'Notes_with_tool_outputs.pdf'
+      )
+    })
+
+    it('never appends include_tool_outputs for json, even if requested', async () => {
+      const spy = vi.spyOn(api, 'downloadFileStream').mockResolvedValue(true)
+      chatsStore.currentChat = {
+        id: 'c2',
+        name: 'Notes',
+        assistantIds: [],
+        assistantData: [],
+        history: [],
+      }
+
+      await chatsStore.exportChat('json', true)
+      expect(spy).toHaveBeenCalledWith(
+        'v1/conversations/c2/export?export_format=json',
+        undefined,
+        'Notes.json'
+      )
+    })
   })
 
   describe('exportConversationAIMessage', () => {

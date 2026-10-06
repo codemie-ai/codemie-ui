@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-09-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Two components changed across two layers — the ChatHeaderDownloadConversationButton UI menu (two new menu items for DOCX/PDF with tool outputs) and the chatsStore.exportChat service method (new includeToolOutputs param, query-string and filename-suffix logic). The existing export flow already covered json/docx/pdf, so this is an extension of an established pattern, not a new abstraction." },
+    { "dimension": "file_change_estimate", "reason": "diffstat reports 4 files changed (171 insertions, 16 deletions): ChatHeaderDownloadConversationButton.tsx and chats.ts modified, plus one new store test file (chats.export.test.ts) and one extended component test file, all within two top-level directories (src/pages/chat, src/store)." },
+    { "dimension": "affected_layers", "reason": "Touches exactly two layers — UI (menu/button component) and Service/Store (chatsStore.exportChat building the request and filename). No API route, DB, infrastructure, or external-service layer is added; the backend endpoint already accepted export_format and only gains a new query param." },
+    { "dimension": "technical_risk", "reason": "Well-established pattern: exportChat already handled json/docx/pdf downloads via api.downloadFileStream and sanitizeFileName; this change only adds a boolean flag gated to docx/pdf, with new unit tests covering both the sanitized-filename and include_tool_outputs branches (chats.export.test.ts), so no security- or defensive-testing gap was found." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
