@@ -18,7 +18,7 @@ import { useSnapshot } from 'valtio'
 
 import { A2uiSurface } from '@/a2ui/config'
 import { findCreatedSurfaceIds, findModalTriggerIds } from '@/a2ui/envelopes'
-import { A2uiErrorBoundary , A2uiFallback } from '@/a2ui/fallback'
+import { A2uiErrorBoundary, A2uiFallback } from '@/a2ui/fallback'
 import {
   A2uiModalTriggerProvider,
   A2uiSubmittedActionProvider,

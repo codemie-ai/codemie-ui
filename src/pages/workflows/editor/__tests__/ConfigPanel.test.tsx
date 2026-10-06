@@ -26,8 +26,11 @@ import { TAB_DATA } from '../constants'
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 // Mock child components to keep test isolated and fast
+const capturedGeneralTabProps = vi.hoisted(() => ({ current: null as any }))
+
 vi.mock('../configPanels/GeneralConfigTab', () => ({
-  default: React.forwardRef((_props: any, ref: any) => {
+  default: React.forwardRef((props: any, ref: any) => {
+    capturedGeneralTabProps.current = props
     React.useImperativeHandle(ref, () => ({
       isDirty: () => mockGeneralConfigDirty,
       save: mockGeneralConfigSave,
@@ -270,6 +273,18 @@ describe('ConfigPanel — useImperativeHandle (unstashed changes)', () => {
       shared: false,
       guardrail_assignments: [],
     }
+  })
+
+  describe('GeneralConfigTab defaultValues', () => {
+    it('passes workflow categories so saving without edits keeps them and stays clean', () => {
+      const ref = createRef<ConfigPanelRef>()
+      renderConfigPanel(ref, {
+        workflow: { ...defaultProps.workflow, categories: ['cat-a', 'cat-b'] } as any,
+      })
+
+      expect(capturedGeneralTabProps.current.defaultValues.categories).toEqual(['cat-a', 'cat-b'])
+      expect(ref.current?.isDirty()).toBe(false)
+    })
   })
 
   describe('isDirty', () => {

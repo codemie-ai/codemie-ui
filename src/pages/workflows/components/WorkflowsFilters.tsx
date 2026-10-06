@@ -133,6 +133,9 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       assistantsStore.getAssistantCategories()
       loadCreatedByOptions(true)
     } else {
+      if (scope === WORKFLOW_LIST_SCOPE.MY || scope === WORKFLOW_LIST_SCOPE.ALL) {
+        assistantsStore.getAssistantCategories()
+      }
       loadProjectOptions('')
       if (scope === WORKFLOW_LIST_SCOPE.ALL || scope === WORKFLOW_LIST_SCOPE.FAVORITES) {
         loadCreatedByOptions()
@@ -232,7 +235,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
         if (scope === 'marketplace') {
           return definition.name === 'categories' || definition.name === CREATED_BY
         }
-        if (definition.name === 'categories') {
+        if (definition.name === 'categories' && scope === WORKFLOW_LIST_SCOPE.FAVORITES) {
           return false
         }
         if (scope === 'my' && definition.name === CREATED_BY) {

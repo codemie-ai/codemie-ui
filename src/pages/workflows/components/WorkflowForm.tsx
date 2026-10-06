@@ -108,6 +108,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
       shared: workflow?.shared ?? false,
       project: workflow?.project || null,
       guardrail_assignments: workflow.guardrail_assignments ?? [],
+      categories: workflow?.categories ?? [],
     })
 
     useEffect(() => {
@@ -138,6 +139,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
             shared: formValues?.shared ?? false,
             project: formValues?.project || null,
             guardrail_assignments: formValues?.guardrail_assignments ?? [],
+            categories: formValues?.categories ?? [],
           },
         }
       }
@@ -155,6 +157,7 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
             shared: false,
             project: workflowFields.project,
             guardrail_assignments: [],
+            categories: [],
           },
         }
       }

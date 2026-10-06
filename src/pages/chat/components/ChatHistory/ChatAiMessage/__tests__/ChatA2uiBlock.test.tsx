@@ -119,7 +119,12 @@ const textSurfaceEnvelopes = (surfaceId = 's1'): A2uiEnvelope[] => [
       components: [
         { id: 'root', component: 'Column', children: ['greeting', 'approve'] },
         { id: 'greeting', component: 'Text', text: 'Hello from A2UI' },
-        { id: 'approve', component: 'Button', child: 'approveLabel', action: { event: { name: 'approve' } } },
+        {
+          id: 'approve',
+          component: 'Button',
+          child: 'approveLabel',
+          action: { event: { name: 'approve' } },
+        },
         { id: 'approveLabel', component: 'Text', text: 'Approve' },
       ],
     },
@@ -141,12 +146,22 @@ const modalSurfaceEnvelopes = (surfaceId = 's1'): A2uiEnvelope[] => [
         // layout holds the Modal, not the button. The catalog still forces that Button to
         // declare an action, which is what used to submit the surface on click.
         { id: 'root', component: 'Column', children: ['dialog'] },
-        { id: 'openModal', component: 'Button', child: 'openLabel', action: { event: { name: 'openModal' } } },
+        {
+          id: 'openModal',
+          component: 'Button',
+          child: 'openLabel',
+          action: { event: { name: 'openModal' } },
+        },
         { id: 'openLabel', component: 'Text', text: 'Open dialog' },
         { id: 'dialog', component: 'Modal', trigger: 'openModal', content: 'dialogBody' },
         { id: 'dialogBody', component: 'Column', children: ['dialogText', 'confirm'] },
         { id: 'dialogText', component: 'Text', text: 'Inside the dialog' },
-        { id: 'confirm', component: 'Button', child: 'confirmLabel', action: { event: { name: 'confirm' } } },
+        {
+          id: 'confirm',
+          component: 'Button',
+          child: 'confirmLabel',
+          action: { event: { name: 'confirm' } },
+        },
         { id: 'confirmLabel', component: 'Text', text: 'Confirm' },
       ],
     },
@@ -450,7 +465,10 @@ describe('ChatA2uiBlock', () => {
   it('falls back for a created surface whose components never arrived', () => {
     const message = createMessage({
       a2uiEnvelopes: [
-        { version: A2UI_PROTOCOL_VERSION, createSurface: { surfaceId: 's1', catalogId: CATALOG_ID } },
+        {
+          version: A2UI_PROTOCOL_VERSION,
+          createSurface: { surfaceId: 's1', catalogId: CATALOG_ID },
+        },
       ],
     })
     mockChatsStore.currentChat.history = [[message]]
@@ -463,7 +481,10 @@ describe('ChatA2uiBlock', () => {
   it('falls back for a surface whose root component is not named "root"', () => {
     const message = createMessage({
       a2uiEnvelopes: [
-        { version: A2UI_PROTOCOL_VERSION, createSurface: { surfaceId: 's1', catalogId: CATALOG_ID } },
+        {
+          version: A2UI_PROTOCOL_VERSION,
+          createSurface: { surfaceId: 's1', catalogId: CATALOG_ID },
+        },
         {
           version: A2UI_PROTOCOL_VERSION,
           updateComponents: {
@@ -484,7 +505,10 @@ describe('ChatA2uiBlock', () => {
     const message = createMessage({
       inProgress: true,
       a2uiEnvelopes: [
-        { version: A2UI_PROTOCOL_VERSION, createSurface: { surfaceId: 's1', catalogId: CATALOG_ID } },
+        {
+          version: A2UI_PROTOCOL_VERSION,
+          createSurface: { surfaceId: 's1', catalogId: CATALOG_ID },
+        },
       ],
     })
     mockChatsStore.currentChat.history = [[message]]
@@ -640,7 +664,14 @@ describe('ChatA2uiBlock', () => {
     await user.click(screen.getByRole('button', { name: 'Confirm' }))
 
     expect(mockSubmitA2uiAction).toHaveBeenCalledTimes(1)
-    expect(mockSubmitA2uiAction).toHaveBeenCalledWith('s1', 'confirm', 'confirm', {}, 'confirm', undefined)
+    expect(mockSubmitA2uiAction).toHaveBeenCalledWith(
+      's1',
+      'confirm',
+      'confirm',
+      {},
+      'confirm',
+      undefined
+    )
   })
 
   it('renders nothing without envelopes', () => {

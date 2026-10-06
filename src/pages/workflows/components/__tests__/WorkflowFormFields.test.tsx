@@ -83,6 +83,10 @@ vi.mock('@/store/workflows', () => ({
   },
 }))
 
+vi.mock('@/pages/assistants/components/AssistantForm/components/MarketplaceCategories', () => ({
+  default: () => <div data-testid="marketplace-categories" />,
+}))
+
 const YAML_WITH_USER_INTEGRATION = `
 assistants:
   - name: my_assistant
@@ -192,6 +196,26 @@ describe('WorkflowFormFields — Share with Project disable behavior', () => {
         expect(switchInput.checked).toBe(false)
         expect(switchInput).toBeDisabled()
       })
+    })
+  })
+})
+
+describe('WorkflowFormFields — categories field', () => {
+  beforeEach(() => {
+    mockHasUserIntegrationInYamlConfig.mockReturnValue(false)
+  })
+
+  it('renders MarketplaceCategories field', () => {
+    renderWorkflowFormFields({ workflow: {} })
+    expect(screen.getByTestId('marketplace-categories')).toBeInTheDocument()
+  })
+
+  it('getValues includes categories from workflow prop', async () => {
+    const ref = createRef<WorkflowFormFieldsRef>()
+    render(<WorkflowFormFields ref={ref} workflow={{ categories: ['cat-1'] }} />)
+    await waitFor(() => {
+      const values = ref.current?.getValues()
+      expect(values?.categories).toEqual(['cat-1'])
     })
   })
 })

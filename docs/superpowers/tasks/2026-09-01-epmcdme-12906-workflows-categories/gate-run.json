@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-12906_workflows-categories-field-filter",
+  "head": "793e318e2f14a9d5494b7ffb4965d7cebac31d9c",
+  "runner": "npm",
+  "started_at": "2026-09-01T19:44:00Z",
+  "completed_at": "2026-09-01T20:19:00Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 3000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No package.json or lockfile changes in branch diff — guide skip condition met."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25000,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 514740,
+      "command": "npm run test:unit",
+      "exit_code": 1,
+      "notes": "8 test files failing (21 tests); ALL are pre-existing failures not attributable to this branch. Confirmed: none of the 11 branch-changed files appear in the failing test set; git log shows the known failing file (UserProjectSpendingTable.test.tsx) was last touched by EPMCDME-14071, not this branch. All 4 branch-specific test files pass (22/22 tests). Root cause: spending-table currency formatting assertion mismatch introduced by EPMCDME-14071."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 634020,
+      "command": "npm run test:integration",
+      "exit_code": 1,
+      "notes": "1 test file failing (1 test): UsersManagementSpending.integration.test.tsx. Pre-existing failure — not in branch diff; same currency-formatting assertion mismatch as unit failures (EPMCDME-14071). 36/37 integration test files pass (488/490 tests). All 6 workflow integration tests pass."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 30000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 200,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN in .env.local to run the full SonarQube analysis locally."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (tsx files in branch diff) but no configured UI test script (test:ui absent from package.json scripts); browser verification is a separate caller decision."
+    }
+  ],
+  "failures": {
+    "unit": "UserProjectSpendingTable.test.tsx:70 — getByText('$120.50 / $500.00') not found in DOM. Rendered table shows '$120,50' locale-formatted amounts rather than '$120.50'. Same failure pattern across 8 test files / 21 assertions. Summary: Test Files 8 failed | 442 passed (450) · Tests 21 failed | 4727 passed (4748) · Duration 514.74s. PRE-EXISTING: last change to UserProjectSpendingTable.test.tsx was commit for EPMCDME-14071, not this branch.",
+    "integration": "UsersManagementSpending.integration.test.tsx:136 — getByText('$120.50 / $500.00') not found in DOM. Same locale-formatting root cause as unit failures. Summary: Test Files 1 failed | 36 passed (37) · Tests 1 failed | 488 passed | 1 skipped (490) · Duration 634.02s. PRE-EXISTING: file not in branch diff; not touched by any commit in EPMCDME-12906_workflows-categories-field-filter."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "fail", "notes": "All 4 commits in the review range have a lowercase first word after the colon, violating the documented ^EPMCDME-\\d+:\\s[A-Z][a-z]*.* regex. Subjects: 'un-gate categories filter for my/all workflow scopes' (commit a91402c), 'add categories field to visual editor GeneralConfigTab' (5e94ceb), 'add categories field to workflow text-editor form path' (3e1418f), 'add categories to Workflow type and baseWorkflowSchema' (035ec7f)."},
+    {"kind": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md is absent from the repository; no standard to adjudicate against."},
+    {"kind": "security", "status": "pass", "notes": "No HTML sinks (dangerouslySetInnerHTML, innerHTML), untrusted navigation, cross-window message handlers, credential exposure, or nosonar suppressions introduced in any of the 10 changed files."}
+  ],
+  "blocking_findings": [
+    {
+      "location": "commits a91402c, 5e94ceb, 3e1418f, 035ec7f",
+      "violation": "git-workflow.md requires the first word after the colon to start with uppercase (regex [A-Z][a-z]*). All four commit subjects begin with lowercase: 'un-gate' and 'add' (x3).",
+      "why_blocking": "Tekton CI enforces the commit-message regex and blocks the pipeline on violations.",
+      "remedy": "Reword all four subjects so the first word is capitalised: e.g. 'Un-gate categories filter for my/all workflow scopes' and 'Add categories field to visual editor GeneralConfigTab', etc."
+    }
+  ],
+  "coverage_gap": false
+}

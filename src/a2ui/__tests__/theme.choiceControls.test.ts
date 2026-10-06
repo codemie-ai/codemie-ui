@@ -51,9 +51,7 @@ describe('theme.css choice controls', () => {
   it('gives the resting control a visible border through the catalog property', () => {
     const body = ruleBody(css, '.a2ui-scope')
 
-    expect(declaration(body as string, '--a2ui-checkbox-border')).toContain(
-      'colors-border-primary'
-    )
+    expect(declaration(body as string, '--a2ui-checkbox-border')).toContain('colors-border-primary')
   })
 
   it('renders the radio as a circle', () => {

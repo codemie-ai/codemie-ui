@@ -30,6 +30,7 @@ import Spinner from '@/components/Spinner'
 import ZoomableImage from '@/components/ZoomableImage'
 import { ButtonType } from '@/constants/index'
 import { YAML_PLACEHOLDER } from '@/constants/workflows'
+import MarketplaceCategories from '@/pages/assistants/components/AssistantForm/components/MarketplaceCategories'
 import { settingsStore } from '@/store/settings'
 import { workflowsStore } from '@/store/workflows'
 import { GuardrailEntity } from '@/types/entity/guardrail'
@@ -92,6 +93,7 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
         shared: workflow?.shared ?? false,
         project: workflow?.project || '',
         guardrail_assignments: workflow?.guardrail_assignments ?? [],
+        categories: workflow?.categories ?? [],
       },
     })
 
@@ -277,6 +279,20 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
                     label="Icon URL"
                     error={fieldState.error?.message}
                     {...field}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Controller
+                name="categories"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <MarketplaceCategories
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
                   />
                 )}
               />

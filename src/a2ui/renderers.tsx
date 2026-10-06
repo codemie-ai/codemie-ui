@@ -68,7 +68,6 @@ import {
 import { A2uiMediaPlaceholder } from './fallback'
 import { useA2uiSubmittedAction, useIsModalTrigger } from './surfaceContext'
 
-
 /**
  * Marks a subtree as already styled by the design system.
  *
@@ -128,7 +127,8 @@ const MEDIA_PRIVACY_PROPS = {
  * happily turn an object into "[object Object]" and look up a style under that. Only a
  * string can name a variant; anything else falls back to the default.
  */
-const asName = (value: unknown, fallback: string): string => (typeof value === 'string' ? value : fallback)
+const asName = (value: unknown, fallback: string): string =>
+  typeof value === 'string' ? value : fallback
 
 export const ImageRenderer: React.FC<MediaRenderProps> = ({ url, rest }) => {
   // The URL is agent-authored and often simply wrong (the first one seen in practice was
@@ -145,7 +145,8 @@ export const ImageRenderer: React.FC<MediaRenderProps> = ({ url, rest }) => {
       {...MEDIA_PRIVACY_PROPS}
       className={cn(
         'rounded-lg',
-        IMAGE_VARIANT_STYLES[asName(rest.variant, 'mediumFeature')] ?? IMAGE_VARIANT_STYLES.mediumFeature,
+        IMAGE_VARIANT_STYLES[asName(rest.variant, 'mediumFeature')] ??
+          IMAGE_VARIANT_STYLES.mediumFeature,
         IMAGE_FIT_STYLES[asName(rest.fit, 'fill')] ?? IMAGE_FIT_STYLES.fill
       )}
     />
@@ -318,7 +319,10 @@ export const ButtonRenderer: React.FC<A2uiRenderProps> = ({ props, buildChild, c
       // rather than the action for a data-model answer.
       // The design-system button keeps its label on one line; a generated label can be a
       // whole sentence, so here it wraps rather than spilling out of the chat column.
-      className={cn('h-auto max-w-full whitespace-normal break-all', isSubmittedAction && 'a2ui-answered')}
+      className={cn(
+        'h-auto max-w-full whitespace-normal break-all',
+        isSubmittedAction && 'a2ui-answered'
+      )}
       aria-pressed={isSubmittedAction || undefined}
       {...ariaAttributes(props)}
       {...(isSubmittedAction ? { 'data-testid': `a2ui-selected-${submittedAction!.name}` } : {})}

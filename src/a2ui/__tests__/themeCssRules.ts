@@ -27,7 +27,13 @@ import { resolve } from 'path'
 
 const THEME_CSS_PATH = resolve(__dirname, '../theme.css')
 
-export const readThemeCss = (): string => readFileSync(THEME_CSS_PATH, 'utf-8')
+/**
+ * Prettier's `*.css` override enforces double-quoted string literals, re-quoting theme.css on
+ * every commit that runs the pre-commit hook. Normalizing to single quotes here — the one place
+ * every assertion in this suite routes through — keeps the fixtures below stable regardless of
+ * which quote style the file is currently formatted with.
+ */
+export const readThemeCss = (): string => readFileSync(THEME_CSS_PATH, 'utf-8').replace(/"/g, "'")
 
 /** Strips comments so a declaration quoted in prose is never mistaken for a live one. */
 const stripComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, '')
@@ -40,6 +46,7 @@ const stripComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, 
  */
 export const ruleBody = (css: string, selectorFragment: string): string | null => {
   const source = stripComments(css)
+  const wantedFragment = selectorFragment.replace(/\s+/g, ' ').trim()
   let cursor = 0
 
   while (cursor < source.length) {
@@ -49,8 +56,8 @@ export const ruleBody = (css: string, selectorFragment: string): string | null =
     const close = source.indexOf('}', open)
     if (close === -1) return null
 
-    const selector = source.slice(cursor, open).trim()
-    if (selector.includes(selectorFragment)) return source.slice(open + 1, close)
+    const selector = source.slice(cursor, open).replace(/\s+/g, ' ').trim()
+    if (selector.includes(wantedFragment)) return source.slice(open + 1, close)
 
     cursor = close + 1
   }

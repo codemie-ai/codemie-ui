@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-09-02T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 11,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "11 files across 6 directories — 10 modified (WorkflowForm, WorkflowFormFields, GeneralConfigTab, WorkflowsFilters, workflowSchema, workflow.ts, MarketplaceCategories, 3 test files) and 1 new (workflowSchema.test.ts); count inflated by 4 test files mirroring the 4 implementation touchpoints, not by logic breadth"
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "4 components changed (WorkflowFormFields, WorkflowForm, GeneralConfigTab, WorkflowsFilters) but all apply the same additive pattern — wire existing MarketplaceCategories component into categories Controller + add categories filter; single feature area (workflows) with one cross-area component reuse (assistants/MarketplaceCategories)"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

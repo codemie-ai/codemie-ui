@@ -15,7 +15,7 @@
 
 /** Formats a number as USD with thousands separators and exactly two decimals. */
 export const formatCurrency = (value: number): string =>
-  `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 /**
  * Formats a possibly-absent spend value.

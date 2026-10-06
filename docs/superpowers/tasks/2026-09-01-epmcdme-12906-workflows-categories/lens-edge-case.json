@@ -1,0 +1,26 @@
+[
+  {
+    "location": "src/pages/workflows/components/WorkflowFormFields.tsx:294-300",
+    "trigger_condition": "Yup max(3) fires via programmatic setValue bypassing UI guard",
+    "guard_snippet": "render={({ field, fieldState }) => <MarketplaceCategories ... />} — but MarketplaceCategoriesProps needs an `error?: string` prop too",
+    "potential_consequence": "Form blocks submission with no visible field-level error near categories"
+  },
+  {
+    "location": "src/pages/workflows/editor/configPanels/GeneralConfigTab.tsx:221-229",
+    "trigger_condition": "Yup max(3) fires via programmatic setValue bypassing UI guard",
+    "guard_snippet": "render={({ field, fieldState }) => <MarketplaceCategories ... />} — same missing error prop as WorkflowFormFields",
+    "potential_consequence": "Form blocks submission with no visible field-level error near categories"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantForm/components/MarketplaceCategories.tsx:111",
+    "trigger_condition": "Saved workflow has category IDs deleted server-side since last edit",
+    "guard_snippet": "const safeValue = (value ?? []).filter(id => categoryOptions.some(o => o.value === id))",
+    "potential_consequence": "Orphaned IDs silently re-submitted on save; multiselect shows blank selected items"
+  },
+  {
+    "location": "src/pages/workflows/components/workflowSchema.ts:265-269",
+    "trigger_condition": "categories field receives null (API regression or direct setValue call)",
+    "guard_snippet": "Yup.array().of(...).nullable().transform((v) => v ?? []).max(3).default([])",
+    "potential_consequence": "Yup type error instead of empty-array coercion; form submit fails opaquely"
+  }
+]

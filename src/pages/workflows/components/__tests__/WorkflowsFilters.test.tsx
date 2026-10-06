@@ -14,14 +14,18 @@
 //
 
 import { act, render } from '@testing-library/react'
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+
+import { assistantsStore } from '@/store'
 
 import WorkflowsFilters from '../WorkflowsFilters'
 
 let capturedOnProjectFilter: (value: string) => void = () => {}
+let capturedFilterDefs: any[] = []
 
 vi.mock('@/components/Filters', () => ({
   default: ({ filterDefinitions }: { filterDefinitions: any[] }) => {
+    capturedFilterDefs = filterDefinitions ?? []
     const projectDef = filterDefinitions?.find((d: any) => d.name === 'project')
     if (projectDef?.config?.onFilter) capturedOnProjectFilter = projectDef.config.onFilter
     return null
@@ -77,6 +81,48 @@ vi.mock('@/utils/filters', () => ({
   checkEmptyFilters: () => true,
   FILTER_ENTITY: { WORKFLOWS: 'workflows' },
 }))
+
+describe('WorkflowsFilters — categories filter visibility', () => {
+  beforeEach(() => {
+    capturedFilterDefs = []
+    vi.clearAllMocks()
+  })
+
+  it('shows categories filter for "my" scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="my" />)
+    })
+    expect(capturedFilterDefs.some((d: any) => d.name === 'categories')).toBe(true)
+  })
+
+  it('shows categories filter for "all" scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="all" />)
+    })
+    expect(capturedFilterDefs.some((d: any) => d.name === 'categories')).toBe(true)
+  })
+
+  it('hides categories filter for "favorites" scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="favorites" />)
+    })
+    expect(capturedFilterDefs.some((d: any) => d.name === 'categories')).toBe(false)
+  })
+
+  it('calls getAssistantCategories for "my" scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="my" />)
+    })
+    expect(assistantsStore.getAssistantCategories).toHaveBeenCalled()
+  })
+
+  it('calls getAssistantCategories for "all" scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="all" />)
+    })
+    expect(assistantsStore.getAssistantCategories).toHaveBeenCalled()
+  })
+})
 
 describe('WorkflowsFilters — project search debounce', () => {
   afterEach(() => {

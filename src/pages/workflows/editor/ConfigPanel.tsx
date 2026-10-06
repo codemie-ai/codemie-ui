@@ -347,6 +347,7 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
               icon_url: workflow.icon_url ?? '',
               shared: workflow.shared ?? false,
               guardrail_assignments: workflow.guardrail_assignments ?? [],
+              categories: workflow.categories ?? [],
             }
           : undefined,
       [workflow]

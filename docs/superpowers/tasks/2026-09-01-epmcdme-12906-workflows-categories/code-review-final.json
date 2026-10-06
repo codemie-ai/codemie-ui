@@ -1,0 +1,158 @@
+{
+  "decision": "approve",
+  "rationale": "Three patch findings resolved via check round (code-review-check.json): CR-001 error prop wired in MarketplaceCategories; CR-002 .nullable().transform() added to schema; CR-003 all commits rebased to uppercase-first subjects. 1 deferred (pre-existing orphaned category IDs in MarketplaceCategories). Approved at high confidence.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "WorkflowFormValues / baseWorkflowSchema: add categories?: string[] with .default([])",
+      "status": "pass",
+      "notes": "workflowSchema.ts adds Yup array field (.max(3), .optional(), .default([])); workflowSchema.test.ts covers defaults and max-3 enforcement"
+    },
+    {
+      "kind": "spec",
+      "item": "Workflow type: add explicit categories?: string[]",
+      "status": "pass",
+      "notes": "src/types/entity/workflow.ts adds categories?: string[]"
+    },
+    {
+      "kind": "spec",
+      "item": "WorkflowFormFields.tsx: Controller-wrapped MarketplaceCategories after icon_url",
+      "status": "pass",
+      "notes": "Lines 293-301 confirm placement; defaultValues includes categories: workflow?.categories ?? []"
+    },
+    {
+      "kind": "spec",
+      "item": "WorkflowForm.tsx: categories in initial state and getFormValues snapshot",
+      "status": "pass",
+      "notes": "categories added to reset, getFormValues, and new-workflow branch"
+    },
+    {
+      "kind": "spec",
+      "item": "GeneralConfigTab: render MarketplaceCategories after icon_url",
+      "status": "pass",
+      "notes": "Lines 221-229 confirm placement; ConfigPanel.getWorkflowFields() reads categories via generalConfigTabRef.current.getValues()"
+    },
+    {
+      "kind": "spec",
+      "item": "WorkflowsFilters.tsx: remove my/all guard for categories filter",
+      "status": "pass",
+      "notes": "Guard narrowed to WORKFLOW_LIST_SCOPE.FAVORITES only; tests assert both scopes show categories"
+    },
+    {
+      "kind": "spec",
+      "item": "WorkflowsFilters.tsx: call getAssistantCategories() for my and all scopes",
+      "status": "pass",
+      "notes": "getAssistantCategories() called for MY and ALL scopes; WorkflowsFilters.test.tsx asserts both calls"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC1: Categories multi-select field in create/edit form, immediately below Icon URL",
+      "status": "pass",
+      "notes": "Confirmed in WorkflowFormFields.tsx line 293 and GeneralConfigTab.tsx line 221"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: Field is optional, enforces max 3 categories",
+      "status": "pass",
+      "notes": "Yup .optional().default([]) permits zero; .max(3) rejects 4+; workflowSchema.test.ts verifies both bounds"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: On edit, field pre-populated with saved categories",
+      "status": "pass",
+      "notes": "All three entry points initialise with workflow?.categories ?? []"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: Submit includes categories in payload (empty array when none selected)",
+      "status": "pass",
+      "notes": "getFormValues returns categories: formValues?.categories ?? []; new-workflow branch sets categories: []"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC5: My Workflows sidebar shows Categories filter with same options as Marketplace",
+      "status": "pass",
+      "notes": "Guard narrowed to favorites-only; getAssistantCategories() called for MY scope to populate options"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC6: All Workflows sidebar shows same Categories filter",
+      "status": "pass",
+      "notes": "Same guard change and getAssistantCategories() call covers ALL scope; test asserts both"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC7: Selecting category values narrows workflow list to matching workflows",
+      "status": "pending-stage-7",
+      "notes": "Frontend wiring confirmed; actual list narrowing requires runtime/E2E verification"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC8: Clearing filter restores unfiltered list",
+      "status": "pending-stage-7",
+      "notes": "Relies on same serialisation path as AC7 and existing clearWorkflowsFilters(); runtime verification needed"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC9: Visual editor Config Panel persists categories on save identically to text-editor path",
+      "status": "pass",
+      "notes": "GeneralConfigTab renders field; ConfigPanel.getWorkflowFields() reads categories via getValues(); GeneralConfigTab.test.tsx asserts getValues returns categories"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "fail",
+      "notes": "All 4 commits violate ^EPMCDME-\\d+:\\s[A-Z][a-z]* regex: 'un-gate...' (a91402c), 'add categories field to visual editor...' (5e94ceb), 'add categories field to workflow...' (3e1418f), 'add categories to Workflow type...' (035ec7f)."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md is absent from the repository; no standard to adjudicate against."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No HTML sinks, untrusted navigation, cross-window message handlers, credential exposure, or nosonar suppressions introduced in any changed file."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowFormFields.tsx",
+      "line": 298,
+      "title": "Yup validation error not surfaced in categories field",
+      "problem": "Both Controller usages for categories (WorkflowFormFields.tsx:298 and GeneralConfigTab.tsx:226) destructure only { field }, discarding fieldState. MarketplaceCategories accepts no external error prop. The component enforces max-3 via its internal handleChange UI guard, but if categories are set programmatically via setValue with more than 3 values, Yup fires the .max(3) error and blocks submission with no visible feedback near the field.",
+      "impact": "A user (or AI-assist fill) that triggers the Yup path rather than the UI guard sees the form silently refuse to submit with no indication of which field has an error or why.",
+      "recommendation": "Add error?: string to MarketplaceCategoriesProps, render it below the MultiSelect (same pattern as the Input component's error prop already used on icon_url). In both Controller render functions, destructure { field, fieldState } and pass fieldState.error?.message as the error prop."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/workflowSchema.ts",
+      "line": 37,
+      "title": "null API value causes Yup type error in categories",
+      "problem": "The categories field is declared as Yup.array().of(...).max(3).optional().default([]). Yup's .optional() only allows undefined; it does not coerce null. If the API returns null for categories (regression or older server), Yup throws a type validation error at parse time instead of coercing to an empty array.",
+      "impact": "An opaque Yup type error blocks form submission or form initialisation when the API payload carries null for categories, with no user-visible indication of the cause.",
+      "recommendation": "Add .nullable().transform((v) => v ?? []) before .max(3): Yup.array().of(Yup.string().required()).nullable().transform((v) => v ?? []).max(3, 'Maximum 3 categories').optional().default([])."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "unknown",
+      "title": "All 4 commit subjects violate required uppercase format, blocking CI",
+      "problem": "Commits a91402c ('un-gate categories filter for my/all workflow scopes'), 5e94ceb ('add categories field to visual editor GeneralConfigTab'), 3e1418f ('add categories field to workflow text-editor form path'), and 035ec7f ('add categories to Workflow type and baseWorkflowSchema') all begin with a lowercase word after the colon, violating the documented ^EPMCDME-\\d+:\\s[A-Z][a-z]* regex.",
+      "impact": "Tekton CI enforces the commit-message regex and blocks the pipeline on non-conforming commits, preventing the branch from merging.",
+      "recommendation": "Reword all four commit subjects so the first word is capitalised: e.g. 'Un-gate categories filter for my/all workflow scopes', 'Add categories field to visual editor GeneralConfigTab', 'Add categories field to workflow text-editor form path', 'Add categories to Workflow type and baseWorkflowSchema'. Use git rebase -i to reword in place."
+    }
+  ]
+}

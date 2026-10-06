@@ -34,6 +34,13 @@ export const baseWorkflowSchema = Yup.object()
       .nullable()
       .transform((value) => (value === '' ? null : value)),
     shared: Yup.boolean(),
+    categories: Yup.array()
+      .of(Yup.string().required())
+      .nullable()
+      .transform((v) => v ?? [])
+      .max(3, 'Maximum 3 categories')
+      .optional()
+      .default([]),
   })
   .shape(guardrailAssignmentsSchema)
 
@@ -51,6 +58,7 @@ export interface WorkflowFormValues extends GuardrailAssignmentsSchema {
   start_hint?: string | null
   icon_url?: string | null
   shared?: boolean
+  categories?: string[]
 }
 
 export interface WorkflowFormValuesWithYaml extends WorkflowFormValues {

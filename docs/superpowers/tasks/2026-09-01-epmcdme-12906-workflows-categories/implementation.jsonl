@@ -1,0 +1,4 @@
+{"task_id":"1","status":"done","commit":"035ec7f62","test_command":"npx vitest run --project unit src/pages/workflows/components/__tests__/workflowSchema.test.ts"}
+{"task_id":"2","status":"done","commit":"3e1418f16","test_command":"npx vitest run --project unit src/pages/workflows/components/__tests__/WorkflowFormFields.test.tsx"}
+{"task_id":"3","status":"done","commit":"5e94ceb07","test_command":"npx vitest run --project unit src/pages/workflows/editor/configPanels/__tests__/GeneralConfigTab.test.tsx"}
+{"task_id":"4","status":"done","commit":"a91402c4a","test_command":"npx vitest run --project unit src/pages/workflows/components/__tests__/WorkflowsFilters.test.tsx"}

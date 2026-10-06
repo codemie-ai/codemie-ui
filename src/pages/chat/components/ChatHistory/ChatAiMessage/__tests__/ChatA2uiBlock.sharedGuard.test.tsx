@@ -70,10 +70,7 @@ vi.mock('@/a2ui/useA2uiSurface', async (importOriginal) => {
     // The stub surface carries no components, so the real validity check would refuse the
     // submit before the guard under test is even reached.
     isSurfaceValid: () => true,
-    useA2uiSurface: (
-      _envelopes: unknown,
-      onAction?: (event: unknown) => void
-    ) => {
+    useA2uiSurface: (_envelopes: unknown, onAction?: (event: unknown) => void) => {
       capturedHandler.current = onAction ?? null
       return {
         surfaces: [{ id: 's1', components: new Map() }],

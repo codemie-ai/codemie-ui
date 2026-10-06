@@ -24,6 +24,7 @@ import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import GuardrailAssignmentPanel from '@/components/guardrails/GuardrailAssignmentPanel/GuardrailAssignmentPanel'
 import ProjectSelector from '@/components/ProjectSelector'
+import MarketplaceCategories from '@/pages/assistants/components/AssistantForm/components/MarketplaceCategories'
 import { baseWorkflowSchema, WorkflowFormValues } from '@/pages/workflows/components/workflowSchema'
 import { settingsStore } from '@/store/settings'
 import { GuardrailEntity } from '@/types/entity/guardrail'
@@ -67,6 +68,7 @@ const GeneralConfigTab = forwardRef(
           icon_url: defaultValues.icon_url ?? '',
           shared: defaultValues.shared ?? false,
           guardrail_assignments: defaultValues.guardrail_assignments ?? [],
+          categories: defaultValues.categories ?? [],
         },
       })
 
@@ -211,6 +213,20 @@ const GeneralConfigTab = forwardRef(
                   label="Icon URL"
                   error={fieldState.error?.message}
                   {...field}
+                />
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Controller
+              name="categories"
+              control={control}
+              render={({ field, fieldState }) => (
+                <MarketplaceCategories
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                  error={fieldState.error?.message}
                 />
               )}
             />

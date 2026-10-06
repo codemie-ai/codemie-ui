@@ -133,7 +133,7 @@
   color: rgb(var(--colors-text-quaternary));
 }
 
-.a2ui-scope input:not([type='radio']):not([type='checkbox']):not(.a2ui-own *),
+.a2ui-scope input:not([type="radio"]):not([type="checkbox"]):not(.a2ui-own *),
 .a2ui-scope textarea:not(.a2ui-own *),
 .a2ui-scope select:not(.a2ui-own *) {
   display: block;
@@ -155,9 +155,9 @@
   color: rgb(var(--colors-text-specific-input-placeholder));
 }
 
-.a2ui-scope input:not([type='radio']):not([type='checkbox']):not(.a2ui-own *):hover,
+.a2ui-scope input:not([type="radio"]):not([type="checkbox"]):not(.a2ui-own *):hover,
 .a2ui-scope textarea:not(.a2ui-own *):hover,
-.a2ui-scope input:not([type='radio']):not([type='checkbox']):not(.a2ui-own *):focus-visible,
+.a2ui-scope input:not([type="radio"]):not([type="checkbox"]):not(.a2ui-own *):focus-visible,
 .a2ui-scope textarea:not(.a2ui-own *):focus-visible {
   outline: none;
   border-color: rgb(var(--colors-border-secondary));
@@ -237,8 +237,8 @@
  * the catalog sets inline, so it lands in the chat as a stock OS checkbox. Painting is
  * taken back here to match the design system's own Checkbox and RadioButton.
  */
-.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *),
-.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *) {
+.a2ui-scope input[type="radio"]:not(.a2ui-own, .a2ui-own *),
+.a2ui-scope input[type="checkbox"]:not(.a2ui-own, .a2ui-own *) {
   appearance: none;
   position: relative;
   flex: none;
@@ -246,9 +246,7 @@
   box-sizing: border-box;
   margin: 0;
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 
   /*
    * Size and border are declared here rather than left to the catalog: a picker's options
@@ -262,25 +260,25 @@
   background: var(--a2ui-checkbox-background);
 }
 
-.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *) {
+.a2ui-scope input[type="radio"]:not(.a2ui-own, .a2ui-own *) {
   width: 1.125rem;
   height: 1.125rem;
   border-radius: 50% !important;
 }
 
-.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *):hover,
-.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *):hover {
+.a2ui-scope input[type="radio"]:not(.a2ui-own, .a2ui-own *):hover,
+.a2ui-scope input[type="checkbox"]:not(.a2ui-own, .a2ui-own *):hover {
   border-color: rgb(var(--colors-text-accent-status)) !important;
 }
 
-.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *):checked {
+.a2ui-scope input[type="checkbox"]:not(.a2ui-own, .a2ui-own *):checked {
   background: rgb(var(--colors-text-accent-status)) !important;
   border-color: rgb(var(--colors-text-accent-status)) !important;
 }
 
 /* The tick: a rotated two-sided box, so no icon font or SVG is needed. */
-.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *):checked::after {
-  content: '';
+.a2ui-scope input[type="checkbox"]:not(.a2ui-own, .a2ui-own *):checked::after {
+  content: "";
   position: absolute;
   top: 45%;
   left: 50%;
@@ -291,12 +289,12 @@
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
-.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *):checked {
+.a2ui-scope input[type="radio"]:not(.a2ui-own, .a2ui-own *):checked {
   border-color: rgb(var(--colors-text-accent-status)) !important;
 }
 
-.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *):checked::after {
-  content: '';
+.a2ui-scope input[type="radio"]:not(.a2ui-own, .a2ui-own *):checked::after {
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -308,8 +306,8 @@
 }
 
 /* The catalog sets `outline: none` inline, and appearance:none removed the UA ring. */
-.a2ui-scope input[type='radio']:not(.a2ui-own, .a2ui-own *):focus-visible,
-.a2ui-scope input[type='checkbox']:not(.a2ui-own, .a2ui-own *):focus-visible {
+.a2ui-scope input[type="radio"]:not(.a2ui-own, .a2ui-own *):focus-visible,
+.a2ui-scope input[type="checkbox"]:not(.a2ui-own, .a2ui-own *):focus-visible {
   outline: 2px solid rgb(var(--colors-text-accent-status)) !important;
   outline-offset: 2px;
 }
@@ -368,7 +366,7 @@
 }
 
 .a2ui-scope .chip.selected::before {
-  content: '✓ ';
+  content: "✓ ";
 }
 
 /*
@@ -378,7 +376,7 @@
  * text-like inputs so it cannot catch a choice option, whose label is also a span after
  * an input.
  */
-.a2ui-scope input:not([type='radio']):not([type='checkbox']):not(.a2ui-own *) + span,
+.a2ui-scope input:not([type="radio"]):not([type="checkbox"]):not(.a2ui-own *) + span,
 .a2ui-scope textarea:not(.a2ui-own *) + span {
   display: block;
   margin-top: 0.25rem;
@@ -386,7 +384,7 @@
   color: rgb(var(--colors-failed-secondary));
 }
 
-.a2ui-scope input[type='range'] {
+.a2ui-scope input[type="range"] {
   width: 100%;
   accent-color: rgb(var(--colors-text-accent-status));
 }
@@ -426,7 +424,7 @@
 }
 
 .a2ui-scope .a2ui-answered::before {
-  content: '✓ ';
+  content: "✓ ";
 }
 
 /*
@@ -439,11 +437,9 @@
  * `cursor` is deliberately absent — the fieldset also carries `pointer-events: none`, which
  * is inherited, so no descendant is ever a hit target and a cursor here could never apply.
  */
-.a2ui-scope fieldset:disabled :where(input, textarea, select, button):not(
-    .a2ui-answered,
-    .a2ui-own,
-    .a2ui-own *
-  ) {
+.a2ui-scope
+  fieldset:disabled
+  :where(input, textarea, select, button):not(.a2ui-answered, .a2ui-own, .a2ui-own *) {
   opacity: 0.65;
 }
 
@@ -463,11 +459,11 @@
  * List carries the same inline direction but adds `overflow-x: auto` to be a scroller —
  * wrapping it would turn one designed line into a vertically clipped grid, so it is excluded.
  */
-.a2ui-scope div[style*='flex-direction: row']:not([style*='overflow-x: auto']) {
+.a2ui-scope div[style*="flex-direction: row"]:not([style*="overflow-x: auto"]) {
   flex-wrap: wrap;
   min-width: 0;
 }
 
-.a2ui-scope div[style*='flex-direction: row']:not([style*='overflow-x: auto']) > * {
+.a2ui-scope div[style*="flex-direction: row"]:not([style*="overflow-x: auto"]) > * {
   min-width: 0;
 }

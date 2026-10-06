@@ -45,6 +45,7 @@ export interface Workflow {
   unique_users_count?: number
   pool_config?: WorkflowPoolConfig
   max_nesting_level?: number
+  categories?: string[]
   [key: string]: any
 }
 

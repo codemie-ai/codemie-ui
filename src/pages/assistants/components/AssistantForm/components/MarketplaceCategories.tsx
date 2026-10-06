@@ -29,12 +29,13 @@ interface MarketplaceCategoriesProps {
   value?: string[]
   onChange: (categoryIds: string[]) => void
   isAIGenerated?: boolean
+  error?: string
 }
 
 const MarketplaceCategories = forwardRef<PrimeMultiselect, MarketplaceCategoriesProps>(
-  ({ value, onChange, isAIGenerated = false }, ref) => {
+  ({ value, onChange, isAIGenerated = false, error: externalError }, ref) => {
     const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState('')
+    const [internalError, setInternalError] = useState('')
     const { assistantCategories, getAssistantCategories } = useSnapshot(assistantsStore)
 
     const categoryOptions = useMemo(() => {
@@ -49,9 +50,9 @@ const MarketplaceCategories = forwardRef<PrimeMultiselect, MarketplaceCategories
 
     const handleChange = (categoryIds: string[]) => {
       if (categoryIds?.length > MAX_CATEGORIES)
-        setError(`You can select maximum ${MAX_CATEGORIES} categories`)
+        setInternalError(`You can select maximum ${MAX_CATEGORIES} categories`)
       else {
-        setError('')
+        setInternalError('')
         onChange(categoryIds)
       }
     }
@@ -109,7 +110,7 @@ const MarketplaceCategories = forwardRef<PrimeMultiselect, MarketplaceCategories
           placeholder="Categories"
           options={categoryOptions}
           value={value ?? []}
-          error={error}
+          error={externalError || internalError}
           loading={isLoading}
           onChange={(e) => handleChange(e.value)}
           renderOption={(option) => CategoryOption(option as Option)}

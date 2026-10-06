@@ -42,7 +42,7 @@ describe('theme.css read-only affordance', () => {
     const body = ruleBody(css, 'fieldset:disabled :where(input, textarea, select, button)')
 
     expect(body).not.toBeNull()
-    const selector = css.match(/\.a2ui-scope fieldset:disabled :where\([^{]*/)?.[0] ?? ''
+    const selector = css.match(/\.a2ui-scope\s+fieldset:disabled\s+:where\([^{]*/)?.[0] ?? ''
     expect(selector).toContain('.a2ui-answered')
   })
 

@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "task": "Add optional Categories field to Workflow create/edit form and Categories filter to My/All Workflows sidebar.",
+  "generated": "2026-09-01T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 17,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "5-6 distinct components touched across 3 layers: workflowSchema (form schema), WorkflowFormFields (form field + Controller), WorkflowForm (form state + getFormValues), ConfigPanel/GeneralConfigTab (visual editor path), WorkflowsFilters (sidebar filter). Reuses shared utilities assistantsStore and MarketplaceCategories. Matches L: 3-4 components across 2-3 layers, shared utilities involved."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "6 source files modified (workflow.ts, workflowSchema.ts, WorkflowFormFields.tsx, WorkflowForm.tsx, ConfigPanel or GeneralConfigTab, WorkflowsFilters.tsx) plus 3 test files needing new assertions = ~9 files total. Matches L: 8-10 modified."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "MarketplaceCategories already handles loading, max-3 enforcement and the getAssistantCategories() call; filter logic in WorkflowsFilters is ~80% implemented. Dual code-path risk (visual editor silently dropping categories) is identified and has a clear fix. No security or performance surface. Nearest pattern: MarketplaceCategories reuse in AssistantForm covers the component; filter guard removal follows the existing marketplace-scope branch pattern."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "UI layer (WorkflowFormFields, ConfigPanel/GeneralConfigTab, WorkflowsFilters), schema/type layer (workflowSchema.ts, workflow.ts), Service layer (assistantsStore.getAssistantCategories calls) — 3 distinct layers, no persistence or infrastructure changes."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
