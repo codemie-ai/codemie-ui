@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "task": "Add default-project assignment and display to the User Management UI (widen a permission gate, extend the frontend type, add two store methods against already-live endpoints, and update three components).",
+  "generated": "2026-09-25",
+  "mode": "actual",
+  "initial_assessment_ref": "complexity-assessment.json",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 15,
+  "size": "M",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Lowered from initial M to S: both open decisions flagged at assessment time (AC5's reachable role, the two-row optimistic-update shape) were resolved cleanly during brainstorming with no rework needed later — the plan and spec matched implementation with zero scope surprises." },
+    { "dimension": "technical_risk", "reason": "Confirmed at M as predicted: the permission-gate widen (isAdmin -> isAdmin||isMaintainer) was the one real authorization-adjacent change, and code review specifically flagged it — but it was dismissed as a false positive once cross-referenced against EPMCDME-15110's already-shipped, already-verified backend parity for the same gate. The real technical risk that materialized was instead in state-management correctness (see file_change_estimate)." },
+    { "dimension": "file_change_estimate", "reason": "11 files touched (5 production, 6 test) matches the initial estimate almost exactly, but a code-review check-round fix-up commit was needed on top of the 6 planned implementation commits: the review surfaced 6 real findings (2 functional state bugs in the add+set-default optimistic-update chain, a concurrent-click race, a missing aria-label against a documented accessibility guide, and 2 test-coverage gaps), all fixed and re-verified via a targeted check round before QA gates." },
+    { "dimension": "component_scope", "reason": "Unchanged from initial: six files across three conceptual layers (presentation, type, store), all within one admin feature area, no new abstractions introduced during implementation." }
+  ],
+  "variance_from_initial": {
+    "total_delta": -1,
+    "summary": "Landed one point lower than initial (15 vs 16, both M) — requirements clarity resolved cleanly during brainstorming (no rework), offset by an unplanned but contained code-review fix-up round that closed 6 real findings (state-management races/flicker in the optimistic add+default chain, one accessibility-guide violation, two test gaps) before QA gates. No scope changes, no new files, no plan deviations."
+  },
+  "qa_summary": {
+    "lint": "pass",
+    "typecheck": "pass",
+    "license_headers": "pass (2208 files, 0 missing)",
+    "secrets_scan": "pass (gitleaks, no leaks)",
+    "unit_tests": "613/617 files pass; 4 pre-existing flaky failures (check_license_headers.test.js, a2ui/manifest.test.ts, Popup.test.tsx stacked-dialog focus trap, modalSurfaces.guard.test.ts) confirmed unrelated — failure count varies 3-4 across identical reruns with zero diff, and none reference any file touched by this change",
+    "integration_tests": "48/48 files pass, 540 passed + 1 skipped"
+  },
+  "red_flags_applied": [
+    "Technical Risk held at M: the permission-gate widen affects authorization, per the 'affects authentication or authorization' red flag — verified safe via cross-reference to EPMCDME-15110's shipped backend parity, not dismissed without evidence."
+  ]
+}

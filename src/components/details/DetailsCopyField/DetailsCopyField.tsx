@@ -21,10 +21,35 @@ interface DetailsCopyFieldProps {
   value?: string | null
   className?: string
   notification?: string
+  readOnlyText?: boolean
 }
 
-const DetailsCopyField = ({ label, value, className, notification }: DetailsCopyFieldProps) => {
+const DetailsCopyField = ({
+  label,
+  value,
+  className,
+  notification,
+  readOnlyText,
+}: DetailsCopyFieldProps) => {
   if (!value) return null
+
+  if (readOnlyText) {
+    return (
+      <div className={cn('flex flex-col gap-2', className)}>
+        {label && <h4 className="text-xs text-text-primary">{label}</h4>}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-primary break-all">{value}</span>
+          <button
+            className="flex-shrink-0 text-text-accent hover:text-border-accent transition"
+            onClick={() => copyToClipboard(value, notification ?? 'Value copied to clipboard')}
+            aria-label="Copy"
+          >
+            <CopySvg className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>

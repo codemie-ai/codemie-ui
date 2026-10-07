@@ -101,6 +101,7 @@ interface UserStoreType {
     isProjectAdmin: boolean
   ) => Promise<void>
   removeUserProjectAccess: (userId: string, projectName: string) => Promise<void>
+  setDefaultProject: (userId: string, projectName: string) => Promise<void>
   bulkUpdateUsers: (userIds: string[], updates: { role: 'user' | 'admin' }) => Promise<void>
   bulkUpdateUsersProjectRole: (
     userIds: string[],
@@ -570,6 +571,25 @@ export const userStore = proxy<UserStoreType>({
       })
       .catch((error) => {
         toaster.error('Failed to remove project access')
+        throw error
+      })
+  },
+
+  setDefaultProject(userId, projectName) {
+    return api
+      .put(
+        `v1/admin/users/${userId}/projects/${encodeURIComponent(projectName)}/default`,
+        undefined,
+        {
+          skipErrorHandling: true,
+        }
+      )
+      .then((response) => response.json())
+      .then(() => {
+        toaster.info('Default project set successfully')
+      })
+      .catch((error) => {
+        toaster.error(error?.parsedError?.message || 'Failed to set default project')
         throw error
       })
   },

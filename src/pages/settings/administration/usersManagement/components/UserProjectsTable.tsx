@@ -17,6 +17,7 @@ import { FC, useState, useMemo, useCallback, useEffect } from 'react'
 
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
+import RadioButton from '@/components/form/RadioButton'
 import Select from '@/components/form/Select'
 import Pagination from '@/components/Pagination'
 import Table from '@/components/Table'
@@ -33,7 +34,7 @@ import AddProjectPopup from './popups/AddProjectPopup'
 
 interface UserProjectsTableProps {
   user: UserListItem
-  onProjectsChange?: () => void
+  onProjectsChange?: (update?: (projects: UserAssignedProject[]) => UserAssignedProject[]) => void
   canManageProjects?: boolean
 }
 
@@ -47,7 +48,13 @@ const columnDefinitions: ColumnDefinition[] = [
     key: 'project',
     label: 'Project',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[40%]',
+    headClassNames: 'w-[30%]',
+  },
+  {
+    key: 'default',
+    label: 'Default',
+    type: DefinitionTypes.Custom,
+    headClassNames: 'w-[10%]',
   },
   {
     key: 'admin',
@@ -62,6 +69,28 @@ const columnDefinitions: ColumnDefinition[] = [
     headClassNames: 'w-[20%]',
   },
 ]
+
+const markDefault = (projects: UserAssignedProject[], projectName: string) =>
+  projects.map((p) => ({ ...p, is_default: p.name === projectName }))
+
+const renderDefaultColumn = (
+  item: UserAssignedProject,
+  canManageProjects: boolean,
+  settingDefaultFor: string | null,
+  onSetDefault: (projectName: string) => void
+) => (
+  <RadioButton
+    inputId={`default-radio-${item.name}`}
+    name="default-project"
+    value={item.name}
+    checked={item.is_default}
+    aria-label={item.is_default ? 'Default project' : 'Set as default project'}
+    onChange={() => onSetDefault(item.name)}
+    onClick={(e) => e.stopPropagation()}
+    disabled={!canManageProjects || !!item.is_default || settingDefaultFor !== null}
+    data-testid="default-toggle"
+  />
+)
 
 const perPageOptions = [
   { value: '5', label: '5' },
@@ -84,6 +113,7 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
     newRole: ProjectRole
   } | null>(null)
   const [deletingProject, setDeletingProject] = useState<string | null>(null)
+  const [settingDefaultFor, setSettingDefaultFor] = useState<string | null>(null)
 
   const totalPages = Math.ceil(projects.length / perPage)
   const paginatedProjects = useMemo(() => {
@@ -125,24 +155,69 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
     }
   }, [deletingProject, user.id, setProjects, onProjectsChange])
 
-  const handleAddProject = useCallback(
+  const handleSetDefault = useCallback(
     async (projectName: string) => {
+      setSettingDefaultFor(projectName)
+      try {
+        await setProjects(
+          (projects) => markDefault(projects, projectName),
+          () => userStore.setDefaultProject(user.id, projectName)
+        )
+        onProjectsChange?.((projects) => markDefault(projects, projectName))
+      } catch (error) {
+        console.error('Failed to set default project:', error)
+      } finally {
+        setSettingDefaultFor(null)
+      }
+    },
+    [user.id, setProjects, onProjectsChange]
+  )
+
+  const handleAddProject = useCallback(
+    async (projectName: string, setAsDefault: boolean) => {
       if (projects.find((p) => p.name === projectName)) {
         toaster.info('Project is already assigned to this user')
         return
       }
 
-      const newProject: UserAssignedProject = { name: projectName, is_project_admin: false }
+      const newProject: UserAssignedProject = {
+        name: projectName,
+        is_project_admin: false,
+        is_default: false,
+      }
+      let added = false
 
       try {
         await setProjects(
-          (projects) => [...projects, newProject],
-          () => userStore.addUserProjectAccess(user.id, projectName, false)
+          (projects) => {
+            const withNew = [...projects, newProject]
+            return setAsDefault ? markDefault(withNew, projectName) : withNew
+          },
+          async () => {
+            await userStore.addUserProjectAccess(user.id, projectName, false)
+            added = true
+            if (setAsDefault) {
+              await userStore.setDefaultProject(user.id, projectName)
+            }
+          }
         )
         toaster.info(`User added to project`)
-        onProjectsChange?.()
+        onProjectsChange?.((projects) => {
+          const withNew = projects.some((p) => p.name === projectName)
+            ? projects
+            : [...projects, newProject]
+          return setAsDefault ? markDefault(withNew, projectName) : withNew
+        })
       } catch (error) {
         console.error('Failed to add project:', error)
+        if (added) {
+          // The membership exists even though setting it as default failed: resync instead of
+          // leaving the rolled-back optimistic view claiming the user was never added.
+          toaster.info('User added to project, but the default project was not changed')
+          onProjectsChange?.((projects) =>
+            projects.some((p) => p.name === projectName) ? projects : [...projects, newProject]
+          )
+        }
       }
     },
     [user.id, projects, setProjects, onProjectsChange]
@@ -184,6 +259,8 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
           )}
         </div>
       ),
+      default: (item: UserAssignedProject) =>
+        renderDefaultColumn(item, canManageProjects, settingDefaultFor, handleSetDefault),
       admin: (item: UserAssignedProject) => {
         const currentRole = item.is_project_admin ? ProjectRole.ADMINISTRATOR : ProjectRole.USER
 
@@ -214,13 +291,15 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
         }
 
         return (
-          <Button variant="delete" onClick={() => handleRemoveProject(item.name)}>
-            Unassign
-          </Button>
+          <div className="flex justify-end">
+            <Button variant="delete" onClick={() => handleRemoveProject(item.name)}>
+              Unassign
+            </Button>
+          </div>
         )
       },
     }),
-    [handleRoleChange, handleRemoveProject]
+    [handleRoleChange, handleRemoveProject, handleSetDefault, canManageProjects, settingDefaultFor]
   )
 
   return (

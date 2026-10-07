@@ -524,4 +524,39 @@ describe('userStore', () => {
       expect(parsed.is_auditor).toBeUndefined()
     })
   })
+
+  describe('setDefaultProject', () => {
+    it('PUTs the default endpoint and resolves on success', async () => {
+      const { userStore } = await import('@/store/user')
+      mockPut.mockResolvedValue({ json: async () => ({ success: true }) })
+
+      await userStore.setDefaultProject('user-1', 'proj-a')
+
+      expect(mockPut).toHaveBeenCalledWith(
+        'v1/admin/users/user-1/projects/proj-a/default',
+        undefined,
+        { skipErrorHandling: true }
+      )
+    })
+
+    it('encodes the project name in the URL', async () => {
+      const { userStore } = await import('@/store/user')
+      mockPut.mockResolvedValue({ json: async () => ({ success: true }) })
+
+      await userStore.setDefaultProject('user-1', 'proj a/b')
+
+      expect(mockPut).toHaveBeenCalledWith(
+        'v1/admin/users/user-1/projects/proj%20a%2Fb/default',
+        undefined,
+        { skipErrorHandling: true }
+      )
+    })
+
+    it('rethrows on failure', async () => {
+      const { userStore } = await import('@/store/user')
+      mockPut.mockRejectedValue(new Error('boom'))
+
+      await expect(userStore.setDefaultProject('user-1', 'proj-a')).rejects.toThrow('boom')
+    })
+  })
 })

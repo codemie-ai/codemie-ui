@@ -15,28 +15,32 @@
 
 import { FC, useState } from 'react'
 
+import Switch from '@/components/form/Switch'
 import Popup from '@/components/Popup'
 import ProjectSelector from '@/components/ProjectSelector/ProjectSelector'
 
 interface AddProjectPopupProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (projectName: string) => void
+  onAdd: (projectName: string, setAsDefault: boolean) => void
 }
 
 const AddProjectPopup: FC<AddProjectPopupProps> = ({ isOpen, onClose, onAdd }) => {
   const [selectedProject, setSelectedProject] = useState<string>('')
+  const [setAsDefault, setSetAsDefault] = useState(false)
 
   const handleSubmit = () => {
     if (selectedProject) {
-      onAdd(selectedProject)
+      onAdd(selectedProject, setAsDefault)
       setSelectedProject('')
+      setSetAsDefault(false)
       onClose()
     }
   }
 
   const handleClose = () => {
     setSelectedProject('')
+    setSetAsDefault(false)
     onClose()
   }
 
@@ -51,12 +55,18 @@ const AddProjectPopup: FC<AddProjectPopupProps> = ({ isOpen, onClose, onAdd }) =
       submitText="Add"
       submitDisabled={!selectedProject}
     >
-      <div className="px-4 py-2">
+      <div className="px-4 py-2 flex flex-col gap-3">
         <ProjectSelector
           value={selectedProject}
           onChange={(value) => setSelectedProject(value as string)}
           multiple={false}
           fullWidth
+        />
+        <Switch
+          id="add-project-set-default"
+          label="Set as default"
+          value={setAsDefault}
+          onChange={(e) => setSetAsDefault(e.target.checked)}
         />
       </div>
     </Popup>

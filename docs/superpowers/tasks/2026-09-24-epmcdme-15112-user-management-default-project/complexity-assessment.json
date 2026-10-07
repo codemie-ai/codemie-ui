@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "task": "Add default-project assignment and display to the User Management UI (widen a permission gate, extend the frontend type, add two store methods against already-live endpoints, and update three components).",
+  "generated": "2026-09-24",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 16,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "Base risk is low (S) — every touch point copies an exact existing pattern (Valtio CRUD shape, DetailsBadge icon prop, controlled popup, (isAdmin || isMaintainer) idiom used 8+ times already). Bumped to M by the authorization red flag: UserDetailsPopup.tsx's canManageProjects gate is widened from super-admin-only to admin-or-maintainer, changing who can manage project assignments." },
+    { "dimension": "requirements_clarity", "reason": "Five concrete ACs and an explicit out-of-scope list, but two open decisions remain before implementation: AC5's 'plain user' wording doesn't match a reachable role under today's tab-visibility gate (auditor is the concrete case, needs confirming), and the optimistic-update UX for a default moving from one row to another (two-row visual change vs. refetch) isn't specified." },
+    { "dimension": "component_scope", "reason": "Six files touched across three conceptual layers (presentation: UsersManagementPage.tsx, UserProjectsTable.tsx, AddProjectPopup.tsx, UserDetailsPopup.tsx; type: user.ts; store: store/user.ts) — more than a single self-contained component, but all within one admin feature area with no new abstractions." },
+    { "dimension": "affected_layers", "reason": "UI (four components) + Store/service (two new Valtio methods) + the already-live backend endpoints they call — a standard full-stack path (UI + Service + API) even though the backend side itself needs no changes." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S to M: the permission-gate widen affects authorization (who can manage a user's project assignments), per the 'affects authentication or authorization' red flag."
+  ],
+  "split_recommendation": null
+}

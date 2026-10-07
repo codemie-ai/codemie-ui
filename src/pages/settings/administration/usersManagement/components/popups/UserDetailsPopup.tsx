@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useEffect, useState } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
@@ -32,7 +32,7 @@ import UserProjectsTable from '@/pages/settings/administration/usersManagement/c
 import SpendingCard from '@/pages/settings/components/SpendingCard'
 import { userStore } from '@/store/user'
 import { BudgetAssignment } from '@/types/entity/budget'
-import { UserListItem, UserType } from '@/types/entity/user'
+import { UserAssignedProject, UserListItem, UserType } from '@/types/entity/user'
 import { FilterOption } from '@/types/filters'
 
 const USER_TYPE_OPTIONS: FilterOption[] = [
@@ -63,6 +63,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   })
   const [isUpdatingRoles, setIsUpdatingRoles] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const detailsRequestId = useRef(0)
   const { user: currentUser } = useSnapshot(userStore)
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
@@ -75,24 +76,37 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   const fetchUserDetails = async () => {
     if (!userId) return
 
+    detailsRequestId.current += 1
+    const requestId = detailsRequestId.current
     setIsLoading(true)
     try {
-      const [details, budgets] = await Promise.all([
+      const [detailsResult, budgetsResult] = await Promise.allSettled([
         userStore.getUserById(userId),
         canViewBudgets ? userStore.getUserBudgets(userId) : Promise.resolve([]),
       ])
-      setUser(details)
-      setUserType(details.user_type)
-      setBudgetAssignments(budgets)
-      setRoleFlags({
-        is_admin: details.is_admin,
-        is_maintainer: details.is_maintainer ?? false,
-        is_auditor: details.is_auditor ?? false,
-      })
+      if (requestId !== detailsRequestId.current) return
+      if (detailsResult.status === 'fulfilled') {
+        const details = detailsResult.value
+        setUser(details)
+        setUserType(details.user_type)
+        setRoleFlags({
+          is_admin: details.is_admin,
+          is_maintainer: details.is_maintainer ?? false,
+          is_auditor: details.is_auditor ?? false,
+        })
+      } else {
+        console.error('Failed to fetch user details:', detailsResult.reason)
+      }
+      if (budgetsResult.status === 'fulfilled') {
+        setBudgetAssignments(budgetsResult.value)
+      } else {
+        setBudgetAssignments([])
+        console.error('Failed to fetch user budgets:', budgetsResult.reason)
+      }
     } catch (error) {
       console.error('Failed to fetch user details:', error)
     } finally {
-      setIsLoading(false)
+      if (requestId === detailsRequestId.current) setIsLoading(false)
     }
   }
 
@@ -104,7 +118,18 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     }
   }, [canViewBudgets, isOpen, userId])
 
-  const handleProjectsChange = () => {
+  const handleProjectsChange = (
+    update?: (projects: UserAssignedProject[]) => UserAssignedProject[]
+  ) => {
+    // Commit the confirmed mutation before refreshing. A failed fetch must not restore
+    // the default that was displayed before the successful write.
+    if (update) {
+      setUser((current) =>
+        current && current.id === userId
+          ? { ...current, projects: update(current.projects) }
+          : current
+      )
+    }
     setHasChanges(true)
     fetchUserDetails()
   }
@@ -201,10 +226,17 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
         <Spinner inline rootClassName="py-32" />
       ) : (
         <div className="px-3 pt-1 pb-6">
-          <div className="flex gap-4 items-center mb-5">
+          <div className="flex gap-4 items-start mb-5">
             <UserAvatar src={user.picture ?? undefined} name={user.name ?? undefined} size="lg" />
 
-            <h3 className="text-lg font-semibold text-text-primary">{user.name}</h3>
+            <div className="flex flex-col gap-1">
+              <h3 className="text-lg font-semibold text-text-primary">{user.name}</h3>
+              <DetailsCopyField
+                readOnlyText
+                value={user.email}
+                notification="Email copied to clipboard"
+              />
+            </div>
           </div>
 
           <div className="flex flex-col gap-4">
@@ -272,8 +304,6 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
               </div>
             )}
 
-            <DetailsCopyField label="Email:" value={user.email} className="mb-2" />
-
             {canViewBudgets && (
               <>
                 <div className="bg-border-structural h-px" />
@@ -321,7 +351,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
             <UserProjectsTable
               user={user}
               onProjectsChange={handleProjectsChange}
-              canManageProjects={isAdmin}
+              canManageProjects={isAdmin || isMaintainer}
             />
           </div>
         </div>

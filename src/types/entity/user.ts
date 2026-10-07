@@ -19,6 +19,7 @@ export interface UserAssignedProject {
   name: string
   display_name?: string | null
   is_project_admin: boolean
+  is_default: boolean
 }
 
 export interface User {

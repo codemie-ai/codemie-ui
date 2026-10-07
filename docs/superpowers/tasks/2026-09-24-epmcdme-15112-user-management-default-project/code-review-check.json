@@ -1,0 +1,40 @@
+{
+  "decision": "approve",
+  "rationale": "Fix-up diff (e3caac493..c6848ed42) addresses all 6 blocking findings from code-review-final.json with clear, verifiable evidence: handleAddProject no longer chains a second independent handleSetDefault call (removing both the swallowed-failure and double-onProjectsChange defects, CR-002), the add-with-default optimistic updater now sets is_default correctly for the new row in the same pendingOp as the add itself (no more stale-list flicker, CR-003), a settingDefaultFor guard disables every toggle while any set-default call is pending (CR-004), the toggle button now has an aria-label (CR-005), the users-list marker check now targets a stable data-testid instead of a generic svg query (CR-001), and the spec-required no-op test was added (CR-006). Re-ran the full affected unit + integration suites after the fix-up: 38/38 unit tests pass (including the new no-op test) and the 1 integration test passes. No new high-risk issue suspected in the fix-up diff (state/prop/aria/test-assertion changes only, no new API surface), so no confirmation pass was dispatched.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "AC1: admin/maintainer views a user's projects; each row shows default status and can set any as default", "status": "pass", "notes": "UserProjectsTable.tsx default column + toggle, backed by setDefaultProject"},
+    {"kind": "story-ac", "item": "AC2: add-project dialog lets admin mark the new project as default in the same action", "status": "pass", "notes": "AddProjectPopup Switch + handleAddProject chaining to handleSetDefault; see CR-003 for a flicker defect in this path"},
+    {"kind": "story-ac", "item": "AC3: users list Projects cell marks the default project", "status": "pass", "notes": "UsersManagementPage.tsx customRenderColumns.projects icon slot"},
+    {"kind": "story-ac", "item": "AC4: no marker when user has no default project", "status": "pass", "notes": "icon: p.is_default ? <StarFilledSvg/> : undefined"},
+    {"kind": "story-ac", "item": "AC5: auditor sees markers but cannot change them", "status": "pass", "notes": "UserDetailsPopup gate widen + toggle disabled={!canManageProjects || ...}; confirmed by UserDetailsPopup.projectsGate.test.tsx"},
+    {"kind": "spec", "item": "UserAssignedProject gains is_default?: boolean", "status": "pass", "notes": "src/types/entity/user.ts"},
+    {"kind": "spec", "item": "store/user.ts adds setDefaultProject (PUT) / clearDefaultProject (DELETE) following existing method shape", "status": "pass", "notes": "src/store/user.ts, tested in user.test.ts"},
+    {"kind": "spec", "item": "Default column toggle disabled (not hidden) when !canManageProjects", "status": "pass", "notes": "UserProjectsTable.tsx default column renderer"},
+    {"kind": "spec", "item": "Single optimistic update flips both rows, no visible flicker on success", "status": "partial", "notes": "Holds for the direct table-toggle path; the add-dialog chained path flickers/loses the marker until refetch — see CR-003"},
+    {"kind": "spec", "item": "Clicking the already-default row is a no-op", "status": "pass", "notes": "disabled={... || !!item.is_default} in code; not directly asserted by a test — see CR-006"},
+    {"kind": "spec", "item": "Rollback on API failure via useOptimistic error path", "status": "pass", "notes": "UserProjectsTable.test.tsx 'rolls back both rows if the API call fails'"},
+    {"kind": "spec", "item": "AddProjectPopup Switch labeled 'Set as default', onAdd widened to (projectName, setAsDefault)", "status": "pass", "notes": "AddProjectPopup.tsx"},
+    {"kind": "spec", "item": "handleAddProject sequentially awaits add then set-default (two calls, not atomic)", "status": "pass", "notes": "UserProjectsTable.tsx handleAddProject; see CR-002 for the swallowed-failure/double-onProjectsChange defect in this exact chain"},
+    {"kind": "spec", "item": "UserDetailsPopup.tsx:324 gate widened to isAdmin || isMaintainer", "status": "pass", "notes": "confirmed by projectsGate.test.tsx for admin/maintainer/auditor"},
+    {"kind": "spec", "item": "Testing: new UserProjectsTable.test.tsx covers toggle render, disabled state, click-flip, rollback, no-op-on-already-default, and add-dialog chaining", "status": "fail", "notes": "No-op-on-already-default test is missing (all other listed cases are present) — CR-006"},
+    {"kind": "spec", "item": "Testing: new AddProjectPopup.test.tsx covers switch default state and onAdd(name, true) on submit", "status": "pass", "notes": "AddProjectPopup.test.tsx, 3 tests"},
+    {"kind": "spec", "item": "Testing: users-list integration test asserts badge marker renders only for the default project", "status": "pass", "notes": "UsersManagementDefaultProject.integration.test.tsx; assertion is loose — see CR-001"},
+    {"kind": "spec", "item": "No separate 'Default project' column added to the users list", "status": "pass", "notes": "marker stays inside the existing Projects cell icon slot"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "6/6 commits match `EPMCDME-XXXX: Capital sentence` per .ai-run/guides/standards/git-workflow.md"},
+    {"kind": "code-quality", "status": "fail", "notes": "Icon-only default-toggle button (UserProjectsTable.tsx) has no aria-label, violating .ai-run/guides/patterns/accessibility-patterns.md's blocking Pre-Delivery Checklist item 'Icon-only buttons have aria-label' — filed as CR-005"},
+    {"kind": "security", "status": "pass", "notes": "No HTML-sink/redirect/secret/injection issues introduced; the canManageProjects gate widen (isAdmin -> isAdmin||isMaintainer) matches backend parity already shipped in EPMCDME-15110 and 8+ sibling gates already using this idiom in the same file"}
+  ],
+  "findings": [],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "Integration test now asserts on data-testid=\"default-project-marker\" instead of a generic svg query; re-ran, passes."},
+    {"id": "CR-002", "status": "resolved", "notes": "handleAddProject no longer chains a separate handleSetDefault call; add+set-default is one setProjects call with one try/catch and a single onProjectsChange invocation, so a set-default failure now propagates to the outer catch instead of being swallowed."},
+    {"id": "CR-003", "status": "resolved", "notes": "The add's optimistic updater now constructs the new project with is_default: setAsDefault and un-defaults the rest in the same pendingOp, so the marker is correct immediately with no dependency on a second pendingOp seeing a not-yet-committed row."},
+    {"id": "CR-004", "status": "resolved", "notes": "settingDefaultFor state added; every toggle's disabled now includes `settingDefaultFor !== null`, blocking overlapping clicks while a set-default call is in flight."},
+    {"id": "CR-005", "status": "resolved", "notes": "aria-label={item.is_default ? 'Default project' : 'Set as default project'} added to the toggle button."},
+    {"id": "CR-006", "status": "resolved", "notes": "New test 'clicking the already-default row is a no-op' added to UserProjectsTable.test.tsx and passing."}
+  ]
+}
