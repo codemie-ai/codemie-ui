@@ -206,6 +206,7 @@ export const FILTER_INITIAL_STATE: {
   categories: string[]
   sort_by: string | null
   sort_order: string
+  integration_type: string[]
 } = {
   search: '',
   project: [],
@@ -215,4 +216,5 @@ export const FILTER_INITIAL_STATE: {
   categories: [],
   sort_by: null,
   sort_order: 'desc',
+  integration_type: [],
 }

@@ -18,6 +18,8 @@ import { CredentialAccessType, CredentialRoleRestriction } from '@/types/setting
 export const MCP_SETTINGS_TYPE = 'mcp'
 export const MCP_SETTINGS_TYPE_LABEL = 'MCP'
 
+export const PLUGIN_CREDENTIAL_TYPE = 'plugin'
+
 export const MASKED_VALUE = '**********'
 
 // Default values for settings ui fields and panels

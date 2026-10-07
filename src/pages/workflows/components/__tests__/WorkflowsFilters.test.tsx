@@ -17,6 +17,7 @@ import { act, render } from '@testing-library/react'
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 
 import { assistantsStore } from '@/store'
+import { FilterDefinitionType } from '@/types/filters'
 
 import WorkflowsFilters from '../WorkflowsFilters'
 
@@ -121,6 +122,53 @@ describe('WorkflowsFilters — categories filter visibility', () => {
       render(<WorkflowsFilters scope="all" />)
     })
     expect(assistantsStore.getAssistantCategories).toHaveBeenCalled()
+  })
+})
+
+describe('WorkflowsFilters — integration_type filter', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    capturedFilterDefs = []
+  })
+
+  it('includes integration_type Multiselect definition for "all" scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="all" onApply={vi.fn()} />)
+    })
+    const integrationDef = capturedFilterDefs.find((d: any) => d.name === 'integration_type')
+    expect(integrationDef).toBeDefined()
+    expect(integrationDef.type).toBe(FilterDefinitionType.Multiselect)
+  })
+
+  it('includes integration_type for "my" scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="my" onApply={vi.fn()} />)
+    })
+    const integrationDef = capturedFilterDefs.find((d: any) => d.name === 'integration_type')
+    expect(integrationDef).toBeDefined()
+  })
+
+  it('excludes integration_type from TEMPLATES scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="templates" onApply={vi.fn()} />)
+    })
+    expect(capturedFilterDefs.find((d: any) => d.name === 'integration_type')).toBeUndefined()
+  })
+
+  it('excludes integration_type from marketplace scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="marketplace" onApply={vi.fn()} />)
+    })
+    expect(capturedFilterDefs.find((d: any) => d.name === 'integration_type')).toBeUndefined()
+  })
+
+  it('excludes Plugin option from integration_type options for "all" scope', async () => {
+    await act(async () => {
+      render(<WorkflowsFilters scope="all" onApply={vi.fn()} />)
+    })
+    const integrationDef = capturedFilterDefs.find((d: any) => d.name === 'integration_type')
+    expect(integrationDef).toBeDefined()
+    expect(integrationDef.options.some((opt: any) => opt.value === 'Plugin')).toBe(false)
   })
 })
 

@@ -19,6 +19,8 @@ import { useSnapshot } from 'valtio'
 import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CREATED_BY } from '@/constants'
+import { PLUGIN_CREDENTIAL_TYPE } from '@/constants/settings'
+import { useAllIntegrationTypeOptions } from '@/hooks/useAllIntegrationTypeOptions'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
@@ -34,6 +36,7 @@ import { workflowsStore } from '@/store/workflows'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { FILTER_ENTITY, getFilters, setFilters, updateUrlWithFilters } from '@/utils/filters'
 import { createdBy } from '@/utils/helpers'
+import { getOriginalCredentialType } from '@/utils/settings'
 import { makeCleanObject } from '@/utils/utils'
 
 interface WorkflowsFilters {
@@ -42,6 +45,7 @@ interface WorkflowsFilters {
   shared?: string
   created_by?: string
   categories?: string[]
+  integration_type?: string[]
 }
 
 interface WorkflowsFiltersProps {
@@ -72,6 +76,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
   }, [scope])
 
   const resolvedProjectOptions = useResolvedProjectOptions(projectOptions, persistedProject)
+  const integrationTypeOptions = useAllIntegrationTypeOptions()
 
   const categoriesOptions = useMemo<FilterOption[]>(
     () => assistantCategories.map((c) => ({ label: c.name, value: c.id })),
@@ -97,6 +102,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       shared = INITIAL_WORKFLOWS_FILTERS.shared,
       created_by = INITIAL_WORKFLOWS_FILTERS.created_by,
       categories = INITIAL_WORKFLOWS_FILTERS.categories,
+      integration_type = INITIAL_WORKFLOWS_FILTERS.integration_type,
     } = getFilters<WorkflowsFilters>(`${FILTER_ENTITY.WORKFLOWS}.${scope}`)
 
     return {
@@ -105,6 +111,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       shared: shared === '' ? '' : String(shared),
       created_by: created_by || '',
       categories: Array.isArray(categories) ? categories : [],
+      integration_type: Array.isArray(integration_type) ? integration_type : [],
     }
   })()
 
@@ -212,6 +219,20 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
           },
         },
         {
+          name: 'integration_type',
+          label: 'Integration Type',
+          type: FilterDefinitionType.Multiselect,
+          value: initialFilterValues.integration_type || [],
+          options: integrationTypeOptions.filter(
+            (opt) => opt.value !== getOriginalCredentialType(PLUGIN_CREDENTIAL_TYPE)
+          ),
+          config: {
+            maxSelectedLabels: 3,
+            filter: true,
+            filterPlaceholder: 'Search for integration type',
+          },
+        },
+        {
           name: CREATED_BY,
           label: 'Created by',
           type: FilterDefinitionType.Custom,
@@ -248,8 +269,10 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       initialFilterValues.project,
       initialFilterValues.created_by,
       initialFilterValues.shared,
+      initialFilterValues.integration_type,
       categoriesOptions,
       resolvedProjectOptions,
+      integrationTypeOptions,
       isLoadingProjects,
       createdByOptions,
       scope,
@@ -271,6 +294,7 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       delete newQuery.shared
       delete newQuery.created_by
       delete newQuery.categories
+      delete newQuery.integration_type
 
       router.push({
         path: route.path,
@@ -299,7 +323,8 @@ const WorkflowsFilters: React.FC<WorkflowsFiltersProps> = ({ scope, onApply }) =
       (!initialFilterValues.project || initialFilterValues.project.length === 0) &&
       initialFilterValues.shared === '' &&
       !initialFilterValues.created_by &&
-      (!initialFilterValues.categories || initialFilterValues.categories.length === 0)
+      (!initialFilterValues.categories || initialFilterValues.categories.length === 0) &&
+      (!initialFilterValues.integration_type || initialFilterValues.integration_type.length === 0)
     )
   }, [initialFilterValues])
 

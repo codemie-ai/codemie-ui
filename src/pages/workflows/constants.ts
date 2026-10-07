@@ -47,6 +47,7 @@ export const INITIAL_WORKFLOWS_FILTERS = {
   shared: '',
   created_by: '',
   categories: [] as string[],
+  integration_type: [] as string[],
 }
 
 export const INITIAL_WORKFLOWS_PAGINATION = {

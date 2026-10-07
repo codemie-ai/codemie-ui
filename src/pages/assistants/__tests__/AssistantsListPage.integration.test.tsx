@@ -19,6 +19,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
+import { selectMultiSelectOptions } from '@/test-utils/component-interactions'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 
 describe('AssistantsListPage - Integration', () => {
@@ -1107,6 +1108,73 @@ describe('AssistantsListPage - Integration', () => {
       })
 
       expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Integration Type Filter', () => {
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it('selecting an integration_type value fires the API with that filter', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture()],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+      })
+
+      await selectMultiSelectOptions('Integration Type', ['Jira'], { user })
+
+      await waitFor(() => {
+        const assistantsCalls = (global.fetch as any).mock.calls.filter((call: any[]) =>
+          call[0].includes('v1/assistants')
+        )
+        const found = assistantsCalls.some((call: any[]) =>
+          decodeURIComponent(call[0]).includes('"integration_type":["Jira"]')
+        )
+        expect(found).toBe(true)
+      })
+    })
+
+    it('combining integration_type with a search term fires both filters in the same request', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture()],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+      })
+
+      const searchInput = screen.getByPlaceholderText('Search')
+      await user.clear(searchInput)
+      await user.type(searchInput, 'AI')
+
+      await selectMultiSelectOptions('Integration Type', ['Jira'], { user })
+
+      await waitFor(() => {
+        const assistantsCalls = (global.fetch as any).mock.calls.filter((call: any[]) =>
+          call[0].includes('v1/assistants')
+        )
+        const found = assistantsCalls.some((call: any[]) => {
+          const decoded = decodeURIComponent(call[0])
+          return (
+            decoded.includes('"integration_type":["Jira"]') && decoded.includes('"search":"AI"')
+          )
+        })
+        expect(found).toBe(true)
+      })
     })
   })
 })

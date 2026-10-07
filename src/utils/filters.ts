@@ -75,6 +75,7 @@ const knownFilterKeys: FilterKeys = {
     'users',
     'projects',
     'budgets',
+    'integration_type',
   ],
 }
 /**

@@ -1,0 +1,63 @@
+{
+  "decision": "request-changes",
+  "rationale": "Three blocking major findings across both repos: (1) The GIN index on assistants.toolkits added by the Alembic migration will not accelerate the jsonb_array_elements EXISTS query used by compose_credential_type_filter — PostgreSQL GIN indexes on JSONB support containment operators only, not set-returning function scans, so the migration adds write amplification with no read benefit; (2) filter_value=[None] (JSON [null]) bypasses all guards in compose_credential_type_filter and generates an IS NULL condition via SQLAlchemy's == None translation, returning incorrect results silently as HTTP 200; (3) Two frontend integration tests explicitly mandated by the spec are not implemented. One deferred item: enum validation at the router boundary (spec marks as 'should', non-blocking for MVP).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "BE-1: compose_credential_type_filter using EXISTS + jsonb_array_elements", "status": "pass", "notes": "Function present; uses jsonb_array_elements table-valued, casts to JSONB, navigates ['settings']['credential_type'].astext, wraps in exists(subquery)."},
+    {"criterion": "BE-2: integration_type key in AssistantFilter.FILTER_CONFIG mapping to toolkits", "status": "pass", "notes": "Entry present with field_name='toolkits' and correct compose function."},
+    {"criterion": "BE-3: Multi-value OR-combined, AND-combined with other filters", "status": "pass", "notes": "or_(*conditions) across values; query.where(exists(...)) ANDs with the surrounding filter chain."},
+    {"criterion": "BE-4: Alembic migration adds GIN index on assistants.toolkits", "status": "partial", "notes": "Migration present and syntactically correct, but the index type (GIN) is mismatched with the query pattern (jsonb_array_elements EXISTS) — will not accelerate reads. See CR-001."},
+    {"criterion": "BE-5: Empty list is a no-op", "status": "pass", "notes": "Guard clause 'if not values: return query' fires before any SQL construction."},
+    {"criterion": "BE-6: PROJECT_WITH_MARKETPLACE scope honors integration_type", "status": "pass", "notes": "FILTER_CONFIG registration makes filter available; dedicated unit test confirms the scope."},
+    {"criterion": "BE-7: Validation of integration_type against CredentialTypes enum (should)", "status": "partial", "notes": "No router-level validation. Spec marks as 'should'; unrecognized values return empty results instead of 400. Deferred."},
+    {"criterion": "BE-8: Unit tests — single value, multiple values, empty list, scopes", "status": "pass", "notes": "All cases present in test_filter_services.py and test_assistant_repository.py."},
+    {"criterion": "BE-9: No HTTP/router-level test strictly required", "status": "na", "notes": "Acknowledged gap in spec; not expected."},
+    {"criterion": "FE-1: useAllIntegrationTypeOptions returning FilterOption[] sorted alphabetically", "status": "pass", "notes": "Hook uses Object.keys(CREDENTIAL_UI_MAPPING).sort with localeCompare; maps to {label: displayName, value: getOriginalCredentialType}."},
+    {"criterion": "FE-2: FILTER_INITIAL_STATE extended with integration_type: []", "status": "pass", "notes": "Addition visible in constants/assistants.ts diff."},
+    {"criterion": "FE-3: AssistantFilters interface extended with integration_type?: string[]", "status": "pass", "notes": "Optional property present in useAssistantFilters.ts."},
+    {"criterion": "FE-4: AssistantFilters.tsx adds integration_type Multiselect definition", "status": "pass", "notes": "Definition added with correct label, options from hook, and config."},
+    {"criterion": "FE-5: Filter excluded from MARKETPLACE scope", "status": "pass", "notes": "integration_type absent from MARKETPLACE allowlist."},
+    {"criterion": "FE-6: Filter excluded from TEMPLATES scope", "status": "pass", "notes": "TEMPLATES branch returns false unconditionally."},
+    {"criterion": "FE-7: filters.integration_type and integrationTypeOptions in useMemo deps", "status": "pass", "notes": "Both deps explicitly added."},
+    {"criterion": "FE-8: Unit tests — VISIBLE_TO_USER present, PROJECT_WITH_MARKETPLACE present, TEMPLATES absent, MARKETPLACE absent", "status": "pass", "notes": "All four unit test cases present."},
+    {"criterion": "FE-9: Integration tests — filter firing and combination", "status": "fail", "notes": "Spec explicitly requires two integration tests; neither is implemented. See CR-003."}
+  ],
+  "standards_review": [
+    {"standard": "Commit message format (ticket-prefix)", "status": "pass", "notes": "Commits use EPMCDME-7212: prefix consistent with project convention."},
+    {"standard": "Security — no new auth/secrets/injection surface", "status": "pass", "notes": "No new endpoints, auth changes, or user-controlled SQL injection vectors. filter_value is compared via parameterized SQLAlchemy conditions."},
+    {"standard": "Code quality — no blocking linter/type errors", "status": "pass", "notes": "Pre-commit hooks ran tsc --noEmit and eslint --fix without errors on FE commits."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "file": "src/external/alembic/versions/219d9b372c3b_add_assistants_toolkits_index.py",
+      "problem": "GIN index on assistants.toolkits will not accelerate the jsonb_array_elements EXISTS query used by compose_credential_type_filter",
+      "impact": "PostgreSQL GIN indexes on JSONB columns accelerate @>, ?, ?|, ?& operators only — not set-returning function scans (jsonb_array_elements is SRF). Every integration_type-filtered query performs a full sequential scan; the migration adds write amplification on every assistants INSERT/UPDATE with zero read benefit. The spec's performance intent (following the ix_assistants_categories precedent) is unmet.",
+      "recommendation": "Either remove the GIN index migration (correct for the current query pattern), or redesign the filter to use @> containment which GIN does accelerate — but note the spec explicitly chose EXISTS to avoid @> due to test-suite limitations with mocked sessions.",
+      "severity": "major",
+      "triage": "patch",
+      "sources": ["edge-case", "blind"]
+    },
+    {
+      "id": "CR-002",
+      "file": "src/codemie/service/filter/compose_filter_functions.py",
+      "problem": "filter_value=[None] passes all guards and generates an IS NULL condition returning incorrect results silently",
+      "impact": "A client sending filters={\"integration_type\":[null]} results in values=[None] which is truthy and non-empty — both guard checks pass. SQLAlchemy translates .astext == None to '... IS NULL', returning assistants whose toolkit settings lack a credential_type key. Callers receive HTTP 200 with a misleading result set. The filter JSON is parsed with raw json.loads with no schema validation on element types.",
+      "recommendation": "Filter out None and empty-string entries after coercion: values = [v for v in (filter_value if isinstance(filter_value, list) else [filter_value]) if v is not None and v != '']",
+      "severity": "major",
+      "triage": "patch",
+      "sources": ["edge-case", "blind"]
+    },
+    {
+      "id": "CR-003",
+      "file": "src/pages/assistants/__tests__/AssistantsListPage.integration.test.tsx",
+      "problem": "Two integration tests explicitly mandated by the spec are not implemented",
+      "impact": "End-to-end wiring of the integration_type filter to the API call layer is unverified by automated tests. Regressions in filter serialization, debounce timing, cleanObject stripping, or request construction will not be caught by CI.",
+      "recommendation": "Implement the two spec-required integration tests: (1) selecting a single integration_type value fires the correct API request with integration_type in the filters payload; (2) combining integration_type with a search term fires the correctly combined request.",
+      "severity": "major",
+      "triage": "patch",
+      "sources": ["acceptance"]
+    }
+  ]
+}

@@ -21,6 +21,7 @@ import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CATEGORIES, CREATED_BY, NOT_SHARED, SHARED, GLOBAL } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
+import { useAllIntegrationTypeOptions } from '@/hooks/useAllIntegrationTypeOptions'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
@@ -52,6 +53,7 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   activeScope,
 }) => {
   const { projectOptions, loadProjectOptions } = useProjectOptions()
+  const integrationTypeOptions = useAllIntegrationTypeOptions()
   const [projectSearchTerm, setProjectSearchTerm] = useState('')
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
@@ -165,6 +167,18 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
           },
         },
         {
+          name: 'integration_type',
+          label: 'Integration Type',
+          type: FilterDefinitionType.Multiselect,
+          value: filters.integration_type,
+          options: integrationTypeOptions,
+          config: {
+            maxSelectedLabels: 3,
+            filter: true,
+            filterPlaceholder: 'Search for integration type',
+          },
+        },
+        {
           name: CREATED_BY,
           label: 'Created by',
           type: FilterDefinitionType.Custom,
@@ -224,6 +238,8 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
       filters.categories,
       filters.sort_by,
       filters.sort_order,
+      filters.integration_type,
+      integrationTypeOptions,
       resolvedProjectOptions,
       isLoadingProjects,
       createdByOptions,

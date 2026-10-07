@@ -34,6 +34,7 @@ export interface AssistantFilters extends Record<string, unknown> {
   categories: string[]
   sort_by: string | null
   sort_order: string
+  integration_type: string[]
 }
 
 /**
