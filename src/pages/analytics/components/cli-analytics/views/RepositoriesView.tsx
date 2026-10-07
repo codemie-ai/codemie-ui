@@ -136,6 +136,8 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
         sessionFilters: filters,
         repositories: repo.repository != null ? [repo.repository] : undefined,
         isUnattributed: repo.repository === null,
+        projectName: repo.project_name || undefined,
+        isProjectUnattributed: !repo.project_name,
       })
     },
     [filters]
@@ -150,6 +152,8 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
           sessionFilters: filters,
           repositories: undefined,
           isUnattributed: true,
+          projectName: repo.project_name || undefined,
+          isProjectUnattributed: !repo.project_name,
         })
       } else {
         setSelectedTarget({
@@ -159,6 +163,8 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
           repositories: [repo.repository],
           isUnattributed: false,
           branch: branch.branch ?? undefined,
+          projectName: repo.project_name || undefined,
+          isProjectUnattributed: !repo.project_name,
         })
       }
     },

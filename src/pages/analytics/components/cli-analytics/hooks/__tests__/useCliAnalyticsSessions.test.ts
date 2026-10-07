@@ -267,6 +267,36 @@ describe('useCliAnalyticsSessions', () => {
     })
   })
 
+  it('sends is_project_unattributed and no projects when isProjectUnattributed is set', async () => {
+    const fetchSessions = vi.spyOn(cliAnalyticsStore, 'fetchSessions').mockResolvedValue(undefined)
+
+    renderHook(() =>
+      useCliAnalyticsSessions({ ...BASE_FILTERS, projects: ['x'] }, undefined, {
+        isProjectUnattributed: true,
+      })
+    )
+
+    await waitFor(() => {
+      const arg = fetchSessions.mock.calls[0][0]
+      expect(arg).toEqual(expect.objectContaining({ is_project_unattributed: true }))
+      expect(arg.projects).toBeUndefined()
+    })
+  })
+
+  it('overrides the projects param with projectName', async () => {
+    const fetchSessions = vi.spyOn(cliAnalyticsStore, 'fetchSessions').mockResolvedValue(undefined)
+
+    renderHook(() =>
+      useCliAnalyticsSessions({ ...BASE_FILTERS, projects: ['x', 'y'] }, undefined, {
+        projectName: 'P',
+      })
+    )
+
+    await waitFor(() => {
+      expect(fetchSessions).toHaveBeenCalledWith(expect.objectContaining({ projects: 'P' }))
+    })
+  })
+
   it('omits is_unattributed param when isUnattributed option is false', async () => {
     const fetchSessions = vi.spyOn(cliAnalyticsStore, 'fetchSessions').mockResolvedValue(undefined)
 

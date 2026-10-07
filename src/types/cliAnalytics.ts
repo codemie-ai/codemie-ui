@@ -278,4 +278,6 @@ export interface ExtendedSessionsTarget {
   repositories?: string[]
   isUnattributed?: boolean
   branch?: string
+  projectName?: string
+  isProjectUnattributed?: boolean
 }

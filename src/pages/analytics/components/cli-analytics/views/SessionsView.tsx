@@ -114,9 +114,18 @@ interface SessionsViewProps {
   repositories?: string[]
   isUnattributed?: boolean
   branch?: string
+  projectName?: string
+  isProjectUnattributed?: boolean
 }
 
-const SessionsView: FC<SessionsViewProps> = ({ filters, repositories, isUnattributed, branch }) => {
+const SessionsView: FC<SessionsViewProps> = ({
+  filters,
+  repositories,
+  isUnattributed,
+  branch,
+  projectName,
+  isProjectUnattributed,
+}) => {
   const [deliveryFramework, setDeliveryFramework] = useState<string | null>(null)
 
   const frameworks = useCliAnalyticsFrameworks()
@@ -131,6 +140,8 @@ const SessionsView: FC<SessionsViewProps> = ({ filters, repositories, isUnattrib
       framework: deliveryFramework ?? undefined,
       isUnattributed,
       branch,
+      projectName,
+      isProjectUnattributed,
     })
 
   const { selectedTraceId, selectSession, closeSession } = useSessionModal()

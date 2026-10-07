@@ -33,7 +33,16 @@ vi.mock('../views/ExtendedSessionsModal', () => ({
     target: ExtendedSessionsTarget
     isVisible: boolean
     onHide: () => void
-  }) => (isVisible ? <div data-testid="sessions-modal">{target.title}</div> : null),
+  }) =>
+    isVisible ? (
+      <div
+        data-testid="sessions-modal"
+        data-project-name={target.projectName ?? ''}
+        data-project-unattributed={String(!!target.isProjectUnattributed)}
+      >
+        {target.title}
+      </div>
+    ) : null,
 }))
 
 vi.mock('../../AnalyticsWidget', () => ({
@@ -173,6 +182,45 @@ describe('RepositoriesView', () => {
     await user.click(screen.getAllByText('▶')[0])
     await user.click(screen.getByText('dev'))
     expect(screen.getByTestId('sessions-modal')).toHaveTextContent('dev')
+  })
+
+  it('passes the project of the clicked branch to the sessions modal', async () => {
+    const user = userEvent.setup()
+    vi.mocked(useCliAnalyticsRepositories).mockReturnValue({
+      ...EMPTY_HOOK_RESULT,
+      rows: MOCK_ROWS.map((r) => ({ ...r, project_name: 'P' })),
+    })
+    render(<RepositoriesView filters={MOCK_FILTERS} />)
+    await user.click(screen.getAllByText('▶')[0])
+    await user.click(screen.getByText('dev'))
+    const modal = screen.getByTestId('sessions-modal')
+    expect(modal).toHaveAttribute('data-project-name', 'P')
+    expect(modal).toHaveAttribute('data-project-unattributed', 'false')
+  })
+
+  it('marks the sessions target project-unattributed for a branch under no project', async () => {
+    const user = userEvent.setup()
+    vi.mocked(useCliAnalyticsRepositories).mockReturnValue({
+      ...EMPTY_HOOK_RESULT,
+      rows: MOCK_ROWS.map((r) => ({ ...r, project_name: null })),
+    })
+    render(<RepositoriesView filters={MOCK_FILTERS} />)
+    await user.click(screen.getAllByText('▶')[0])
+    await user.click(screen.getByText('dev'))
+    const modal = screen.getByTestId('sessions-modal')
+    expect(modal).toHaveAttribute('data-project-name', '')
+    expect(modal).toHaveAttribute('data-project-unattributed', 'true')
+  })
+
+  it('passes the project group to the sessions modal when a repository row is clicked', async () => {
+    const user = userEvent.setup()
+    vi.mocked(useCliAnalyticsRepositories).mockReturnValue({
+      ...EMPTY_HOOK_RESULT,
+      rows: MOCK_ROWS.map((r) => ({ ...r, project_name: 'P' })),
+    })
+    render(<RepositoriesView filters={MOCK_FILTERS} />)
+    await user.click(screen.getByText('repo-a'))
+    expect(screen.getByTestId('sessions-modal')).toHaveAttribute('data-project-name', 'P')
   })
 
   it('shows widget error when the hook returns an error', () => {

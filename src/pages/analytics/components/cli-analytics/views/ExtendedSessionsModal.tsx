@@ -50,6 +50,8 @@ const ExtendedSessionsModal: FC<ExtendedSessionsModalProps> = ({ target, isVisib
         repositories={target.repositories}
         isUnattributed={target.isUnattributed}
         branch={target.branch}
+        projectName={target.projectName}
+        isProjectUnattributed={target.isProjectUnattributed}
       />
     </div>
   </Popup>
