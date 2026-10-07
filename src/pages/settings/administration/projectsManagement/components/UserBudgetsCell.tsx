@@ -42,9 +42,6 @@ const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
   budgetAllocationLookup,
   onOverride,
 }) => {
-  if (!enforceMemberSpendLimits) {
-    return <span className="text-xs text-text-quaternary">Not enforced</span>
-  }
   const rows = BUDGET_CATEGORIES.filter(
     (cat) =>
       user.budget_assignments?.some((item) => item.category === cat) ||
@@ -62,6 +59,33 @@ const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
         const usage = assignment?.current_spending ?? null
         const limit = assignment?.max_budget ?? alloc?.allocated_max_budget
         const spendColor = getSpendColorFromValues(usage, limit)
+        const content = (
+          <>
+            <span className="text-text-quaternary w-32 shrink-0 whitespace-nowrap">
+              {getBudgetCategoryLabel(cat)}
+            </span>
+            <span className="inline-flex items-center gap-1 whitespace-nowrap text-text-primary tabular-nums">
+              <span className="shrink-0" style={spendColor ? { color: spendColor } : undefined}>
+                {formatCurrency(usage, '-')}
+              </span>
+              <span className="text-text-secondary">/</span>
+              <span className="shrink-0 text-text-secondary">{formatCurrency(limit, '-')}</span>
+              {isFixed && <BudgetOverrideIndicator />}
+            </span>
+          </>
+        )
+
+        if (!enforceMemberSpendLimits) {
+          return (
+            <span
+              key={cat}
+              className="inline-flex w-fit items-center gap-2 px-1 -mx-1 text-left text-xs"
+            >
+              {content}
+            </span>
+          )
+        }
+
         return (
           <button
             key={cat}
@@ -74,17 +98,7 @@ const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
             data-tooltip-id="react-tooltip"
             data-tooltip-content="Click to override allocation"
           >
-            <span className="text-text-quaternary w-32 shrink-0 whitespace-nowrap">
-              {getBudgetCategoryLabel(cat)}
-            </span>
-            <span className="inline-flex items-center gap-1 whitespace-nowrap text-text-primary tabular-nums">
-              <span className="shrink-0" style={spendColor ? { color: spendColor } : undefined}>
-                {formatCurrency(usage, '-')}
-              </span>
-              <span className="text-text-secondary">/</span>
-              <span className="shrink-0 text-text-secondary">{formatCurrency(limit, '-')}</span>
-              {isFixed && <BudgetOverrideIndicator />}
-            </span>
+            {content}
           </button>
         )
       })}

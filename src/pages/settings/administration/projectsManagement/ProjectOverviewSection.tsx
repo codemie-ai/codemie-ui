@@ -12,7 +12,6 @@ import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingProgressBar'
 import { projectBudgetsStore } from '@/store/projectBudgets'
-import { TimePeriod } from '@/types/analytics'
 import {
   BUDGET_CATEGORY_OPTIONS,
   BudgetCategory,
@@ -20,6 +19,7 @@ import {
 } from '@/types/entity/budget'
 import { BudgetSyncStatus, ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail, ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
+import { computeAnalyticsBudgetPeriod } from '@/utils/analyticsBudgetPeriod'
 import { formatDateTime } from '@/utils/helpers'
 import { displayValue } from '@/utils/utils'
 
@@ -37,15 +37,6 @@ const describeOverrideCount = (count: number): string => {
   if (count <= 0) return 'No user overrides'
   return count === 1 ? '1 user override' : `${count} user overrides`
 }
-
-const ANALYTICS_PERIOD_BY_DURATION: Record<string, TimePeriod> = {
-  '1d': TimePeriod.LAST_24_HOURS,
-  '7d': TimePeriod.LAST_7_DAYS,
-  '30d': TimePeriod.LAST_30_DAYS,
-}
-
-const getAnalyticsTimePeriod = (duration?: string | null): TimePeriod | undefined =>
-  duration ? ANALYTICS_PERIOD_BY_DURATION[duration] : undefined
 
 const getBudgetSyncStatusPresentation = (status: BudgetSyncStatus | null) => {
   if (status === 'ok' || status === 'noop') {
@@ -243,7 +234,6 @@ const ProjectOverviewSection: FC<Props> = ({
   const router = useVueRouter()
   const description = project.description?.trim() ?? ''
   const spending = canViewBudgets ? project.spending : undefined
-  const analyticsTimePeriod = getAnalyticsTimePeriod(projectBudgets[0]?.budget_duration)
   const costCenterName = project.cost_center_name || '—'
   const createdBy = project.created_by?.trim() || '—'
 
@@ -282,11 +272,16 @@ const ProjectOverviewSection: FC<Props> = ({
   )
 
   const openAnalytics = () => {
+    const period = computeAnalyticsBudgetPeriod(projectBudgets)
+    const hasBudgetPeriod = 'start_date' in period
+
     router.push({
       name: ANALYTICS,
       query: {
         projects: [project.name],
-        ...(analyticsTimePeriod ? { time_period: analyticsTimePeriod } : {}),
+        ...(hasBudgetPeriod
+          ? { start_date: period.start_date, end_date: period.end_date }
+          : { time_period: period.time_period }),
       },
     })
   }

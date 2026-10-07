@@ -3,16 +3,14 @@
 
 import { FC, ReactNode, useEffect, useState } from 'react'
 
-import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { PROJECTS_MANAGEMENT_INTEGRATIONS, PROJECTS_MANAGEMENT_MODELS } from '@/constants/routes'
-import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { analyticsStore } from '@/store/analytics'
 import { appInfoStore } from '@/store/appInfo'
 import { projectModelSettingsStore } from '@/store/projectModelSettings'
 import { projectSettingsStore } from '@/store/projectSettings'
-import { Metric, OverviewMetricType, TabularMetricType, TimePeriod } from '@/types/analytics'
-import { formatCurrency } from '@/utils/currency'
+import { TabularMetricType, TimePeriod } from '@/types/analytics'
+import { cn } from '@/utils/utils'
 
 import {
   getConfigurableModels,
@@ -35,11 +33,6 @@ interface ModelAvailabilitySummary {
   hidePremiumModels: boolean
 }
 
-interface RoutingImpact {
-  requests: number
-  savings: number
-}
-
 interface Props {
   projectName: string
   canManageProject: boolean
@@ -50,8 +43,16 @@ const IndicatorCard: FC<{
   title: string
   action?: ReactNode
   children: ReactNode
-}> = ({ title, action, children }) => (
-  <div className="flex min-h-[140px] min-w-0 flex-col gap-3 rounded-lg border border-border-structural bg-surface-base-secondary p-4">
+  enforceMinHeight?: boolean
+  className?: string
+}> = ({ title, action, children, enforceMinHeight = true, className }) => (
+  <div
+    className={cn(
+      'flex min-w-0 flex-col gap-3 rounded-lg border border-border-structural bg-surface-base-secondary p-4',
+      enforceMinHeight && 'min-h-[140px]',
+      className
+    )}
+  >
     <div className="flex items-center justify-between gap-2">
       <div className="text-sm font-medium text-text-primary">{title}</div>
       {action}
@@ -62,13 +63,10 @@ const IndicatorCard: FC<{
 
 const Unavailable: FC = () => <div className="text-xs text-text-quaternary">Not available</div>
 
-const getRoutingMetric = (metrics: Metric[], id: string) =>
-  Number(metrics.find((item) => item.id === id)?.value ?? 0)
-
 /**
  * Project-level indicators of the Overview tab: model availability, model usage distribution,
- * integrations and automatic-routing impact. Each card loads independently and degrades to
- * "Not available" when the viewer lacks access to its source.
+ * and integrations. Each card loads independently and degrades to "Not available" when the
+ * viewer lacks access to its source.
  */
 const ProjectOverviewIndicators: FC<Props> = ({
   projectName,
@@ -76,11 +74,9 @@ const ProjectOverviewIndicators: FC<Props> = ({
   isModelsConfigEnabled = false,
 }) => {
   const router = useVueRouter()
-  const [isRoutingAnalyticsEnabled] = useFeatureFlag(FEATURE_FLAGS.ROUTING_ANALYTICS)
   const [models, setModels] = useState<ModelAvailabilitySummary | null | undefined>()
   const [usage, setUsage] = useState<ModelUsageRow[] | null | undefined>()
   const [integrations, setIntegrations] = useState<number | null | undefined>()
-  const [routing, setRouting] = useState<RoutingImpact | null | undefined>()
 
   useEffect(() => {
     let cancelled = false
@@ -138,29 +134,10 @@ const ProjectOverviewIndicators: FC<Props> = ({
       .catch(() => null)
       .then(settle(setIntegrations))
 
-    if (isRoutingAnalyticsEnabled) {
-      analyticsStore
-        .fetchSummaries(OverviewMetricType.ROUTING_SUMMARY, {
-          projects: [projectName],
-          time_period: USAGE_PERIOD,
-        })
-        .then((response) => {
-          if (!response) return null
-          return {
-            requests: getRoutingMetric(response.data.metrics, 'request_count'),
-            savings: getRoutingMetric(response.data.metrics, 'total_potential_savings'),
-          }
-        })
-        .catch(() => null)
-        .then(settle(setRouting))
-    } else {
-      setRouting(null)
-    }
-
     return () => {
       cancelled = true
     }
-  }, [isRoutingAnalyticsEnabled, isModelsConfigEnabled, projectName])
+  }, [isModelsConfigEnabled, projectName])
 
   const maxRequests = Math.max(1, ...(usage ?? []).map((row) => row.requests))
   const openTab = (route: string) => router.push({ name: route, params: { projectName } })
@@ -178,10 +155,10 @@ const ProjectOverviewIndicators: FC<Props> = ({
 
   return (
     <section>
-      <div className="mb-3 text-sm font-semibold text-text-primary">Models and usage</div>
+      <div className="mb-3 text-sm font-semibold text-text-primary">Integrations</div>
       <div
         className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${
-          isModelsConfigEnabled ? 'xl:grid-cols-4' : 'xl:grid-cols-2'
+          isModelsConfigEnabled ? 'xl:grid-cols-3' : 'xl:grid-cols-1'
         }`}
       >
         {isModelsConfigEnabled && (
@@ -239,32 +216,17 @@ const ProjectOverviewIndicators: FC<Props> = ({
         )}
 
         <IndicatorCard
-          title="Integrations"
+          title={integrations?.toString() ?? ''}
           action={tabLink(PROJECTS_MANAGEMENT_INTEGRATIONS, 'View')}
+          enforceMinHeight={false}
+          className="lg:max-w-xs"
         >
           {integrations === undefined && loading}
           {integrations === null && <Unavailable />}
           {typeof integrations === 'number' && (
             <>
-              <div className="text-base font-semibold text-text-primary">{integrations}</div>
               <div className="text-xs text-text-quaternary">
                 Project-level integration{integrations === 1 ? '' : 's'}
-              </div>
-            </>
-          )}
-        </IndicatorCard>
-
-        <IndicatorCard title="Routing impact · 30 days">
-          {routing === undefined && loading}
-          {routing === null && <Unavailable />}
-          {routing && (
-            <>
-              <div className="text-base font-semibold text-text-primary">
-                {formatCurrency(routing.savings)}
-              </div>
-              <div className="text-xs text-text-quaternary">
-                Potential savings across {routing.requests.toLocaleString()} routed request
-                {routing.requests === 1 ? '' : 's'}
               </div>
             </>
           )}
