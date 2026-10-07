@@ -11,7 +11,9 @@ import { ANALYTICS } from '@/constants/routes'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingProgressBar'
+import { analyticsStore } from '@/store/analytics'
 import { projectBudgetsStore } from '@/store/projectBudgets'
+import { Metric, OverviewMetricType } from '@/types/analytics'
 import {
   BUDGET_CATEGORY_OPTIONS,
   BudgetCategory,
@@ -20,7 +22,7 @@ import {
 import { BudgetSyncStatus, ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail, ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
 import { computeAnalyticsBudgetPeriod } from '@/utils/analyticsBudgetPeriod'
-import { formatDateTime } from '@/utils/helpers'
+import { formatDateTime, pluralize } from '@/utils/helpers'
 import { displayValue } from '@/utils/utils'
 
 import ProjectOverviewIndicators from './components/ProjectOverviewIndicators'
@@ -215,6 +217,23 @@ const getChargebackStatus = (
   return 'Enabled'
 }
 
+interface RoutingImpact {
+  requests: number
+  savings: number
+}
+
+const getRoutingMetric = (metrics: Metric[], id: string) =>
+  Number(metrics.find((item) => item.id === id)?.value ?? 0)
+
+const getRoutingImpactText = (routing: RoutingImpact | null | undefined): string => {
+  if (routing === undefined) return 'Loading…'
+  if (routing === null) return 'Not available'
+  return `${formatCurrency(routing.savings)} (${routing.requests.toLocaleString()} ${pluralize(
+    routing.requests,
+    'request'
+  )})`
+}
+
 const ProjectOverviewSection: FC<Props> = ({
   project,
   onCostCenterOpen,
@@ -228,9 +247,11 @@ const ProjectOverviewSection: FC<Props> = ({
   onProjectChanged,
 }) => {
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAGS.COST_CENTERS)
+  const [isRoutingAnalyticsEnabled] = useFeatureFlag(FEATURE_FLAGS.ROUTING_ANALYTICS)
   const [projectBudgets, setProjectBudgets] = useState<ProjectBudget[]>([])
   const [budgetLoadError, setBudgetLoadError] = useState(false)
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false)
+  const [routing, setRouting] = useState<RoutingImpact | null | undefined>()
   const router = useVueRouter()
   const description = project.description?.trim() ?? ''
   const spending = canViewBudgets ? project.spending : undefined
@@ -258,6 +279,39 @@ const ProjectOverviewSection: FC<Props> = ({
   useEffect(() => {
     loadProjectBudgets()
   }, [loadProjectBudgets])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!isRoutingAnalyticsEnabled) {
+      setRouting(null)
+      return () => {
+        cancelled = true
+      }
+    }
+
+    const period = computeAnalyticsBudgetPeriod(projectBudgets)
+    analyticsStore
+      .fetchSummaries(OverviewMetricType.ROUTING_SUMMARY, {
+        projects: [project.name],
+        ...period,
+      })
+      .then((response) => {
+        if (!response) return null
+        return {
+          requests: getRoutingMetric(response.data.metrics, 'request_count'),
+          savings: getRoutingMetric(response.data.metrics, 'total_potential_savings'),
+        }
+      })
+      .catch(() => null)
+      .then((value) => {
+        if (!cancelled) setRouting(value)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isRoutingAnalyticsEnabled, project.name, projectBudgets])
 
   const budgetByCategory = useMemo(
     () => new Map(projectBudgets.map((budget) => [budget.budget_category, budget])),
@@ -289,7 +343,7 @@ const ProjectOverviewSection: FC<Props> = ({
   return (
     <>
       <div className="flex flex-col gap-6 pt-5 pb-8">
-        <div className="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-[3fr_2fr]">
+        <div className="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-2">
           <section className="flex min-h-0 flex-col">
             <div className="mb-3 text-sm font-semibold text-text-primary">Project information</div>
             <div className="min-h-0 flex-1 rounded-lg border border-border-structural bg-surface-base-secondary p-4">
@@ -342,16 +396,6 @@ const ProjectOverviewSection: FC<Props> = ({
                     }
                   />
                 )}
-                {isChargebackFeatureEnabled && (
-                  <InfoItem
-                    label="Chargeback"
-                    value={getChargebackStatus(
-                      project.chargeback_enabled,
-                      project.chargeback_attribution,
-                      costCentersEnabled
-                    )}
-                  />
-                )}
               </div>
             </div>
           </section>
@@ -394,6 +438,19 @@ const ProjectOverviewSection: FC<Props> = ({
                   label="Member spend limits"
                   value={project.enforce_member_spend_limits ? 'Enabled' : 'Disabled'}
                 />
+                {isChargebackFeatureEnabled && (
+                  <InfoItem
+                    label="Chargeback"
+                    value={getChargebackStatus(
+                      project.chargeback_enabled,
+                      project.chargeback_attribution,
+                      costCentersEnabled
+                    )}
+                  />
+                )}
+                {isRoutingAnalyticsEnabled && (
+                  <InfoItem label="Routing impact" value={getRoutingImpactText(routing)} />
+                )}
               </div>
             </div>
           </section>
