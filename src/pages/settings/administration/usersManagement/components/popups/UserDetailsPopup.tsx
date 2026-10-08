@@ -64,6 +64,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   const [isUpdatingRoles, setIsUpdatingRoles] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const detailsRequestId = useRef(0)
+  const refreshInFlight = useRef(false)
   const { user: currentUser } = useSnapshot(userStore)
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
@@ -73,12 +74,15 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   const canEditPlatformRoles = isMaintainer && currentUser?.userId !== userId
   const canAssignAuditor = (isAdmin || isMaintainer) && currentUser?.userId !== userId
 
-  const fetchUserDetails = async () => {
+  // A refresh after an edit keeps the details on screen: swapping them for the spinner collapses
+  // the panel and resets its scroll position (EPMCDME-15747).
+  const fetchUserDetails = async ({ refresh = false } = {}) => {
     if (!userId) return
 
     detailsRequestId.current += 1
     const requestId = detailsRequestId.current
-    setIsLoading(true)
+    refreshInFlight.current = refresh
+    if (!refresh) setIsLoading(true)
     try {
       const [detailsResult, budgetsResult] = await Promise.allSettled([
         userStore.getUserById(userId),
@@ -106,8 +110,19 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     } catch (error) {
       console.error('Failed to fetch user details:', error)
     } finally {
-      if (requestId === detailsRequestId.current) setIsLoading(false)
+      if (requestId === detailsRequestId.current) {
+        setIsLoading(false)
+        refreshInFlight.current = false
+      }
     }
+  }
+
+  // The panel stays editable during an in-place refresh, so a save can land while that refresh is
+  // reading an older snapshot. Each save re-applies its confirmed value and, if a refresh is still in
+  // flight, starts a newer one so the stale response is discarded.
+  const refreshAfterSave = () => {
+    setHasChanges(true)
+    if (refreshInFlight.current) fetchUserDetails({ refresh: true })
   }
 
   useEffect(() => {
@@ -131,7 +146,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
       )
     }
     setHasChanges(true)
-    fetchUserDetails()
+    fetchUserDetails({ refresh: true })
   }
 
   const handleUserTypeChange = async (newType: UserType) => {
@@ -142,7 +157,8 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
     try {
       await userStore.updateUser(userId, { user_type: newType })
-      setHasChanges(true)
+      setUserType(newType)
+      refreshAfterSave()
     } catch {
       setUserType(previousType)
     }
@@ -166,7 +182,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
       await userStore.updateUserBudgets(userId, editedAssignments)
       setBudgetAssignments(editedAssignments)
       setIsBudgetEditing(false)
-      setHasChanges(true)
+      refreshAfterSave()
     } finally {
       setIsSavingBudgets(false)
     }
@@ -198,8 +214,9 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
     try {
       await userStore.updateUser(userId, nextFlags)
-      setUser({ ...user, ...nextFlags })
-      setHasChanges(true)
+      setRoleFlags(nextFlags)
+      setUser((current) => (current ? { ...current, ...nextFlags } : current))
+      refreshAfterSave()
     } catch {
       setRoleFlags(previousFlags)
     } finally {

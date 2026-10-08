@@ -48,7 +48,7 @@ const columnDefinitions: ColumnDefinition[] = [
     key: 'project',
     label: 'Project',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[30%]',
+    headClassNames: 'w-[45%]',
   },
   {
     key: 'default',
@@ -60,7 +60,7 @@ const columnDefinitions: ColumnDefinition[] = [
     key: 'admin',
     label: 'Role',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[40%]',
+    headClassNames: 'w-[25%]',
   },
   {
     key: 'actions',
@@ -149,7 +149,7 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
       )
       toaster.info(`Removed from project`)
       setDeletingProject(null)
-      onProjectsChange?.()
+      onProjectsChange?.((projects) => projects.filter((p) => p.name !== deletingProject))
     } catch (error) {
       console.error('Failed to remove project:', error)
     }
@@ -231,18 +231,18 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
     if (!pendingRoleChange) return
 
     const isAdmin = pendingRoleChange.newRole === ProjectRole.ADMINISTRATOR
+    const applyRole = (projects: UserAssignedProject[]) =>
+      projects.map((p) =>
+        p.name === pendingRoleChange.projectName ? { ...p, is_project_admin: isAdmin } : p
+      )
 
     try {
-      await setProjects(
-        (projects) =>
-          projects.map((p) =>
-            p.name === pendingRoleChange.projectName ? { ...p, is_project_admin: isAdmin } : p
-          ),
-        () => userStore.updateUserProjectAccess(user.id, pendingRoleChange.projectName, isAdmin)
+      await setProjects(applyRole, () =>
+        userStore.updateUserProjectAccess(user.id, pendingRoleChange.projectName, isAdmin)
       )
       toaster.info('Role updated successfully')
       setPendingRoleChange(null)
-      onProjectsChange?.()
+      onProjectsChange?.(applyRole)
     } catch (error: any) {
       console.error('Failed to update role:', error)
       toaster.error(error?.parsedError?.message || 'Failed to update role')
@@ -252,7 +252,7 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
   const customRenderColumns = useMemo(
     () => ({
       project: (item: UserAssignedProject) => (
-        <div className="text-text-primary text-sm break-all min-w-0 max-w-[200px]">
+        <div className="text-text-primary text-sm break-all min-w-0">
           {getProjectDisplayName(item)}
           {item.display_name && (
             <span className="block text-xs text-text-quaternary">{item.name}</span>
@@ -280,7 +280,7 @@ const UserProjectsTable: FC<UserProjectsTableProps> = ({
               value={currentRole}
               onChange={(e) => handleRoleChange(item.name, e.value)}
               options={ROLE_OPTIONS}
-              rootClassName="w-48"
+              rootClassName="w-full max-w-48"
             />
           </div>
         )

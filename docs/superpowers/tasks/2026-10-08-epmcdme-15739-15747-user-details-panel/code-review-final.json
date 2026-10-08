@@ -1,0 +1,55 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three lenses (blind, edge-case, acceptance) ran with parseable output; every acceptance criterion of EPMCDME-15739 and EPMCDME-15747 passes. Three defects introduced by the change block: the in-place refresh leaves the panel editable, so a role, user-type or budget save can be repainted by an older refresh snapshot; the role save writes from a stale closure; and the 25% Role column can be narrower than its fixed 192px select below the lg breakpoint. 4 findings deferred as pre-existing (a mutation finishing after the popup was closed or reopened for another user, failed budget refetch clearing assignments, double-clicking a confirm button, swallowed unassign error); 14 dismissed (the updater and refresh ordering already matches the existing set-default path, the table has a single consumer, the initial load keeps its spinner, other edit handlers never refetched).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "EPMCDME-15739 AC1: Default and Role shifted right to widen the Project column", "status": "pass", "notes": "Project 30% -> 45%, Role 40% -> 25%, Default and actions unchanged"},
+    {"kind": "story-ac", "item": "EPMCDME-15739 AC2: Long project names, including personal emails, fit on one row", "status": "pass", "notes": "max-w-[200px] cap removed; before/after screenshots in the MR show a long email on one line"},
+    {"kind": "story-ac", "item": "EPMCDME-15739 AC3: No overlap; Default, Role and row actions stay usable", "status": "pass", "notes": "overflow-x-auto wrapper; Role margin is tight at narrow widths (see CR-001)"},
+    {"kind": "story-ac", "item": "EPMCDME-15739 AC4: Verified against the attached screenshot", "status": "pass", "notes": "manual check; evidence is the MR screenshots, outside the diff"},
+    {"kind": "story-ac", "item": "EPMCDME-15747 AC1: Saving a default project does not reset the panel scroll position", "status": "pass", "notes": "refresh after a project change no longer swaps the panel for the spinner; refreshInPlace test; measured scrollTop 62 -> 62 (main 70 -> 0)"},
+    {"kind": "story-ac", "item": "EPMCDME-15747 AC2: Saved default shown without scrolling back", "status": "pass", "notes": "confirmed update applied before the refetch; table stays mounted"},
+    {"kind": "spec", "item": "Table keeps showing the API's is_default after set default, unassign, add and role change", "status": "pass", "notes": "every change applies its confirmed update, then refetches; latest request wins"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "commits match EPMCDME-XXXX: Capital sentence"},
+    {"kind": "code-quality", "status": "pass", "notes": "lint and typecheck clean; prettier applied"},
+    {"kind": "security", "status": "na", "notes": "no HTML sinks, redirects, cross-window messages or config touched"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/usersManagement/components/UserProjectsTable.tsx",
+      "line": 283,
+      "title": "Role select overflows the narrower column",
+      "problem": "The Role column dropped to 25% while its select keeps a fixed 192px width; the table is table-fixed and the popup goes full width below the lg breakpoint.",
+      "impact": "On narrow screens the select spills into the actions column, breaking AC3 (no overlap, controls usable).",
+      "recommendation": "Make the select fluid up to its current width (w-full max-w-48)."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/usersManagement/components/popups/UserDetailsPopup.tsx",
+      "line": 94,
+      "title": "Save during in-place refresh gets repainted",
+      "problem": "The post-project-change refresh no longer blocks the panel, so a role, user-type or budget save can complete while that refresh is reading the pre-save snapshot; the refresh then overwrites roleFlags, userType and budgets with old values.",
+      "impact": "Controls show the old value after a successful save, with nothing to correct it.",
+      "recommendation": "On save success re-apply the confirmed value and, if a refresh is in flight, start a newer refresh so the stale response is discarded."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/usersManagement/components/popups/UserDetailsPopup.tsx",
+      "line": 203,
+      "title": "Role save writes user from stale closure",
+      "problem": "handleRoleChange sets setUser({ ...user, ...nextFlags }) with the user captured when the save started.",
+      "impact": "A project change or refresh that landed meanwhile is reverted in the table, and with the in-place refresh nothing re-corrects it.",
+      "recommendation": "Use the functional form: setUser((current) => (current ? { ...current, ...nextFlags } : current))."
+    }
+  ]
+}

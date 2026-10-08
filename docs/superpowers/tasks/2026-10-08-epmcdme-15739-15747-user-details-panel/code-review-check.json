@@ -1,0 +1,85 @@
+{
+  "decision": "approve",
+  "rationale": "All three blocking findings from the final review are fixed in the fix-up commits \"EPMCDME-15747: Keep saves made while the user details refresh in place\" and \"EPMCDME-15739: Let the role select shrink with its column\" and covered by tests that fail without the fixes. The fix-up diff introduces no new high-risk issue: it only re-applies confirmed values, re-runs the existing guarded refresh, and changes one class name.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "EPMCDME-15739 AC1: Default and Role shifted right to widen the Project column",
+      "status": "pass",
+      "notes": "Project 30% -> 45%, Role 40% -> 25%, Default and actions unchanged"
+    },
+    {
+      "kind": "story-ac",
+      "item": "EPMCDME-15739 AC2: Long project names, including personal emails, fit on one row",
+      "status": "pass",
+      "notes": "max-w-[200px] cap removed; before/after screenshots in the MR show a long email on one line"
+    },
+    {
+      "kind": "story-ac",
+      "item": "EPMCDME-15739 AC3: No overlap; Default, Role and row actions stay usable",
+      "status": "pass",
+      "notes": "overflow-x-auto wrapper; Role select made fluid at narrow widths (CR-001)"
+    },
+    {
+      "kind": "story-ac",
+      "item": "EPMCDME-15739 AC4: Verified against the attached screenshot",
+      "status": "pass",
+      "notes": "manual check; evidence is the MR screenshots, outside the diff"
+    },
+    {
+      "kind": "story-ac",
+      "item": "EPMCDME-15747 AC1: Saving a default project does not reset the panel scroll position",
+      "status": "pass",
+      "notes": "refresh after a project change no longer swaps the panel for the spinner; refreshInPlace test; measured scrollTop 62 -> 62 (main 70 -> 0)"
+    },
+    {
+      "kind": "story-ac",
+      "item": "EPMCDME-15747 AC2: Saved default shown without scrolling back",
+      "status": "pass",
+      "notes": "confirmed update applied before the refetch; table stays mounted"
+    },
+    {
+      "kind": "spec",
+      "item": "Table keeps showing the API's is_default after set default, unassign, add and role change",
+      "status": "pass",
+      "notes": "every change applies its confirmed update, then refetches; latest request wins"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "commits match EPMCDME-XXXX: Capital sentence"
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "lint and typecheck clean; prettier applied"
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "no HTML sinks, redirects, cross-window messages or config touched"
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "commit \"EPMCDME-15739: Let the role select shrink with its column\": role select rootClassName is now w-full max-w-48, so it shrinks with the 25% column"
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "commit \"EPMCDME-15747: Keep saves made while the user details refresh in place\": refreshAfterSave re-runs the refresh when one is in flight, and role/type/budget saves re-apply their confirmed values; UserDetailsPopup.saveDuringRefresh.test.tsx covers both orderings and fails without the fix"
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "commit \"EPMCDME-15747: Keep saves made while the user details refresh in place\": handleRoleChange uses setUser((current) => ...)"
+    }
+  ]
+}
