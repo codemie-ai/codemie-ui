@@ -181,7 +181,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
                   !item.disabled &&
                     'hover:bg-surface-specific-dropdown-hover hover:text-text-accent',
                   'hover:no-underline',
-                  'focus:outline-none focus:ring-2 focus:ring-primary-500',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
                   item.href && item.disabled && 'pointer-events-none opacity-50'
                 )
 

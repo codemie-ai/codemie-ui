@@ -224,6 +224,15 @@ describe('NavigationMore', () => {
     )
     expect(trigger).not.toHaveClass('focus:ring-2')
   })
+
+  it('shows a menu item focus ring only for keyboard-visible focus, not on open', () => {
+    render(<NavigationMore items={makeItems()} />)
+    openMenu()
+
+    const [firstItem] = screen.getAllByRole('menuitem')
+    expect(firstItem).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-primary-500')
+    expect(firstItem).not.toHaveClass('focus:ring-2')
+  })
 })
 
 describe('NavigationMore accessibility attributes', () => {
