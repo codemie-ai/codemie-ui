@@ -89,7 +89,13 @@ const OverridesSummary: FC<{ data: BudgetCardData; projectName: string }> = ({
       <button
         type="button"
         className="shrink-0 text-text-accent-status hover:text-text-accent-status-hover"
-        onClick={() => router.push({ name: PROJECTS_MANAGEMENT_MEMBERS, params: { projectName } })}
+        onClick={() =>
+          router.push({
+            name: PROJECTS_MANAGEMENT_MEMBERS,
+            params: { projectName },
+            query: { overrides: data.category },
+          })
+        }
       >
         View details
       </button>

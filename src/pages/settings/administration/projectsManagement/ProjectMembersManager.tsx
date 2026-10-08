@@ -75,7 +75,8 @@ import UserBudgetsCell, {
 } from './components/UserBudgetsCell'
 import ImportUsersModal from './ImportUsersModal'
 import ProjectMembersFilters, {
-  PROJECT_MEMBERS_INITIAL_FILTERS,
+  ALL_USAGE_RANGES,
+  getInitialFilters,
   BudgetUsageFilter,
   isDefaultBudgetUsageFilter,
   ProjectMembersFiltersState,
@@ -95,7 +96,10 @@ const matchesBudgetUsage = (
       spendingByUserId[user.id],
       category
     )
-    if (usage == null) return false
+    // A member with an override but no spend yet still matches "Override only".
+    if (usage == null) {
+      return filter.overrideOnly && filter.usageRanges.length === ALL_USAGE_RANGES.length
+    }
 
     return filter.usageRanges.some((range) => {
       if (range === 'low') return usage < 50
@@ -261,8 +265,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     per_page: 10,
     total: 0,
   })
-  const [filters, setFilters] = useState<ProjectMembersFiltersState>(
-    PROJECT_MEMBERS_INITIAL_FILTERS
+  const [filters, setFilters] = useState<ProjectMembersFiltersState>(() =>
+    getInitialFilters(router.query.overrides)
   )
   const [hasScroll, setHasScroll] = useState(false)
   const [isSelectAllLoading, setIsSelectAllLoading] = useState(false)
@@ -874,6 +878,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
 
         <div className="mb-5">
           <ProjectMembersFilters
+            initialFilters={filters}
             onFilterChange={handleFiltersChange}
             isModelsConfigEnabled={isModelsConfigEnabled}
           />

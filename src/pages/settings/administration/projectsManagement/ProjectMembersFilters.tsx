@@ -43,7 +43,7 @@ export interface BudgetUsageFilter {
 }
 
 const ALL_BUDGET_CATEGORIES = BUDGET_CATEGORY_OPTIONS.map((option) => option.value)
-const ALL_USAGE_RANGES: BudgetUsageRange[] = ['low', 'medium', 'high']
+export const ALL_USAGE_RANGES: BudgetUsageRange[] = ['low', 'medium', 'high']
 
 const createDefaultBudgetUsageFilter = (): BudgetUsageFilter => ({
   categories: [...ALL_BUDGET_CATEGORIES],
@@ -103,18 +103,33 @@ export const PROJECT_MEMBERS_INITIAL_FILTERS: ProjectMembersFiltersState = {
   modelSettings: 'all',
 }
 
+/** Filters for the Budget tab "View details" link: one category, override-only. */
+export const getInitialFilters = (category: unknown): ProjectMembersFiltersState =>
+  ALL_BUDGET_CATEGORIES.includes(category as BudgetCategory)
+    ? {
+        ...PROJECT_MEMBERS_INITIAL_FILTERS,
+        budgetUsage: {
+          ...createDefaultBudgetUsageFilter(),
+          categories: [category as BudgetCategory],
+          overrideOnly: true,
+        },
+      }
+    : PROJECT_MEMBERS_INITIAL_FILTERS
+
 interface ProjectMembersFiltersProps {
   onFilterChange: (filters: ProjectMembersFiltersState) => void
   isModelsConfigEnabled?: boolean
+  initialFilters?: ProjectMembersFiltersState
 }
 
 const ProjectMembersFilters: FC<ProjectMembersFiltersProps> = ({
   onFilterChange,
   isModelsConfigEnabled = false,
+  initialFilters,
 }) => {
   const budgetUsagePanelRef = useRef<OverlayPanel>(null)
   const [localFilters, setLocalFilters] = useState<ProjectMembersFiltersState>(
-    PROJECT_MEMBERS_INITIAL_FILTERS
+    initialFilters ?? PROJECT_MEMBERS_INITIAL_FILTERS
   )
 
   const areFiltersEmpty = useMemo(() => {
