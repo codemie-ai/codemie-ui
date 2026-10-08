@@ -49,6 +49,7 @@ import AddUserModal, {
 import ProjectMembersBulkActions from '@/pages/settings/administration/components/projectsManagement/ProjectMembersBulkActions'
 import ResetBudgetPopup from '@/pages/settings/administration/usersManagement/components/popups/ResetBudgetPopup'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
+import { analyticsStore } from '@/store/analytics'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { projectModelSettingsStore } from '@/store/projectModelSettings'
 import { userStore } from '@/store/user'
@@ -57,6 +58,7 @@ import { ProjectRole, ProjectType } from '@/types/entity/project'
 import { ProjectBudget, ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { UserListItem } from '@/types/entity/user'
+import { ProjectMemberSpendingRow } from '@/types/entity/userProjectSpending'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 import { isUserManagementEnabled } from '@/utils/featureFlags'
@@ -83,10 +85,16 @@ import ProjectMembersFilters, {
 const matchesBudgetUsage = (
   user: UserListItem,
   budgetAllocationLookup: BudgetAllocationLookup,
+  spendingByUserId: Record<string, ProjectMemberSpendingRow>,
   filter: BudgetUsageFilter
 ): boolean => {
   const matchesUsage = filter.categories.some((category) => {
-    const usage = getUserBudgetUsage(user, budgetAllocationLookup, category)
+    const usage = getUserBudgetUsage(
+      user,
+      budgetAllocationLookup,
+      spendingByUserId[user.id],
+      category
+    )
     if (usage == null) return false
 
     return filter.usageRanges.some((range) => {
@@ -265,6 +273,9 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   } | null>(null)
   const [modelOverrideUsers, setModelOverrideUsers] = useState<UserListItem[]>([])
   const [resetBudgetUser, setResetBudgetUser] = useState<UserListItem | null>(null)
+  const [spendingByUserId, setSpendingByUserId] = useState<
+    Record<string, ProjectMemberSpendingRow>
+  >({})
 
   // Budgets fetched independently for the "View analytics" link — entirely
   // separate from the `budgets` prop which drives the Budget Allocations column.
@@ -307,6 +318,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
 
   const budgetAllocationLookupRef = useRef(budgetAllocationLookup)
   budgetAllocationLookupRef.current = budgetAllocationLookup
+  const spendingByUserIdRef = useRef(spendingByUserId)
+  spendingByUserIdRef.current = spendingByUserId
   const userModelOverridesRef = useRef(userModelOverrides)
   userModelOverridesRef.current = userModelOverrides
 
@@ -369,8 +382,12 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       const allUsers = await fetchAllMatchingUsers()
       const filteredUsers = allUsers.filter(
         (user) =>
-          matchesBudgetUsage(user, budgetAllocationLookupRef.current, filters.budgetUsage) &&
-          matchesModelSettings(user.id, filters.modelSettings, userModelOverridesRef.current)
+          matchesBudgetUsage(
+            user,
+            budgetAllocationLookupRef.current,
+            spendingByUserIdRef.current,
+            filters.budgetUsage
+          ) && matchesModelSettings(user.id, filters.modelSettings, userModelOverridesRef.current)
       )
       const start = page * perPage
       const result = {
@@ -399,7 +416,12 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       return hasBudgetUsageFilter || hasModelSettingsFilter
         ? allUsers.filter(
             (user) =>
-              matchesBudgetUsage(user, budgetAllocationLookupRef.current, filters.budgetUsage) &&
+              matchesBudgetUsage(
+                user,
+                budgetAllocationLookupRef.current,
+                spendingByUserIdRef.current,
+                filters.budgetUsage
+              ) &&
               matchesModelSettings(user.id, filters.modelSettings, userModelOverridesRef.current)
           )
         : allUsers
@@ -441,6 +463,26 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   useEffect(() => {
     loadUsers()
   }, [loadUsers])
+
+  // Per-member spend inside this project — the left-hand number in the Budget Allocations column.
+  useEffect(() => {
+    if (!showBudgets) return () => {}
+    let cancelled = false
+    analyticsStore
+      .fetchProjectMemberSpending(project.name)
+      .then((result) => {
+        if (cancelled) return
+        const rows = (result?.data?.rows as unknown as ProjectMemberSpendingRow[]) ?? []
+        setSpendingByUserId(Object.fromEntries(rows.map((row) => [row.user_id, row])))
+      })
+      .catch((error) => {
+        console.error('Failed to fetch project member spending:', error)
+        if (!cancelled) setSpendingByUserId({})
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [project.name, showBudgets])
 
   // Fetch project budgets independently for the "View analytics" link period calculation.
   // This is guarded by canManageProject and does NOT affect showBudgets or the budget column.
@@ -701,6 +743,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           user={user}
           enforceMemberSpendLimits={!!project.enforce_member_spend_limits}
           budgetAllocationLookup={budgetAllocationLookup}
+          spendingRow={spendingByUserId[user.id]}
           onOverride={(userId, category) =>
             setOverrideContext({ userId, userName: user.name, category })
           }
@@ -775,6 +818,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       isPersonal,
       handleDeleteUser,
       budgetAllocationLookup,
+      spendingByUserId,
       openModelOverrides,
       memberBudgets,
       budgetsLoaded,

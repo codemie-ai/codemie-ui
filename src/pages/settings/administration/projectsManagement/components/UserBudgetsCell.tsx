@@ -6,6 +6,7 @@ import { FC } from 'react'
 import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
 import { ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
 import { UserListItem } from '@/types/entity/user'
+import { getCategorySpend, ProjectMemberSpendingRow } from '@/types/entity/userProjectSpending'
 
 import BudgetOverrideIndicator from './BudgetOverrideIndicator'
 import { formatCurrency, getSpendColorFromValues } from './spendPresentation'
@@ -20,12 +21,13 @@ export type BudgetAllocationLookup = Record<
 export const getUserBudgetUsage = (
   user: UserListItem,
   budgetAllocationLookup: BudgetAllocationLookup,
+  spendingRow: ProjectMemberSpendingRow | undefined,
   category: BudgetCategory
 ): number | null => {
   const assignment = user.budget_assignments?.find((item) => item.category === category)
   const allocation = budgetAllocationLookup?.[user.id]?.[category]
-  const spent = assignment?.current_spending ?? null
-  const limit = assignment?.max_budget ?? allocation?.allocated_max_budget
+  const spent = spendingRow ? getCategorySpend(spendingRow, category) ?? null : null
+  const limit = allocation?.allocated_max_budget ?? assignment?.max_budget
   return spent != null && limit != null && limit > 0 ? (spent / limit) * 100 : null
 }
 
@@ -33,6 +35,7 @@ interface UserBudgetsCellProps {
   user: UserListItem
   enforceMemberSpendLimits: boolean
   budgetAllocationLookup: BudgetAllocationLookup
+  spendingRow: ProjectMemberSpendingRow | undefined
   onOverride: (userId: string, category: BudgetCategory) => void
 }
 
@@ -40,6 +43,7 @@ const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
   user,
   enforceMemberSpendLimits,
   budgetAllocationLookup,
+  spendingRow,
   onOverride,
 }) => {
   const rows = BUDGET_CATEGORIES.filter(
@@ -56,8 +60,8 @@ const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
         const assignment = user.budget_assignments?.find((item) => item.category === cat)
         const alloc = budgetAllocationLookup?.[user.id]?.[cat]
         const isFixed = alloc?.allocation_mode === 'fixed'
-        const usage = assignment?.current_spending ?? null
-        const limit = assignment?.max_budget ?? alloc?.allocated_max_budget
+        const usage = spendingRow ? getCategorySpend(spendingRow, cat) ?? null : null
+        const limit = alloc?.allocated_max_budget ?? assignment?.max_budget
         const spendColor = getSpendColorFromValues(usage, limit)
         const content = (
           <>

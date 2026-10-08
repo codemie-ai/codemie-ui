@@ -17,6 +17,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import ProjectMembersManager from '@/pages/settings/administration/projectsManagement/ProjectMembersManager'
+import { analyticsStore } from '@/store/analytics'
 import { userStore } from '@/store/user'
 import { BudgetAssignment } from '@/types/entity/budget'
 import { ProjectBudget, ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
@@ -95,6 +96,7 @@ const usersResponse = (data: unknown[]) => ({
 
 describe('ProjectMembersManager — merged Spending column', () => {
   beforeEach(() => {
+    vi.restoreAllMocks()
     vi.clearAllMocks()
     userStore.user = { userId: 'admin-1', isAdmin: true } as never
     userStore.getUsers = vi
@@ -109,13 +111,30 @@ describe('ProjectMembersManager — merged Spending column', () => {
     expect(screen.queryByText('Allocated')).not.toBeInTheDocument()
   })
 
-  it('shows spend and allocation together on one line per category', async () => {
+  it('shows project spend and allocation together on one line per category', async () => {
+    vi.spyOn(analyticsStore, 'fetchProjectMemberSpending').mockResolvedValue({
+      data: { rows: [{ user_id: 'u-1', platform: 120.5 }] },
+    } as never)
+
+    render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('$120.50')).toBeInTheDocument()
+      expect(screen.getByText('$0.00')).toBeInTheDocument()
+    })
+    expect(analyticsStore.fetchProjectMemberSpending).toHaveBeenCalledWith('Test Project')
+  })
+
+  it('ignores the personal budget spend and limit when a project allocation exists', async () => {
+    vi.spyOn(analyticsStore, 'fetchProjectMemberSpending').mockResolvedValue({
+      data: { rows: [{ user_id: 'u-1', platform: 120.5 }] },
+    } as never)
     userStore.getUsers = vi
       .fn()
       .mockResolvedValue(
         usersResponse([
           buildUser('u-1', 'Jane Doe', 'jane@epam.com', [
-            { category: 'platform', budget_id: null, current_spending: 120.5, max_budget: null },
+            { category: 'platform', budget_id: 'personal', current_spending: 7, max_budget: 250 },
           ]),
         ])
       )
@@ -126,6 +145,8 @@ describe('ProjectMembersManager — merged Spending column', () => {
       expect(screen.getByText('$120.50')).toBeInTheDocument()
       expect(screen.getByText('$0.00')).toBeInTheDocument()
     })
+    expect(screen.queryByText('$7.00')).not.toBeInTheDocument()
+    expect(screen.queryByText('$250.00')).not.toBeInTheDocument()
   })
 
   it('renders a dash for the spend side when a member has no spending row', async () => {
