@@ -67,4 +67,50 @@ describe('SpendingProgressBar', () => {
     const { container } = render(<SpendingProgressBar percentage={30} className="my-class" />)
     expect(container.querySelector('.my-class')).toBeInTheDocument()
   })
+
+  it('renders spend, limit and percentage when limit is provided', () => {
+    render(<SpendingProgressBar spend={2.29} limit={100} percentage={2.29} />)
+    expect(screen.getByText('$2.29 / $100.00 (2.3%)')).toBeInTheDocument()
+  })
+
+  it('renders dash for the limit when limit is null', () => {
+    render(<SpendingProgressBar spend={2.29} limit={null} percentage={2.29} />)
+    expect(screen.getByText('$2.29 / - (2.3%)')).toBeInTheDocument()
+  })
+
+  it('shows only the percentage when neither spend nor limit is passed', () => {
+    const { container } = render(<SpendingProgressBar percentage={2.29} />)
+    expect(screen.getByText('2.3%')).toBeInTheDocument()
+    expect(container.textContent).not.toContain('$')
+  })
+
+  it('renders spend and percentage when only spend is passed', () => {
+    render(<SpendingProgressBar spend={12.34} percentage={44.5} />)
+    expect(screen.getByText('$12.34 (44.5%)')).toBeInTheDocument()
+  })
+
+  it('renders zero spend as $0.00, not a dash', () => {
+    render(<SpendingProgressBar spend={0} limit={50} percentage={0} />)
+    expect(screen.getByText('$0.00 / $50.00 (0.0%)')).toBeInTheDocument()
+  })
+
+  it.each([null, undefined, -5.5, NaN, Infinity, -Infinity])(
+    'renders a dash for invalid spend %s',
+    (spend) => {
+      render(<SpendingProgressBar spend={spend} limit={100} percentage={30} />)
+      expect(screen.getByText('- / $100.00 (30.0%)')).toBeInTheDocument()
+    }
+  )
+
+  it('shows real amounts but clamps the percentage when spend exceeds the limit', () => {
+    render(<SpendingProgressBar spend={120} limit={100} percentage={120} />)
+    expect(screen.getByText('$120.00 / $100.00 (100.0%)')).toBeInTheDocument()
+  })
+
+  it('in amounts mode the bar grows to fill the row instead of a fixed width', () => {
+    const { container } = render(<SpendingProgressBar spend={2.29} limit={100} percentage={2.29} />)
+    const track = container.querySelector('.relative')
+    expect(track).toHaveClass('flex-1')
+    expect(track).not.toHaveClass('w-[110px]')
+  })
 })

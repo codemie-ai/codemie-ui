@@ -19,10 +19,14 @@ import {
   getStatusColor,
   getStatusColorWithOpacity,
 } from '@/pages/analytics/components/widgets/RatioWidget/utils'
+import { formatSpend } from '@/utils/currency'
 import { cn } from '@/utils/utils'
 
 interface SpendingProgressBarProps {
   percentage: number
+  /** When spend or limit is passed, the label reads "spend / limit (pct%)" instead of the plain percentage */
+  spend?: number | null
+  limit?: number | null
   className?: string
   fullWidth?: boolean
   dangerThreshold?: number
@@ -31,12 +35,15 @@ interface SpendingProgressBarProps {
 
 const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
   percentage,
+  spend,
+  limit,
   className,
   fullWidth = false,
   dangerThreshold = 90,
   warningThreshold = 75,
 }) => {
   const normalizedPercentage = Math.min(Math.max(percentage, 0), 100)
+  const showAmounts = spend !== undefined || limit !== undefined
 
   const barColor = useMemo(
     () => getStatusColor(normalizedPercentage, dangerThreshold, warningThreshold),
@@ -48,10 +55,29 @@ const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
     [normalizedPercentage, dangerThreshold, warningThreshold]
   )
 
-  return (
-    <div className={cn('flex items-center gap-2 w-full', className)}>
+  // Validate spend: accept only finite, non-negative numbers
+  const amountsLabel = useMemo(() => {
+    const validatedSpend =
+      typeof spend === 'number' && Number.isFinite(spend) && spend >= 0 ? spend : null
+    const limitText = limit === undefined ? '' : ` / ${formatSpend(limit)}`
+    return `${formatSpend(validatedSpend)}${limitText} (${normalizedPercentage.toFixed(1)}%)`
+  }, [spend, limit, normalizedPercentage])
+
+  const content = (
+    <div
+      className={cn(
+        'flex items-center gap-2',
+        showAmounts ? 'flex-wrap min-w-0 w-full' : 'w-full',
+        className
+      )}
+    >
       <div
-        className={cn('relative h-2 rounded-[99px] min-w-0 flex-1', !fullWidth && 'w-[110px]')}
+        className={cn(
+          'relative h-2 rounded-[99px]',
+          showAmounts
+            ? 'min-w-[96px] flex-1 basis-[96px]'
+            : cn('min-w-0 flex-1', !fullWidth && 'w-[110px]')
+        )}
         style={{ backgroundColor: bgColor }}
       >
         <div
@@ -63,12 +89,25 @@ const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
         />
       </div>
       <span
-        className="text-sm font-semibold leading-none whitespace-nowrap w-12 text-right"
+        className={cn(
+          'text-sm font-semibold leading-none whitespace-nowrap text-right',
+          showAmounts
+            ? 'max-xl:whitespace-normal max-xl:text-left max-xl:leading-tight [@container(max-width:281px)]:basis-full'
+            : 'w-12'
+        )}
         style={{ color: barColor }}
       >
-        {normalizedPercentage.toFixed(1)}%
+        {showAmounts ? amountsLabel : `${normalizedPercentage.toFixed(1)}%`}
       </span>
     </div>
+  )
+
+  // Amounts mode: stack the label under the bar when the available width is narrow, by container width
+  // (not by label length) so every row of a list is laid out the same way
+  return showAmounts ? (
+    <div className="w-full [container-type:inline-size]">{content}</div>
+  ) : (
+    content
   )
 }
 

@@ -62,7 +62,7 @@ describe('SpendingCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('$12.34')).toBeInTheDocument()
-      expect(screen.getByText('(45%)')).toBeInTheDocument()
+      expect(screen.getByText('(45.0%)')).toBeInTheDocument()
     })
   })
 
@@ -95,7 +95,7 @@ describe('SpendingCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('$120.00')).toBeInTheDocument()
-      expect(screen.getByText('(100%)')).toBeInTheDocument()
+      expect(screen.getByText('(100.0%)')).toBeInTheDocument()
     })
   })
 
@@ -128,7 +128,7 @@ describe('SpendingCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('-')).toBeInTheDocument()
-      expect(screen.getByText('(30%)')).toBeInTheDocument()
+      expect(screen.getByText('(30.0%)')).toBeInTheDocument()
     })
   })
 
@@ -161,7 +161,7 @@ describe('SpendingCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('$0.00')).toBeInTheDocument()
-      expect(screen.getByText('(0%)')).toBeInTheDocument()
+      expect(screen.getByText('(0.0%)')).toBeInTheDocument()
     })
   })
 
@@ -194,7 +194,7 @@ describe('SpendingCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('$12.34')).toBeInTheDocument()
-      expect(screen.getByText('(45%)')).toBeInTheDocument()
+      expect(screen.getByText('(45.0%)')).toBeInTheDocument()
     })
   })
 
@@ -227,7 +227,7 @@ describe('SpendingCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('-')).toBeInTheDocument()
-      expect(screen.getByText('(30%)')).toBeInTheDocument()
+      expect(screen.getByText('(30.0%)')).toBeInTheDocument()
     })
   })
 
@@ -260,7 +260,7 @@ describe('SpendingCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('-')).toBeInTheDocument()
-      expect(screen.getByText('(30%)')).toBeInTheDocument()
+      expect(screen.getByText('(30.0%)')).toBeInTheDocument()
     })
   })
 
@@ -293,7 +293,270 @@ describe('SpendingCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('-')).toBeInTheDocument()
-      expect(screen.getByText('(50%)')).toBeInTheDocument()
+      expect(screen.getByText('(50.0%)')).toBeInTheDocument()
+    })
+  })
+
+  it('renders multi-row table without Current Spending and with Spent / Limit column', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue({
+      data: {
+        columns: [
+          { id: 'project_name', label: 'Project' },
+          { id: 'current_spending', label: 'Current Spending' },
+          { id: 'budget_reset_at', label: 'Budget Reset' },
+          { id: 'time_until_reset', label: 'Time Until Reset' },
+          { id: 'total', label: 'Total', format: 'percentage' },
+          { id: 'budget_limit', label: 'Budget Limit' },
+        ],
+        rows: [
+          {
+            project_name: 'Project A',
+            current_spending: 2.29,
+            budget_reset_at: '2026-10-24',
+            time_until_reset: '30 days',
+            total: 2.29,
+            budget_limit: 100,
+          },
+          {
+            project_name: 'Project B',
+            current_spending: 50,
+            budget_reset_at: '2026-10-24',
+            time_until_reset: '30 days',
+            total: 50,
+            budget_limit: 100,
+          },
+        ],
+      },
+      metadata: {},
+    } as any)
+
+    render(<SpendingCard />)
+
+    await waitFor(() => {
+      expect(screen.getByText('$2.29 / $100.00 (2.3%)')).toBeInTheDocument()
+      expect(screen.getByText('$50.00 / $100.00 (50.0%)')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Spent / Limit')).toBeInTheDocument()
+    expect(screen.queryByText('Current Spending')).not.toBeInTheDocument()
+    expect(screen.queryByText('Total')).not.toBeInTheDocument()
+  })
+
+  it('shows each row its own amounts when rows share a project name', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue({
+      data: {
+        columns: [
+          { id: 'project_name', label: 'Project' },
+          { id: 'current_spending', label: 'Current Spending' },
+          { id: 'budget_reset_at', label: 'Budget Reset' },
+          { id: 'time_until_reset', label: 'Time Until Reset' },
+          { id: 'total', label: 'Total', format: 'percentage' },
+          { id: 'budget_limit', label: 'Budget Limit' },
+        ],
+        rows: [
+          {
+            project_name: 'Same Name',
+            current_spending: 2.29,
+            budget_reset_at: '2026-10-24',
+            time_until_reset: '30 days',
+            total: 2.29,
+            budget_limit: 100,
+          },
+          {
+            project_name: 'Same Name',
+            current_spending: 50,
+            budget_reset_at: '2026-10-24',
+            time_until_reset: '30 days',
+            total: 50,
+            budget_limit: 100,
+          },
+        ],
+      },
+      metadata: {},
+    } as any)
+
+    render(<SpendingCard />)
+
+    await waitFor(() => {
+      expect(screen.getByText('$2.29 / $100.00 (2.3%)')).toBeInTheDocument()
+      expect(screen.getByText('$50.00 / $100.00 (50.0%)')).toBeInTheDocument()
+    })
+  })
+
+  it('single-row layout omits the Current Spending row but keeps the amount in the doughnut', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue({
+      data: {
+        columns: [
+          { id: 'project_name', label: 'Project' },
+          { id: 'current_spending', label: 'Current Spending ($)' },
+          { id: 'budget_reset_at', label: 'Budget Reset Date' },
+          { id: 'time_until_reset', label: 'Time Until Reset' },
+          { id: 'total', label: 'Total' },
+          { id: 'budget_limit', label: 'Budget Limit' },
+        ],
+        rows: [
+          {
+            project_name: 'Project A',
+            current_spending: 2.29,
+            budget_reset_at: '2026-11-01',
+            time_until_reset: '25 days',
+            total: 2.29,
+            budget_limit: 100,
+          },
+        ],
+      },
+      metadata: {},
+    } as any)
+
+    render(<SpendingCard />)
+
+    await waitFor(() => {
+      expect(screen.getByText('$2.29')).toBeInTheDocument()
+      expect(screen.getByText('(2.3%)')).toBeInTheDocument()
+    })
+    expect(screen.getAllByText('$2.29')).toHaveLength(1)
+    expect(screen.queryByText('Current Spending ($)')).not.toBeInTheDocument()
+    expect(screen.getByText('Time Until Reset')).toBeInTheDocument()
+  })
+
+  it('single-row layout keeps the Current Spending row when there is no limit column', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue({
+      data: {
+        columns: [
+          { id: 'project_name', label: 'Project' },
+          { id: 'current_spending', label: 'Current Spending ($)', format: 'currency' },
+          { id: 'budget_reset_at', label: 'Budget Reset Date' },
+          { id: 'total', label: 'Total' },
+        ],
+        rows: [
+          {
+            project_name: 'Project A',
+            current_spending: 2.29,
+            budget_reset_at: '2026-11-01',
+            total: 2.29,
+          },
+        ],
+      },
+      metadata: {},
+    } as any)
+
+    render(<SpendingCard />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Current Spending ($)')).toBeInTheDocument()
+    })
+    expect(screen.getByText('$2.29')).toBeInTheDocument()
+  })
+
+  it('single-row layout also renders spent / limit text with the bar for small screens', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue({
+      data: {
+        columns: [
+          { id: 'project_name', label: 'Project' },
+          { id: 'current_spending', label: 'Current Spending ($)' },
+          { id: 'budget_reset_at', label: 'Budget Reset Date' },
+          { id: 'total', label: 'Total' },
+          { id: 'budget_limit', label: 'Budget Limit' },
+        ],
+        rows: [
+          {
+            project_name: 'Project A',
+            current_spending: 2.29,
+            budget_reset_at: '2026-11-01',
+            total: 2.29,
+            budget_limit: 100,
+          },
+        ],
+      },
+      metadata: {},
+    } as any)
+
+    render(<SpendingCard />)
+
+    await waitFor(() => {
+      expect(screen.getByText('$2.29 / $100.00 (2.3%)')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Spent / Limit')).toBeInTheDocument()
+  })
+
+  it('mobile card list gives Spent / Limit a full-width cell', async () => {
+    const { matchMedia } = window
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }) as unknown as typeof window.matchMedia
+
+    try {
+      vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue({
+        data: {
+          columns: [
+            { id: 'project_name', label: 'Project' },
+            { id: 'current_spending', label: 'Current Spending ($)' },
+            { id: 'total', label: 'Total', format: 'percentage' },
+            { id: 'budget_limit', label: 'Budget Limit' },
+          ],
+          rows: [
+            { project_name: 'Project A', current_spending: 2.29, total: 2.29, budget_limit: 100 },
+            { project_name: 'Project B', current_spending: 50, total: 50, budget_limit: 100 },
+          ],
+        },
+        metadata: {},
+      } as any)
+
+      render(<SpendingCard />)
+
+      const label = await screen.findByText('$2.29 / $100.00 (2.3%)')
+      expect(label.closest('.col-span-full')).not.toBeNull()
+    } finally {
+      window.matchMedia = matchMedia
+    }
+  })
+
+  it('multi-row table shows a dash for a budget without a limit', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue({
+      data: {
+        columns: [
+          { id: 'project_name', label: 'Project' },
+          { id: 'current_spending', label: 'Current Spending ($)' },
+          { id: 'total', label: 'Total', format: 'percentage' },
+          { id: 'budget_limit', label: 'Budget Limit' },
+        ],
+        rows: [
+          { project_name: 'Project A', current_spending: 4.2, total: 0, budget_limit: null },
+          { project_name: 'Project B', current_spending: 2.29, total: 2.29, budget_limit: 100 },
+        ],
+      },
+      metadata: {},
+    } as any)
+
+    render(<SpendingCard />)
+
+    await waitFor(() => {
+      expect(screen.getByText('$4.20 / - (0.0%)')).toBeInTheDocument()
+      expect(screen.getByText('$2.29 / $100.00 (2.3%)')).toBeInTheDocument()
+    })
+  })
+
+  it('single-row small-screen text shows a dash for a budget without a limit', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue({
+      data: {
+        columns: [
+          { id: 'project_name', label: 'Project' },
+          { id: 'current_spending', label: 'Current Spending ($)' },
+          { id: 'total', label: 'Total' },
+          { id: 'budget_limit', label: 'Budget Limit' },
+        ],
+        rows: [
+          { project_name: 'Project A', current_spending: 2.29, total: 2.29, budget_limit: null },
+        ],
+      },
+      metadata: {},
+    } as any)
+
+    render(<SpendingCard />)
+
+    await waitFor(() => {
+      expect(screen.getByText('$2.29 / - (2.3%)')).toBeInTheDocument()
     })
   })
 })

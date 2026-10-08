@@ -55,6 +55,7 @@ interface TableWidgetProps {
   onSort?: (key: string) => void
   sortableColumns?: string[]
   columnLabels?: Record<string, string>
+  fullWidthColumns?: string[]
   columnTooltips?: Record<string, string>
 }
 
@@ -106,6 +107,7 @@ const TableWidget: FC<TableWidgetProps> = ({
   onSort: onSortProp,
   sortableColumns,
   columnLabels,
+  fullWidthColumns,
   columnTooltips,
 }) => {
   const { loading, error } = useSnapshot(analyticsStore)
@@ -196,6 +198,7 @@ const TableWidget: FC<TableWidgetProps> = ({
     return {
       key: col.id,
       label: columnLabels?.[col.id] ?? col.label,
+      fullWidthInCard: fullWidthColumns?.includes(col.id),
       type,
       maxLength,
       headClassNames: 'whitespace-normal',
