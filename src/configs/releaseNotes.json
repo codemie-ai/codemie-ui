@@ -1,5 +1,319 @@
 [
   {
+  "version": "2.57.0",
+  "date": "2026-10-08",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": [
+        {
+          "title": "Advanced Assistant and Workflow search filters",
+          "description": "Adds enhanced filters for finding Assistants and Workflows, including integration-type filtering.",
+          "issues": [
+            {
+              "key": "EPMCDME-7212",
+              "type": "TASK",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-7212"
+            }
+          ]
+        },
+        {
+          "title": "Claude Haiku 5.5 model availability",
+          "description": "Adds Claude Haiku 5.5 to CodeMie.",
+          "issues": [
+            {
+              "key": "EPMCDME-15711",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15711"
+            }
+          ]
+        },
+        {
+          "title": "Gemini Nano Banana 2.1 model availability",
+          "description": "Adds Gemini Nano Banana 2.1 to CodeMie.",
+          "issues": [
+            {
+              "key": "EPMCDME-15712",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15712"
+            }
+          ]
+        },
+        {
+          "title": "Workflow categories",
+          "description": "Adds optional workflow categories and category filtering in the My Workflows and All Workflows sidebars.",
+          "issues": [
+            {
+              "key": "EPMCDME-12906",
+              "type": "TASK",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-12906"
+            }
+          ]
+        },
+        {
+          "title": "Trusted image domains for AI output",
+          "description": "Images in LLM responses are now loaded only from approved trusted domains.",
+          "issues": [
+            {
+              "key": "EPMCDME-12950",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-12950"
+            }
+          ]
+        },
+        {
+          "title": "Redesigned Project Details",
+          "description": "Introduces an updated Project Details experience for project-level controls and overview.",
+          "issues": [
+            {
+              "key": "EPMCDME-14781",
+              "type": "TASK",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14781"
+            }
+          ]
+        },
+        {
+          "title": "MCP Catalogue Governance",
+          "description": "Adds governance capabilities for the MCP Catalogue.",
+          "issues": [
+            {
+              "key": "EPMCDME-15094",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15094"
+            }
+          ]
+        },
+        {
+          "title": "Default project assignment and budget attribution",
+          "description": "Enables default-project assignment in User Management and attributes budget consumption accordingly.",
+          "issues": [
+            {
+              "key": "EPMCDME-15109",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15109"
+            }
+          ]
+        },
+        {
+          "title": "Run scripts from workflow steps",
+          "description": "Enables workflow steps to execute scripts.",
+          "issues": [
+            {
+              "key": "EPMCDME-15559",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15559"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "Project settings transfer filters",
+          "description": "Adds filters for transferring user and project integration settings between projects.",
+          "issues": [
+            {
+              "key": "EPMCDME-13982",
+              "type": "TASK",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-13982"
+            }
+          ]
+        },
+        {
+          "title": "Run scripts from workflow steps",
+          "description": "Enables workflow steps to execute scripts.",
+          "issues": [
+            {
+              "key": "EPMCDME-15559",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15559"
+            }
+          ]
+        },
+        {
+          "title": "Improved conversation exports",
+          "description": "DOCX and PDF exports hide tool outputs by default and preserve assistant-response formatting.",
+          "issues": [
+            {
+              "key": "EPMCDME-14774",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14774"
+            }
+          ]
+        },
+        {
+          "title": "More efficient conversation saves",
+          "description": "Removes redundant full-row reads before saving conversations.",
+          "issues": [
+            {
+              "key": "EPMCDME-15381",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15381"
+            }
+          ]
+        },
+        {
+          "title": "Security and dependency maintenance",
+          "description": "Includes security remediation and dependency-maintenance updates.",
+          "issues": []
+        },
+        {
+          "title": "Workflow YAML configuration expansion",
+          "description": "Restores the ability to expand YAML configuration in the Workflows UI.",
+          "issues": [
+            {
+              "key": "EPMCDME-10659",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-10659"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Accessibility improvements across Assistant and Chat navigation",
+          "description": "Improves focus order, focus visibility, semantic list structure, accordion contrast, and keyboard navigation in chat-sidebar options.",
+          "issues": [
+            {
+              "key": "EPMCDME-8432",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8432"
+            },
+            {
+              "key": "EPMCDME-8509",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8509"
+            },
+            {
+              "key": "EPMCDME-8510",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8510"
+            },
+            {
+              "key": "EPMCDME-8512",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8512"
+            },
+            {
+              "key": "EPMCDME-8571",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-8571"
+            },
+            {
+              "key": "EPMCDME-15443",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15443"
+            }
+          ]
+        },
+        {
+          "title": "Assistant datasource resilience",
+          "description": "Prevents an Assistant from becoming unusable when an attached datasource has been deleted.",
+          "issues": [
+            {
+              "key": "EPMCDME-12505",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-12505"
+            }
+          ]
+        },
+        {
+          "title": "Bedrock context-compaction compatibility",
+          "description": "Resolves unsupported-parameter errors during OpenCode context compaction with Bedrock.",
+          "issues": [
+            {
+              "key": "EPMCDME-12762",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-12762"
+            }
+          ]
+        },
+        {
+          "title": "Assistant skill configuration",
+          "description": "Fixes display and discovery of configured skills in Assistant configuration and the Assistants catalog.",
+          "issues": [
+            {
+              "key": "EPMCDME-13280",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-13280"
+            }
+          ]
+        },
+        {
+          "title": "Assistant Marketplace display and publishing",
+          "description": "Fixes clipped usage metrics on Assistant cards and prevents already-published sub-assistants from being suggested for publication.",
+          "issues": [
+            {
+              "key": "EPMCDME-14284",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14284"
+            },
+            {
+              "key": "EPMCDME-15428",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15428"
+            }
+          ]
+        },
+        {
+          "title": "Datasource alias generation",
+          "description": "Corrects automatic alias generation on the Create Datasource page.",
+          "issues": [
+            {
+              "key": "EPMCDME-14495",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14495"
+            }
+          ]
+        },
+        {
+          "title": "Assistant feedback and tool-response handling",
+          "description": "Preserves the selected like/dislike state and prevents an erroneous Azure/LiteLLM error from appearing after successful sub-assistant tool responses.",
+          "issues": [
+            {
+              "key": "EPMCDME-14840",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14840"
+            },
+            {
+              "key": "EPMCDME-14859",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-14859"
+            }
+          ]
+        },
+        {
+          "title": "Tool-call approval reliability",
+          "description": "Fixes approval failures for applicable platform tools.",
+          "issues": [
+            {
+              "key": "EPMCDME-15183",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15183"
+            }
+          ]
+        },
+        {
+          "title": "Dataset trace metadata",
+          "description": "Restores missing session information in trace metadata.",
+          "issues": [
+            {
+              "key": "EPMCDME-15430",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15430"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+},
+  {
     "version": "2.56.0",
     "date": "2026-10-05",
     "sections": [
