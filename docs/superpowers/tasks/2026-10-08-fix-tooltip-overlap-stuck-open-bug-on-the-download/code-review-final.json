@@ -1,0 +1,27 @@
+{
+  "decision": "approve",
+  "rationale": "No-spec round (acceptance lens found no story/spec artifact), so confidence is capped low. CR-001 was fixed in commit dba333e7e: the padding test now scopes its query to the dialog (getByRole('dialog')), asserts the element is not null before checking its className, and verifies the positive !pt-2 class rather than relying on a negative match that could pass silently. Fix-up diff reviewed and approved at code-review.final. Deferred 2 pre-existing findings (Copy and Preview buttons share the same tooltip-overlap pattern Download was fixed for, but the task explicitly scoped the fix to Download only). Dismissed 1 speculative edge-case note about hypothetical future buttons, below the emission floor.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards review not expected for compact profile; no project guide dispatched this round." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards review not expected for compact profile; no project guide dispatched this round." },
+    { "kind": "security", "status": "na", "notes": "Standards review not expected for compact profile; no project guide dispatched this round." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "outcome": "fixed",
+      "file": "src/components/CodeBlock/__tests__/CodeBlockExpandPopup.test.tsx",
+      "line": 32,
+      "title": "Unscoped DOM query lets padding test pass silently",
+      "problem": "The new 'does not collapse the body top padding to zero' test selects via document.body.querySelector('[class*=\"pt-\"]'), which matches the first element anywhere in the document body with a pt- class, not necessarily the popup's own body container.",
+      "impact": "The assertion `expect(bodyEl?.className).not.toMatch(/!pt-0\\b/)` also passes when bodyEl is undefined (optional chaining yields undefined, which does not match the regex), so the test gives false confidence and can pass or fail based on an unrelated DOM node rather than verifying the actual CodeBlockExpandPopup body padding regression it is meant to guard.",
+      "recommendation": "Scope the query to the rendered dialog (e.g. via getByRole('dialog') or the Popup's own content container) and assert a specific positive expectation such as toHaveClass('!pt-2') instead of a negative match that silently passes on a missing element."
+    }
+  ]
+}

@@ -46,6 +46,7 @@ interface CodeBlockProps {
   headerActionsTemplate?: ReactNode
   expandable?: boolean
   expandTitle?: string
+  isInExpandPopup?: boolean
 }
 
 const CodeBlock: FC<CodeBlockProps> = ({
@@ -62,6 +63,7 @@ const CodeBlock: FC<CodeBlockProps> = ({
   headerActionsTemplate,
   expandable,
   expandTitle,
+  isInExpandPopup,
 }) => {
   const [isHtmlPopupVisible, setIsHtmlPopupVisible] = useState(false)
   const [isExpandPopupVisible, setIsExpandPopupVisible] = useState(false)
@@ -161,7 +163,7 @@ const CodeBlock: FC<CodeBlockProps> = ({
               type="secondary"
               className="!px-2"
               data-tooltip-id="react-tooltip"
-              data-tooltip-place="top"
+              data-tooltip-place={isInExpandPopup ? 'bottom' : 'top'}
               data-tooltip-content={`Download as ${displayLanguage}`}
               onClick={downloadCode}
             >

@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-10659_tooltip-overlap-fix",
+  "head": "dba333e7e63f2324b294de5ac674000591afbf64",
+  "runner": "npm",
+  "started_at": "2026-10-08T12:12:10Z",
+  "completed_at": "2026-10-08T14:17:51Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 537430,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "No output after the file list; eslint over .js/.jsx/.cjs/.mjs/.tsx/.ts."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 259909,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 285996,
+      "command": "npm run license-check",
+      "exit_code": 1,
+      "notes": "Guide Skip-if condition met: no dependency added/removed/moved in this diff (package.json/package-lock.json unchanged vs merge_base). Run anyway produced exit 1 with 'Package \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted by the --onlyAllow flag' — appears to be a Windows cmd.exe single-quote stripping artifact on the --onlyAllow argument list (MIT is explicitly allow-listed), not a real licence violation. Not treated as blocking because the skip condition applies; still owed a real run from a POSIX shell or CI."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 253057,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: 'no leaks found' after scanning ~37.40 MB in 2m12s."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "N/A",
+      "command": "npm run test:unit:slnt",
+      "exit_code": null,
+      "notes": "Descoped mid-run by explicit user instruction ('skip unit and integration tests, I will run them manually'). Before the request, the run had already progressed to completion: 1 failed | 544 passed test files (546), 1 failed | 5353 passed | 1 skipped tests (5355), plus 133 'Worker exited unexpectedly with exit code 3221225794 (0xC0000142)' errors consistent with local resource/worker-pool contention rather than a code defect. The one real assertion failure was src/components/Popup/__tests__/Popup.test.tsx > 'Popup — stacked dialogs' > 'traps focus in the topmost (inner) dialog when two dialogs are stacked' (focus landed on the dialog's own close button instead of the expected Cancel button). Not scored here per caller's descoping; caller is responsible for re-running and triaging this failure manually."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "N/A",
+      "command": "npm run test:integration:slnt",
+      "exit_code": null,
+      "notes": "Descoped by explicit user instruction before this gate was started; not executed."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (src/components/CodeBlock/CodeBlock.tsx, CodeBlockExpandPopup.tsx match ui_globs) but no configured UI test script exists in package.json; browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Enforced by .husky/pre-commit but not listed in quality-gates.md. Checked 2321 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip detected: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 without doing the work. Enforced by .husky/pre-commit but not in quality-gates.md. To enable locally, set SONAR_TOKEN before running; this check is otherwise owed to CI/compliance-report only."
+    }
+  ],
+  "failures": {}
+}

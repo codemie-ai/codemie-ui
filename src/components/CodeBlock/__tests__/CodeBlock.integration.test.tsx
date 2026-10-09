@@ -148,3 +148,19 @@ describe('CodeBlock stickyHeader prop', () => {
     expect(wrapper?.classList.contains('z-10')).toBe(true)
   })
 })
+
+describe('CodeBlock Download tooltip placement', () => {
+  afterEach(cleanup)
+
+  it('defaults the Download tooltip to top placement', () => {
+    const { getByText } = render(<CodeBlock text="const x = 1;" language="js" />)
+    const downloadBtn = getByText('Download').closest('button')
+    expect(downloadBtn).toHaveAttribute('data-tooltip-place', 'top')
+  })
+
+  it('places the Download tooltip at bottom when isInExpandPopup is true', () => {
+    const { getByText } = render(<CodeBlock text="const x = 1;" language="js" isInExpandPopup />)
+    const downloadBtn = getByText('Download').closest('button')
+    expect(downloadBtn).toHaveAttribute('data-tooltip-place', 'bottom')
+  })
+})

@@ -45,13 +45,14 @@ const CodeBlockExpandPopup: FC<CodeBlockExpandPopupProps> = ({
     visible={isVisible}
     onHide={onHide}
     className="h-full"
-    bodyClassName="!pt-0"
+    bodyClassName="!pt-2"
   >
     <CodeBlock
       language={language}
       text={text}
       title={title}
       downloadFilename={downloadFilename}
+      isInExpandPopup
     />
   </Popup>
 )
