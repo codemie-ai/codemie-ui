@@ -40,11 +40,9 @@ import {
   Metric,
   TabularMetricType,
   MetricFormat,
-  MetricValue,
   TabularResponse,
 } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
-import { formatSpend } from '@/utils/currency'
 
 import InfoCard from './InfoCard'
 
@@ -92,7 +90,7 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
           type: column.type,
           format: column.format,
           description: column.description,
-          value: row[column.id] as MetricValue,
+          value: row[column.id] as string | number | boolean,
         })),
       },
       metadata: keySpendingData.metadata,
@@ -102,19 +100,6 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
   const currentMetric = summaries?.data.metrics.find((m: any) => m.id === 'current_spending')
   const limitMetric = summaries?.data.metrics.find((m: any) => m.id === 'budget_limit')
 
-  const currentSpendValue = useMemo(() => {
-    if (keySpendingData && rowCount === 1) {
-      const row = keySpendingData.data.rows[0]
-      const rawSpend = row.current_spending
-      // Accept only non-negative numbers; coerce non-numeric/absent/negative values to null
-      if (typeof rawSpend === 'number' && rawSpend >= 0) {
-        return rawSpend
-      }
-      return null
-    }
-    return null
-  }, [keySpendingData, rowCount])
-
   const percentage = useMemo(() => {
     if (keySpendingData && rowCount === 1) {
       const row = keySpendingData.data.rows[0]
@@ -122,14 +107,6 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
       return rawPercentage
     }
     return 0
-  }, [keySpendingData, rowCount])
-
-  const limitValue = useMemo(() => {
-    if (keySpendingData && rowCount === 1) {
-      const rawLimit = keySpendingData.data.rows[0].budget_limit
-      return typeof rawLimit === 'number' && rawLimit >= 0 ? rawLimit : null
-    }
-    return null
   }, [keySpendingData, rowCount])
 
   const statusColor = useMemo(() => {
@@ -197,116 +174,76 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
     }
 
     return (
-      <div className="[container-type:inline-size]">
-        <div className="flex flex-col gap-3 [@container(min-width:400px)]:flex-row [@container(min-width:400px)]:items-center [@container(min-width:400px)]:gap-4 [@container(min-width:500px)]:gap-0">
-          <div className="flex flex-col gap-1 min-w-0 [@container(min-width:400px)]:flex-1 [@container(min-width:500px)]:min-w-fit">
-            {summaries.data.metrics
-              .filter((metric: Metric) => {
-                // Spend moves into the doughnut only when it renders (needs both metrics); otherwise keep its row
-                const excludedColumns = [
-                  'project_name',
-                  'total',
-                  'budget_limit',
-                  ...(currentMetric && limitMetric ? ['current_spending'] : []),
-                ]
-                return !excludedColumns.includes(metric.id)
-              })
-              .map((metric: Metric) => (
-                <div
-                  key={metric.id}
-                  className="flex items-center justify-between gap-4 [@container(max-width:499px)]:flex-wrap [@container(max-width:499px)]:gap-y-0"
-                >
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-sm leading-lg font-normal text-text-quaternary">
-                      {metric.label}
-                    </span>
-                    {metric.description && (
-                      <>
-                        <InfoIcon
-                          className="w-4 h-4 text-text-quaternary cursor-pointer flex-shrink-0"
-                          data-pr-tooltip={metric.description}
-                          data-pr-position="top"
-                        />
-                        <Tooltip target={`[data-pr-tooltip="${metric.description}"]`} />
-                      </>
-                    )}
-                  </div>
-
-                  <div className="text-right flex-shrink-0">
-                    <span className="text-sm leading-lg font-normal text-text-primary [@container(min-width:500px)]:whitespace-nowrap">
-                      {formatMetricValue(metric.value, metric.format)}
-                    </span>
-                  </div>
+      <div className="flex items-center gap-28">
+        <div className="flex flex-col gap-1 flex-1 min-w-0">
+          {summaries.data.metrics
+            .filter((metric: Metric) => {
+              const excludedColumns = ['project_name', 'total', 'budget_limit']
+              return !excludedColumns.includes(metric.id)
+            })
+            .map((metric: Metric) => (
+              <div key={metric.id} className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-sm leading-lg font-normal text-text-quaternary">
+                    {metric.label}
+                  </span>
+                  {metric.description && (
+                    <>
+                      <InfoIcon
+                        className="w-4 h-4 text-text-quaternary cursor-pointer flex-shrink-0"
+                        data-pr-tooltip={metric.description}
+                        data-pr-position="top"
+                      />
+                      <Tooltip target={`[data-pr-tooltip="${metric.description}"]`} />
+                    </>
+                  )}
                 </div>
-              ))}
-          </div>
 
-          {currentMetric && limitMetric && (
-            <div className="hidden [@container(min-width:400px)]:flex justify-center shrink-0 [@container(min-width:500px)]:shrink [@container(min-width:500px)]:basis-[232px] [@container(min-width:500px)]:min-w-[160px]">
-              <div className="flex-shrink-0 relative w-32 h-32">
-                <Doughnut data={chartData} options={chartOptions} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-2">
-                  <div
-                    className="text-sm font-bold text-center flex flex-col items-center"
-                    style={{ color: statusColor }}
-                  >
-                    <span>{formatSpend(currentSpendValue)}</span>
-                    <span>{`(${percentage.toFixed(1)}%)`}</span>
-                  </div>
+                <div className="text-right flex-shrink-0">
+                  <span className="text-sm leading-lg font-normal text-text-primary whitespace-nowrap">
+                    {formatMetricValue(metric.value, metric.format)}
+                  </span>
                 </div>
               </div>
-            </div>
-          )}
-
-          {currentMetric && limitMetric && (
-            <div className="flex flex-col gap-1 [@container(min-width:400px)]:hidden">
-              <span className="text-sm leading-lg font-normal text-text-quaternary">
-                Spent / Limit
-              </span>
-              <SpendingProgressBar
-                percentage={percentage}
-                spend={currentSpendValue}
-                limit={limitValue}
-                dangerThreshold={SPENDING_DANGER_THRESHOLD}
-                warningThreshold={SPENDING_WARNING_THRESHOLD}
-              />
-            </div>
-          )}
+            ))}
         </div>
+
+        {currentMetric && limitMetric && (
+          <div className="flex-shrink-0 relative w-32 h-32">
+            <Doughnut data={chartData} options={chartOptions} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-2">
+              <div className="text-base font-bold" style={{ color: statusColor }}>
+                {percentage.toFixed(1)}%
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
-  const renderSpendCell = (colId: string, item: Record<string, MetricValue>) => {
-    const value = item[colId]
-    const percentage: number = typeof value === 'number' ? value : 0
-    // budget_limit and current_spending are hidden columns, so item keeps their raw values
-    const rawSpend = item.current_spending
-    const spend = typeof rawSpend === 'number' && rawSpend >= 0 ? rawSpend : null
-    const rawLimit = item.budget_limit
-    const limit = typeof rawLimit === 'number' && rawLimit >= 0 ? rawLimit : null
-    return (
-      <SpendingProgressBar
-        percentage={percentage}
-        spend={spend}
-        limit={limit}
-        dangerThreshold={SPENDING_DANGER_THRESHOLD}
-        warningThreshold={SPENDING_WARNING_THRESHOLD}
-      />
-    )
-  }
-
-  const isTotalPercentageColumn = (col: TabularResponse['data']['columns'][number]) =>
-    col.format === MetricFormat.PERCENTAGE && col.id === 'total'
-
   const getSpendingCustomRenderColumns = () => {
-    if (!keySpendingData) return {}
+    const customColumns: Record<
+      string,
+      (item: Record<string, string | number | boolean>) => ReactElement
+    > = {}
 
-    const { data } = keySpendingData
-    const customColumns: Record<string, (item: Record<string, MetricValue>) => ReactElement> = {}
+    if (!keySpendingData) return customColumns
 
-    data.columns.filter(isTotalPercentageColumn).forEach((col) => {
-      customColumns[col.id] = (item) => renderSpendCell(col.id, item)
+    keySpendingData.data.columns.forEach((col) => {
+      if (col.format === MetricFormat.PERCENTAGE && col.id === 'total') {
+        customColumns[col.id] = (item: Record<string, string | number | boolean>) => {
+          const value = item[col.id]
+          const percentage: number = typeof value === 'number' ? value : 0
+          return (
+            <SpendingProgressBar
+              percentage={percentage}
+              dangerThreshold={SPENDING_DANGER_THRESHOLD}
+              warningThreshold={SPENDING_WARNING_THRESHOLD}
+            />
+          )
+        }
+      }
     })
 
     return Object.keys(customColumns).length > 0 ? customColumns : undefined
@@ -334,7 +271,7 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
             </p>
           </div>
 
-          <div className="col-span-2 mt-6 max-xl:[--sp-project:136px] max-xl:[--sp-reset:112px] max-xl:[--sp-time:100px] max-xl:[--sp-total:208px]">
+          <div className="col-span-2 mt-6">
             <TableWidget
               metricType={TabularMetricType.KEY_SPENDING}
               title=""
@@ -342,18 +279,17 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
               initialData={keySpendingData}
               hideWrapper
               hidePagination
-              hiddenColumns={['budget_limit', 'current_spending']}
-              columnLabels={{ total: 'Spent / Limit' }}
-              fullWidthColumns={['total']}
+              hiddenColumns={['budget_limit']}
               tableStyles={{
                 className: 'spending-table-widget',
                 minWidth: '100%',
                 cellPadding: '0.75rem',
                 columnWidths: {
-                  project_name: 'var(--sp-project, 220px)',
-                  budget_reset_at: 'var(--sp-reset, 112px)',
-                  time_until_reset: 'var(--sp-time, 130px)',
-                  total: 'var(--sp-total, 320px)',
+                  project_name: '228px',
+                  current_spending: '120px',
+                  budget_reset_at: '114px',
+                  time_until_reset: '132px',
+                  total: '186px',
                 },
               }}
               customRenderColumns={getSpendingCustomRenderColumns()}
