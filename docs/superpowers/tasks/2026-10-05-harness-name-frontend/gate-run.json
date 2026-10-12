@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15326_harness-name-frontend",
+  "head": "7267c2b50faff745a0539202d3f4ec5eccf6b8b0",
+  "runner": "npm",
+  "started_at": "2026-10-05T10:22:20Z",
+  "completed_at": "2026-10-05T10:49:20Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 56864,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 34183,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "npm run license-check",
+      "notes": "Skip-if condition met: no dependency was added, removed, or moved in this diff (package.json / package-lock.json unchanged against merge_base)."
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 15337,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output confirmed 'no leaks found' (not just exit code)."
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 987416,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "10 failed test files / 25 failed tests out of 6649 (6623 passed, 1 skipped). All failures are currency/number locale-formatting mismatches (e.g. expected '$1,234.50' got '$1 234,50') in files unrelated to this branch's diff (currency.test.ts, analyticsFormatters.test.ts, SpendingAmount.test.tsx, ProjectBudgetCard.test.tsx, SkillInstructions.test.tsx, modalSurfaces.guard.test.ts, WorkflowExecutionInfoPopup.test.tsx, ProjectBudgetsSection.test.tsx, UserProjectSpendingTable.test.tsx, ProjectMembersSpending.test.tsx). Appears to be a machine-locale/Intl environment issue, not caused by the diffed files (SessionModal.tsx, cliAnalytics.ts, their tests)."
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 343737,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 1,
+      "notes": "1 failed test file / 1 failed test out of 551 (549 passed, 1 skipped): UsersManagementSpending.integration.test.tsx expected '$120.50 / $500.00' but got locale-separated output. Same root cause class as the unit-tests gate; unrelated to this branch's diff."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2514,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: output was '-> No staged files found.' Nothing was staged in the working tree at run time (branch changes are already committed); the full 'npm run lint' guide gate above already lints the diffed files. Stage the changed files before invoking lint-staged directly to exercise this hook gate."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1475,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2254 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1074,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: output was '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit code 0 but no scan ran. Set the SONAR_TOKEN environment variable to run this gate locally; CI runs the equivalent compliance-report check with the token configured."
+    },
+    {
+      "id": "ci-pipeline-guard",
+      "source": "ci",
+      "status": "N/A",
+      "notes": "`.gitlab-ci.yml` only includes a remote 'pre-ci-guard' template that waits for external MR pipeline contexts (ci-pipeline, compliance-report) hosted in another project/CI system. No concrete, locally runnable check is defined in this repo's own CI file; the actual checks those contexts represent are not reachable or inspectable from this checkout."
+    }
+  ],
+  "failures": {
+    "unit-tests": "                    [36m<label[39m\n                      [33mclass[39m=[32m\"flex text-xs text-text-quaternary input-label\"[39m\n                      [33mfor[39m=[32m\"_r_2k_\"[39m\n                    [36m>[39m\n                      [0mSearch[0m\n                    [36m</label>[39m\n                  [36m</div>[39m\n                [36m</div>[39m\n                [36m<div[39m\n                  [33mclass[39m=[32m\"flex rounded-lg min-h-8 max-h-8 border bg-surface-base-content input-block-container transition border-border-primary hover:border-border-secondary focus-within:border-border-secondary\"[39m\n                [36m>[39m\n                  [36m<div[39m\n                    [33mclass[39m=[32m\"relative text-text-primary pl-[30px] w-full\"[39m\n                  [36m>[39m\n                    [36m<div[39m\n                      [33mclass[39m=[32m\"absolute top-[50%] left-[8px] transform -translate-y-1/2\"[39m\n                    [36m>[39m\n                      [36m<svg[39m\n                        [33mclass[39m=[32m\"w-4 h-4 text-text-tertiary\"[39m\n                        [33mfill[39m=[32m\"none\"[39m\n                        [33mheight[39m=[32m\"18\"[39m\n                        [33mviewBox[39m=[32m\"0 0 18 18\"[39m\n                        [33mwidth[39m=[32m\"18\"[39m\n                        [33mxmlns[39m=[32m\"http://www.w3.org/2000/svg\"[39m\n                      [36m>[39m\n                        [36m<path[39m\n                          [33mclip-rule[39m=[32m\"evenodd\"[39m\n                          [33md[39m=[32m\"M8 2.25C11.1756 2.25 13.75 4.82436 13.75 8C13.75 9.31734 13.3047 10.5295 12.5596 11.499L16.0303 14.9697C16.3231 15.2626 16.3232 15.7374 16.0303 16.0303C15.7374 16.3231 15.2626 16.3231 14.9697 16.0303L11.499 12.5596C10.5295 13.3047 9.31734 13.75 8 13.75C4.82436 13.75 2.25 11.1756 2.25 8C2.25 4.82436 4.82436 2.25 8 2.25ZM8 3.75C5.65279 3.75 3.75 5.65279 3.75 8C3.75 10.3472 5.65279 12.25 8 12.25C10...\n ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27\n ❯ findAllByText node_modules/@testing-library/dom/dist/query-helpers.js:86:33\n ❯ src/pages/settings/administration/projectsManagement/__tests__/ProjectMembersSpending.test.tsx:165:33\n    163|     expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument()\n    164|\n    165|     const dashes = await screen.findAllByText(/^- \\/ \\$0\\.00$/)\n       |                                 ^\n    166|     expect(dashes.length).toBeGreaterThan(0)\n    167|   })\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/50]⎯\n\n\n Test Files  10 failed | 631 passed (641)\n      Tests  25 failed | 6623 passed | 1 skipped (6649)\n   Start at  13:25:57\n   Duration  977.99s (import 46%, environment 25%, tests 10%, setup 9%, transform 9%)\n\n     Import  |unit| 2829 modules were evaluated 368869 times · 1274.03s total, 46% of tracked time\n             ~416.52s faster with isolate: false — shared modules are evaluated once per worker instead of once per file\n             learn more: https://vitest.dev/guide/improving-performance#test-isolation\n",
+    "integration-tests": "                  [33mclass[39m=[32m\"svg-text-logo\"[39m\n                  [33md[39m=[32m\"M0 19.5C0 8.73045 8.73045 0 19.5 0C25.3028 0 30.5165 2.53831 34.0844 6.55577L29.7643 10.3924C27.2464 7.55726 23.5829 5.77778 19.5 5.77778C11.9214 5.77778 5.77778 11.9214 5.77778 19.5C5.77778 27.0786 11.9214 33.2222 19.5 33.2222C23.5829 33.2222 27.2464 31.4427 29.7643 28.6076L34.0844 32.4442C30.5165 36.4617 25.3028 39 19.5 39C8.73045 39 0 30.2696 0 19.5Z\"[39m\n                  [33mfill[39m=[32m\"url(#paint0_linear_438_5980)\"[39m\n                [36m/>[39m\n                [36m<path[39m\n...(SVG logo markup omitted)...\n ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19\n ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38\n ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17\n ❯ getByText node_modules/@testing-library/dom/dist/query-helpers.js:95:19\n ❯ src/pages/settings/administration/__tests__/UsersManagementSpending.integration.test.tsx:136:19\n    134|\n    135|     expect(await screen.findByText('Project 6')).toBeInTheDocument()\n    136|     expect(screen.getByText('$120.50 / $500.00')).toBeInTheDocument()\n       |                   ^\n    137|   })\n    138|\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯\n\n\n Test Files  1 failed | 47 passed (48)\n      Tests  1 failed | 549 passed | 1 skipped (551)\n   Start at  13:43:12\n   Duration  337.48s (tests 43%, import 35%, transform 14%, environment 6%, setup 2%)\n\n     Import  |integration| 2220 modules were evaluated 98545 times · 334.53s total, 35% of tracked time\n             ~104.10s faster with isolate: false — shared modules are evaluated once per worker instead of once per file\n             learn more: https://vitest.dev/guide/improving-performance#test-isolation\n\nEXIT_CODE=1 DURATION_MS=343737\n"
+  }
+}

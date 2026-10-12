@@ -32,7 +32,7 @@ const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
 
   const title = truncateInput(session?.prompt, 80, 'Session')
   const subtitle = [
-    'Claude-Code',
+    session?.harness_name,
     session?.model_name,
     session?.repository,
     session?.branch,

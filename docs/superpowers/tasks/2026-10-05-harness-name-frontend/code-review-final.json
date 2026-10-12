@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case lens found no blocking defects: the hardcoded 'Claude-Code' literal is replaced with session?.harness_name, the field was added only to SessionDetail (not SessionRow/the list view), and a new SessionModal.test.tsx covers the change. 1 finding dismissed as noise (version-skew scenario the backend's already-merged non-empty fallback already covers). 1 finding deferred (unchecked API-boundary cast typing harness_name as a guaranteed string — a pre-existing pattern already used for every other required field on SessionRow/SessionDetail, not introduced by this change; see code-review-deferred.md). acceptance lens did not run — no story/spec artifact existed for this change (genuine no-spec), which caps confidence at low; blind and verification-gap were out of roster for the compact profile; standards audit was not expected for this profile and is reported na with no coverage gap.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for compact profile; no project guides applicable." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for compact profile; no project guides applicable." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for compact profile; no project guides applicable." }
+  ],
+  "findings": []
+}

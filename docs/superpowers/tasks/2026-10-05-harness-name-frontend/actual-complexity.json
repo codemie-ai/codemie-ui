@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "4 files changed per diffstat (2 new test files, 2 modified: SessionModal.tsx view and the cliAnalytics.ts type contract) — maps to M under the actual-mode file-count rule even though the real edit surface is tiny." },
+    { "dimension": "component_scope", "reason": "Change is confined to one component (SessionModal subtitle) plus the SessionDetail type it reads from — no new component, no layer boundary crossed; harness_name was already carried by the store/hook and simply wasn't rendered." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

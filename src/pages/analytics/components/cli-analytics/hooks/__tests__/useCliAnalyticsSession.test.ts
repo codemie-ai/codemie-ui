@@ -37,6 +37,7 @@ const MOCK_SESSION = {
   output_tokens: 1800,
   cost_usd: 0.085,
   tool_call_count: 12,
+  harness_name: 'Claude Code',
   events: [],
 }
 
