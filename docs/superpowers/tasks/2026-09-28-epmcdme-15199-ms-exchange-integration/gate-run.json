@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15199_add-ms-exchange-integration",
+  "head": "05b11740b2dad663a7f7993a0088eab2067860d6",
+  "runner": "npm",
+  "started_at": "2026-09-28T13:59:46Z",
+  "completed_at": "2026-09-28T14:03:16Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13589,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9708,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency added/removed/moved. Diff vs origin/main touches only src/utils/settingsUIConfig.ts and its test; package.json/package-lock.json unchanged."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9532,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks printed 'no leaks found'."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 60169,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 617 passed (617); Tests 6317 passed | 1 skipped (6318)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 31972,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 48 passed (48); Tests 547 passed | 1 skipped (548). Previously-flaky DataSourceCreatePage.integration.test.tsx (xWiki name field, unrelated by path to this branch's diff) passed cleanly on this 3rd full-suite retry, consistent with the prior isolation re-runs that also passed."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 726,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: output 'No staged files found.' Nothing is staged (branch work already committed; only an untracked docs run-dir present). Its substantive checks — eslint and tsc --noEmit — are covered against the full diff by the lint and typecheck guide gates above; run `git add -A && npx lint-staged` locally before a real commit to exercise it directly."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 267,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2210 files, 0 missing license headers. Enforced by .husky/pre-commit but not listed among the guide's primary gates; added per hook inspection."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 159,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: script printed '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' and exited 0. SonarQube host https://sonar.core.kuberocketci.io was reachable (HTTP 200), so setting a valid SONAR_TOKEN env var would let this run for real; only CI's Sonar step can settle this locally-unrun check."
+    }
+  ],
+  "failures": {}
+}

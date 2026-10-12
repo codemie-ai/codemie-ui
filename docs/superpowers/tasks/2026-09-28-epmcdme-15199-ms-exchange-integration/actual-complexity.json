@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-09-28T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk": { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Adds one self-contained new entry (msExchange) to the existing CREDENTIAL_UI_MAPPING config object in settingsUIConfig.ts — no new component or layer boundary, follows the exact shape of neighboring entries (email, sql) with auth_type-conditional fields."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "OAuth-Azure and NTLM sub-forms mirror the pre-existing email.oauth_azure pattern almost verbatim (Yup .when() conditional required, sensitive: true on client_secret / service_account_password), so the closest existing pattern already covers the security-sensitive aspects — no divergence to bump."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15200_ms-exchange-test-button",
+  "head": "cdae4e86f43d50b47d1fb8e9abcfd3eaaa435891",
+  "runner": "npm",
+  "started_at": "2026-10-01T12:59:17.718609",
+  "completed_at": "2026-10-01T12:59:17.718609",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 10000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2000,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 10000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "no leaks found"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 151000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "618 files, 6325 passed"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 54000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "48 files passed on rerun; first run in this pass failed 1 DataSourceCreatePage xWiki test (flaky, matches prior failure); second run passed 48/48"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 500,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Skipping Sonar scan because SONAR_TOKEN is not set; set SONAR_TOKEN to run locally"
+    }
+  ],
+  "failures": {}
+}

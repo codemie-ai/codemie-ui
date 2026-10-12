@@ -299,7 +299,7 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
                   value={value}
                   error={error}
                   placeholder={getPlaceholder(placeholder)}
-                  label={getLabel(placeholder)}
+                  label={typeof label === 'string' ? label : getLabel(placeholder)}
                   sensitive={sensitive}
                   rows={rows}
                   onChange={(e) => field.onChange(e.target.value)}
@@ -321,7 +321,7 @@ const CredentialFields: React.FC<CredentialFieldsProps> = ({
                   value={value}
                   error={error}
                   placeholder={getPlaceholder(placeholder)}
-                  label={getLabel(placeholder)}
+                  label={typeof label === 'string' ? label : getLabel(placeholder)}
                   options={options}
                   onChange={field.onChange}
                 />

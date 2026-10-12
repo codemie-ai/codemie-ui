@@ -1,0 +1,26 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case flagged two candidates — a missing auth_type enum guard (matches the pre-existing no-.oneOf() convention used by every other select field in this file, e.g. sql dialect, git/a2a/email auth_type) and non-email-shaped mailbox validation (task scopes mailbox to non-blank only, confirmed by the acceptance lens) — both dismissed as noise, 0 findings emitted, 0 deferred. Acceptance: 11/12 criteria pass, 1 pending-stage-7 (test/lint/build execution), no fail or partial items. Standards review is out of scope for the compact profile (na rows, no coverage gap); blind and verification-gap lenses were not dispatched under this profile.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1: displayName 'Microsoft Exchange' shown in new-integration type list", "status": "pass", "notes": "Built generically from CREDENTIAL_UI_MAPPING; no per-type gating excludes msExchange." },
+    { "kind": "story-ac", "item": "AC2: auth_type has no defaultValue so the user must actively choose", "status": "pass", "notes": "Diff's auth_type field omits defaultValue; test asserts it is undefined." },
+    { "kind": "story-ac", "item": "AC4: serverEnum explicitly 'MSExchange' so the correct credential type is saved", "status": "pass", "notes": "serverEnum set explicitly, avoiding capitalize() fallback." },
+    { "kind": "story-ac", "item": "AC6: testable: false so no test-connection button is offered", "status": "pass", "notes": "testable: false set explicitly, matching sibling pattern." },
+    { "kind": "story-ac", "item": "OAuth-path fields (tenant_id/client_id/client_secret) show and are required only when auth_type === oauth_azure", "status": "pass", "notes": "shouldShow + Yup .when('auth_type', ...) mirrors existing pattern; covered by new test." },
+    { "kind": "story-ac", "item": "NTLM-path fields (ews_url/service_account_username/password) show and are required only when auth_type === ntlm", "status": "pass", "notes": "Same shouldShow/when shape via isNtlmExchangeAuth; covered by same test." },
+    { "kind": "story-ac", "item": "Both secrets (oauth_client_secret, service_account_password) marked sensitive for masking", "status": "pass", "notes": "sensitive: true present on both fields; asserted directly in the new test." },
+    { "kind": "story-ac", "item": "Mailbox required and non-blank (whitespace-only rejected)", "status": "pass", "notes": "Yup.string().trim().required() rejects whitespace-only. Spec scopes to non-blank only, not email format." },
+    { "kind": "story-ac", "item": "Test coverage added in settingsUIConfig.test.ts for serverEnum/displayName/testable/no-default, required fields, shouldShow+validation matrix, sensitive flags", "status": "pass", "notes": "New describe('msExchange', ...) block covers each listed assertion." },
+    { "kind": "story-ac", "item": "No other file requires a code change (SettingsForm.tsx, CredentialFields.tsx render generically)", "status": "pass", "notes": "Confirmed generic shouldShow-gated rendering and schema build; no credential-type special-casing." },
+    { "kind": "story-ac", "item": "No feature flag or role restriction added; entry visible under default accessType/roleRestrictionType", "status": "pass", "notes": "No accessType/roleRestrictionType/featureFlag keys; defaults to ALL/GENERAL with no gating." },
+    { "kind": "story-ac", "item": "Full test suite / lint / type-check green for this change", "status": "pending-stage-7", "notes": "Not executed as part of this review; requires the actual test/lint/build run." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards review is not part of the compact review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards review is not part of the compact review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards review is not part of the compact review profile." }
+  ],
+  "findings": []
+}

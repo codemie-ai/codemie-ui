@@ -85,7 +85,11 @@ const TestIntegration: React.FC<TestIntegrationProps> = ({
         return
       }
 
-      toaster.info('Integration test successful')
+      const successMessage =
+        typeof response.message === 'string' && response.message
+          ? response.message
+          : 'Integration test successful'
+      toaster.info(successMessage)
       setStatus(CHECKER_STATUSES.SUCCESS)
     } catch (error) {
       console.error(error)

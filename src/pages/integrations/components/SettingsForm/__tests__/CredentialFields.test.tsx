@@ -504,6 +504,45 @@ describe('CredentialFields — sectionHeader rendering', () => {
   })
 })
 
+describe('CredentialFields — select/textarea fields with label but no placeholder', () => {
+  // Regression for a crash reported against the msExchange auth_type field
+  // (EPMCDME-15199): getLabel(placeholder) was called unconditionally for
+  // select/textarea, blowing up on `text.split(...)` when placeholder was
+  // undefined, even though the field config supplied an explicit `label`.
+  function SelectWrapper() {
+    const { control } = useForm({ defaultValues: { auth_type: '' } })
+    const fields: Record<string, CredentialFieldConfig> = {
+      auth_type: {
+        label: 'Authentication Type',
+        type: CredentialComponentType.select,
+        options: [
+          { value: 'oauth_azure', label: 'OAuth via Microsoft Entra ID Application' },
+          { value: 'ntlm', label: 'NTLM' },
+        ],
+      },
+    }
+    return <CredentialFields control={control as any} credentialFields={fields} />
+  }
+
+  function TextareaWrapper() {
+    const { control } = useForm({ defaultValues: { notes: '' } })
+    const fields: Record<string, CredentialFieldConfig> = {
+      notes: { label: 'Notes', type: CredentialComponentType.textarea },
+    }
+    return <CredentialFields control={control as any} credentialFields={fields} />
+  }
+
+  it('renders the select field label without crashing', () => {
+    render(<SelectWrapper />)
+    expect(screen.getByText('Authentication Type')).toBeInTheDocument()
+  })
+
+  it('renders the textarea field label without crashing', () => {
+    render(<TextareaWrapper />)
+    expect(screen.getByText('Notes')).toBeInTheDocument()
+  })
+})
+
 describe('CredentialFields — resourceSelect field', () => {
   function ResourceWrapper({
     resourceType,

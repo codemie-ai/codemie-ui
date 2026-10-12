@@ -212,6 +212,7 @@ export const getCredentialType = (name: string): string => {
   if (name === 'azure_devops_git' || type.includes('azure devops')) return 'azuredevops'
   if (name.startsWith('servicenow')) return 'servicenow'
   if (name.startsWith('Report')) return 'reportportal'
+  if (name === 'Microsoft Exchange' || name.startsWith('exchange_')) return 'msexchange'
   return type
 }
 

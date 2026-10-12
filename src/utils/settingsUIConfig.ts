@@ -110,6 +110,14 @@ const isWorkflowOrAsstResource = (values) =>
 const isBasicEmailAuth = (values) => values.auth_type === EMAIL_AUTH_TYPE.BASIC
 const isOAuthAzureAuth = (values) => values.auth_type === EMAIL_AUTH_TYPE.OAUTH_AZURE
 
+const EXCHANGE_AUTH_TYPE = {
+  OAUTH_AZURE: 'oauth_azure',
+  NTLM: 'ntlm',
+}
+
+const isOAuthAzureExchangeAuth = (values) => values.auth_type === EXCHANGE_AUTH_TYPE.OAUTH_AZURE
+const isNtlmExchangeAuth = (values) => values.auth_type === EXCHANGE_AUTH_TYPE.NTLM
+
 export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
   a2a: {
     displayName: 'A2A',
@@ -518,6 +526,89 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
         label: 'OAuth Scope for Token Acquisition',
         placeholder: 'Optional, e.g. https://outlook.office365.com/.default',
         shouldShow: isOAuthAzureAuth,
+      },
+    },
+  },
+  msexchange: {
+    displayName: 'Microsoft Exchange',
+    serverEnum: 'MSExchange',
+    testable: true,
+    fields: {
+      auth_type: {
+        label: 'Authentication Type',
+        type: CredentialComponentType.select,
+        options: [
+          { value: 'oauth_azure', label: 'OAuth via Microsoft Entra ID Application' },
+          { value: 'ntlm', label: 'NTLM' },
+        ],
+        validation: Yup.string().required('Authentication Type is required'),
+      },
+      mailbox: {
+        label: 'Mailbox',
+        placeholder: 'user@example.com',
+        validation: Yup.string().trim().required('Mailbox is required'),
+      },
+      oauth_tenant_id: {
+        label: 'Microsoft Entra ID Tenant',
+        placeholder: 'Required',
+        shouldShow: isOAuthAzureExchangeAuth,
+        validation: Yup.string().when('auth_type', {
+          is: (v) => isOAuthAzureExchangeAuth({ auth_type: v }),
+          then: (s) => s.trim().required('Tenant ID is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
+      },
+      oauth_client_id: {
+        label: 'Microsoft Entra ID Application Client ID',
+        placeholder: 'Required',
+        shouldShow: isOAuthAzureExchangeAuth,
+        validation: Yup.string().when('auth_type', {
+          is: (v) => isOAuthAzureExchangeAuth({ auth_type: v }),
+          then: (s) => s.trim().required('Client ID is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
+      },
+      oauth_client_secret: {
+        label: 'Microsoft Entra ID Application Secret',
+        placeholder: 'Required',
+        sensitive: true,
+        shouldShow: isOAuthAzureExchangeAuth,
+        validation: Yup.string().when('auth_type', {
+          is: (v) => isOAuthAzureExchangeAuth({ auth_type: v }),
+          then: (s) => s.trim().required('Client secret is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
+      },
+      ews_url: {
+        label: 'EWS URL',
+        placeholder: 'https://outlook.office365.com/EWS/Exchange.asmx',
+        shouldShow: isNtlmExchangeAuth,
+        validation: Yup.string().when('auth_type', {
+          is: (v) => isNtlmExchangeAuth({ auth_type: v }),
+          then: (s) => s.trim().required('EWS URL is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
+      },
+      service_account_username: {
+        label: 'Service Account Username',
+        placeholder: 'Required',
+        shouldShow: isNtlmExchangeAuth,
+        validation: Yup.string().when('auth_type', {
+          is: (v) => isNtlmExchangeAuth({ auth_type: v }),
+          then: (s) => s.trim().required('Service account username is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
+      },
+      service_account_password: {
+        label: 'Service Account Password',
+        placeholder: 'Required',
+        sensitive: true,
+        shouldShow: isNtlmExchangeAuth,
+        validation: Yup.string().when('auth_type', {
+          is: (v) => isNtlmExchangeAuth({ auth_type: v }),
+          then: (s) => s.trim().required('Service account password is required'),
+          otherwise: (s) => s.nullable().optional(),
+        }),
       },
     },
   },

@@ -375,6 +375,14 @@ describe('getCredentialType', () => {
     expect(getCredentialType('SharePoint')).toBe('sharepoint')
   })
 
+  it('returns msexchange for the Microsoft Exchange toolkit and its exchange_* tools', () => {
+    expect(getCredentialType('Microsoft Exchange')).toBe('msexchange')
+    expect(getCredentialType('exchange_retrieve_folders')).toBe('msexchange')
+    expect(getCredentialType('exchange_read')).toBe('msexchange')
+    expect(getCredentialType('exchange_retrieve_by_id')).toBe('msexchange')
+    expect(getCredentialType('exchange_enrich_body')).toBe('msexchange')
+  })
+
   it('returns lowercase type for unrecognized tools', () => {
     expect(getCredentialType('CustomTool')).toBe('customtool')
   })
