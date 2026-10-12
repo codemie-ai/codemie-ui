@@ -240,6 +240,8 @@ export interface Tool {
   label: string
   settings?: Setting | null
   settings_config: boolean
+  // Set by the backend: whether a workflow script may call this tool.
+  script_callable?: boolean
   description?: string | null
   user_description?: string | null
   serverConfig?: MCPServerDetails
@@ -493,8 +495,22 @@ export interface CreateAssistantDto {
 }
 
 // Tool schema types
+/** Extra editor a tool asks for on its workflow step; `field` is the step key it edits. */
+export interface ToolStepConfigItem {
+  field: string
+  component: string
+  props?: {
+    label?: string
+    help?: string
+    /** Properties a catalog tool must have to be offered (e.g. `{ script_callable: true }`). */
+    tool_filter?: Record<string, unknown>
+    unique_tools?: boolean
+  }
+}
+
 export interface AssistantToolSchemaResponse {
   tool_name: string
   creds_schema: Record<string, DynamicFormFieldSchema>
   args_schema: Record<string, DynamicFormFieldSchema>
+  step_config?: ToolStepConfigItem[]
 }

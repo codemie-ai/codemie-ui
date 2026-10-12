@@ -132,3 +132,7 @@ export const useBudgetSoftLimitEmailEnabled = (): FeatureFlagResult => {
 export const useSchedulersViewEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.SCHEDULERS_VIEW)
 }
+
+export const useWorkspaceScriptBridgeEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.WORKSPACE_SCRIPT_BRIDGE)
+}

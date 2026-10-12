@@ -1,0 +1,225 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two required behaviors are unmet: the issues-summary enumeration for script_tool_access and the longer owner-integration toast; two key bugs also flagged. 5 findings dismissed as speculative or test-gap noise (tests are not written unless requested); not every dismissed candidate was individually code-verified, so confidence is low. No deferred items.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Req 1: script step detection, empty list when none",
+      "status": "pass",
+      "notes": "isScriptTool gates editor; toScriptToolAccess returns []"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 1: switching away clears value and drops field from saved config",
+      "status": "pass",
+      "notes": "ToolForm setValue clears; ToolTab saves only for script tool"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 1: controlled editor, item type, converter, ToolConfiguration field",
+      "status": "pass",
+      "notes": "Implemented; type exported from scriptToolAccess.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 1: callable tool options with exclusion list and dedupe",
+      "status": "pass",
+      "notes": "EXCLUDED list + seen set"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 1: alias MultiSelect by credential type",
+      "status": "pass",
+      "notes": "getAliasOptions/showAliases"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 1: empty state, help text, alias hint",
+      "status": "pass",
+      "notes": "Present in editor"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 1: global-workflow note only when global with alias",
+      "status": "pass",
+      "notes": "isGlobal && hasAlias"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 1: isGlobal/isCreator plumbing",
+      "status": "pass",
+      "notes": "Forwarded ConfigPanel to ToolForm"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 1: four enumeration points",
+      "status": "fail",
+      "notes": "Point 4 missing: issues summary at ToolForm.tsx:383 lacks script_tool_access"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 2: WorkflowWarning union, normalizer, formatter, toast",
+      "status": "pass",
+      "notes": "workflowWarnings.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 2: toast rule per kind, longer duration for owner-integration",
+      "status": "fail",
+      "notes": "notifyScriptOwnerIntegration uses toaster.info with no longer duration"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 2: wiring in New/Edit page and history restore",
+      "status": "pass",
+      "notes": "All call notifyAboutWarnings"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 2: publish preview warnings list with highlight",
+      "status": "pass",
+      "notes": "Modal list; publish never disabled"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 2: editor highlighting",
+      "status": "pass",
+      "notes": "Global note and renderHighlighted"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 3: Invalid script tool access in issues list and under editor",
+      "status": "partial",
+      "notes": "Editor shows error; issues summary enumeration missing"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 3: error parser covering seven shapes, section fallback",
+      "status": "pass",
+      "notes": "PATTERNS in scriptToolAccess.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Req 3: backend wording dependency recorded",
+      "status": "pass",
+      "notes": "Comment in PATTERNS"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Add/remove tools and pick aliases per tool",
+      "status": "pass",
+      "notes": "Editor"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Empty selection persists script_tool_access: []",
+      "status": "pass",
+      "notes": "ToolTab.saveData"
+    },
+    {
+      "kind": "story-ac",
+      "item": "No duplicate tool; excluded families hidden",
+      "status": "pass",
+      "notes": "availableTools filter"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Editor absent for other tools; field dropped on switch",
+      "status": "pass",
+      "notes": "Gate and clearing"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Save/YAML round-trip incl. unknown keys",
+      "status": "pass",
+      "notes": "Spread in converter; manual check needed"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Warnings per kind, longer owner toast, publish inline, note, fallbacks",
+      "status": "partial",
+      "notes": "Longer owner-integration toast duration missing"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Bad tool/alias error in issues list and on row/section",
+      "status": "partial",
+      "notes": "Issues-list summary not extended"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Backend scenarios exercised against local backend",
+      "status": "pending-stage-7",
+      "notes": "Runtime proof deferred to Stage 7"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "6 subjects match the documented format"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "guide code-quality.md absent from repo; no standard invented"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No HTML sinks, redirects, postMessage, config or secrets introduced"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/PublishWorkflowToMarketplaceModal.tsx",
+      "line": 197,
+      "title": "Warning list uses message as React key",
+      "problem": "<li key={message}> collides when two warnings render the same text (e.g. identical consumer_slot 'tool (Type)' lines or empty messages).",
+      "impact": "Duplicate keys make React drop or misrender list items; reachability of duplicates not confirmed against backend output.",
+      "recommendation": "Use key={`${message}-${index}`}."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/components/ScriptToolAccessEditor.tsx",
+      "line": 105,
+      "title": "Row key is the editable tool name",
+      "problem": "key={item.name} is empty for a new row and changes when the tool is chosen; loaded config with duplicate names yields duplicate keys.",
+      "impact": "Rows remount on selection (lost state/focus), duplicates misrender and share one error; reachability of duplicates unconfirmed.",
+      "recommendation": "Key rows by index or a stable generated id."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/components/ToolForm.tsx",
+      "line": 383,
+      "title": "Issues summary omits script_tool_access",
+      "problem": "toolField summary only chains tool, integration_alias and mcp_server.description; script_tool_access is absent, so spec point 4 and the story AC for the issues list are unmet.",
+      "impact": "An 'Invalid script tool access' error is not shown in the tool-step issues summary and is never displayed at all when the step is not currently a script tool.",
+      "recommendation": "Add getIssueField('script_tool_access') to the toolField fallback chain and render its error outside the isScriptTool block."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/utils/workflowWarnings.ts",
+      "line": 92,
+      "title": "Owner-integration toast lacks longer duration",
+      "problem": "notifyScriptOwnerIntegration calls toaster.info with default 3000 ms; the spec/story AC requires a longer duration for this kind, and toaster.info accepts no duration option.",
+      "impact": "The advisory about running under the author's integration disappears before it can be read; required behavior missing.",
+      "recommendation": "Extend toaster.info with an optional duration and pass a longer one here."
+    }
+  ]
+}

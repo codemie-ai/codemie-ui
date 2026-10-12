@@ -36,7 +36,8 @@ import {
   processBackendError,
   WorkflowValidationError,
 } from '@/utils/workflowEditor/helpers/backendErrorHandler'
-import { isVisualEditorEnabled, notifyAboutConsumerSlots } from '@/utils/workflows'
+import { isVisualEditorEnabled } from '@/utils/workflows'
+import { notifyAboutWarnings } from '@/utils/workflowWarnings'
 
 import RefineWorkflowPromptPopup from './components/RefineWorkflowPromptPopup'
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
@@ -126,7 +127,7 @@ const EditWorkflowPage: React.FC = () => {
 
       // Slots whose integration is left to whoever runs the workflow do not block saving, but the
       // author should know they depend on each user's own setup.
-      notifyAboutConsumerSlots(await response?.json().catch(() => undefined))
+      notifyAboutWarnings(await response?.json().catch(() => undefined), { prefixSaved: true })
 
       if (shouldOpenExecution) {
         await workflowsStore.fetchWorkflow(id)

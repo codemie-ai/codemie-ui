@@ -43,6 +43,8 @@ interface ToolTabProps {
   onClose: (forceClose?: boolean) => void
   onDelete: () => void
   onDuplicate?: () => void
+  isGlobal?: boolean
+  isCreator?: boolean
   validationError?: string
   onClearStateError?: (stateId: string) => void
 }
@@ -93,6 +95,8 @@ const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(
       onDuplicate,
       validationError,
       onClearStateError,
+      isGlobal,
+      isCreator,
     },
     ref
   ) => {
@@ -127,6 +131,7 @@ const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(
         'resolve_dynamic_values_in_response',
         'input_key',
         'mcp_server',
+        'tool_access',
       ]
 
       if (
@@ -184,6 +189,9 @@ const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(
         resolve_dynamic_values_in_response: toolFormValues.resolve_dynamic_values_in_response,
         input_key: toolFormValues.input_key || undefined,
       }
+
+      // Step keys the tool's schema asked for (`step_config`), already limited to the current tool.
+      Object.assign(finalToolConfig, toolFormValues.step_config_values ?? {})
 
       if (mcp_server) {
         finalToolConfig.mcp_server = {
@@ -249,6 +257,8 @@ const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(
             <ToolForm
               ref={toolFormRef}
               project={project}
+              isGlobal={isGlobal}
+              isCreator={isCreator}
               toolConfig={toolActorConfig}
               showNewIntegrationPopup={showNewIntegrationPopup}
             />

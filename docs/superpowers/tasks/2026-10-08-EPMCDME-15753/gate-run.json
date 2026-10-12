@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15753_script-step-tool-access",
+  "head": "e7be465f3976586eabbf01382c8ffa2fa7272961",
+  "runner": "npm",
+  "started_at": "2026-10-09T12:08:29.559467Z",
+  "completed_at": "2026-10-09T12:08:29.559467Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 21000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 15000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 222000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "678 files, 6914 passed, 1 skipped"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 73000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "49 files, 556 passed, 1 skipped"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 0,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "2327 files, 0 missing"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "no leaks found"
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency added/removed/moved (package files unchanged)"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Needs local Sonar infrastructure; not run"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs stack up and ~/.codemie/test-harness.json; unverified, owed for MR"
+    }
+  ],
+  "failures": {}
+}

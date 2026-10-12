@@ -25,6 +25,7 @@ import ToolkitIcon from '@/pages/assistants/components/ToolkitIcon'
 export interface InlineCredential {
   credential_type?: string
   toolkit?: string | null
+  tool?: string | null
   label?: string
   mcp_server?: string | null
   env_vars?: string[] | null
@@ -67,12 +68,23 @@ export const InlineCredentialsContent: React.FC<InlineCredentialsContentProps> =
       credential.mcp_server && credential.integration_alias && !isMcpTechnicalType(credential)
     )
 
+  // A tool pinned to an integration alias (a tool step, a virtual assistant tool or a script
+  // step's allowed tools): the row shows the tool and the alias instead of the technical type.
+  const isToolAlias = (credential: InlineCredential) =>
+    Boolean(
+      credential.credential_type === 'tool_integration_alias' &&
+        credential.tool &&
+        credential.integration_alias
+    )
+
   // Name (primary, bold) of the row:
+  // - tool pinned to an alias -> the tool name;
   // - pinned integration -> the integration name (alias);
   // - MCP inline/auth (base config) -> the server name;
   // - non-MCP toolkit tool -> its label;
   // - fallback -> the friendly / humanized type.
   const getCredentialName = (credential: InlineCredential) => {
+    if (isToolAlias(credential)) return credential.tool
     if (isPinnedIntegration(credential)) return credential.integration_alias
     if (isMcpTechnicalType(credential) && credential.mcp_server) return credential.mcp_server
     return (
@@ -83,9 +95,11 @@ export const InlineCredentialsContent: React.FC<InlineCredentialsContentProps> =
   }
 
   // Type (secondary) of the row, shown on the right:
+  // - tool pinned to an alias -> the alias;
   // - pinned integration -> the real integration type (e.g. "Jira");
   // - everything else -> the toolkit the backend attached ("MCP", "Project Management", ...).
   const getCredentialType = (credential: InlineCredential) => {
+    if (isToolAlias(credential)) return credential.integration_alias
     if (isPinnedIntegration(credential)) return formatCredentialType(credential.credential_type)
     return credential.toolkit || formatCredentialType(credential.credential_type)
   }

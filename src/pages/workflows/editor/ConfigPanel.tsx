@@ -25,6 +25,7 @@ import {
   Dispatch,
   SetStateAction,
 } from 'react'
+import { useSnapshot } from 'valtio'
 
 import ChevronRightIconSvg from '@/assets/icons/chevron-right.svg?react'
 import CrossIconSvg from '@/assets/icons/cross.svg?react'
@@ -34,6 +35,7 @@ import { ButtonType } from '@/constants'
 import { FormIDs } from '@/constants/formIds'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import { WorkflowFormValues } from '@/pages/workflows/components/workflowSchema'
+import { userStore } from '@/store'
 import { WorkflowIssue } from '@/types/entity'
 import { WorkflowNode, WorkflowEdge, NodeTypes } from '@/types/workflowEditor/base'
 import { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
@@ -399,6 +401,15 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       }
     }, [config, workflow, onUpdateAdvancedConfig, handleClose])
 
+    const { user } = useSnapshot(userStore)
+    const creator = workflow?.created_by
+    const isCreator = useMemo((): boolean | undefined => {
+      let result: boolean | undefined
+      if (creator?.id && user?.userId) result = creator.id === user.userId
+      else if (creator?.username && user?.username) result = creator.username === user.username
+      return result
+    }, [creator, user])
+
     const renderNodeTab = useCallback((): PanelTab | null => {
       if (!selectedNode) return null
 
@@ -423,7 +434,7 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
             onDelete={onDeleteNode}
             onDuplicate={onDuplicateNode}
             project={project ?? ''}
-            {...{ isGlobal: Boolean(workflow?.is_global) }}
+            {...{ isGlobal: Boolean(workflow?.is_global), isCreator }}
           />
         ),
       }
@@ -431,6 +442,7 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
       config,
       project,
       workflow?.is_global,
+      isCreator,
       selectedNode,
       updateIssues,
       onUpdateConfig,

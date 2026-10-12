@@ -33,6 +33,7 @@ import {
 } from '@/types/workflowEditor/configuration'
 import { ConfigurationUpdate } from '@/utils/workflowEditor'
 import { generateActorID, shouldReuseActorId } from '@/utils/workflowEditor/helpers/states'
+import { getToolsFromToolkits } from '@/utils/workflows'
 
 import CommonStateFields, { CommonStateFieldsRef } from './CommonStateFields'
 import AssistantSelector, { AssistantSelectorRef } from './components/AssistantSelector'
@@ -226,13 +227,7 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
             settings: null,
             integration_alias: server.settings?.alias,
           })),
-          tools: virtualAssistantValues.toolkits?.flatMap(
-            (tk) =>
-              tk.tools?.map((tool) => ({
-                name: tool.name,
-                integration_alias: tool.settings?.alias || tk.settings?.alias,
-              })) || []
-          ),
+          tools: getToolsFromToolkits(virtualAssistantValues.toolkits),
           datasource_ids: virtualAssistantValues.context.map((c) => c.id),
           skill_ids: virtualAssistantValues.skill_ids ?? [],
         }

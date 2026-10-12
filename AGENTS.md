@@ -25,6 +25,7 @@ from the same source tree.
 | Development | `.ai-run/guides/development/api-integration.md` | Backend calls, errors, constants, performance |
 | Styling | `.ai-run/guides/styling/styling-guide.md` | Tailwind conventions and theming |
 | Testing | `.ai-run/guides/testing/testing-patterns.md` | Unit and integration test patterns |
+| Local Verification | `.ai-run/guides/testing/local-verification.md` | Harness run, browser scenarios and screenshots before an MR |
 | Integration | `.ai-run/guides/integration/ticket-flow.md` | Ticket state sync driven by pipeline events |
 | Onboarding | `.ai-run/guides/onboarding/flow-creation-guide.md` | Authoring in-product onboarding flows |
 <!-- ai-run-init:guide-imports end -->
@@ -45,7 +46,7 @@ from the same source tree.
 | Accessibility | semantics, keyboard, labels | add an aria label; heading order | `.ai-run/guides/patterns/accessibility-patterns.md` | `.ai-run/guides/components/component-patterns.md` |
 | Development | errors, constants, performance | handle this error; extract this constant; slow list | `.ai-run/guides/development/error-handling-patterns.md` | `.ai-run/guides/development/performance-patterns.md` |
 | Testing | only when the user explicitly asks tests | write tests; fix this failing test | `.ai-run/guides/testing/testing-patterns.md` | `.ai-run/guides/testing/qa-strategy.md` |
-| Git | only when the user explicitly asks git ops | commit; push; open an MR | `.ai-run/guides/standards/git-workflow.md` | `.ai-run/guides/project.md` |
+| Git | only when the user explicitly asks git ops | commit; push; open an MR | `.ai-run/guides/standards/git-workflow.md` | `.ai-run/guides/testing/local-verification.md` |
 <!-- ai-run-init:task-classifier end -->
 
 <!-- ai-run-init:critical-rules start -->
@@ -76,7 +77,8 @@ from the same source tree.
 | Licence and secret checks | `.ai-run/guides/quality-gates.md` | `package.json` scripts, `.gitleaks.toml` | Read the output, not the exit code. |
 | Run the app, Docker, Keycloak theme | `README.md` | `package.json` scripts, Dockerfiles | Human-facing setup lives in the README. |
 | Fixing a reported CVE or scanner finding | `.ai-run/guides/security/README.md` | `package.json`, Dockerfiles, git history | Covers dependency surfaces, image rebuild, verification, MR handoff. |
-| Branch, commit, open an MR | `.ai-run/guides/standards/git-workflow.md` | `.husky/pre-commit`, CONTRIBUTING.md | |
+| Branch, commit, open an MR | `.ai-run/guides/standards/git-workflow.md` | `.husky/pre-commit`, CONTRIBUTING.md, `.gitlab/merge_request_templates/Default.md` | MR body follows the template. |
+| Verify a change locally before an MR | `.ai-run/guides/testing/local-verification.md` | `package.json` (`test-harness`), `.gitlab/merge_request_templates/Default.md` | Browser scenarios and screenshots go to `## Verified locally`. |
 <!-- ai-run-init:commands end -->
 
 ## Stack

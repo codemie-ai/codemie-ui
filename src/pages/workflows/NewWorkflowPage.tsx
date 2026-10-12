@@ -34,7 +34,8 @@ import API from '@/utils/api'
 import toaster from '@/utils/toaster'
 import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
 import { serialize } from '@/utils/workflowEditor/serialization'
-import { isVisualEditorEnabled, notifyAboutConsumerSlots } from '@/utils/workflows'
+import { isVisualEditorEnabled } from '@/utils/workflows'
+import { notifyAboutWarnings } from '@/utils/workflowWarnings'
 
 import GenerateWorkflowPopup from './components/GenerateWorkflowPopup'
 import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
@@ -276,7 +277,7 @@ const NewWorkflowPage: React.FC = () => {
       toaster.info('Workflow has been created successfully!')
       // Slots whose integration is left to whoever runs the workflow do not block the save, but the
       // author should know they depend on each user's own setup — on creation as well as on update.
-      notifyAboutConsumerSlots(workflow)
+      notifyAboutWarnings(workflow, { prefixSaved: true })
 
       if (shouldOpenExecution) {
         setCreatedWorkflowId(workflow.data.id)

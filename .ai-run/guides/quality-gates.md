@@ -90,6 +90,20 @@ Run gates in this order (fastest to slowest). All must pass before opening an MR
 
 ---
 
+### Test Harness (MR compliance gate)
+
+**Run**: `npm run test-harness`
+
+**Pass**: Summary shows no failures (e.g. `42 passed`), exit code 0.
+
+**Fail**: Paste the summary anyway and group failures by cause in the MR (see the template). Reproduce on `main` with the same complete config before calling a failure unrelated.
+
+**Auto-fix**: None.
+
+**Skip if**: Never. The `auto_epm-cdme_vcs` bot checks the `## Test harness` section of the MR; without it the MR fails the compliance check. Needs the stack up and `~/.codemie/test-harness.json`. A gate that could not run is unverified, not passed. Manual browser scenarios and screenshots: [testing/local-verification.md](testing/local-verification.md).
+
+---
+
 ## Pre-commit Gate (Automatic)
 
 The Husky pre-commit hook runs these automatically on every `git commit`:
@@ -114,4 +128,4 @@ npm run test:unit:slnt         # Unit tests
 npm run test:integration:slnt  # Integration tests
 ```
 
-All four must exit 0 before pushing and opening an MR.
+All four must exit 0 before pushing and opening an MR. Then run the harness gate above and the scenarios in [testing/local-verification.md](testing/local-verification.md).

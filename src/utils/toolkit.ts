@@ -37,6 +37,25 @@ export const extractToolkitSettings = (
   }
 }
 
+/** True when every property of the filter equals the same property of the catalog tool. */
+export const matchesToolFilter = (tool: Tool, filter?: Record<string, unknown>): boolean =>
+  Object.entries(filter ?? {}).every(([key, expected]) => (tool as any)[key] === expected)
+
+/**
+ * The catalog the picker offers: only the tools matching the `tool_filter` the backend sent in the
+ * tool's `step_config`, in their own toolkits. Toolkits left without a tool are dropped.
+ */
+export const filterToolkitsByToolFilter = (
+  toolkits: AssistantToolkit[],
+  toolFilter?: Record<string, unknown>
+): AssistantToolkit[] =>
+  toolkits
+    .map((toolkit) => ({
+      ...toolkit,
+      tools: (toolkit.tools ?? []).filter((tool) => matchesToolFilter(tool, toolFilter)),
+    }))
+    .filter((toolkit) => toolkit.tools.length > 0)
+
 /** A tool or toolkit slot, as far as the automatic-lookup decision is concerned. */
 export type AutoLookupSlot = {
   auto_credentials_lookup?: boolean

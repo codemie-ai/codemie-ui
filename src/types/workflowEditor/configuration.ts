@@ -57,6 +57,19 @@ export interface ToolConfiguration {
   input_key?: string
 }
 
+/** Step keys a tool asks for in its schema (`step_config`); they live next to the base fields. */
+export const TOOL_BASE_CONFIG_KEYS = [
+  'id',
+  'tool',
+  'tool_args',
+  'integration_alias',
+  'trace',
+  'tool_result_json_pointer',
+  'resolve_dynamic_values_in_response',
+  'mcp_server',
+  'input_key',
+]
+
 export type CustomNodeConfigurationValues = Record<string, string>
 
 export enum CustomNodeType {

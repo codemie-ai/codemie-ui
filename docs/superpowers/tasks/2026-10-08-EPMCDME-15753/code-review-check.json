@@ -1,0 +1,16 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted check: CR-003 resolved; ToolForm now selects the first candidate with an issue or fieldError, so script_tool_access surfaces for non-script steps (the editor shows its own error for script steps). CR-001/002/004 were resolved in the prior check round.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "ToolForm.tsx:386-393 picks first of tool/integration_alias/mcp_server.description/script_tool_access (non-script only) with .issue or .fieldError; getIssueField returns issue only when one exists"
+    }
+  ]
+}

@@ -24,12 +24,14 @@ import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import YamlEditor from '@/components/form/YamlEditor/YamlEditor'
 import Spinner from '@/components/Spinner'
+import { useWorkspaceScriptBridgeEnabled } from '@/hooks/useFeatureFlags'
+import { useToolStepConfig } from '@/hooks/useToolStepConfig'
 import { assistantsStore } from '@/store'
 import { settingsStore } from '@/store/settings'
 import { AssistantToolkit } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { NodeTypes } from '@/types/workflowEditor/base'
-import { ToolConfiguration } from '@/types/workflowEditor/configuration'
+import { TOOL_BASE_CONFIG_KEYS, ToolConfiguration } from '@/types/workflowEditor/configuration'
 import { extractToolkitSettings } from '@/utils/toolkit'
 import {
   getMCPServersFromConfiguration,
@@ -40,6 +42,7 @@ import {
 import FieldController from './FieldController'
 import ToolArgumentsForm from './ToolArgumentsForm'
 import ToolSelector from './ToolSelector'
+import ToolStepConfigFields from './ToolStepConfigFields'
 import { useWorkflowContext } from '../../hooks/useWorkflowContext'
 import { registerFields } from '../../utils/visualEditorFieldRegistry'
 
@@ -51,6 +54,8 @@ registerFields(
     'integration_alias',
     'resolve_dynamic_values_in_response',
     'input_key',
+    'tool_access',
+    /^tool_access\./,
     /^tool_args\./,
     /^mcp_server\./,
   ],
@@ -66,6 +71,8 @@ type ToolArgsMode = (typeof TOOL_ARGS_MODE)[keyof typeof TOOL_ARGS_MODE]
 
 interface ToolFormProps {
   project: string
+  isGlobal?: boolean
+  isCreator?: boolean
   toolConfig: ToolConfiguration
   showNewIntegrationPopup: (project: string, credentialType: string) => void
 }
@@ -78,6 +85,8 @@ export interface ToolFormValues {
   tool_result_json_pointer?: string
   resolve_dynamic_values_in_response?: boolean
   input_key?: string
+  /** Step keys the tool's schema asked for (`step_config`), keyed by step field. */
+  step_config_values?: Record<string, unknown>
 }
 
 export interface ToolFormRef {
@@ -126,6 +135,7 @@ const getValidationSchema = (requiredFields: string[]) => {
     tool_result_json_pointer: Yup.string().optional(),
     resolve_dynamic_values_in_response: Yup.boolean().optional(),
     input_key: Yup.string().optional(),
+    step_config_values: Yup.object().optional(),
   })
 }
 
@@ -138,11 +148,14 @@ const getDefaultValues = (config?: ToolConfiguration): ToolFormValues => {
     tool_result_json_pointer: config?.tool_result_json_pointer || '',
     resolve_dynamic_values_in_response: config?.resolve_dynamic_values_in_response || false,
     input_key: config?.input_key || '',
+    step_config_values: Object.fromEntries(
+      Object.entries(config ?? {}).filter(([key]) => !TOOL_BASE_CONFIG_KEYS.includes(key))
+    ),
   }
 }
 
 const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
-  ({ toolConfig, project, showNewIntegrationPopup }, ref) => {
+  ({ toolConfig, project, isGlobal, isCreator, showNewIntegrationPopup }, ref) => {
     const { availableToolkits, getAssistantToolkits } = useSnapshot(assistantsStore)
     const { settings, indexSettings } = useSnapshot(settingsStore)
     const { tempIssues, markIssueDirty, getIssueField, selectedStateId } = useWorkflowContext()
@@ -167,6 +180,10 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
     const toolkits = watch('toolkits')
     const mcpServers = watch('mcpServers')
     const toolArgs = watch('tool_args')
+    const stepConfigValues = watch('step_config_values')
+    const [scriptBridgeEnabled] = useWorkspaceScriptBridgeEnabled()
+    const selectedToolName = toolkits?.[0]?.tools?.[0]?.name
+    const stepConfig = useToolStepConfig(selectedToolName)
     const hasInitialized = useRef(false)
     const yamlHasError = useRef(false)
     const yamlWasEdited = useRef(false)
@@ -177,7 +194,19 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
     useImperativeHandle(
       ref,
       () => ({
-        getValues,
+        getValues: () => {
+          const values = getValues()
+          if (!stepConfig) return values
+
+          // Only keys the current tool's schema declares are saved; a switched tool drops the rest.
+          const fields = new Set(stepConfig.map((item) => item.field))
+          return {
+            ...values,
+            step_config_values: Object.fromEntries(
+              Object.entries(values.step_config_values ?? {}).filter(([key]) => fields.has(key))
+            ),
+          }
+        },
         validate: async () => {
           const isValid = await trigger()
           const errors: Record<string, string> = {}
@@ -205,7 +234,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
           yamlWasEdited.current = false
         },
       }),
-      [getValues, trigger, isDirty, reset, schemaRequiredFields, toolArgs]
+      [getValues, trigger, isDirty, reset, schemaRequiredFields, toolArgs, stepConfig]
     )
 
     const resolveToolArgsIssues = () => {
@@ -230,7 +259,10 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
         toolkits?.[0]?.tools?.[0]?.name !== newToolkits?.[0]?.tools?.[0]?.name
 
       setValue('toolkits', newToolkits, { shouldValidate: true, shouldDirty: true })
-      if (toolChanged) resetToolArgs()
+      if (toolChanged) {
+        resetToolArgs()
+        setValue('step_config_values', {}, { shouldDirty: true })
+      }
       setArgsMode(TOOL_ARGS_MODE.FORM)
     }
 
@@ -240,7 +272,10 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
         mcpServers?.[0]?.tools?.[0] !== newMcpServers?.[0]?.tools?.[0]
 
       setValue('mcpServers', newMcpServers, { shouldValidate: true, shouldDirty: true })
-      if (toolChanged) resetToolArgs()
+      if (toolChanged) {
+        resetToolArgs()
+        setValue('step_config_values', {}, { shouldDirty: true })
+      }
       setArgsMode(TOOL_ARGS_MODE.FORM)
     }
 
@@ -355,10 +390,23 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
       return <Spinner inline rootClassName="pt-0" />
     }
 
+    // The editors the tool's schema asks for are shown when the script bridge is on; otherwise an
+    // issue on those fields goes to the summary. 'tool_access' is kept for steps whose tool
+    // no longer declares it (the backend still rejects the key there).
+    const shownStepConfig = scriptBridgeEnabled ? stepConfig ?? [] : []
+    const shownFields = shownStepConfig.map((item) => item.field)
+    const summaryStepFields = Array.from(
+      new Set([...(stepConfig ?? []).map((item) => item.field), 'tool_access'])
+    ).filter((field) => !shownFields.includes(field))
+    const baseToolField = getIssueField('tool')
+    const toolFieldCandidates = [
+      baseToolField,
+      getIssueField('integration_alias'),
+      getIssueField('mcp_server.description'),
+      ...summaryStepFields.map((field) => getIssueField(field)),
+    ]
     const toolField =
-      getIssueField('tool') ||
-      getIssueField('integration_alias') ||
-      getIssueField('mcp_server.description')
+      toolFieldCandidates.find((field) => field.issue || field.fieldError) ?? baseToolField
 
     return (
       <div className="flex flex-col gap-4">
@@ -381,6 +429,27 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
         />
 
         {toolField?.fieldError && <p className="text-text-error text-sm">{toolField.fieldError}</p>}
+
+        {shownStepConfig.length > 0 && (
+          <ToolStepConfigFields
+            stepConfig={shownStepConfig}
+            values={stepConfigValues ?? {}}
+            onChange={(field, value) =>
+              setValue(
+                'step_config_values',
+                { ...(getValues('step_config_values') ?? {}), [field]: value },
+                { shouldValidate: true, shouldDirty: true }
+              )
+            }
+            toolkits={availableToolkits as AssistantToolkit[]}
+            settings={settings}
+            getIssueField={getIssueField}
+            project={project}
+            showNewIntegrationPopup={showNewIntegrationPopup}
+            isGlobal={isGlobal}
+            isCreator={isCreator}
+          />
+        )}
 
         <FieldController
           name="input_key"

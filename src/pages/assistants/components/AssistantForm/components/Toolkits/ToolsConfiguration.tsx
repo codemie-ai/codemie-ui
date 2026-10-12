@@ -29,6 +29,7 @@ import { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 import { getCredentialType } from '@/utils/settings'
+import { filterToolkitsByToolFilter } from '@/utils/toolkit'
 import { cn } from '@/utils/utils'
 
 import AvailableToolsSection from './AvailableToolsSection'
@@ -59,6 +60,10 @@ interface ToolsConfigurationProps {
   }
   showInternalTools?: boolean
   showMcpServers?: boolean
+  /** External (plugin-style) tools of the toolkits already selected; off for pickers fed by a filter. */
+  showExternalTools?: boolean
+  /** Offer only the catalog tools whose properties equal these (e.g. `{script_callable: true}`). */
+  toolFilter?: Record<string, unknown>
   isAIGenerated?: boolean
   renderHint?: () => React.ReactNode
   renderTitleExtra?: () => React.ReactNode
@@ -78,6 +83,8 @@ const ToolsConfiguration = ({
   customToolkitRenderer,
   showInternalTools = true,
   showMcpServers = true,
+  showExternalTools = true,
+  toolFilter,
   isAIGenerated = false,
   renderHint,
   renderTitleExtra,
@@ -111,10 +118,10 @@ const ToolsConfiguration = ({
     return () => clearTimeout(timer)
   }, [defaultOpenSection])
 
-  const internalToolkits = useMemo(
-    () => availableToolkits.filter((tk) => !tk.is_external),
-    [availableToolkits]
-  ) as AssistantToolkit[]
+  const internalToolkits = useMemo(() => {
+    const internal = availableToolkits.filter((tk) => !tk.is_external)
+    return toolFilter ? filterToolkitsByToolFilter(internal, toolFilter) : internal
+  }, [availableToolkits, toolFilter])
 
   const filteredSettings = useMemo(() => {
     return Object.fromEntries(
@@ -243,14 +250,16 @@ const ToolsConfiguration = ({
         </div>
       )}
 
-      <ExternalToolsSection
-        toolkits={selectedToolkits}
-        onToolkitsChange={onToolkitsChange}
-        project={project}
-        singleToolSelection={singleToolSelection}
-        showNewIntegrationPopup={showNewIntegrationPopup}
-        isCompactView={isCompactView}
-      />
+      {showExternalTools && (
+        <ExternalToolsSection
+          toolkits={selectedToolkits}
+          onToolkitsChange={onToolkitsChange}
+          project={project}
+          singleToolSelection={singleToolSelection}
+          showNewIntegrationPopup={showNewIntegrationPopup}
+          isCompactView={isCompactView}
+        />
+      )}
 
       {showMcpServers && isMcpFeatureEnabled && (
         <McpServersSection

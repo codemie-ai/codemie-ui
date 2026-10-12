@@ -86,7 +86,7 @@ const prepareText = (text: string): string => {
 }
 
 interface Toaster {
-  info: (text: string) => void
+  info: (text: string, options?: { duration?: number }) => void
   success: (text: string) => void
   error: (text: string) => void
 }
@@ -145,9 +145,9 @@ const toAnnouncement = (text: string): string => {
 }
 
 const toaster: Toaster = {
-  info: (text: string) => {
+  info: (text: string, options?: { duration?: number }) => {
     if (!text) return
-    Toastify({ ...defaultOpts, ...infoOpts, text: prepareText(text) }).showToast()
+    Toastify({ ...defaultOpts, ...infoOpts, ...options, text: prepareText(text) }).showToast()
     fixCloseButton()
     announcer?.(toAnnouncement(text))
   },

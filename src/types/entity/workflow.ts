@@ -219,9 +219,11 @@ export function isWorkflowAssistantMcpIssue(
 export interface WorkflowInlineCredential {
   credential_type?: string
   toolkit?: string | null
+  tool?: string | null
   label?: string
   mcp_server?: string | null
   env_vars?: string[] | null
+  integration_alias?: string | null
 }
 
 export interface WorkflowPublishValidationResponse {

@@ -47,6 +47,7 @@ export const FEATURE_FLAGS = {
   AI_CHAMPIONS_LEADERBOARD: 'aiChampionsLeaderboard',
   CLI_ANALYTICS: 'features:cliAnalytics',
   PROJECT_MODEL_OVERRIDE: 'features:projectModelOverride',
+  WORKSPACE_SCRIPT_BRIDGE: 'features:workspaceScriptBridge',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

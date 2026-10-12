@@ -20,6 +20,7 @@ import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
 import { WorkflowIssue } from '@/types/entity'
 import toaster from '@/utils/toaster'
 import { WorkflowValidationError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
+import { notifyAboutWarnings } from '@/utils/workflowWarnings'
 
 interface UseWorkflowHistoryRestoreArgs {
   workflowId: string
@@ -79,11 +80,14 @@ export function useWorkflowHistoryRestore({
     const myGen = validateGenRef.current
     const stopWatch = watchYamlDivergence(myGen, yamlConfig)
     try {
-      await workflowsStore.validateWorkflow(
+      const response = await workflowsStore.validateWorkflow(
         workflowId,
         { ...formRef.current.getFormValues(), yaml_config: yamlConfig },
         ERROR_FORMAT_JSON
       )
+      // Warnings describe the YAML that was just restored, so they are shown even when the editor
+      // re-serialised it meanwhile; only the issues panel below needs the result to be current.
+      notifyAboutWarnings(await response?.json().catch(() => undefined))
       if (!isRestoreValidationCurrent(myGen, yamlConfig)) return
       setIssues(null)
       formRef.current?.clearAllResolvedFields()
