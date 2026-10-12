@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "head": "d4a59331eb9756e5b43c1a6603e18372b7637bb8",
+  "branch": "EPMCDME-15511_fix-mcp-documentation-icons",
+  "merge_base": "5776590e81feec87b9aeb01fc8326468265d2441",
+  "tool": "unconfigured",
+  "required": true,
+  "verified": false,
+  "result": "BLOCKED",
+  "user_decision": "skip",
+  "user_decision_context": "User explicitly chose to skip browser verification after blocked browser-tool discovery.",
+  "browser_commands_run": [],
+  "blocked_evidence_path": "evidence/verification/_blocked.json",
+  "reason": "No exposed browser tool, configured browser runner, or reusable Playwright installation was found during the existing discovery. Cached browser binaries alone do not provide an automation runner.",
+  "features": [
+    {
+      "feature_id": "EPMCDME-15511",
+      "affected_file": "src/pages/assistants/components/AssistantForm/components/Toolkits/MCPToolkit/MCPMarketplaceCard.tsx",
+      "required_checks": [
+        "Verify per-card deduplication of exactly equal nonempty documentation/source destinations and preservation of distinct destinations.",
+        "Verify remaining link labels, destinations and external-link protections through actual interaction.",
+        "Verify EPAM Radar, Deprecated EPAM Radar and Stage EPAM Radar in authenticated Browse MCP Servers using actual catalog URL values.",
+        "Verify usage counts, tags, badges, Add/Added behavior and responsive footer alignment across multiple cards."
+      ],
+      "verified": false,
+      "result": "BLOCKED",
+      "disposition": "Skipped by user after blocked discovery; no browser verification performed."
+    }
+  ]
+}

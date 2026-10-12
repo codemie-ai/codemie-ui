@@ -96,32 +96,36 @@ const StatusBadges: React.FC<{ isPublic?: boolean; isSystem?: boolean }> = ({
 const ExternalLinks: React.FC<{ homeUrl?: string; sourceUrl?: string }> = ({
   homeUrl,
   sourceUrl,
-}) => (
-  <div className="flex items-center gap-2">
-    {homeUrl && (
-      <a
-        href={homeUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-text-accent-status hover:text-text-accent-status-hover transition"
-        title="Documentation"
-      >
-        <ExternalSvg className="w-4 h-4" />
-      </a>
-    )}
-    {sourceUrl && (
-      <a
-        href={sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-text-accent-status hover:text-text-accent-status-hover transition"
-        title="Source Code"
-      >
-        <ExternalSvg className="w-4 h-4" />
-      </a>
-    )}
-  </div>
-)
+}) => {
+  const hasDistinctSourceDestination = sourceUrl && sourceUrl !== homeUrl
+
+  return (
+    <div className="flex items-center gap-2">
+      {homeUrl && (
+        <a
+          href={homeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-text-accent-status hover:text-text-accent-status-hover transition"
+          title="Documentation"
+        >
+          <ExternalSvg className="w-4 h-4" />
+        </a>
+      )}
+      {hasDistinctSourceDestination && (
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-text-accent-status hover:text-text-accent-status-hover transition"
+          title="Source Code"
+        >
+          <ExternalSvg className="w-4 h-4" />
+        </a>
+      )}
+    </div>
+  )
+}
 
 const MCPMarketplaceCard: React.FC<MCPMarketplaceCardProps> = ({
   config,

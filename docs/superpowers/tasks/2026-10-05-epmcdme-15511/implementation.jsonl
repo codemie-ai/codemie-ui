@@ -1,0 +1,2 @@
+{"task_id":"1","status":"done","commit":"d688161c2","test_command":"npm run test:unit -- --reporter=verbose src/pages/assistants/components/AssistantForm/components/Toolkits/MCPToolkit/__tests__/MCPMarketplaceCard.test.tsx"}
+{"task_id":"qa-fix-manifest-lf","role":"implementation-inline","mode":"qa-fix","status":"done","commit":"e2c7603e2","test_command":"npm run test:unit -- --reporter=verbose src/a2ui/__tests__/manifest.test.ts"}

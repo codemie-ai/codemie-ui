@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "head": "d4a59331eb9756e5b43c1a6603e18372b7637bb8",
+  "branch": "EPMCDME-15511_fix-mcp-documentation-icons",
+  "feature_id": "EPMCDME-15511-mcp-documentation-icons",
+  "required": true,
+  "verified": false,
+  "blocking": true,
+  "tool": "unconfigured",
+  "result": "BLOCKED",
+  "reason": "No browser tool is exposed to this runner. No Playwright/Cypress configuration, repository browser-runner dependency, local custom verification configuration, or reusable Playwright installation was found in the checked global/npm-cache locations. Cached browser binaries exist but do not provide an automation runner.",
+  "remediation": "Expose an existing Playwright/browser tool or supply the path to an already-installed browser automation runner, plus the authenticated application URL/session for this HEAD. No dependency installation has been attempted.",
+  "required_checks": [
+    "Open authenticated Browse MCP Servers, search radar, and inspect EPAM Radar, Deprecated EPAM Radar and Stage EPAM Radar using actual catalog URL values.",
+    "Assert one Documentation action for exactly equal nonempty destinations, retaining both labeled links for distinct destinations without URL normalization.",
+    "Click every remaining external link and confirm its destination and target/rel protection.",
+    "Verify multiple-card usage counts, tags, badges, Add/Added behavior and responsive footer alignment."
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git branch --show-current",
+    "git diff --name-only 5776590e81feec87b9aeb01fc8326468265d2441...HEAD",
+    "git diff 5776590e81feec87b9aeb01fc8326468265d2441...HEAD -- src/pages/assistants/components/AssistantForm/components/Toolkits/MCPToolkit/MCPMarketplaceCard.tsx src/pages/assistants/components/AssistantForm/components/Toolkits/MCPToolkit/__tests__/MCPMarketplaceCard.test.tsx",
+    "npm root -g",
+    "find /c/Users/DmytroMelnyk4/AppData/Local/npm-cache/_npx -maxdepth 8 -type d -name playwright -o -name playwright-core -o -name @playwright"
+  ],
+  "shell": "C:/Program Files/Git/bin/bash.exe -c, launched through PowerShell with PATH=/usr/bin:/bin:$PATH",
+  "browser_attempted": false,
+  "screenshot_path": null,
+  "console_errors": null,
+  "network_failures": null,
+  "evidence_note": "Browser checks did not run. Screenshots, console and network evidence are unavailable, not clean or passed."
+}

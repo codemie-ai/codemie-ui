@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "The fresh compact-round edge-case lens ran with parseable output and reported no candidates, leaving 0 blockers, 0 deferred findings, and 0 dismissals; reachability verification was unnecessary. Acceptance was skipped because no genuine story/spec was supplied, so business review is empty and confidence is low. Blind, verification-gap, and standards were intentionally omitted by the compact profile without a coverage gap; no failures or truncation were reported, and earlier review artifacts were not used.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit intentionally omitted by the compact profile; standards_expected is false."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit intentionally omitted by the compact profile; standards_expected is false."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit intentionally omitted by the compact profile; standards_expected is false."
+    }
+  ],
+  "findings": []
+}

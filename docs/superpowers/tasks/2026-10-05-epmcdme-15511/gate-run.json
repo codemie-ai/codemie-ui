@@ -1,0 +1,158 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15511_fix-mcp-documentation-icons",
+  "head": "d4a59331eb9756e5b43c1a6603e18372b7637bb8",
+  "merge_base": "5776590e81feec87b9aeb01fc8326468265d2441",
+  "runner": "npm",
+  "started_at": "2026-10-06T11:26:07.423Z",
+  "completed_at": "2026-10-06T11:44:44.337Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "install",
+      "source": "guide",
+      "command": "npm ci",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 83685,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/install.resume.20261006T112607.local.log"
+    },
+    {
+      "id": "lint",
+      "source": "guide",
+      "command": "npm run lint",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 58449,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/lint.resume.20261006T112736.local.log"
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "command": "npm run typecheck",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 27508,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/typecheck.resume.20261006T112835.local.log"
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "command": "npm run license-check",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "No dependency added, removed, or moved; guide Skip if applies."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "command": "npm run secrets:check",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 26584,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/secrets.resume.20261006T112916.local.log"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "command": "npm run test:unit:slnt",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 639763,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/unit.resume.20261006T112948.local.log",
+      "test_files": [
+        "Test Files  641 passed (641)"
+      ]
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "command": "npm run test:integration:slnt",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 205828,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/integration.resume.20261006T114028.local.log",
+      "test_files": [
+        "Test Files  48 passed (48)"
+      ]
+    },
+    {
+      "id": "build",
+      "source": "guide",
+      "command": "npm run build",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 43555,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/build.resume.20261006T114354.local.log"
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "command": "",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision. User prohibits browser work."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "command": "npx lint-staged",
+      "status": "SKIPPED",
+      "exit_code": 0,
+      "duration_ms": 1845,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/lint-staged.resume.20261006T114438.local.log",
+      "notes": "No staged files; hook command executed but no files processed. Whole-tree lint and typecheck ran separately; no staging authorized."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "command": "npm run license-headers:check",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 1520,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/license-headers.resume.20261006T114440.local.log"
+    },
+    {
+      "id": "sonar",
+      "source": "hook",
+      "command": "npm run sonar-local",
+      "status": "SKIPPED",
+      "exit_code": 0,
+      "duration_ms": 1053,
+      "log": "docs/superpowers/tasks/2026-10-05-epmcdme-15511/sonar.resume.20261006T114442.local.log",
+      "notes": "[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set. Local SAST unverified; token/server and explicit source-upload consent required for real scan."
+    },
+    {
+      "id": "ci-guard",
+      "source": "ci",
+      "command": "",
+      "status": "N/A",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "External include /templates/pre-ci-guard.yml and MR-only wait-ci-init require remote MR pipeline context. No local executable gate; no CI result inferred."
+    }
+  ],
+  "failures": {},
+  "environment": {
+    "shell": "real Windows Git Bash",
+    "node_platform": "win32",
+    "node": "v22.18.0"
+  },
+  "lock_sha256_before": "3cae6900866cf5e742b43cbe352a051c1727ab25e3965656f56a1140f2c24c16",
+  "recovery": {
+    "previous_head": "d688161c2fa925eaa49fdb191fff2535067867e3",
+    "evidence_reused": false,
+    "reason": "Prior results belong to a different HEAD; all required executable gates rerun after fresh npm ci.",
+    "process_check": "Fresh escalated read-only Win32_Process inspection: no prior npm/Vitest QA process. Only unrelated IDE/Codex node processes and current inspection shells."
+  },
+  "ui_changed": true,
+  "browser_authorized": false,
+  "needs_input": [],
+  "lock_sha256_after": "3cae6900866cf5e742b43cbe352a051c1727ab25e3965656f56a1140f2c24c16",
+  "head_after": "d4a59331eb9756e5b43c1a6603e18372b7637bb8",
+  "raw_passed": true,
+  "continuation_allowed": true
+}

@@ -1,0 +1,5 @@
+{"ts":"2026-10-06T08:19:59Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved the one-task plan","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-06T09:17:24Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved review and continuation to final QA","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-06T11:18:58Z","gate_id":"feature.verification","mode":"hitl","verdict":{"decision":"request-changes","rationale":"User","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-06T11:45:24Z","gate_id":"feature.verification","mode":"hitl","verdict":{"decision":"approve","rationale":"User","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-06T11:47:27Z","gate_id":"feature.verification","mode":"hitl","verdict":{"decision":"approve","rationale":"User","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

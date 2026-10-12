@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "generated": "2026-10-06T11:48:11Z",
+  "dimensions": {
+    "component_scope": { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk": { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 3,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "The actual diff changes the existing ExternalLinks renderer within MCPMarketplaceCard, adds its colocated regression suite, and normalizes relative paths in the existing modalSurfaces guard. Production behavior stays within one UI component; no API, service, persistence, infrastructure, shared runtime utility, or external integration changes."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "git diff 5776590e81feec87b9aeb01fc8326468265d2441...HEAD reports 3 files changed, 169 insertions(+), 29 deletions(-): two modified files and one new test file, all under src/. The actual-mode 2-3-file rule scores S. Calibration epmcdme-10101-add-logging-to-endpoint.json scores XS/6 for one function and one file; this implementation remains XS but totals 8 because component scope and actual file count are larger. Adjacent epmcdme-10102-add-validation-to-form-field.json scores S/11 with two runtime layers and validation uncertainty that this diff does not introduce."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Closest existing pattern: ExternalLinks already conditionally renders native anchors for homeUrl and sourceUrl. The implementation adds a truthiness and exact-string-inequality condition, retaining href, target, rel, title, icon, and styling. The new parameterized suite covers equal, distinct, trailing-slash, absent, and empty URLs, plus per-card independence and unchanged badges, usage, and Add/Added behavior. The separate guard fix uses Node path.sep to normalize both existing relative-path comparisons. No new security surface, dependency, configuration, migration, or performance-sensitive path; rollback is localized. Mechanical QA was reported passed by the caller; browser verification was explicitly skipped and is not treated as verified."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
