@@ -1,5 +1,85 @@
 [
   {
+    "version": "2.58.0",
+    "date": "2026-10-12",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": []
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "Expanded Claude context support in autorouters",
+            "description": "Claude models now use a 1M-token context window by default in autorouters.",
+            "issues": [
+              {
+                "key": "EPMCDME-15754",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15754"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Improved table accessibility",
+            "description": "Tables now expose an accessible name.",
+            "issues": [
+              {
+                "key": "EPMCDME-8542",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-8542"
+              }
+            ]
+          },
+          {
+            "title": "Reliable assistant slug resolution",
+            "description": "Prevented non-deterministic cross-project assistant matches when looking up a slug without a project.",
+            "issues": [
+              {
+                "key": "EPMCDME-14158",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14158"
+              }
+            ]
+          },
+          {
+            "title": "Cleaner MCP server cards",
+            "description": "Removed duplicate documentation-link icons from the MCP selection popup.",
+            "issues": [
+              {
+                "key": "EPMCDME-15511",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15511"
+              }
+            ]
+          },
+          {
+            "title": "Clearer CodeExecutor workflow failures",
+            "description": "Workflows using code_executor now surface failure details correctly.",
+            "issues": [
+              {
+                "key": "EPMCDME-15810",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15810"
+              }
+            ]
+          },
+          {
+            "title": "Security maintenance updates",
+            "description": "Included security remediation maintenance in this release.",
+            "issues": []
+          }
+        ]
+      }
+    ]
+  },
+  {
   "version": "2.57.0",
   "date": "2026-10-09",
   "sections": [
