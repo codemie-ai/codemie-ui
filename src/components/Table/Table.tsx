@@ -77,6 +77,8 @@ export interface TableProps<T = TableItem> {
   expandedRowIds?: ReadonlyArray<string>
   onToggleExpand?: (id: string) => void
   renderExpandedRow?: (item: T) => React.ReactNode
+
+  ariaLabel?: string
 }
 
 const Table = <T,>({
@@ -106,6 +108,8 @@ const Table = <T,>({
   expandedRowIds,
   onToggleExpand,
   renderExpandedRow,
+
+  ariaLabel,
 }: TableProps<T>): React.ReactNode => {
   const isLazyMode = !!pagination?.totalCount && !!onSelectAllChange
 
@@ -218,6 +222,7 @@ const Table = <T,>({
           />
         ) : (
           <table
+            aria-label={ariaLabel}
             className={cn(
               'mt-4 border-separate border-spacing-0 w-full text-[12px] leading-tight',
               TABLE_VARIANT_CLASSES[variant],

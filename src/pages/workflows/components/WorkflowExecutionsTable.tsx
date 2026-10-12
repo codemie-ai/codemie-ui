@@ -143,6 +143,7 @@ const WorkflowExecutionsTable: React.FC<WorkflowExecutionsTableProps> = ({ workf
         onPaginationChange={onPaginationUpdate}
         perPageOptions={DECIMAL_PAGINATION_OPTIONS}
         customRenderColumns={customRenderColumns}
+        ariaLabel="Workflow executions"
       />
       <WorkflowExecutionExportPopup
         visible={showExportPopup}

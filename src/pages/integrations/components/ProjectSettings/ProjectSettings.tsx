@@ -253,6 +253,7 @@ const ProjectSettings: FC<Props> = ({ tableColumns, portalSidebarRef }) => {
         onPaginationChange={onPaginationUpdate}
         customRenderColumns={customTableColumns}
         perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+        ariaLabel="Project integrations"
       />
       {portalSidebarRef.current
         ? createPortal(

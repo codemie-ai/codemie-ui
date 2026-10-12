@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-8542",
+  "head": "0b092af4b7e07912094861ce4567965f00587ea8",
+  "runner": "npm",
+  "started_at": "2026-10-06T10:24:57Z",
+  "completed_at": "2026-10-06T10:54:48Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 15000,
+      "command": "npm run license-check",
+      "exit_code": 1,
+      "notes": "Skip if: no dependency was added, removed, or moved on this branch (diff vs merge_base touches no package.json/package-lock.json). Ran anyway for visibility and exited 1 — 'Package \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted by the --onlyAllow flag' — this is pre-existing on main, not introduced by this branch."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 15100,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 915780,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 655 passed (655); Tests 6749 passed | 1 skipped (6750)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 245030,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 48 passed (48); Tests 552 passed | 1 skipped (553)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "",
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 4000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Enforced by .husky/pre-commit; not in quality-gates.md gate list. Checked 2270 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Enforced by .husky/pre-commit; not in quality-gates.md gate list. Set SONAR_TOKEN locally (and SonarLint connected-mode config) to run for real. CI/server-side Sonar enforcement, if any, is not settled by this result."
+    }
+  ],
+  "failures": {}
+}

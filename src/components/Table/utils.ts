@@ -99,6 +99,7 @@ const ignoredKeys = [
   'tableClassName',
   'onSelectRow',
   'onSelectAllChange',
+  'ariaLabel',
 ] as const satisfies ReadonlyArray<keyof TableProps<unknown>>
 
 // Exhaustiveness guard. propsAreEqual compares props against an explicit

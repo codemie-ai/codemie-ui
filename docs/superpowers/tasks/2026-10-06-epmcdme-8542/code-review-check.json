@@ -1,0 +1,16 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 (ProjectSettings table had no accessibility test) is resolved: the new ProjectSettings.accessibility.test.tsx asserts screen.getByRole('table', { name: 'Project integrations' }) against the real ProjectSettings component, matching the literal ariaLabel at ProjectSettings.tsx:256, and the test passes on current HEAD.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "standards review not expected for this profile/round; no project guide gap implied." },
+    { "kind": "code-quality", "status": "na", "notes": "standards review not expected for this profile/round; no project guide gap implied." },
+    { "kind": "security", "status": "na", "notes": "standards review not expected for this profile/round; no project guide gap implied." }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "New ProjectSettings.accessibility.test.tsx asserts getByRole('table', { name: 'Project integrations' }); matches ariaLabel at ProjectSettings.tsx:256; test run passes (1/1)." }
+  ]
+}

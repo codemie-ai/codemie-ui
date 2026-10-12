@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-10-06T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 15,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 11,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Shared Table component gained an ariaLabel prop and the change was threaded through four consumer page components across four distinct product areas (DataSources, Integrations ProjectSettings, Integrations UserSettings, Workflows) plus their accessibility test suites — a shared-utility change fanned out across multiple workflows, even though each individual edit is small and follows the same pattern." },
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 11 files changed (6 modified source/behavior files: Table.tsx, utils.ts, DataSourcesPage.tsx, ProjectSettings.tsx, UserSettings.tsx, WorkflowExecutionsTable.tsx; plus Table.test.tsx updated and 4 new *.accessibility.test.tsx files), which falls in the 11-15 bucket mapping to XL on the file-count scale." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped: change affects multiple workflows/product areas (DataSources, Integrations ProjectSettings, Integrations UserSettings, Workflows) via a shared Table component"
+  ],
+  "split_recommendation": null
+}

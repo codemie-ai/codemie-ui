@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import DataSourcesPage from '../DataSourcesPage'
@@ -84,7 +84,15 @@ vi.mock('@/components/Sidebar', () => ({
 }))
 
 vi.mock('@/components/Table', () => ({
-  default: () => null,
+  default: ({ ariaLabel }: any) => (
+    <table aria-label={ariaLabel}>
+      <thead>
+        <tr>
+          <th>Name</th>
+        </tr>
+      </thead>
+    </table>
+  ),
 }))
 
 vi.mock('@/components/Tooltip', () => ({
@@ -117,5 +125,10 @@ describe('DataSourcesPage - Announcement Integration', () => {
     const output = document.querySelector('output[aria-live="polite"]')
     expect(output).toBeInTheDocument()
     expect(output).toHaveAttribute('aria-atomic', 'true')
+  })
+
+  it('names the table "Data sources"', () => {
+    render(<DataSourcesPage />)
+    expect(screen.getByRole('table', { name: 'Data sources' })).toBeInTheDocument()
   })
 })

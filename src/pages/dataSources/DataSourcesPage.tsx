@@ -189,6 +189,7 @@ const DataSourcesPage = () => {
             customRenderColumns={tableProps.customRenderColumns}
             onPaginationChange={tableProps.onPaginationChange}
             perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+            ariaLabel="Data sources"
           />
         </div>
         <Tooltip target=".target-tooltip" textStyles="text-h5" />

@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "edge-case was the only applicable lens (compact profile skips blind/verification-gap; acceptance did not run — no spec/story artifact), so confidence is capped low for genuine no-spec coverage. 1 patch finding: ProjectSettings.tsx:256 adds ariaLabel but, unlike the other 3 call sites touched by this change, got no accessibility test. 1 defer: TableCardList mobile fallback never applies ariaLabel — pre-existing and explicitly out of scope per the original task. 1 dismiss: utils.ts ignoredKeys treating ariaLabel as memo-static is a deliberate, already-documented design choice and every current call site (including out-of-scope ones) passes a literal/stable string, so no live caller trips it.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "standards review not expected for this profile/round; no project guide gap implied." },
+    { "kind": "code-quality", "status": "na", "notes": "standards review not expected for this profile/round; no project guide gap implied." },
+    { "kind": "security", "status": "na", "notes": "standards review not expected for this profile/round; no project guide gap implied." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/integrations/components/ProjectSettings/ProjectSettings.tsx",
+      "line": 256,
+      "title": "Missing accessibility test for ProjectSettings table name",
+      "problem": "The Table call site adds ariaLabel=\"Project integrations\", but there is no accessibility test asserting the table's accessible name — the sibling call sites this same change touches (UserSettings, DataSourcesPage, WorkflowExecutionsTable) each got a matching *.accessibility.test.tsx with a getByRole('table', { name: ... }) assertion.",
+      "impact": "A future refactor can silently drop or rename the label on this call site with nothing failing to catch it, leaving the a11y fix unverified for Project integrations specifically.",
+      "recommendation": "Add a ProjectSettings accessibility test mirroring UserSettings.accessibility.test.tsx's table-name assertion: screen.getByRole('table', { name: 'Project integrations' })."
+    }
+  ]
+}

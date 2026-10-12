@@ -96,17 +96,27 @@ vi.mock('@/hooks/useIntegrationTypeOptions', () => ({
   useIntegrationTypeOptions: () => [],
 }))
 
-// Table mock: calls alias + actions renderers so the alias id is in DOM for aria-labelledby.
+// Table mock: calls alias + actions renderers so the alias id is in DOM for aria-labelledby,
+// and renders a real <table aria-label> so accessible-name assertions exercise production wiring.
 vi.mock('@/components/Table', () => ({
-  default: ({ customRenderColumns, items }: any) => (
-    <div>
-      {items?.map((item: any) => (
-        <div key={item.id} data-testid={`row-${item.id}`}>
-          {customRenderColumns?.alias?.(item)}
-          {customRenderColumns?.actions?.(item)}
-        </div>
-      ))}
-    </div>
+  default: ({ customRenderColumns, items, ariaLabel }: any) => (
+    <table aria-label={ariaLabel}>
+      <thead>
+        <tr>
+          <th>Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items?.map((item: any) => (
+          <tr key={item.id} data-testid={`row-${item.id}`}>
+            <td>
+              {customRenderColumns?.alias?.(item)}
+              {customRenderColumns?.actions?.(item)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   ),
 }))
 
@@ -196,5 +206,10 @@ describe('UserSettings accessibility — action button aria-labelledby wiring', 
 
     expect(document.getElementById('user-setting-name-setting-1')).not.toBeNull()
     expect(document.getElementById('user-setting-name-setting-2')).not.toBeNull()
+  })
+
+  it('names the table "User integrations"', () => {
+    render(<UserSettings tableColumns={[]} portalSidebarRef={{ current: null }} />)
+    expect(screen.getByRole('table', { name: 'User integrations' })).toBeInTheDocument()
   })
 })
