@@ -14,6 +14,7 @@
 //
 
 import { ChangeEvent, FC, useEffect, useMemo, useRef, useState } from 'react'
+import { useSnapshot } from 'valtio'
 
 import CrossSvg from '@/assets/icons/cross.svg?react'
 import FileSvg from '@/assets/icons/file.svg?react'
@@ -21,30 +22,30 @@ import FolderAddSvg from '@/assets/icons/folder-add.svg?react'
 import FolderSvg from '@/assets/icons/folder.svg?react'
 import Button from '@/components/Button'
 import Input from '@/components/form/Input'
+import InfoWarning from '@/components/InfoWarning/InfoWarning'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
+import { InfoWarningType } from '@/constants'
+import { MAX_SKILL_BUNDLE_FILE_COUNT, MAX_SKILL_BUNDLE_SIZE_BYTES } from '@/constants/skills'
+import { skillsStore } from '@/store/skills'
 import { SkillCompanionFile } from '@/types/entity/skill'
 import toaster from '@/utils/toaster'
 
 import {
   collectBundleFolders,
   fileToSkillCompanionFile,
+  formatFileSize,
   getBundleFileName,
   getBundleFolderPath,
+  getBundleTotals,
   normalizeBundleFolderPath,
 } from '../utils/skillBundleUtils'
-
-const formatFileSize = (sizeBytes?: number): string => {
-  if (sizeBytes == null) return 'Unknown size'
-  if (sizeBytes < 1024) return `${sizeBytes} B`
-  if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`
-  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 interface SkillBundleFilesSectionProps {
   companionFiles: SkillCompanionFile[]
   folders: string[]
   isLoading?: boolean
+  savedBundleWarning?: string | null
   onCompanionFilesChange: (files: SkillCompanionFile[]) => void
   onFoldersChange: (folders: string[]) => void
 }
@@ -53,9 +54,14 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
   companionFiles,
   folders,
   isLoading = false,
+  savedBundleWarning,
   onCompanionFilesChange,
   onFoldersChange,
 }) => {
+  const { skillConfig } = useSnapshot(skillsStore)
+  const maxBundleSizeBytes = skillConfig?.bundle_seed_max_size_bytes ?? MAX_SKILL_BUNDLE_SIZE_BYTES
+  const maxBundleFileCount = skillConfig?.bundle_seed_max_file_count ?? MAX_SKILL_BUNDLE_FILE_COUNT
+
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [isAddFolderPopupVisible, setIsAddFolderPopupVisible] = useState(false)
@@ -85,6 +91,33 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
       files: files.sort((left, right) => left.path.localeCompare(right.path)),
     }))
   }, [allFolders, companionFiles])
+
+  const bundleTotals = useMemo(() => getBundleTotals(companionFiles), [companionFiles])
+
+  const exceedsSize = bundleTotals.totalSizeBytes > maxBundleSizeBytes
+  const exceedsCount = bundleTotals.fileCount > maxBundleFileCount
+
+  const bundleCeilingWarning = useMemo(() => {
+    if (!exceedsSize && !exceedsCount) return null
+
+    if (exceedsSize && exceedsCount) {
+      return `This bundle has ${
+        bundleTotals.fileCount
+      } files (limit ${maxBundleFileCount}) and is ${formatFileSize(
+        bundleTotals.totalSizeBytes
+      )} (limit ${formatFileSize(
+        maxBundleSizeBytes
+      )}). Only files up to these limits will be copied into an assistant workspace.`
+    }
+
+    if (exceedsCount) {
+      return `This bundle has ${bundleTotals.fileCount} files (limit ${maxBundleFileCount}). Only files up to this limit will be copied into an assistant workspace.`
+    }
+
+    return `This bundle is ${formatFileSize(bundleTotals.totalSizeBytes)} (limit ${formatFileSize(
+      maxBundleSizeBytes
+    )}). Only files up to this limit will be copied into an assistant workspace.`
+  }, [exceedsSize, exceedsCount, bundleTotals, maxBundleSizeBytes, maxBundleFileCount])
 
   const updateFolders = (updatedFolders: string[]) => {
     const normalizedFolders = Array.from(
@@ -209,6 +242,13 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
           Upload files directly from the root or a sub-folder section below. Empty folders stay only
           in the current editor session until a file is added to them.
         </p>
+
+        {(bundleCeilingWarning ?? savedBundleWarning) && (
+          <InfoWarning
+            type={InfoWarningType.WARNING}
+            message={(bundleCeilingWarning ?? savedBundleWarning)!}
+          />
+        )}
 
         <div className="flex flex-col gap-3">
           {isLoading ? (

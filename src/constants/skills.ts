@@ -43,6 +43,9 @@ export const MAX_CONTENT_LENGTH = 30000
 
 export const SKILL_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/
 
+export const MAX_SKILL_BUNDLE_SIZE_BYTES = 10 * 1024 * 1024
+export const MAX_SKILL_BUNDLE_FILE_COUNT = 100
+
 export const SKILL_EXAMPLE_TEMPLATE = `---
 name: example-skill
 description: A brief description of what this skill helps with

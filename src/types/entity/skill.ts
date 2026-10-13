@@ -90,6 +90,8 @@ export interface Skill {
 
   // Built-in subagents
   enabled_builtin_subagents?: string[]
+
+  bundle_warning?: string | null
 }
 
 export interface SkillCreateRequest {

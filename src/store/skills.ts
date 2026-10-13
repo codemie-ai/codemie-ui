@@ -45,6 +45,8 @@ const SHOW_NEW_SKILL_AI_POPUP = 'codemie-new-skill-ai-popup'
 export interface SkillConfig {
   max_content_length: number
   min_content_length: number
+  bundle_seed_max_file_count: number
+  bundle_seed_max_size_bytes: number
 }
 
 interface SkillsStoreType {

@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "task": "Show a non-blocking warning in the skill editor's bundle files section when uploaded companion files exceed backend seeding ceilings (10MB total, 100 files), without blocking save.",
+  "generated": "2026-10-06T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches 3 small pieces (SkillBundleFilesSection.tsx component, skillBundleUtils.ts aggregation helper, constants/skills.ts ceilings) but all within the UI/component layer; no store, API, or validation-schema layer is touched." },
+    { "dimension": "file_change_estimate", "reason": "Technical analysis estimates ~5-7 files total: 1 component edit, 1 utility addition, 1 constants addition, plus 2-3 new/extended test files across existing __tests__ directories." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

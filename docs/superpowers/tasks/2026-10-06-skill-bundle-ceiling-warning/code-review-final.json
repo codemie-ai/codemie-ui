@@ -1,0 +1,33 @@
+{
+  "decision": "request-changes",
+  "rationale": "Implementation matches spec intent and is well-tested at the component level, but the acceptance lens found the utils-level test coverage for skillBundleUtils.ts partially unmet: the spec's Testing section explicitly calls for getBundleTotals-level tests crossing the size/count ceilings (under both, exceeding size only, exceeding count only, exceeding both), and the current tests only cover empty/sum/missing-size_bytes at that layer plus a loose regex assertion in the combined-ceiling component test. 2 other minor findings (hardcoded \"10 MB\" string, unverified truncation-copy claim) and 3 low-priority observations (size_bytes undercount for backend-loaded files, near-threshold display rounding, NaN/negative guard) were triaged as non-blocking: the size_bytes-coalesces-to-0 behavior and the enforcement-copy wording are both explicitly spec-mandated (requirements 2 and 5's example wording), and the rest are cosmetic. All three review lenses (blind, edge-case, acceptance) ran successfully with no failures; the spec was present and fully read.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "criterion": "1. Warning appears in SkillBundleFilesSection when bundle exceeds 10MB total size or 100 file count", "status": "pass" },
+    { "criterion": "2. Missing/undefined size_bytes on any file treated as 0 for the size total", "status": "pass" },
+    { "criterion": "3. Warning is non-blocking — never prevents saving the skill", "status": "pass" },
+    { "criterion": "4. Warning names which limit(s) are exceeded with current values (size, count, or both)", "status": "pass" },
+    { "criterion": "5. Test coverage for empty bundle, under both ceilings, exceeding size only, exceeding count only, exceeding both, and missing size_bytes contributing 0", "status": "partial", "notes": "Covered at the component level (SkillBundleFilesSection.test.tsx) via a loose regex for the combined case; skillBundleUtils.test.ts itself only covers empty/sum/missing-size_bytes and has no dedicated test crossing MAX_SKILL_BUNDLE_SIZE_BYTES/MAX_SKILL_BUNDLE_FILE_COUNT at the getBundleTotals layer." },
+    { "criterion": "6. Uses existing InfoWarning component with WARNING type", "status": "pass" },
+    { "criterion": "7. Constants MAX_SKILL_BUNDLE_SIZE_BYTES (10MB) and MAX_SKILL_BUNDLE_FILE_COUNT (100) added to src/constants/skills.ts", "status": "pass" },
+    { "criterion": "8. Backend seeding/ledger enforcement explicitly out of scope", "status": "pass" }
+  ],
+  "standards_review": [
+    { "standard": "git-workflow.md commit subject format", "status": "pass", "notes": "All 3 commits (5246cfdeb, 85e38e0aa, b10e1bfe3) use the EPMCDME-15558: <summary> format consistent with recent repo history." },
+    { "standard": "development/security-patterns.md", "status": "na", "notes": "Diff touches no dangerouslySetInnerHTML sink, redirect, cross-window message, or secret/config value — guide's checklist is not applicable to this change." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "skillBundleUtils.test.ts lacks tests at the getBundleTotals layer that exercise the actual MAX_SKILL_BUNDLE_SIZE_BYTES/MAX_SKILL_BUNDLE_FILE_COUNT ceilings (under both, exceeding size only, exceeding count only, exceeding both), and the combined-warning assertion in SkillBundleFilesSection.test.tsx uses a loose `.*` regex for the MB value instead of pinning the exact expected value as the size-only test does.",
+      "impact": "If MAX_SKILL_BUNDLE_SIZE_BYTES or MAX_SKILL_BUNDLE_FILE_COUNT changes, or if getBundleTotals' ceiling-crossing arithmetic regresses, no utils-level test would catch it — the spec's own Testing section calls for this coverage shape explicitly, and the loose regex means a wrong-but-plausible MB string in the combined case would still pass.",
+      "recommendation": "Add getBundleTotals-focused tests in skillBundleUtils.test.ts for: under both ceilings, exceeding size only, exceeding count only, and exceeding both (asserting against MAX_SKILL_BUNDLE_SIZE_BYTES/MAX_SKILL_BUNDLE_FILE_COUNT directly). Tighten the combined-warning test's regex to pin the exact expected MB value.",
+      "sources": ["acceptance"]
+    }
+  ],
+  "deferred_notes": "2 findings deferred as non-blocking: (1) blind+acceptance lenses both flagged the literal \"10 MB\" string appearing 3 times in SkillBundleFilesSection.tsx's warning messages instead of being derived from MAX_SKILL_BUNDLE_SIZE_BYTES/formatFileSize — a real but cosmetic drift risk if the constant ever changes; (2) blind lens flagged that the warning copy's \"Only files up to these limits will be copied into a new workspace\" phrasing describes truncation/enforcement behavior not implemented in this diff — this matches the spec's own example wording and the explicitly out-of-scope backend seeding/ledger work, so it is intentional, pre-approved copy, not a defect. 3 additional low-priority observations dismissed as noise: size_bytes coalescing to 0 for backend-loaded files without populated metadata (spec requirement #2 mandates this exact behavior), formatFileSize's toFixed(1) rounding near the threshold (e.g. displaying \"10.0 MB\" for a value just over 10MB), and the absence of a NaN/negative-value guard in getBundleTotals (input is trusted File.size via fileToSkillCompanionFile).",
+  "lens_coverage": "blind: ran, no failures. edge-case: ran, no failures. acceptance: ran against the full text of spec.md, no failures. No oversized-diff degradation (diff was 252 lines across 5 files)."
+}

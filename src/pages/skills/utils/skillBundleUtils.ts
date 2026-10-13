@@ -15,6 +15,13 @@
 
 import { SkillCompanionFile } from '@/types/entity/skill'
 
+export const formatFileSize = (sizeBytes?: number): string => {
+  if (sizeBytes == null) return 'Unknown size'
+  if (sizeBytes < 1024) return `${sizeBytes} B`
+  if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`
+  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 const TEXT_FILE_EXTENSIONS = new Set([
   'css',
   'csv',
@@ -195,4 +202,12 @@ export const fileToSkillCompanionFile = async (
     mime_type: file.type || undefined,
     size_bytes: file.size,
   }
+}
+
+export const getBundleTotals = (
+  companionFiles: SkillCompanionFile[]
+): { totalSizeBytes: number; fileCount: number } => {
+  const totalSizeBytes = companionFiles.reduce((sum, file) => sum + (file.size_bytes ?? 0), 0)
+
+  return { totalSizeBytes, fileCount: companionFiles.length }
 }

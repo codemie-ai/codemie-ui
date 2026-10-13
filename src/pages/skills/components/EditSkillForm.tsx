@@ -97,6 +97,7 @@ const EditSkillForm: React.FC<EditSkillFormProps> = ({ skill, onBack }) => {
           companionFiles={companionFiles}
           bundleFolders={bundleFolders}
           isCompanionFilesLoading={isCompanionFilesLoading}
+          savedBundleWarning={skill.bundle_warning}
           onCompanionFilesChange={setCompanionFiles}
           onBundleFoldersChange={setBundleFolders}
           onSuccess={handleSuccess}

@@ -69,6 +69,7 @@ interface SkillFormProps {
   companionFiles: SkillCompanionFile[]
   bundleFolders: string[]
   isCompanionFilesLoading?: boolean
+  savedBundleWarning?: string | null
   onCompanionFilesChange: (files: SkillCompanionFile[]) => void
   onBundleFoldersChange: (folders: string[]) => void
   onSuccess?: () => void
@@ -84,6 +85,7 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
       companionFiles,
       bundleFolders,
       isCompanionFilesLoading = false,
+      savedBundleWarning,
       onCompanionFilesChange,
       onBundleFoldersChange,
       onSuccess,
@@ -338,6 +340,7 @@ const SkillForm = forwardRef<SkillFormRef, SkillFormProps>(
               companionFiles={companionFiles}
               folders={bundleFolders}
               isLoading={isCompanionFilesLoading}
+              savedBundleWarning={savedBundleWarning}
               onCompanionFilesChange={onCompanionFilesChange}
               onFoldersChange={onBundleFoldersChange}
             />
