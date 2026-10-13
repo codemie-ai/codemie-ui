@@ -302,6 +302,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   const isProjectAdmin =
     !isAdmin && (currentUser?.applicationsAdmin?.includes(project.name || '') ?? false)
   const canManageProject = isAdmin || isProjectAdmin
+  const canAccessUsersTab = isAdmin || !!currentUser?.isMaintainer || !!currentUser?.isAuditor
   const isPersonal = project.project_type === ProjectType.PERSONAL
 
   const showBudgets = !!budgets?.length
@@ -745,7 +746,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       budgets: (user: UserListItem) => (
         <UserBudgetsCell
           user={user}
-          enforceMemberSpendLimits={!!project.enforce_member_spend_limits}
           budgetAllocationLookup={budgetAllocationLookup}
           spendingRow={spendingByUserId[user.id]}
           onOverride={(userId, category) =>
@@ -779,6 +779,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
                 toaster.info('Users Management is unavailable in this environment')
               }
             },
+            hidden: !canAccessUsersTab,
           },
           {
             title: 'Override budgets',

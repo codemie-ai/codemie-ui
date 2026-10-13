@@ -155,7 +155,7 @@ const ProjectOverviewIndicators: FC<Props> = ({
 
   return (
     <section>
-      <div className="mb-3 text-sm font-semibold text-text-primary">Integrations</div>
+      <div className="mb-3 text-sm font-semibold text-text-primary">Models and usage</div>
       <div
         className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${
           isModelsConfigEnabled ? 'xl:grid-cols-3' : 'xl:grid-cols-1'

@@ -33,7 +33,6 @@ export const getUserBudgetUsage = (
 
 interface UserBudgetsCellProps {
   user: UserListItem
-  enforceMemberSpendLimits: boolean
   budgetAllocationLookup: BudgetAllocationLookup
   spendingRow: ProjectMemberSpendingRow | undefined
   onOverride: (userId: string, category: BudgetCategory) => void
@@ -41,7 +40,6 @@ interface UserBudgetsCellProps {
 
 const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
   user,
-  enforceMemberSpendLimits,
   budgetAllocationLookup,
   spendingRow,
   onOverride,
@@ -78,17 +76,6 @@ const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
             </span>
           </>
         )
-
-        if (!enforceMemberSpendLimits) {
-          return (
-            <span
-              key={cat}
-              className="inline-flex w-fit items-center gap-2 px-1 -mx-1 text-left text-xs"
-            >
-              {content}
-            </span>
-          )
-        }
 
         return (
           <button
