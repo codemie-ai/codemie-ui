@@ -119,3 +119,6 @@ credentials.json
 # Legacy review artifacts / analytics exports: ignore entirely, no exceptions
 docs/superpowers/reviews/
 docs/codemie/analytics/
+
+# Default results folder of codemie-test-harness (junit.xml, results.json)
+codemie-test-reports/
