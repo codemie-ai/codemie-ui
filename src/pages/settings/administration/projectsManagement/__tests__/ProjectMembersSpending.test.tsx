@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import ProjectMembersManager from '@/pages/settings/administration/projectsManagement/ProjectMembersManager'
@@ -172,4 +172,20 @@ describe('ProjectMembersManager — merged Spending column', () => {
       expect(screen.getByText('$0.00')).toBeInTheDocument()
     })
   })
+
+  it.each([true, false])(
+    'opens the budget override dialog from an allocation row when enforcement is %s',
+    async (enforceMemberSpendLimits) => {
+      render(
+        <ProjectMembersManager
+          project={{ ...mockProject, enforce_member_spend_limits: enforceMemberSpendLimits }}
+          budgets={mockBudgets}
+        />
+      )
+
+      fireEvent.click(await screen.findByRole('button', { name: /Platform/ }))
+
+      expect(await screen.findByText('Budget Override — Jane Doe')).toBeInTheDocument()
+    }
+  )
 })

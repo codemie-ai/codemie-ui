@@ -1,7 +1,7 @@
 // Copyright 2026 EPAM Systems, Inc. ("EPAM")
 // Licensed under the Apache License, Version 2.0
 
-import { FC, useEffect, useMemo, useState } from 'react'
+import { FC, useCallback, useEffect, useMemo, useState } from 'react'
 
 import Button from '@/components/Button'
 import Input from '@/components/form/Input'
@@ -87,18 +87,36 @@ const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
     [budgets]
   )
 
+  const getAvailableCapacity = useCallback(
+    (category: BudgetCategory, field: BudgetOverrideField) => {
+      const budget = budgetByCategory.get(category)
+      if (!budget) return null
+      const reserved = budget.member_allocations
+        .filter((item) => item.allocation_mode === 'fixed' && item.user_id !== userId)
+        .reduce(
+          (total, item) =>
+            total + (field === 'max' ? item.allocated_max_budget : item.allocated_soft_budget),
+          0
+        )
+      return Math.max(0, (field === 'max' ? budget.max_budget : budget.soft_budget) - reserved)
+    },
+    [budgetByCategory, userId]
+  )
+
   const initialValues = useMemo(() => {
     const values = emptyDraft()
     CATEGORIES.forEach((category) => {
       const budget = budgetByCategory.get(category)
       const allocation = userAllocationsByCategory?.[category]
+      const max = allocation?.allocated_max_budget ?? budget?.max_budget ?? 0
+      const maxAvailable = getAvailableCapacity(category, 'max')
       values[category] = {
-        max: String(allocation?.allocated_max_budget ?? budget?.max_budget ?? 0),
+        max: String(maxAvailable == null ? max : Math.min(max, maxAvailable)),
         soft: String(allocation?.allocated_soft_budget ?? budget?.soft_budget ?? 0),
       }
     })
     return values
-  }, [budgetByCategory, userAllocationsByCategory])
+  }, [budgetByCategory, userAllocationsByCategory, getAvailableCapacity])
 
   useEffect(() => {
     if (!visible || !userId) return
@@ -137,19 +155,6 @@ const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
   const getAllocationState = (category: BudgetCategory) => {
     if (clearedCategories.includes(category)) return 'pending-project' as const
     return hasFixedOverride(category) ? ('override' as const) : ('project' as const)
-  }
-
-  const getAvailableCapacity = (category: BudgetCategory, field: BudgetOverrideField) => {
-    const budget = budgetByCategory.get(category)
-    if (!budget) return null
-    const reserved = budget.member_allocations
-      .filter((item) => item.allocation_mode === 'fixed' && item.user_id !== userId)
-      .reduce(
-        (total, item) =>
-          total + (field === 'max' ? item.allocated_max_budget : item.allocated_soft_budget),
-        0
-      )
-    return Math.max(0, (field === 'max' ? budget.max_budget : budget.soft_budget) - reserved)
   }
 
   const getValidationErrors = (nextDraft: Draft, onlyTouched = false) => {

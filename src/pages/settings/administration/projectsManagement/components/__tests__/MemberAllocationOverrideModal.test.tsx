@@ -17,7 +17,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
 import { BudgetCategory } from '@/types/entity/budget'
-import { ProjectBudget } from '@/types/entity/projectBudget'
+import { ProjectBudget, ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
 
 import MemberAllocationOverrideModal from '../MemberAllocationOverrideModal'
 
@@ -60,5 +60,38 @@ describe('MemberAllocationOverrideModal', () => {
   it('falls back to userId when userName is empty string', () => {
     render(<MemberAllocationOverrideModal {...baseProps} userName="" />)
     expect(screen.getByText('Budget Override — john_doe')).toBeInTheDocument()
+  })
+
+  it('caps the prefilled hard limit at the budget not reserved by other overrides', () => {
+    const ownAllocation: ProjectBudgetMemberAllocation = {
+      user_id: 'john_doe',
+      allocation_mode: 'equal',
+      allocated_soft_budget: 80,
+      allocated_max_budget: 100,
+      sync_status: null,
+    }
+    const budget: ProjectBudget = {
+      ...mockBudget,
+      member_allocations: [
+        ownAllocation,
+        {
+          user_id: 'jane_doe',
+          allocation_mode: 'fixed',
+          allocated_soft_budget: 10,
+          allocated_max_budget: 30,
+          sync_status: null,
+        },
+      ],
+    }
+
+    render(
+      <MemberAllocationOverrideModal
+        {...baseProps}
+        budgets={[budget]}
+        userAllocationsByCategory={{ platform: ownAllocation }}
+      />
+    )
+
+    expect(screen.getByLabelText('Hard Limit ($)')).toHaveValue('70')
   })
 })
