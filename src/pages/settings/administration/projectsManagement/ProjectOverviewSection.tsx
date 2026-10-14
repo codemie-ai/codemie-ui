@@ -13,6 +13,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingProgressBar'
 import { analyticsStore } from '@/store/analytics'
 import { projectBudgetsStore } from '@/store/projectBudgets'
+import { userStore } from '@/store/user'
 import { Metric, OverviewMetricType } from '@/types/analytics'
 import {
   BUDGET_CATEGORY_OPTIONS,
@@ -256,7 +257,8 @@ const ProjectOverviewSection: FC<Props> = ({
   const description = project.description?.trim() ?? ''
   const spending = canViewBudgets ? project.spending : undefined
   const costCenterName = project.cost_center_name || '—'
-  const createdBy = project.created_by?.trim() || '—'
+  const createdById = project.created_by?.trim() || ''
+  const [createdByLabel, setCreatedByLabel] = useState('—')
 
   const loadProjectBudgets = useCallback(() => {
     if (!canViewBudgets) {
@@ -279,6 +281,32 @@ const ProjectOverviewSection: FC<Props> = ({
   useEffect(() => {
     loadProjectBudgets()
   }, [loadProjectBudgets])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!createdById) {
+      setCreatedByLabel('—')
+      return () => {
+        cancelled = true
+      }
+    }
+
+    userStore
+      .getUserById(createdById)
+      .then((user) => {
+        if (cancelled) return
+        setCreatedByLabel(user.name ?? user.username ?? createdById)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setCreatedByLabel(createdById)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [createdById])
 
   useEffect(() => {
     let cancelled = false
@@ -362,10 +390,10 @@ const ProjectOverviewSection: FC<Props> = ({
                   value={<span className="capitalize">{project.project_type}</span>}
                 />
                 <InfoItem
-                  label="Created by"
+                  label="Owned by"
                   value={
-                    <span className="block whitespace-nowrap" title={createdBy}>
-                      {displayValue(createdBy)}
+                    <span className="block whitespace-nowrap" title={createdByLabel}>
+                      {displayValue(createdByLabel)}
                     </span>
                   }
                 />

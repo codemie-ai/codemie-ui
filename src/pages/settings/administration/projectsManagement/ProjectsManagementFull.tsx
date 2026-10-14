@@ -21,6 +21,7 @@ import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import SearchIcon from '@/assets/icons/search.svg?react'
+import ShareSvg from '@/assets/icons/share.svg?react'
 import ViewSvg from '@/assets/icons/view.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
@@ -39,6 +40,7 @@ import {
 import { useVueRouter } from '@/hooks/useVueRouter'
 import BudgetSpendCell from '@/pages/settings/administration/components/BudgetSpendCell'
 import NameLinkCell from '@/pages/settings/administration/components/NameLinkCell'
+import ChangeOwnershipModal from '@/pages/settings/administration/components/projectsManagement/ChangeOwnershipModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
@@ -193,6 +195,7 @@ const ProjectsManagementFull: FC = () => {
   const [showModal, setShowModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
+  const [transferringProject, setTransferringProject] = useState<Project | null>(null)
   const skipPaginationReloadRef = useRef(false)
 
   const [isUserManagementEnabled] = useUserManagementEnabled()
@@ -391,6 +394,10 @@ const ProjectsManagementFull: FC = () => {
     setDeletingProject(project)
   }, [])
 
+  const handleChangeOwnership = useCallback((project: Project) => {
+    setTransferringProject(project)
+  }, [])
+
   const handleOpenProjectDetails = useCallback(
     (projectName: string) => {
       router.push({
@@ -460,6 +467,22 @@ const ProjectsManagementFull: FC = () => {
     [editingProject, handleModalClose, refreshProjects]
   )
 
+  const handleConfirmOwnershipTransfer = useCallback(
+    async (newOwnerId: string, newOwnerName: string) => {
+      if (!transferringProject) return
+
+      await projectsStore.transferOwnership(transferringProject.id, newOwnerId)
+      toaster.info(
+        newOwnerName
+          ? `Ownership transferred to ${newOwnerName}`
+          : 'Ownership transferred successfully'
+      )
+      setTransferringProject(null)
+      refreshProjects()
+    },
+    [transferringProject, refreshProjects]
+  )
+
   // Writes the requested page/perPage and stops there: the pagination effect below is the only
   // thing that fetches. Fetching here as well duplicated every page change, because
   // indexProjects writes the responded page back into the store, which re-ran that effect with
@@ -516,6 +539,12 @@ const ProjectsManagementFull: FC = () => {
           })
 
           if (!isPersonal) {
+            menuItems.push({
+              title: 'Change ownership',
+              icon: <ShareSvg />,
+              onClick: () => handleChangeOwnership(item),
+            })
+
             const hasCountData = item.counters !== undefined
             const blockingLabels = getBlockingResourceLabels(item)
             const shouldDisableDelete = !hasCountData || blockingLabels.length > 0
@@ -553,6 +582,7 @@ const ProjectsManagementFull: FC = () => {
     [
       handleEditProject,
       handleDeleteProject,
+      handleChangeOwnership,
       handleOpenProjectDetails,
       canManageProject,
       isUserManagementEnabled,
@@ -669,6 +699,13 @@ const ProjectsManagementFull: FC = () => {
             />
           )}
         </ConfirmationModal>
+
+        <ChangeOwnershipModal
+          visible={!!transferringProject}
+          currentOwnerId={transferringProject?.created_by}
+          onHide={() => setTransferringProject(null)}
+          onSubmit={handleConfirmOwnershipTransfer}
+        />
       </div>
     )
   }

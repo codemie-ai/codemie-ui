@@ -1,0 +1,62 @@
+{
+  "decision": "request-changes",
+  "rationale": "Edge-case lens ran clean under the compact profile; acceptance was correctly skipped as no-spec, which caps confidence at low. Verified all 6 edge-case candidates against source: 4 are real, kept as major patches (CR-001..CR-004); 2 dismissed as noise (one assumed currentOwnerId is still resolving when it is already synchronously set from the project prop, one flagged a transient label flicker the effect's dependency array already covers). CR-002 is ambiguous without a spec (should personal projects be excluded from ownership transfer, as they are from delete?) and is kept blocking per no-spec routing rather than silently deferred. No findings deferred; no standards audit expected for this profile.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for this profile/round." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for this profile/round." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for this profile/round." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/projectsManagement/ChangeOwnershipModal.tsx",
+      "line": 156,
+      "title": "Form resets on failed ownership transfer",
+      "problem": "handleConfirmOwnershipTransfer (the parent onSubmit passed into this modal) catches its own errors and never rethrows, so the awaited onSubmit() call in handleFormSubmit always resolves. resetFormState() therefore runs unconditionally after await onSubmit(selectedUserId), even when the transfer failed.",
+      "impact": "After a failed transfer, the modal silently clears the selected user and search text, forcing the admin to re-search and re-select the same user to retry — the error toast fires but the form state is lost underneath it.",
+      "recommendation": "Have onSubmit indicate success/failure (return a boolean, or let the error propagate out of handleFormSubmit) and only call resetFormState() on the success path."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx",
+      "line": 539,
+      "title": "Ownership transfer menu item not gated for personal projects",
+      "problem": "The 'Change ownership' menu item is pushed whenever canManage is true, with no isPersonal check — unlike 'Delete', pushed a few lines below only when !isPersonal.",
+      "impact": "Admins can open the ownership-transfer flow on personal projects, where the concept of a transferable owner may not be meaningful; whether the backend accepts or rejects this is unverified from the frontend alone.",
+      "recommendation": "No spec clarifies whether personal projects should support ownership transfer. Given 'Delete' already excludes them, apply the same !isPersonal gate to 'Change ownership' unless product intent says otherwise; confirm with the backend/story before shipping either way."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/projects.ts",
+      "line": 312,
+      "title": "Ownership response spread without validation",
+      "problem": "transferOwnership spreads the raw PUT response into { ...result, id: result.name } and writes result.created_by into the cached project with no check that name or created_by are present.",
+      "impact": "A response missing those fields produces a returned project with id: undefined, and if the project isn't found in the cache by the old id the local store silently stays stale for any caller relying on the return value instead of the subsequent refetch.",
+      "recommendation": "Validate the response shape (e.g. throw a clear error when result.name is missing) before constructing the returned project or writing it into the cache."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/projects.ts",
+      "line": 317,
+      "title": "No ordering guard on ownership cache write",
+      "problem": "The this.projects[index] = { ...this.projects[index], created_by: result.created_by } write in transferOwnership has no request-id/version check, unlike the modal's own requestIdRef guard for its search calls.",
+      "impact": "If two transferOwnership calls for the same project resolve out of order, the store's cached created_by can be overwritten by a stale response, showing the wrong owner until the next refetch. Likelihood from the current UI is low (submit is disabled while isSubmitting) but no guard enforces it at the store layer.",
+      "recommendation": "Guard the cache write with a request-id/version check (mirroring the modal's requestIdRef pattern) so a stale response cannot overwrite a newer one."
+    }
+  ]
+}

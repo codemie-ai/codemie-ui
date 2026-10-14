@@ -37,6 +37,7 @@ const { mockUserStore } = vi.hoisted(() => ({
       applicationsAdmin: string[]
     },
     getCurrentUser: vi.fn(),
+    getUserById: vi.fn(),
   },
 }))
 
@@ -143,6 +144,7 @@ describe('ProjectDetailsPage', () => {
     projectsStore.updateProject = vi.fn().mockResolvedValue(mockProject)
     userStore.user = { isAdmin: true } as any
     userStore.getCurrentUser = vi.fn().mockResolvedValue(userStore.user)
+    userStore.getUserById = vi.fn().mockResolvedValue({ id: 'owner-1', name: 'Owner' })
     projectDisplayNamesStore.invalidate = vi.fn()
   })
 

@@ -62,6 +62,7 @@ interface ProjectsStore {
   getProject: (projectName: string, includeSpending?: boolean) => Promise<ProjectDetail>
   createProject: (data: ProjectRequest) => Promise<Project>
   updateProject: (id: string, data: ProjectRequest) => Promise<Project>
+  transferOwnership: (projectName: string, userId: string) => Promise<Project>
   deleteProject: (id: string) => Promise<void>
   assignUserToProject: (projectName: string, userId: string, isAdmin: boolean) => Promise<void>
   updateUserProjectAssignment: (
@@ -290,6 +291,39 @@ export const projectsStore = proxy<ProjectsStore>({
       return project
     } catch (error: any) {
       console.error('Projects Store Error (updateProject):', error)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async transferOwnership(projectName: string, userId: string) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const response = await api.put(`v1/projects/${encodeURIComponent(projectName)}/ownership`, {
+        user_id: userId,
+      })
+      const result = await response.json()
+
+      if (!result?.name) {
+        throw new Error('Ownership transfer response is missing the project name')
+      }
+
+      const project = {
+        ...result,
+        id: result.name,
+      }
+
+      const index = this.projects.findIndex((p) => p.id === projectName)
+      if (index !== -1) {
+        this.projects[index] = { ...this.projects[index], created_by: result.created_by }
+      }
+
+      return project
+    } catch (error: any) {
+      console.error('Projects Store Error (transferOwnership):', error)
       throw error
     } finally {
       this.loading = false

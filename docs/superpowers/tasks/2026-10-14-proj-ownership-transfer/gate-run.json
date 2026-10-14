@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15951-ch-proj-ownership",
+  "head": "badd6798a34ef81777105318273c452c20d2ffd4",
+  "runner": "npm",
+  "started_at": "2026-10-14T13:24:59Z",
+  "completed_at": "2026-10-14T13:39:58Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29462,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 20826,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip condition met: no dependency added/removed/moved in this diff (package.json and package-lock.json unchanged vs merge_base)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 123000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output: 'no leaks found' after scanning ~513MB in 2m3s."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 390560,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 691 passed (691); Tests 6963 passed | 1 skipped (6964)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 134650,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 49 passed (49); Tests 558 passed | 1 skipped (559)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs the stack running and ~/.codemie/test-harness.json, which is not present/reachable in this environment; a gate that could not run is unverified, not passed. To enable locally: bring up the stack and configure ~/.codemie/test-harness.json, then run npm run test-harness."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1302,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2340 files, 0 missing license headers. Pre-commit hook step; not already covered by guide gates list."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 361,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip detected: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 but no scan work was done. To enable locally, set SONAR_TOKEN before running npm run sonar-local; CI's compliance-report job runs the real scan server-side."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "lint-staged only lints/formats staged files at commit time; full-tree lint already covered by the 'lint' guide gate (npm run lint), which is a superset for this working tree."
+    },
+    {
+      "id": "ci-pipeline-compliance",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "N/A (server-side GitLab CI expected contexts: ci-pipeline, compliance-report)",
+      "exit_code": null,
+      "notes": ".gitlab-ci.yml only waits on externally-reported statuses (ci-pipeline, compliance-report) via wait-ci-init-template; it runs no local-runnable commands in this checkout. Needs an actual MR pipeline against main to evaluate; cannot be reached locally."
+    }
+  ],
+  "failures": {}
+}
