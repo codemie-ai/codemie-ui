@@ -1,0 +1,46 @@
+{
+  "decision": "approve",
+  "rationale": "All three review lenses ran successfully (blind, edge-case, acceptance). The edge-case lens traced every branch combination (search empty/non-empty, defaultModel null/set, isGrouped true/false) and found the fix correct in all of them, with no stale-memoization risk. The acceptance lens confirmed all 5 Jira ACs pass against the diff and the 49/49 passing test suite, with only 2 minor (non-blocking) informational notes about search-view label behavior and an untested search+router combination — both pre-existing design choices, not regressions, and dropped in triage per minor severity. The blind lens (diff-only, no repo context) raised 5 concerns; all were checked against the full file and the actual passing test run and did not hold up: (1)/(2) assumed the Recommended-row push condition could drift out of sync with recommendedShown, but both are driven by the exact same !search && defaultModel condition in the real file; (3) misread the keyboard-nav test by conflating two different tests' key-press counts (the actual test does 5 total ArrowDown presses, wrapping 5 items back to Default, which is correct and already verified passing); (4)/(5) worried about shared-fixture regressions and unverified existing fixtures, both already empirically refuted by the full test file passing 49/49 after the change, including every sibling test in the touched describe blocks. No critical or major findings survived. Standards: the commit (after a local amend to fix initial casing) matches the project's `EPMCDME-XXXX: Capital sentence` format; no code-quality guide exists in this repo; the diff touches no HTML sink, navigation, cross-window message, or secret per security-patterns.md, so no security concern applies.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "AC1 - recommended model displayed only once",
+      "status": "pass",
+      "notes": "filteredSearchResults.forEach now skips defaultModel.value when recommendedShown; tests assert getAllByRole('option', {name: /GPT-4/}) has length 1 in both flat and grouped layouts."
+    },
+    {
+      "criterion": "AC2 - model keeps its Recommended label",
+      "status": "pass",
+      "notes": "The OPTION_ID_RECOMMENDED push and its renderOption branch are untouched by the fix; tests assert the recommended row still exists."
+    },
+    {
+      "criterion": "AC3 - not repeated as a regular item in Models section",
+      "status": "pass",
+      "notes": "document.getElementById('chat-llm-selector-option-gpt-4') asserted null in both layouts after the fix."
+    },
+    {
+      "criterion": "AC4 - all other models still displayed once each",
+      "status": "pass",
+      "notes": "Skip condition only matches defaultModel.value; new 3-model test confirms Claude-2 and Gemini-Pro each render exactly once alongside the single recommended GPT-4 row."
+    },
+    {
+      "criterion": "AC5 - search does not return duplicated entries",
+      "status": "pass",
+      "notes": "recommendedShown is false whenever search is non-empty, so the Recommended row is not pushed and the plain row renders once; AC5 test confirms exactly one GPT-4 option and no #chat-llm-selector-option-recommended node while searching."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow.md commit message format",
+      "status": "pass",
+      "notes": "Final commit message 'EPMCDME-15904: Fix duplicated Recommended model row in chat model dropdown' matches the required EPMCDME-XXXX: Capital sentence pattern (an initial lowercase-first-word commit was caught and amended before this review)."
+    },
+    {
+      "standard": "security-patterns.md",
+      "status": "na",
+      "notes": "Diff touches no HTML sink, navigation from untrusted input, cross-window message, or config/secret surface."
+    }
+  ],
+  "findings": []
+}

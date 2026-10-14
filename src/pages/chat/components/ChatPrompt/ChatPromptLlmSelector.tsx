@@ -235,6 +235,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
 
   const items = useMemo<ComboboxItem<LlmValue>[]>(() => {
     const list: ComboboxItem<LlmValue>[] = []
+    const recommendedShown = !search && !!defaultModel
     if (!search) {
       list.push({ id: OPTION_ID_DEFAULT, value: ASSISTANT_DEFAULT_VALUE })
       if (!isGrouped && defaultModel) {
@@ -248,6 +249,8 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
       list.push({ id: OPTION_ID_RECOMMENDED, value: defaultModel.value })
     }
     filteredSearchResults.forEach((m) => {
+      // The recommended model already has its own row above; don't repeat it here.
+      if (recommendedShown && m.value === defaultModel?.value) return
       list.push({ id: optionIdForModel(m.value), value: m.value })
     })
     return list

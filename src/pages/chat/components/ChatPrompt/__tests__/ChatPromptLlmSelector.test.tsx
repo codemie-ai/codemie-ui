@@ -154,7 +154,8 @@ describe('ChatPromptLlmSelector — keyboard navigation', () => {
     render(<ChatPromptLlmSelector />)
     const input = screen.getByPlaceholderText('Search models…')
 
-    for (let i = 0; i < 5; i += 1) {
+    // 5 items total: Default, Recommended (gpt-4), gpt-3.5-turbo, claude-2, llama-3.
+    for (let i = 0; i < 4; i += 1) {
       fireEvent.keyDown(input, { key: 'ArrowDown' })
     }
     fireEvent.keyDown(input, { key: 'ArrowDown' })
@@ -171,7 +172,7 @@ describe('ChatPromptLlmSelector — keyboard navigation', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
 
     expect(mockChatsStore.updateChat).toHaveBeenCalledWith('chat-123', {
-      llmModel: 'gpt-4',
+      llmModel: 'gpt-3.5-turbo',
     })
     expect(mockOverlayHide).toHaveBeenCalled()
   })
@@ -244,7 +245,9 @@ describe('ChatPromptLlmSelector — keyboard navigation', () => {
     // Move highlight away from the default
     fireEvent.keyDown(input, { key: 'ArrowDown' })
     fireEvent.keyDown(input, { key: 'ArrowDown' })
-    expect(input.getAttribute('aria-activedescendant')).toBe('chat-llm-selector-option-gpt-4')
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      'chat-llm-selector-option-gpt-3.5-turbo'
+    )
 
     // Simulate closing + reopening the panel via the trigger button.
     // The mocked OverlayPanel's toggle() invokes the component's onShow,
@@ -265,7 +268,7 @@ describe('ChatPromptLlmSelector — keyboard navigation', () => {
     fireEvent.keyDown(input, { key: 'ArrowDown' })
 
     const expectedId = input.getAttribute('aria-activedescendant')
-    expect(expectedId).toBe('chat-llm-selector-option-gpt-4')
+    expect(expectedId).toBe('chat-llm-selector-option-gpt-3.5-turbo')
 
     const highlightedButton = document.getElementById(expectedId!)
     expect(highlightedButton).not.toBeNull()
@@ -282,6 +285,7 @@ describe('ChatPromptLlmSelector — premium badge', () => {
     mockAppInfoStore.llmModels = [
       { label: 'Claude Opus 4.1', value: 'claude-opus-4-1', isDefault: false, isPremium: true },
       { label: 'GPT-4o', value: 'gpt-4o', isDefault: true },
+      { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
     ]
     Element.prototype.scrollIntoView = vi.fn()
   })
@@ -294,7 +298,8 @@ describe('ChatPromptLlmSelector — premium badge', () => {
     expect(meta).not.toBeNull()
     expect(meta.textContent).toBe('Premium')
 
-    const standardRow = screen.getByRole('option', { name: /^GPT-4o$/ })
+    // GPT-3.5 is a plain, non-default, non-premium row — the clean "no meta" case.
+    const standardRow = screen.getByRole('option', { name: /^GPT-3.5$/ })
     expect(standardRow.querySelector('[data-testid="llm-option-meta"]')).toBeNull()
   })
 
@@ -518,6 +523,7 @@ describe('ChatPromptLlmSelector — row-level hover', () => {
         isPremium: true,
       },
       { label: 'GPT-4o', value: 'gpt-4o', isDefault: true },
+      { label: 'Claude-2', value: 'claude-2', isDefault: false },
     ] as ModelOption[]
     mockChatsStore.currentChat = {
       ...mockChat,
@@ -579,7 +585,8 @@ describe('ChatPromptLlmSelector — row-level hover', () => {
   it('carries no premium content on a non-premium row', () => {
     render(<ChatPromptLlmSelector />)
 
-    const row = optionRow(screen.getByRole('option', { name: /^GPT-4o$/ }))
+    // Claude-2 is a plain, non-default, non-premium row — the clean "no meta" case.
+    const row = optionRow(screen.getByRole('option', { name: /^Claude-2$/ }))
 
     expect(row.hasAttribute('data-tooltip-content')).toBe(false)
     expect(row.hasAttribute('data-tooltip-id')).toBe(false)
@@ -692,6 +699,17 @@ describe('ChatPromptLlmSelector — routers', () => {
     expect(document.getElementById('chat-llm-selector-option-recommended')).not.toBeNull()
   })
 
+  it('does not render the recommended model a second time as a plain row in the flat layout', () => {
+    mockAppInfoStore.llmRouters = []
+    render(<ChatPromptLlmSelector />)
+
+    expect(document.getElementById('chat-llm-selector-option-recommended')).not.toBeNull()
+    expect(document.getElementById('chat-llm-selector-option-gpt-4')).toBeNull()
+    // The recommended row's accessible name includes "Recommended"; it's still the only GPT-4 row.
+    expect(screen.getAllByRole('option', { name: /GPT-4/ })).toHaveLength(1)
+    expect(document.getElementById('chat-llm-selector-option-claude-2')).not.toBeNull()
+  })
+
   it('groups into Default, then Routers, then Models (recommended model first) once a router exists', () => {
     render(<ChatPromptLlmSelector />)
 
@@ -705,6 +723,42 @@ describe('ChatPromptLlmSelector — routers', () => {
     expect(isBefore(routersHeader, routerRow)).toBe(true)
     expect(isBefore(routerRow, modelsHeader)).toBe(true)
     expect(isBefore(modelsHeader, recommendedRow)).toBe(true)
+  })
+
+  it('does not render the recommended model a second time as a plain row in Models (grouped layout)', () => {
+    render(<ChatPromptLlmSelector />)
+
+    expect(document.getElementById('chat-llm-selector-option-recommended')).not.toBeNull()
+    expect(document.getElementById('chat-llm-selector-option-gpt-4')).toBeNull()
+    // The recommended row's accessible name includes "Recommended"; it's still the only GPT-4 row.
+    expect(screen.getAllByRole('option', { name: /GPT-4/ })).toHaveLength(1)
+    // The non-default model is unaffected and still renders.
+    expect(document.getElementById('chat-llm-selector-option-claude-2')).not.toBeNull()
+  })
+
+  it('returns exactly one row when searching for the recommended model by name (AC5)', () => {
+    render(<ChatPromptLlmSelector />)
+    const input = screen.getByPlaceholderText('Search models…')
+
+    fireEvent.change(input, { target: { value: 'GPT' } })
+
+    expect(screen.getAllByRole('option', { name: /^GPT-4$/ })).toHaveLength(1)
+    expect(document.getElementById('chat-llm-selector-option-recommended')).toBeNull()
+    expect(document.getElementById('chat-llm-selector-option-gpt-4')).not.toBeNull()
+  })
+
+  it('still shows every other model exactly once alongside the recommended model (AC4)', () => {
+    mockAppInfoStore.llmModels = [
+      { label: 'GPT-4', value: 'gpt-4', isDefault: true },
+      { label: 'Claude-2', value: 'claude-2', isDefault: false },
+      { label: 'Gemini-Pro', value: 'gemini-pro', isDefault: false },
+    ] as ModelOption[]
+    render(<ChatPromptLlmSelector />)
+
+    // GPT-4 is the recommended model, so its accessible name also carries "Recommended".
+    expect(screen.getAllByRole('option', { name: /GPT-4/ })).toHaveLength(1)
+    expect(screen.getAllByRole('option', { name: /^Claude-2$/ })).toHaveLength(1)
+    expect(screen.getAllByRole('option', { name: /^Gemini-Pro$/ })).toHaveLength(1)
   })
 
   it('selecting a router option calls updateChat with the router value', () => {
