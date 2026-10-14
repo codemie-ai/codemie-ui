@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Implement the UI for cloning an MCP server configuration (clone action, permission gating, copy-values dialog, store method, edit-view redirect, stripped-fields/warning banners, error handling) consuming an existing backend clone endpoint.",
+  "generated": "2026-10-06T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 21,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches mcpStore (new cloneConfig method), useMCPManagement hook (new state/handlers), MCPServerActions.tsx and MCPServerModal/index.tsx (modified), plus a brand-new MCPCopyValuesDialog component and types/entity/mcp.ts — 5+ components across store, hook, UI, and types, with a genuinely new abstraction (masked-value preview+reveal dialog) that has no precedent in the codebase." },
+    { "dimension": "requirements_clarity", "reason": "Acceptance criteria enumerate the pieces clearly, but several design decisions are open: what counts as a 'sensitive key', the masked-preview+reveal interaction model, and exact wording/placement of the stripped-fields and placeholder_value_present warnings — all left to be designed from scratch." },
+    { "dimension": "technical_risk", "reason": "No existing masked-value/reveal UI pattern anywhere in the repo for the copy-values dialog; toaster-based error surfacing is not currently wired for this family of store mutations (only console.error/mcpStore.error today), so 'clear error via toaster' is new UX plumbing, not a drop-in reuse. Permission gating and the create/update store pattern do have direct precedent (BudgetsManagementPage, mcpStore mutators), which keeps this at L rather than XL." },
+    { "dimension": "file_change_estimate", "reason": "Estimated: mcp.ts (store), useMCPManagement.ts (hook), MCPServerActions.tsx, MCPServerModal/index.tsx, columnRenderers.tsx (modified, ~5); new MCPCopyValuesDialog component + co-located hook, plus store/menu test files (new, ~3); spanning src/store, src/pages/settings/administration (hooks/components), and src/types — 3+ directories." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

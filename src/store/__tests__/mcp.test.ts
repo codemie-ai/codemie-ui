@@ -18,11 +18,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mcpStore } from '@/store/mcp'
 
 const mockApiGet = vi.fn()
+const mockApiPost = vi.fn()
 
 vi.mock('@/utils/api', () => ({
   default: {
     get: (...args: unknown[]) => mockApiGet(...args),
-    post: vi.fn(),
+    post: (...args: unknown[]) => mockApiPost(...args),
     put: vi.fn(),
     delete: vi.fn(),
   },
@@ -167,5 +168,93 @@ describe('mcpStore.indexConfigs', () => {
     expect(mcpStore.configs).toHaveLength(1)
     expect(mcpStore.configs[0].name).toBe('New Name')
     expect(mcpStore.configs[0].description).toBe('Updated description')
+  })
+})
+
+describe('mcpStore.cloneConfig', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mcpStore.configs = []
+    mcpStore.loading = false
+    mcpStore.error = null
+    mcpStore.pagination = {
+      page: 0,
+      perPage: 20,
+      totalPages: 0,
+      totalCount: 0,
+    }
+    mcpStore.clearCache()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const cloneResponseFixture = {
+    id: 'cloned-1',
+    name: 'Cloned Server (Copy)',
+    description: 'Cloned description',
+    categories: ['Development'],
+    config: { command: 'npx', args: ['cloned-server'] },
+    required_env_vars: [],
+    user_id: 'user-1',
+    project: 'project-1',
+    is_public: true,
+    is_system: false,
+    usage_count: 0,
+    is_active: true,
+    stripped_fields: ['env'],
+    warnings: [{ code: 'env_stripped', message: 'Env vars were stripped' }],
+  }
+
+  it('should clone a config without explicit copyValues and unshift it into configs', async () => {
+    mockApiPost.mockResolvedValueOnce({
+      json: async () => cloneResponseFixture,
+    })
+
+    mcpStore.configs = [
+      {
+        id: 'existing-1',
+        name: 'Existing',
+        categories: [],
+        required_env_vars: [],
+        user_id: 'user-1',
+        project: 'project-1',
+        is_public: true,
+        is_system: false,
+        usage_count: 1,
+        is_active: true,
+      },
+    ]
+
+    const result = await mcpStore.cloneConfig('source-1')
+
+    expect(result).toEqual(cloneResponseFixture)
+    expect(mcpStore.configs[0]).toEqual(cloneResponseFixture)
+    expect(mcpStore.configs).toHaveLength(2)
+    expect(mockApiPost).toHaveBeenCalledWith('v1/mcp-configs/source-1/clone', {
+      copy_values: undefined,
+    })
+  })
+
+  it('should clone a config with explicit copyValues', async () => {
+    mockApiPost.mockResolvedValueOnce({
+      json: async () => cloneResponseFixture,
+    })
+
+    await mcpStore.cloneConfig('source-2', ['env', 'args'])
+
+    expect(mockApiPost).toHaveBeenCalledWith('v1/mcp-configs/source-2/clone', {
+      copy_values: ['env', 'args'],
+    })
+  })
+
+  it('should set error and rethrow when clone request rejects', async () => {
+    mockApiPost.mockRejectedValueOnce({
+      response: { data: { message: 'some message' } },
+    })
+
+    await expect(mcpStore.cloneConfig('source-3')).rejects.toBeTruthy()
+    expect(mcpStore.error).toContain('some message')
   })
 })

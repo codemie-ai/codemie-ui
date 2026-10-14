@@ -25,8 +25,10 @@ import { MCP_PAGINATION_OPTIONS } from '@/constants/mcp'
 import { useMcpEnabled } from '@/hooks/useFeatureFlags'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { mcpStore } from '@/store/mcp'
+import { userStore } from '@/store/user'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 
+import MCPCopyValuesDialog from './components/MCPCopyValuesDialog'
 import MCPServerDetails from './components/MCPServerDetails'
 import MCPServerModal from './components/MCPServerModal'
 import { useMCPManagement } from './hooks/useMCPManagement'
@@ -65,7 +67,12 @@ const columnDefinitions: ColumnDefinition[] = [
 const MCPManagementPage: FC = () => {
   const navigate = useNavigate()
   const { configs, pagination, loading } = useSnapshot(mcpStore) as typeof mcpStore
+  const { user: currentUser } = useSnapshot(userStore)
   const [isMcpFeatureEnabled, isConfigLoaded] = useMcpEnabled()
+
+  const isAdmin = currentUser?.isAdmin ?? false
+  const isMaintainer = currentUser?.isMaintainer ?? false
+  const canClone = isAdmin || isMaintainer
 
   useEffect(() => {
     if (isConfigLoaded && !isMcpFeatureEnabled) {
@@ -77,11 +84,17 @@ const MCPManagementPage: FC = () => {
     showModal,
     editingServer,
     detailsServer,
+    cloneDialogServer,
+    cloningId,
+    strippedFields,
     handleAddMCPServer,
     handleEditServer,
     handleModalClose,
     handleModalSubmit,
     handleDeleteServer,
+    handleCloneServer,
+    handleConfirmClone,
+    handleCloneDialogClose,
     handleViewDetails,
     handleCloseDetails,
     handleEditFromDetails,
@@ -115,8 +128,18 @@ const MCPManagementPage: FC = () => {
         handleEditServer,
         handleDeleteServer: handleDeleteServerWrapper,
         handleViewDetails,
+        handleCloneServer,
+        canClone,
+        cloningId,
       }),
-    [handleEditServer, handleDeleteServerWrapper, handleViewDetails]
+    [
+      handleEditServer,
+      handleDeleteServerWrapper,
+      handleViewDetails,
+      handleCloneServer,
+      canClone,
+      cloningId,
+    ]
   )
 
   const renderHeaderActions = useMemo(
@@ -161,6 +184,15 @@ const MCPManagementPage: FC = () => {
           server={editingServer}
           onHide={handleModalClose}
           onSubmit={handleModalSubmit}
+          strippedFields={strippedFields}
+        />
+
+        {/* Clone copy-values dialog */}
+        <MCPCopyValuesDialog
+          visible={Boolean(cloneDialogServer)}
+          server={cloneDialogServer}
+          onHide={handleCloneDialogClose}
+          onConfirm={handleConfirmClone}
         />
 
         {/* Details Sidebar */}

@@ -1,0 +1,116 @@
+{
+  "decision": "approve",
+  "rationale": "All 6 blocking findings from the final round (CR-001..CR-006) are resolved: current source confirms the sensitive-value hint now checks both path and value, the stripped-fields notice is cleared on edit/add and keyed off both visibility and content, hasCopyableValues delegates to collectCopyValuePaths so the dialog never opens empty, runClone's success path now surfaces the placeholder_value_present toast, a synchronous cloningRef guards against double-dispatch in handleCloneServer/handleConfirmClone/runClone, and cloneConfig no longer toggles the shared this.loading flag. No new findings raised; no evidence/decision findings were present to verify against fix_evidence.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "Clone item appears in the MCP row menu only for admin/maintainer viewers", "status": "pass", "notes": "canClone = isAdmin || isMaintainer gates the menu item via hidden prop" },
+    { "kind": "story-ac", "item": "Clone is available on system-provided configs", "status": "pass", "notes": "no is_system check anywhere in the clone menu item or handlers" },
+    { "kind": "story-ac", "item": "Clicking Clone with copyable keys opens a grouped selection dialog, unchecked by default, sensitive keys hinted; confirming calls cloneConfig with checked paths", "status": "pass", "notes": "collectCopyValuePaths groups by section, checked starts empty, handleConfirmClone wires through to cloneConfig" },
+    { "kind": "story-ac", "item": "If the source has no copyable keys, Clone calls cloneConfig directly with no dialog", "status": "pass", "notes": "hasCopyableValues gate in handleCloneServer skips the dialog" },
+    { "kind": "story-ac", "item": "On clone success, MCPServerModal opens pre-filled in edit mode; no navigation occurs otherwise", "status": "pass", "notes": "runClone sets editingServer + showModal on success; no router navigation added" },
+    { "kind": "story-ac", "item": "On clone failure, a toaster shows the error; no modal opens; list unchanged; Clone action re-enables", "status": "pass", "notes": "catch calls toaster.error without touching editingServer/showModal; finally clears cloningId" },
+    { "kind": "story-ac", "item": "The Clone menu item is disabled for a row while that row's clone request is in flight", "status": "pass", "notes": "cloningId drives disabled state per row; covered by accessibility test" },
+    { "kind": "story-ac", "item": "When the modal opens for a fresh clone with non-empty stripped_fields, a banner lists those paths", "status": "pass", "notes": "banner renders correctly for a fresh clone; CR-002 fix now resets the notice on both visibility and strippedFields changes, and clears it on edit/add" },
+    { "kind": "story-ac", "item": "After any create/update save with a placeholder_value_present warning, a toast surfaces that warning's message", "status": "pass", "notes": "handleModalSubmit checks response.warnings for create and update paths" },
+    { "kind": "story-ac", "item": "mcpStore.cloneConfig, the new types, and the dialog all exist as specified", "status": "pass", "notes": "cloneConfig, MCPConfigCloneResponse/warnings/auth_config types, and MCPCopyValuesDialog all added" },
+    { "kind": "spec", "item": "cloneConfig follows the exact loading/error/try-catch-finally/rethrow shape of createConfig/updateConfig", "status": "pass", "notes": "mirrors createConfig's shape exactly, including its pre-existing totalPages gap (deferred)" },
+    { "kind": "spec", "item": "Copy-values dialog built with Popup, never raw Dialog", "status": "pass", "notes": "imports and renders Popup only" },
+    { "kind": "spec", "item": "Dotted-path collection: headers.<Key>, env.<KEY>, args[<index>], url.query.<key>; sections omitted when empty", "status": "pass", "notes": "collectCopyValuePaths builds exactly these formats" },
+    { "kind": "spec", "item": "Sensitive-looking keys flagged cosmetically, default-unchecked state unaffected", "status": "pass", "notes": "isSensitivePath now checks value too (CR-001 fix); hint-only, never touches checked state" },
+    { "kind": "spec", "item": "No masked-value preview/reveal is included (Non-goals)", "status": "pass", "notes": "checkbox labels render only dotted-path key strings" },
+    { "kind": "spec", "item": "Clone menu item positioned after Edit in menuActions", "status": "pass", "notes": "inserted immediately after Edit" },
+    { "kind": "spec", "item": "Permission gating reuses isAdmin/isMaintainer + toaster.error pattern from BudgetsManagementPage", "status": "pass", "notes": "MCPManagementPage reads userStore the same way" },
+    { "kind": "spec", "item": "No backend change, capabilities endpoint, or client-side naming-collision handling (Non-goals)", "status": "pass", "notes": "no such additions in the diff" },
+    { "kind": "spec", "item": "No telemetry/clone-event tracking (Non-goals)", "status": "pass", "notes": "no analytics/tracking calls added" },
+    { "kind": "spec", "item": "No per-field highlighting inside the raw-JSON textarea; banner/list only (Non-goals)", "status": "pass", "notes": "stripped fields render only as a bullet list in a banner" },
+    { "kind": "spec", "item": "No generic 'disable all menu items while any row is busy' mechanism (Non-goals)", "status": "pass", "notes": "cloning is scoped per-row to the Clone item only" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 5 commit subjects in range follow EPMCDME-15538: Capital sentence per git-workflow.md commit regex; no body violations observed" },
+    { "kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md exists in the repo and no artifact ref was passed for this check" },
+    { "kind": "security", "status": "pass", "notes": "No HTML sinks, unsafe navigation, config/secret additions, or response logging found; sensitive-looking keys are flagged via isSensitiveKey per the secrets-are-public-if-exposed guideline" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/MCPCopyValuesDialog/useMCPCopyValuesDialog.ts",
+      "line": 22,
+      "title": "Sensitive hint misses args values",
+      "problem": "isSensitiveKey is tested only against the generated dotted-path string (e.g. 'args[0]'), never against the underlying value; args paths can never match the sensitive regex, so a secret passed via args (e.g. --api-key=xxx) never gets the 'May contain a sensitive value' hint that the same secret in headers/env would get.",
+      "impact": "A user cloning a server with a secret in args gets no warning before manually checking the box to copy it, silently defeating the hint's purpose of flagging likely secrets before they are propagated into the new config.",
+      "recommendation": "Evaluate isSensitiveKey against the original value as well as the path for every section, e.g. isSensitiveKey(key) || isSensitiveKey(String(originalValue))."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/MCPServerModal/index.tsx",
+      "line": 48,
+      "title": "Stale stripped-fields notice across modal reuse",
+      "problem": "strippedFields is cleared only in handleModalClose, never in handleEditServer/handleAddMCPServer; and MCPServerModal's showStrippedFieldsNotice dismissal resets only on props.visible changing, not on props.strippedFields changing.",
+      "impact": "A clone's stripped-fields banner can resurface with stale data on a later ordinary edit/add reached without an intervening modal close, or a dismissed banner can fail to reappear when a new clone response updates strippedFields while the same modal instance stays open; the exact UI sequence that reaches this was not independently confirmed, so this is capped below the critical rating the matching acceptance-criterion 'partial' status would otherwise warrant.",
+      "recommendation": "Clear strippedFields in handleEditServer and handleAddMCPServer, and add props.strippedFields to the notice-reset effect's dependency array so dismissal tracks both visibility and content."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/hooks/useMCPManagement.ts",
+      "line": 34,
+      "title": "Copy-values dialog can open with nothing to copy",
+      "problem": "hasCopyableValues treats any truthy config.url as copyable, but collectCopyValuePaths only emits a 'url' section when the URL parses and has query params, and silently emits nothing on a parse failure. When url is the only truthy field and has no query string, or fails to parse, the two functions disagree.",
+      "impact": "The copy-values dialog opens with zero sections and no feedback - the user can only Cancel or confirm an empty clone, with no indication why nothing is offered.",
+      "recommendation": "Align hasCopyableValues with collectCopyValuePaths, e.g. derive hasUrl from the same URL-parsing/query-key logic, so the no-dialog path is taken whenever there is truly nothing to offer."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/hooks/useMCPManagement.ts",
+      "line": 116,
+      "title": "Clone success never surfaces placeholder-value warning",
+      "problem": "runClone's success path only reads response.stripped_fields; unlike handleModalSubmit, it never checks response.warnings for a placeholder_value_present entry.",
+      "impact": "The explicit requirement that a placeholder_value_present warning toast appear after create/update/clone saves is unmet for the clone path - a cloned config that still carries a placeholder value gives the user no warning at all.",
+      "recommendation": "Apply the same response.warnings?.find(w => w.code === 'placeholder_value_present') -> toaster.info(...) check used in handleModalSubmit to the clone response inside runClone's success branch."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/hooks/useMCPManagement.ts",
+      "line": 128,
+      "title": "Clone can be double-dispatched before disable renders",
+      "problem": "handleCloneServer dispatches runClone(server, undefined) immediately on click with no check against an already-in-flight cloningId; the Clone menu item is disabled only once cloningId's state update re-renders.",
+      "impact": "A rapid double-click/double-select on Clone before the disabled state renders can fire two concurrent clone requests for the same server, creating duplicate cloned configs.",
+      "recommendation": "Guard handleCloneServer (and handleConfirmClone) with an early return when cloningId is already set for that server, in addition to the UI-level disabled state."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/mcp.ts",
+      "line": 241,
+      "title": "Clone reuses whole-table loading flag",
+      "problem": "cloneConfig sets the same shared this.loading flag used by indexConfigs' full-list fetch; MCPManagementPage passes that same loading into the Table's whole-page loading state, even though a dedicated cloningId already exists specifically to scope in-flight state to the one row being cloned.",
+      "impact": "Triggering a single-row clone can toggle the whole table into its loading/disabled state, disrupting other in-progress interactions on the page for an operation meant to be scoped to one row.",
+      "recommendation": "Scope clone's in-flight indicator to cloningId only; don't set the shared this.loading flag from cloneConfig, or give cloneConfig its own loading flag that the Table doesn't consume."
+    }
+  ],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "collectValueByPath + isSensitivePath now evaluate the sensitive regex against the underlying value for every section, including args" },
+    { "id": "CR-002", "status": "resolved", "notes": "handleEditServer/handleAddMCPServer now clear strippedFields; notice-reset effect depends on [props.visible, props.strippedFields]" },
+    { "id": "CR-003", "status": "resolved", "notes": "hasCopyableValues now delegates to collectCopyValuePaths(server).length > 0, guaranteeing agreement with the dialog's own section logic" },
+    { "id": "CR-004", "status": "resolved", "notes": "runClone's success branch now checks response.warnings for placeholder_value_present and calls toaster.info, matching handleModalSubmit" },
+    { "id": "CR-005", "status": "resolved", "notes": "cloningRef synchronous guard added in handleCloneServer, handleConfirmClone and runClone, closing the pre-render double-dispatch window" },
+    { "id": "CR-006", "status": "resolved", "notes": "cloneConfig no longer sets this.loading; comment documents the deliberate scoping to the caller's cloningId" }
+  ]
+}

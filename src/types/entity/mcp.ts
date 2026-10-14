@@ -30,6 +30,7 @@ export interface MCPServerConfig {
   type?: string
   auth_token?: string
   single_usage?: boolean
+  auth_config?: Record<string, unknown>
 }
 
 export interface MCPUserInfo {
@@ -57,6 +58,11 @@ export interface MCPConfig {
   is_active: boolean
   date?: string
   update_date?: string
+  warnings?: { code: string; message: string; action?: string }[]
+}
+
+export interface MCPConfigCloneResponse extends MCPConfig {
+  stripped_fields: string[]
 }
 
 export interface MCPConfigRequest {

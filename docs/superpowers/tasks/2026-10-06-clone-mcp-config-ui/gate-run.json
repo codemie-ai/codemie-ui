@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15538-clone-mcp-config-ui",
+  "head": "8af35f88a61123c728eb18b0e0c9ba53a4a9a927",
+  "runner": "npm",
+  "started_at": "2026-10-06T12:35:17Z",
+  "completed_at": "2026-10-06T12:56:13Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 24107,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17684,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2161,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 11230,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks printed 'no leaks found'; also covered server-side by the MR pipeline's gitleaks-scan task."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 308015,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 635 passed (635); Tests 6542 passed | 1 skipped (6543)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 139230,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 48 passed (48); Tests 550 passed | 1 skipped (551)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "N/A",
+      "exit_code": null,
+      "notes": "Diff touches .tsx files (UI surface) but the quality-gates guide and package.json define no separate UI test script (e.g. test:ui); browser verification is a separate caller decision (feature-verification)."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1380,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skipped: output was '→ No staged files found.' — working tree had nothing staged at run time. Stage the changes to exercise this hook gate for real."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 783,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2242 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 732051,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "SONAR_TOKEN was set, so this ran a real scan (not the token-unset self-skip). QUALITY GATE STATUS: PASSED on branch EPMCDME-15538-clone-mcp-config-ui."
+    }
+  ],
+  "failures": {}
+}

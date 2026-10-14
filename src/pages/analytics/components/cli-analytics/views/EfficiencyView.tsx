@@ -192,7 +192,7 @@ const SESSION_CUSTOM_COLS = {
   ),
   ctx_per_call: (row: SessionRow) => (
     <div className="text-sm text-text-primary tabular-nums">
-      {row.turns ? formatTokens((row.cache_read_tokens ?? 0) / row.turns) : '—'}
+      {row.ctx_per_call != null ? formatTokens(row.ctx_per_call) : '—'}
     </div>
   ),
   cache_read: (row: SessionRow) => (

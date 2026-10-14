@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "generated": "2026-10-06T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk": { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 3, "label": "M" }
+  },
+  "total": 21,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 13,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches types/entity/mcp.ts, the shared mcpStore (cloneConfig + MCPConfigCloneResponse, also consumed elsewhere via getCachedConfig), two new abstractions (MCPCopyValuesDialog component + useMCPCopyValuesDialog hook), MCPServerActions, useMCPManagement, MCPManagementPage, MCPServerModal, and columnRenderers.tsx — 9 components across the store, hooks and UI component layers." },
+    { "dimension": "technical_risk", "reason": "Clone flow surfaces potentially sensitive config values (headers/env/args/url-query that may hold tokens, secrets, credentials) with only a heuristic regex (isSensitiveKey) flagging them for the user; no pre-existing reusable util covered this exact copy-values/sensitive-hint pattern before this change, so it is treated as a security-sensitive divergence." },
+    { "dimension": "file_change_estimate", "reason": "13 files changed, 921 insertions(+) per diffstat: ~9 modified (mcp.ts types, mcp.ts store, mcp.test.ts, MCPServerActions.tsx + its accessibility test, useMCPManagement.ts + its test, MCPManagementPage.tsx, MCPServerModal/index.tsx, columnRenderers.tsx) and ~4 new (MCPCopyValuesDialog/index.tsx, useMCPCopyValuesDialog.ts, and two new test files), spanning store/, types/entity/, and three directories under pages/settings/administration/." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped: change touches the shared mcpStore (cloneConfig, MCPConfigCloneResponse) which is also consumed elsewhere via getCachedConfig — a core shared utility.",
+    "Technical Risk bumped: feature handles secret/credential-shaped values (clone copy-values selection) with only heuristic sensitive-value detection, a security-sensitive surface with no prior exact precedent in this repo."
+  ],
+  "split_recommendation": null
+}

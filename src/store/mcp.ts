@@ -22,7 +22,7 @@ import { proxy } from 'valtio'
 
 import { MCP_DEFAULT_PAGE, MCP_DEFAULT_PER_PAGE, MCP_DEFAULT_FILTERS } from '@/constants/mcp'
 import { Pagination } from '@/types/common'
-import { MCPConfig, MCPConfigRequest, MCPFilters } from '@/types/entity/mcp'
+import { MCPConfig, MCPConfigCloneResponse, MCPConfigRequest, MCPFilters } from '@/types/entity/mcp'
 import api from '@/utils/api'
 
 interface MCPStore {
@@ -46,6 +46,8 @@ interface MCPStore {
   clearCache: () => void
   /** Create new MCP configuration */
   createConfig: (data: MCPConfigRequest) => Promise<MCPConfig>
+  /** Clone an existing MCP configuration */
+  cloneConfig: (id: string, copyValues?: string[]) => Promise<MCPConfigCloneResponse>
   /** Update existing MCP configuration */
   updateConfig: (id: string, data: Partial<MCPConfigRequest>) => Promise<MCPConfig>
   /** Delete MCP configuration */
@@ -219,6 +221,43 @@ export const mcpStore = proxy<MCPStore>({
       throw error
     } finally {
       this.loading = false
+    }
+  },
+
+  /**
+   * Clones an existing MCP server configuration
+   *
+   * @param id - The unique identifier of the configuration to clone
+   * @param copyValues - Optional list of field names whose values should be copied over
+   * @returns Promise resolving to the cloned MCP configuration
+   * @throws Error if configuration not found or API request fails
+   *
+   * @example
+   * ```typescript
+   * const cloned = await mcpStore.cloneConfig('config-123', ['env'])
+   * ```
+   */
+  async cloneConfig(id: string, copyValues?: string[]) {
+    // Intentionally does not toggle the shared `loading` flag: that flag drives the
+    // whole-table loading state (see indexConfigs), and clone is scoped to a single
+    // row via the caller's own `cloningId` state. Toggling it here would disable the
+    // entire table for what is meant to be a per-row operation.
+    this.error = null
+
+    try {
+      const response = await api.post(`v1/mcp-configs/${id}/clone`, { copy_values: copyValues })
+      const result = await response.json()
+
+      // Add to the beginning of the list
+      this.configs.unshift(result)
+      this.pagination.totalCount += 1
+
+      return result
+    } catch (error: any) {
+      const contextualError = error.response?.data?.message ?? error.message
+      this.error = `Failed to clone MCP configuration: ${contextualError}`
+      console.error('MCP Store Error (cloneConfig):', error)
+      throw error
     }
   },
 

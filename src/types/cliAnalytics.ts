@@ -59,6 +59,7 @@ export interface SessionRow {
   turns?: number
   cache_read_tokens?: number
   cache_creation_tokens?: number
+  ctx_per_call?: number
   net_lines?: number
   bloat_pct?: number
   delivery_framework?: string

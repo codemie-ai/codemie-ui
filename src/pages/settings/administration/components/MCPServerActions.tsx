@@ -31,6 +31,9 @@ interface MCPServerActionsProps {
   onViewDetails: (server: MCPConfig) => void
   onEdit: (server: MCPConfig) => void
   onDelete: (server: MCPConfig) => void
+  onClone: (server: MCPConfig) => void
+  canClone: boolean
+  cloning: boolean
 }
 
 const MCPServerActions: FC<MCPServerActionsProps> = ({
@@ -38,6 +41,9 @@ const MCPServerActions: FC<MCPServerActionsProps> = ({
   onViewDetails,
   onEdit,
   onDelete,
+  onClone,
+  canClone,
+  cloning,
 }) => {
   const [isDeleteConfirmationVisible, setIsDeleteConfirmationVisible] = useState(false)
 
@@ -64,6 +70,13 @@ const MCPServerActions: FC<MCPServerActionsProps> = ({
       title: 'Edit',
       icon: <EditSvg />,
       onClick: () => onEdit(server),
+    },
+    {
+      title: 'Clone',
+      icon: <CopySvg className="w-[18px] h-3.5" />,
+      onClick: () => onClone(server),
+      disabled: cloning,
+      hidden: !canClone,
     },
     {
       title: 'Copy ID',

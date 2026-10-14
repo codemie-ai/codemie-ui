@@ -291,4 +291,40 @@ describe('EfficiencyView', () => {
       per_page: 10,
     })
   })
+
+  it('renders the backend-provided ctx_per_call value without recomputing it from turns', () => {
+    vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+      displayRows: [
+        {
+          trace_id: 's1',
+          developer_name: 'dev',
+          repository: null,
+          start_time: '2026-07-01T00:00:00Z',
+          duration_ms: 1000,
+          model_name: 'claude',
+          input_tokens: 10,
+          output_tokens: 10,
+          cost_usd: 1,
+          tool_call_count: 0,
+          branch: null,
+          turns: 1,
+          cache_read_tokens: 1000, // turns-based would render 1,000 — must not.
+          ctx_per_call: 5,
+        },
+      ],
+      loading: false,
+      error: null,
+      page: 1,
+      totalPages: 1,
+      perPage: 10,
+      setPage: vi.fn(),
+      search: '',
+      setSearch: vi.fn(),
+    })
+
+    render(<EfficiencyView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByText('5')).toBeInTheDocument()
+    expect(screen.queryByText('1,000')).not.toBeInTheDocument()
+  })
 })

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
 import { mcpServerNameId } from '@/utils/ariaIds'
@@ -44,6 +44,9 @@ describe('MCPServerActions accessibility (contextId pattern)', () => {
           onViewDetails={vi.fn()}
           onEdit={vi.fn()}
           onDelete={vi.fn()}
+          onClone={vi.fn()}
+          canClone={true}
+          cloning={false}
         />
       </div>
     )
@@ -52,5 +55,50 @@ describe('MCPServerActions accessibility (contextId pattern)', () => {
     expect(btn).not.toHaveAttribute('aria-label')
     const parts = btn.getAttribute('aria-labelledby')!.split(/\s+/)
     expect(document.getElementById(parts[1])).toHaveTextContent('My MCP Server')
+  })
+})
+
+describe('MCPServerActions — Clone menu item', () => {
+  const openMenu = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'More options My MCP Server' }))
+  }
+
+  const renderActions = (overrides: Partial<Record<'canClone' | 'cloning', boolean>> = {}) => {
+    render(
+      <div>
+        <span id={mcpServerNameId('mcp-1')}>My MCP Server</span>
+        <MCPServerActions
+          server={makeServer() as any}
+          onViewDetails={vi.fn()}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
+          onClone={vi.fn()}
+          canClone={overrides.canClone ?? true}
+          cloning={overrides.cloning ?? false}
+        />
+      </div>
+    )
+  }
+
+  it('does not render a Clone item when canClone is false', () => {
+    renderActions({ canClone: false })
+    openMenu()
+    expect(screen.queryByRole('menuitem', { name: 'Clone' })).not.toBeInTheDocument()
+  })
+
+  it('renders an enabled Clone item when canClone is true and cloning is false', () => {
+    renderActions({ canClone: true, cloning: false })
+    openMenu()
+    const item = screen.getByRole('menuitem', { name: 'Clone' })
+    expect(item).toBeInTheDocument()
+    expect(item).not.toBeDisabled()
+  })
+
+  it('renders a disabled Clone item when cloning is true', () => {
+    renderActions({ canClone: true, cloning: true })
+    openMenu()
+    const item = screen.getByRole('menuitem', { name: 'Clone' })
+    expect(item).toBeInTheDocument()
+    expect(item).toBeDisabled()
   })
 })
