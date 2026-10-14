@@ -17,6 +17,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import { cliAnalyticsStore } from '@/store/cliAnalytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 import type { ExtendedSessionsTarget, RepositoryRow } from '@/types/cliAnalytics'
 
@@ -91,15 +92,20 @@ vi.mock('../../widgets/DonutChartWidget', () => ({
 
 vi.mock('../views/RepositoriesTable', () => ({
   default: ({
+    rows,
     onRowClick,
     clearSelectionRef,
   }: {
+    rows?: RepositoryRow[]
     onRowClick?: (row: RepositoryRow) => void
     clearSelectionRef?: { current: (() => void) | null }
   }) => {
     if (clearSelectionRef) clearSelectionRef.current = vi.fn()
     return (
       <div data-testid="repositories-table">
+        {rows?.map((r) => (
+          <span key={r.repository}>{r.repository}</span>
+        ))}
         <button
           data-testid="repo-row-click"
           onClick={() =>
@@ -251,5 +257,42 @@ describe('OverviewView', () => {
 
     await user.click(screen.getByTestId('repo-row-click'))
     expect(screen.getByTestId('modal-title')).toHaveTextContent('org/test-repo')
+  })
+
+  it('does not render stale rows left in the shared repositories store slot', async () => {
+    const actual = await vi.importActual<typeof import('../hooks/useCliAnalyticsRepositories')>(
+      '../hooks/useCliAnalyticsRepositories'
+    )
+    vi.mocked(useCliAnalyticsRepositories).mockImplementationOnce(
+      actual.useCliAnalyticsRepositories
+    )
+    vi.mocked(useCliAnalyticsRepositories).mockImplementationOnce(
+      actual.useCliAnalyticsRepositories
+    )
+    vi.spyOn(cliAnalyticsStore, 'fetchRepositories').mockReturnValue(new Promise(() => {}))
+    cliAnalyticsStore.repositories = {
+      rows: ['stale/repo-a', 'stale/repo-b'].map((repository) => ({
+        repository,
+        session_count: 1,
+        turns: 1,
+        cost_usd: 1,
+        files_changed: 1,
+        lines_added: 1,
+        lines_removed: 0,
+        net_lines: 1,
+        tool_success_rate: 100,
+      })),
+      pagination: { page: 0, per_page: 20, total_count: 2, has_more: false },
+    }
+
+    const { rerender } = render(<OverviewView filters={MOCK_FILTERS} />)
+    // useSnapshot is not reactive in unit tests; re-render to read the slot after the mount effect
+    rerender(<OverviewView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByTestId('repositories-table')).toBeInTheDocument()
+    expect(screen.queryByText('stale/repo-a')).not.toBeInTheDocument()
+    expect(screen.queryByText('stale/repo-b')).not.toBeInTheDocument()
+
+    cliAnalyticsStore.repositories = null
   })
 })

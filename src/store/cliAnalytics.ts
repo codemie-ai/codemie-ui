@@ -55,6 +55,7 @@ interface CliAnalyticsState {
   fetchSessions: (params: Record<string, unknown>) => Promise<void>
   fetchOverview: (params: Record<string, unknown>) => Promise<void>
   fetchRepositories: (params: Record<string, unknown>) => Promise<void>
+  clearRepositories: () => void
   fetchCost: (params: Record<string, unknown>) => Promise<void>
   fetchEfficiency: (params: Record<string, unknown>) => Promise<void>
   fetchSessionDetail: (traceId: string) => Promise<void>
@@ -249,6 +250,10 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       'Failed to fetch local analytics repositories'
     )
     if (data) cliAnalyticsStore.repositories = data.data
+  },
+
+  clearRepositories() {
+    cliAnalyticsStore.repositories = null
   },
 
   async fetchCost(params) {

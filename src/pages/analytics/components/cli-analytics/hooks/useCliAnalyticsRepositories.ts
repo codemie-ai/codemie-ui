@@ -71,6 +71,12 @@ export function useCliAnalyticsRepositories(
     setPage(1)
   }, [time_period, start_date, end_date, users, projects, repositoriesParam, debouncedSearch])
 
+  // The `repositories` slot is shared with the Repositories view, which uses a different
+  // request shape. Drop whatever it left behind when this hook mounts or its variant changes.
+  useEffect(() => {
+    cliAnalyticsStore.clearRepositories()
+  }, [includeBranches, fetchAll])
+
   useEffect(() => {
     const params: any = {
       time_period,

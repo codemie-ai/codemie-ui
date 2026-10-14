@@ -188,4 +188,72 @@ describe('useCliAnalyticsRepositories', () => {
 
     expect(mockAbort).toHaveBeenCalled()
   })
+
+  describe('stale slot clearing', () => {
+    const STALE = {
+      rows: [
+        {
+          repository: 'stale-repo',
+          session_count: 1,
+          turns: 1,
+          cost_usd: 1,
+          files_changed: 1,
+          lines_added: 1,
+          lines_removed: 0,
+          net_lines: 1,
+          tool_success_rate: 100,
+        },
+      ],
+      pagination: { page: 0, per_page: 10, total_count: 1, has_more: false },
+    }
+
+    it('clears stale rows left by another view on mount', () => {
+      vi.spyOn(cliAnalyticsStore, 'fetchRepositories').mockResolvedValue(undefined)
+      cliAnalyticsStore.repositories = STALE
+
+      const { result, rerender } = renderHook(() =>
+        useCliAnalyticsRepositories(BASE_FILTERS, undefined, false, 10)
+      )
+      // useSnapshot is mocked to return the live store, so re-render to read the cleared slot
+      rerender()
+
+      expect(cliAnalyticsStore.repositories).toBeNull()
+      expect(result.current.rows).toEqual([])
+    })
+
+    it('does not clear again when page or search changes', () => {
+      vi.spyOn(cliAnalyticsStore, 'fetchRepositories').mockResolvedValue(undefined)
+      const clear = vi.spyOn(cliAnalyticsStore, 'clearRepositories')
+
+      const { result } = renderHook(() =>
+        useCliAnalyticsRepositories(BASE_FILTERS, undefined, false, 10)
+      )
+      expect(clear).toHaveBeenCalledTimes(1)
+
+      act(() => {
+        result.current.setPage(2)
+      })
+      act(() => {
+        result.current.setSearch('abc')
+      })
+
+      expect(clear).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears again when includeBranches changes', () => {
+      vi.spyOn(cliAnalyticsStore, 'fetchRepositories').mockResolvedValue(undefined)
+      const clear = vi.spyOn(cliAnalyticsStore, 'clearRepositories')
+
+      const { rerender } = renderHook(
+        (props: { includeBranches: boolean }) =>
+          useCliAnalyticsRepositories(BASE_FILTERS, undefined, props.includeBranches, 10),
+        { initialProps: { includeBranches: false } }
+      )
+      expect(clear).toHaveBeenCalledTimes(1)
+
+      rerender({ includeBranches: true })
+
+      expect(clear).toHaveBeenCalledTimes(2)
+    })
+  })
 })

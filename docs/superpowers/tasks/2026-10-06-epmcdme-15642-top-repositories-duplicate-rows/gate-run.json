@@ -1,0 +1,12 @@
+{"schema":1,"branch":"EPMCDME-15642_top-repositories-duplicate-rows","head":"b2c6c47e425c42761bff3a31f347e7be647fc166","runner":"npm","started_at":"2026-10-06T13:34:00Z","completed_at":"2026-10-06T13:40:00Z","status":"BLOCKED","drift_detected":false,
+"gates":[
+{"id":"install","source":"guide","status":"FAIL","command":"npm ci","exit_code":1,"notes":"EPERM unlink node_modules/@rolldown/binding-win32-x64-msvc/rolldown-binding.win32-x64-msvc.node; file locked by a running process (likely dev server/vitest). node_modules left partially deleted."},
+{"id":"lint","source":"guide","status":"FAIL","command":"npm run lint","exit_code":1,"notes":"Could not run: 'eslint' is not recognized (node_modules/.bin missing after failed npm ci). Unverified."},
+{"id":"typecheck","source":"guide","status":"FAIL","command":"npm run typecheck","exit_code":null,"notes":"Not run: toolchain missing. Unverified."},
+{"id":"license-check","source":"guide","status":"SKIPPED","command":"npm run license-check","exit_code":null,"notes":"No dependency changed in diff; also toolchain missing."},
+{"id":"secrets","source":"guide","status":"FAIL","command":"npm run secrets:check","exit_code":null,"notes":"Not run: environment broken. Unverified."},
+{"id":"unit","source":"guide","status":"FAIL","command":"npm run test:unit:slnt","exit_code":null,"notes":"Not run: vitest missing. Unverified."},
+{"id":"integration","source":"guide","status":"FAIL","command":"npm run test:integration:slnt","exit_code":null,"notes":"Not run: vitest missing. Unverified."},
+{"id":"license-headers","source":"hook","status":"FAIL","command":"npm run license-headers:check","exit_code":null,"notes":"Not run: environment broken. Unverified."},
+{"id":"sonar-local","source":"hook","status":"SKIPPED","command":"npm run sonar-local","exit_code":null,"notes":"Needs SonarQube/token; CI-only enforcement not reachable. Only CI can settle."}],
+"failures":{"install":"npm error code EPERM; npm error syscall unlink; npm error path node_modules/@rolldown/binding-win32-x64-msvc/rolldown-binding.win32-x64-msvc.node; The operation was rejected by your operating system.","lint":"'eslint' is not recognized as an internal or external command, operable program or batch file."}}
