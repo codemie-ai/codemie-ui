@@ -214,20 +214,33 @@ const Navigation: React.FC<NavigationProps> = () => {
       )}
       data-onboarding="navigation-menu"
     >
-      <div className="flex flex-col px-2">
-        {!isMobileLayout && <NavigationLogo isExpanded={isExpanded} onClick={handleCreateChat} />}
+      {!isMobileLayout && (
+        <div className="flex flex-col px-2 flex-shrink-0">
+          <NavigationLogo isExpanded={isExpanded} onClick={handleCreateChat} />
+        </div>
+      )}
+
+      <div
+        className={cn(
+          'flex flex-col px-2',
+          !isMobileLayout && 'flex-1 min-h-0 overflow-y-auto [overflow-anchor:none]'
+        )}
+      >
         <NavigationSection items={upperItems} className="mt-4" />
-        <div className="h-px my-4 bg-border-primary mx-2" />
+        {/* flex-shrink-0: without it, this content-less 1px divider is what flex-shrink crushes
+            to 0 height first (ahead of the text-bearing sections' min-content floor) once this
+            scrollable column's available height tightens, e.g. at >100% browser zoom. */}
+        <div className="h-px my-4 bg-border-primary mx-2 flex-shrink-0" />
         <NavigationSection items={upperSecondaryItems} />
         {((isFavoritesEnabled && isFavoritesPageEnabled) || isPinnedAssistantsEnabled) && (
-          <div className="h-px my-4 bg-border-primary mx-2" />
+          <div className="h-px my-4 bg-border-primary mx-2 flex-shrink-0" />
         )}
         <NavigationSection items={favoritesItems} />
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col gap-3">
-        <nav className="flex flex-col flex-1 min-h-0 gap-2 px-2" aria-label="bottom-nav-links">
-          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-col gap-3 flex-shrink-0">
+        <nav className="flex flex-col gap-2 px-2" aria-label="bottom-nav-links">
+          <div className="flex flex-col overflow-hidden">
             <NavigationPinnedSection />
           </div>
           <div

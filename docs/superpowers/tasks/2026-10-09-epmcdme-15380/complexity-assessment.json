@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Make the global left navigation panel vertically scrollable on desktop without regressing collapse/expand/resize or interactive elements.",
+  "generated": "2026-10-09T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 11,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "AC does not state whether Profile/Hide-Menu stay pinned at the bottom or scroll away with the rest of the content — a design decision open before implementation, per the technical analysis's risk indicators." },
+    { "dimension": "component_scope", "reason": "Confined to one component (src/components/Navigation/Navigation.tsx) and its direct Tailwind class wiring; no store, API, or routing change." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

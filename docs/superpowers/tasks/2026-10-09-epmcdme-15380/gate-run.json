@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15380",
+  "head": "4da1f5f340c034e59823b4a188d5550da28dc70b",
+  "runner": "npm",
+  "started_at": "2026-10-09T13:59:13Z",
+  "completed_at": "2026-10-09T14:22:13Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 65237,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 34755,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 4793,
+      "command": "npm run license-check",
+      "exit_code": 1,
+      "notes": "Guide Skip-if: no dependency added, removed, or moved in this diff (package.json/package-lock.json unchanged vs origin/main). Ran anyway for visibility: exits 1 reporting '@adobe/css-tools@4.5.0 licensed under MIT which is not permitted' despite MIT being in the --onlyAllow list — pre-existing license-checker/allow-list issue unrelated to this branch, not caused by this PR."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17595,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 954520,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 681 passed (681); Tests 6899 passed | 1 skipped (6900)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 310136,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 49 passed (49); Tests 558 passed | 1 skipped (559). Previous cached run (head 9e163f96a) failed here with helpAssistants undefined in Navigation.tsx:97; the current HEAD commit 4da1f5f3 ('Default helpAssistants to an empty array when the API response lacks data') resolved it."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "notes": "Diff touches .tsx files (Navigation.tsx, NavigationProfile.tsx + their tests) but no 'ui'/'test:ui' script is configured in package.json; browser verification is a separate caller decision (feature-verification)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1938,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2324 files, 0 missing license headers. Enforced by .husky/pre-commit; not part of guide gate list."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1135,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 but no scan ran. Would run locally with SONAR_TOKEN set; otherwise only settled by the MR pipeline. Enforced by .husky/pre-commit; not part of guide gate list."
+    }
+  ],
+  "failures": {}
+}

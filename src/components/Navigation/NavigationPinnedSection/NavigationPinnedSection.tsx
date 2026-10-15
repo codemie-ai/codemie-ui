@@ -252,7 +252,7 @@ const NavigationPinnedSection: React.FC = () => {
     return (
       <div
         ref={gridBlockRef}
-        className="relative flex items-center justify-center p-2 rounded-lg select-none cursor-pointer hover:bg-white/15 transition-colors"
+        className="relative flex items-center justify-start p-2 rounded-lg select-none cursor-pointer hover:bg-white/15 transition-colors"
       >
         <button
           ref={gridButtonRef}

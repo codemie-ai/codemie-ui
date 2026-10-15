@@ -258,6 +258,19 @@ describe('Navigation', () => {
     renderWithRouter(<Navigation />)
     expect(screen.getByText('AI Katas').closest('a')).not.toHaveTextContent('NEW')
   })
+
+  it('makes only the middle links section scrollable, not the logo or the bottom controls', () => {
+    const { container } = renderWithRouter(<Navigation />)
+    const header = container.firstChild as HTMLElement
+    const [logoWrapper, middleWrapper, bottomWrapper] = Array.from(header.children)
+
+    expect(header).not.toHaveClass('overflow-y-auto')
+    expect(logoWrapper).not.toHaveClass('overflow-y-auto')
+    expect(middleWrapper).toHaveClass('overflow-y-auto')
+    expect(middleWrapper).toHaveClass('flex-1')
+    expect(bottomWrapper).not.toHaveClass('overflow-y-auto')
+    expect(bottomWrapper).toHaveClass('flex-shrink-0')
+  })
 })
 
 describe('Navigation on mobile', () => {

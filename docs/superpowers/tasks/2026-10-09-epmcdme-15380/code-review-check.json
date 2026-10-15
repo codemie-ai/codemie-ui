@@ -1,0 +1,60 @@
+{
+  "decision": "approve",
+  "rationale": "Both prior blocking findings are resolved: Navigation.tsx now derives the pinned-section height floor from a count filtered by ONBOARDING_ASSISTANT_SLUG/CHATBOT_ASSISTANT_SLUG, matching NavigationPinnedSection's own staticItems filter exactly (CR-001); NavigationProfile.tsx now registers a capture-phase scroll listener on #navigation-menu alongside the existing resize listener and tears it down on cleanup, so the overlay repositions when the newly-scrollable header scrolls (CR-002). No new findings raised; this round verifies only the prior ids per contract.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Desktop branch of #navigation-menu scrolls vertically via native overflow-y-auto", "status": "pass", "notes": "Navigation.tsx:226 adds overflow-y-auto overflow-x-hidden to the desktop className array." },
+    { "kind": "spec", "item": "At reduced viewport heights every nav item (Help, Profile, Hide Menu) is reachable by scrolling", "status": "pending-stage-7", "notes": "Structurally enabled by overflow-y-auto; jsdom cannot model pixel overflow, needs browser/viewport verification." },
+    { "kind": "spec", "item": "Pinned-assistants section with >=1 item stays visible with at least one bubble at reduced heights", "status": "pass", "notes": "Floor now uses the slug-filtered static count matching the child's render logic (CR-001 fixed)." },
+    { "kind": "spec", "item": "Zero-item pinned section contributes no reserved height", "status": "pass", "notes": "Filtered count correctly yields zero when no entry matches either pinned slug (CR-001 fixed, test added)." },
+    { "kind": "spec", "item": "Scrolling works via mouse wheel, touchpad, and keyboard", "status": "pass", "notes": "Native overflow-y-auto on a scrollable block supports all three with no custom JS." },
+    { "kind": "spec", "item": "Nav items remain clickable/correct; no clipped text, no mis-positioned tooltips/popups while scrolled", "status": "pass", "notes": "OverlayPanel reposition effect now also listens for header scroll, capture phase, with matching cleanup (CR-002 fixed)." },
+    { "kind": "spec", "item": "appInfoStore-driven expand/collapse, width/resizing, and main-content scrolling continue unchanged", "status": "pass", "notes": "Fix-up diff does not touch appInfoStore, isExpanded logic, or the main content area." },
+    { "kind": "spec", "item": "Mobile branch (isMobileLayout true arm) untouched", "status": "pass", "notes": "Mobile className branch is unmodified in the diff." },
+    { "kind": "spec", "item": "Navigation.test.tsx gains an assertion for the desktop overflow classes", "status": "pass", "notes": "Carried from prior round; unaffected by this fix-up." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards review not run for compact profile (intentional)." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards review not run for compact profile (intentional)." },
+    { "kind": "security", "status": "na", "notes": "Standards review not run for compact profile (intentional)." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Navigation/Navigation.tsx",
+      "line": 95,
+      "title": "Pinned-section floor ignores child's slug filter",
+      "problem": "hasPinnedContent is computed from raw helpAssistants.length, but NavigationPinnedSection only renders items whose slug matches ONBOARDING_ASSISTANT_SLUG or CHATBOT_ASSISTANT_SLUG.",
+      "impact": "If helpAssistants ever contains an entry matching neither slug, the parent reserves the 54px floor while the child renders nothing, wasting space in exactly the tight-viewport case this ticket targets; the inverse (zero reserved height while content exists) is also possible.",
+      "recommendation": "Derive hasPinnedContent from the same filtered allItems/staticItems list NavigationPinnedSection computes (or lift that derived list into assistantsStore) instead of raw helpAssistants.length."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/components/Navigation/NavigationProfile.tsx",
+      "line": 57,
+      "title": "Profile popup detaches on header scroll",
+      "problem": "The OverlayPanel reposition effect only re-shows the panel on window resize; it has no listener for scroll of the header, which this change made scrollable (overflow-y-auto).",
+      "impact": "Scrolling the sidebar while the Profile overlay is open leaves it visually detached from its trigger button, directly failing the ticket's own acceptance criterion that menu items remain selectable and visually usable while the sidebar is scrolled.",
+      "recommendation": "Add a scroll listener on the header (e.g. header.addEventListener('scroll', handleResize, true)) alongside the existing window resize listener."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Navigation.tsx:96-99 computes staticHelpAssistantsCount by filtering on ONBOARDING_ASSISTANT_SLUG/CHATBOT_ASSISTANT_SLUG, mirroring NavigationPinnedSection.tsx's staticItems find() logic exactly; passed into hasPinnedSectionContent in place of raw helpAssistants.length. New test covers the zero-match case."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "NavigationProfile.tsx:71-77 looks up #navigation-menu and adds a capture-phase 'scroll' listener calling the same handleResize used for window resize, with matching removeEventListener in the effect cleanup. New test asserts the capture-phase listener registration."
+    }
+  ]
+}
