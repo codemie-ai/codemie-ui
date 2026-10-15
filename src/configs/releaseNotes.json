@@ -1,5 +1,167 @@
 [
   {
+    "version": "2.59.0",
+    "date": "2026-10-15",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Workspace access to skill scripts",
+            "description": "Scripts packaged with skills are now available directly in the workspace.",
+            "issues": [
+              {
+                "key": "EPMCDME-15558",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15558"
+              }
+            ]
+          },
+          {
+            "title": "Gemini 4 Argon availability",
+            "description": "Added the Gemini 4 Argon model to CodeMie environments.",
+            "issues": [
+              {
+                "key": "EPMCDME-15930",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15930"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "Runtime delivery ownership migration",
+            "description": "Moved the codemie-runtime Dockerfile and CI/CD pipeline ownership to codemie-code-executor.",
+            "issues": [
+              {
+                "key": "EPMCDME-12148",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-12148"
+              }
+            ]
+          },
+          {
+            "title": "Project ownership management",
+            "description": "Project ownership can now be changed directly from the projects list.",
+            "issues": [
+              {
+                "key": "EPMCDME-15951",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15951"
+              }
+            ]
+          },
+          {
+            "title": "Platform budget validation",
+            "description": "Platform budget hard limits must now be greater than zero.",
+            "issues": [
+              {
+                "key": "EPMCDME-16015",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16015"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "AI/Run marketplace assistant search",
+            "description": "Resolved an indexing error when searching the marketplace assistants datasource through AI/Run FAQ.",
+            "issues": [
+              {
+                "key": "EPMCDME-13933",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13933"
+              }
+            ]
+          },
+          {
+            "title": "Scrollable navigation",
+            "description": "Restored vertical scrolling in the left navigation menu so all menu items remain accessible.",
+            "issues": [
+              {
+                "key": "EPMCDME-15380",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15380"
+              }
+            ]
+          },
+          {
+            "title": "Budget override guidance",
+            "description": "Improved validation feedback when a personal spend override soft limit exceeds the project soft limit.",
+            "issues": [
+              {
+                "key": "EPMCDME-15600",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15600"
+              }
+            ]
+          },
+          {
+            "title": "Member budget override experience",
+            "description": "Fixed member budget override navigation and editing when spend-limit enforcement is disabled.",
+            "issues": [
+              {
+                "key": "EPMCDME-15695",
+                "type": "SUB-BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15695"
+              },
+              {
+                "key": "EPMCDME-15764",
+                "type": "SUB-BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15764"
+              },
+              {
+                "key": "EPMCDME-15765",
+                "type": "SUB-BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15765"
+              }
+            ]
+          },
+          {
+            "title": "Project member permissions",
+            "description": "Restricted the member Details action for regular-user Project Admins who do not have access to the Users tab.",
+            "issues": [
+              {
+                "key": "EPMCDME-15766",
+                "type": "SUB-BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15766"
+              }
+            ]
+          },
+          {
+            "title": "Project budget availability and fallback",
+            "description": "Prevented personal projects from exposing project-budget creation and restored fallback to the Default budget when the platform budget is zero.",
+            "issues": [
+              {
+                "key": "EPMCDME-16016",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16016"
+              },
+              {
+                "key": "EPMCDME-16026",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16026"
+              }
+            ]
+          },
+          {
+            "title": "Security maintenance",
+            "description": "Applied security maintenance updates across CodeMie services and runtime images.",
+            "issues": []
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.58.0",
     "date": "2026-10-12",
     "sections": [
