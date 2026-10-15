@@ -59,6 +59,7 @@ export interface SkillBundlePreview {
   description: string
   content: string
   companion_files: SkillCompanionFile[]
+  bundle_warning?: string | null
 }
 
 export interface Skill {

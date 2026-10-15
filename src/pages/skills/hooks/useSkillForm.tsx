@@ -49,6 +49,7 @@ export const useSkillForm = (initialData?: Skill) => {
   const [bundleFolders, setBundleFoldersState] = useState<string[]>([])
   const [isCompanionFilesLoading, setIsCompanionFilesLoading] = useState(false)
   const [areCompanionFilesDirty, setAreCompanionFilesDirty] = useState(false)
+  const [bundlePreviewWarning, setBundlePreviewWarning] = useState<string | null>(null)
 
   const snap = useSnapshot(skillsStore)
   const maxContentLength = snap.skillConfig?.max_content_length ?? MAX_CONTENT_LENGTH
@@ -90,10 +91,12 @@ export const useSkillForm = (initialData?: Skill) => {
   const setCompanionFiles = useCallback((files: SkillCompanionFile[]) => {
     setCompanionFilesState(files)
     setAreCompanionFilesDirty(true)
+    setBundlePreviewWarning(null)
   }, [])
 
   const setBundleFolders = useCallback((folders: string[]) => {
     setBundleFoldersState(folders)
+    setBundlePreviewWarning(null)
   }, [])
 
   const applyBundlePreview = useCallback(
@@ -116,6 +119,7 @@ export const useSkillForm = (initialData?: Skill) => {
       setCompanionFilesState(bundlePreview.companion_files ?? [])
       setBundleFoldersState([])
       setAreCompanionFilesDirty(true)
+      setBundlePreviewWarning(bundlePreview.bundle_warning ?? null)
     },
     [setValue]
   )
@@ -208,5 +212,6 @@ export const useSkillForm = (initialData?: Skill) => {
     setBundleFolders,
     isCompanionFilesLoading,
     applyBundlePreview,
+    bundlePreviewWarning,
   }
 }

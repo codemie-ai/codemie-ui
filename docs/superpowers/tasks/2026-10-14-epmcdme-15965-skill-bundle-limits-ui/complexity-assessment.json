@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "task": "Fix skill editor bundle size limit config keys and 50MB fallback, and show server bundle_warning from ZIP preview in New Skill page and Create Skill popup with precedence rules in SkillBundleFilesSection (EPMCDME-15965, frontend only).",
+  "generated": "2026-10-14",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 16,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches skills store type, skills constants, SkillBundlePreview entity type, useSkillForm hook, SkillBundleFilesSection, NewSkillPage and CreateSkillPopup (duplicated import handlers and popup reset paths); SkillForm is a pass-through." },
+    { "dimension": "file_change_estimate", "reason": "About 7-8 source files plus 3-4 existing test files that need updating (wrong key, 10MB-to-50MB fallback assumptions) and new tests for precedence and clearing; spans store, constants, types, hooks, components and pages directories." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

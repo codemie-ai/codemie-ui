@@ -13,12 +13,13 @@
 // limitations under the License.
 //
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 import { useSkillForm } from '@/pages/skills/hooks/useSkillForm'
 import * as skillValidation from '@/pages/skills/validation/skillValidation'
 import { skillsStore } from '@/store/skills'
+import { SkillBundlePreview } from '@/types/entity/skill'
 
 vi.mock('@/store/skills', () => ({
   skillsStore: {
@@ -58,5 +59,46 @@ describe('useSkillForm', () => {
 
     expect(spy).toHaveBeenCalledWith(45000)
     spy.mockRestore()
+  })
+
+  describe('bundlePreviewWarning', () => {
+    const preview: SkillBundlePreview = {
+      name: 'my-skill',
+      description: 'd',
+      content: 'c',
+      companion_files: [],
+      bundle_warning: 'Skipped: big.bin',
+    }
+
+    it('exposes the preview bundle_warning after applyBundlePreview', () => {
+      const { result } = renderHook(() => useSkillForm())
+      act(() => result.current.applyBundlePreview(preview))
+      expect(result.current.bundlePreviewWarning).toBe('Skipped: big.bin')
+    })
+
+    it('clears the warning when files or folders are changed', () => {
+      const { result } = renderHook(() => useSkillForm())
+      act(() => result.current.applyBundlePreview(preview))
+      act(() => result.current.setCompanionFiles([]))
+      expect(result.current.bundlePreviewWarning).toBeNull()
+
+      act(() => result.current.applyBundlePreview(preview))
+      act(() => result.current.setBundleFolders([]))
+      expect(result.current.bundlePreviewWarning).toBeNull()
+    })
+
+    it('shows an identical warning again for a re-imported ZIP after an edit', () => {
+      const { result } = renderHook(() => useSkillForm())
+      act(() => result.current.applyBundlePreview(preview))
+      act(() => result.current.setCompanionFiles([]))
+      act(() => result.current.applyBundlePreview(preview))
+      expect(result.current.bundlePreviewWarning).toBe('Skipped: big.bin')
+    })
+
+    it('treats a missing bundle_warning as null', () => {
+      const { result } = renderHook(() => useSkillForm())
+      act(() => result.current.applyBundlePreview({ ...preview, bundle_warning: undefined }))
+      expect(result.current.bundlePreviewWarning).toBeNull()
+    })
   })
 })

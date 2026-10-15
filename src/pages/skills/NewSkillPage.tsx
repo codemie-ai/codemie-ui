@@ -49,6 +49,7 @@ const NewSkillPage: React.FC = () => {
     setBundleFolders,
     isCompanionFilesLoading,
     applyBundlePreview,
+    bundlePreviewWarning,
   } = useSkillForm()
   const {
     showNewIntegration,
@@ -172,6 +173,7 @@ const NewSkillPage: React.FC = () => {
           isCompanionFilesLoading={isCompanionFilesLoading}
           onCompanionFilesChange={setCompanionFiles}
           onBundleFoldersChange={setBundleFolders}
+          savedBundleWarning={bundlePreviewWarning}
           onSuccess={handleSuccess}
           showNewIntegrationPopup={showNewIntegrationPopup}
         />

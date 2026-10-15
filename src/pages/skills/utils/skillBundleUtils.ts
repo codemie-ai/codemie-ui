@@ -211,3 +211,96 @@ export const getBundleTotals = (
 
   return { totalSizeBytes, fileCount: companionFiles.length }
 }
+
+export interface BundleSeedLimits {
+  maxCount: number
+  maxFileSize: number
+  maxTotalSize: number
+}
+
+type BundleSkipReason = 'too_large' | 'count_exceeded' | 'total_exceeded'
+
+const KB = 1024
+const MB = 1024 * 1024
+const MAX_LISTED_PATHS = 5
+
+// Mirrors the backend bundle-seed rules and warning text, so a locally computed warning matches
+// the server `bundle_warning`. Keep in sync with the backend implementation.
+export const formatSeedLimitSize = (bytes: number): string => {
+  const trim = (value: number) => value.toFixed(1).replace(/\.0$/, '')
+  if (bytes >= MB) return `${trim(bytes / MB)} MB`
+  if (bytes >= KB) return `${trim(bytes / KB)} KB`
+  return `${bytes} byte${bytes === 1 ? '' : 's'}`
+}
+
+// Files are taken in path order; a skipped file never counts toward the total.
+export const planBundleSeed = (
+  companionFiles: SkillCompanionFile[],
+  limits: BundleSeedLimits
+): { path: string; reason: BundleSkipReason }[] => {
+  const skipped: { path: string; reason: BundleSkipReason }[] = []
+  let seededCount = 0
+  let totalSize = 0
+
+  const sorted = [...companionFiles].sort((a, b) => {
+    if (a.path < b.path) return -1
+    return a.path > b.path ? 1 : 0
+  })
+
+  sorted.forEach((file) => {
+    const size = file.size_bytes ?? 0
+
+    if (size > limits.maxFileSize) {
+      skipped.push({ path: file.path, reason: 'too_large' })
+    } else if (seededCount >= limits.maxCount) {
+      skipped.push({ path: file.path, reason: 'count_exceeded' })
+    } else if (totalSize + size > limits.maxTotalSize) {
+      skipped.push({ path: file.path, reason: 'total_exceeded' })
+    } else {
+      seededCount += 1
+      totalSize += size
+    }
+  })
+
+  return skipped
+}
+
+const formatSkippedPaths = (paths: string[]): string => {
+  const extra = paths.length - MAX_LISTED_PATHS
+  const listed = paths.slice(0, MAX_LISTED_PATHS).join(', ')
+  const overflow = extra > 0 ? `, ... and ${extra} more` : ''
+
+  return ` (${listed}${overflow})`
+}
+
+export const buildBundleWarning = (
+  companionFiles: SkillCompanionFile[],
+  limits: BundleSeedLimits
+): string | null => {
+  const skipped = planBundleSeed(companionFiles, limits)
+
+  // Order matters: it is the order the sentences appear in.
+  const templates: [BundleSkipReason, (count: number) => string][] = [
+    [
+      'too_large',
+      (count) =>
+        `${count} file(s) exceed the ${formatSeedLimitSize(limits.maxFileSize)} per-file limit`,
+    ],
+    ['count_exceeded', (count) => `${count} file(s) exceed the ${limits.maxCount}-file limit`],
+    [
+      'total_exceeded',
+      (count) =>
+        `${count} file(s) exceed the ${formatSeedLimitSize(limits.maxTotalSize)} total size limit`,
+    ],
+  ]
+
+  const sentences = templates.flatMap(([reason, text]) => {
+    const paths = skipped.filter((entry) => entry.reason === reason).map((entry) => entry.path)
+
+    return paths.length ? [`${text(paths.length)}${formatSkippedPaths(paths)}.`] : []
+  })
+
+  return sentences.length
+    ? `${sentences.join(' ')} These files will not be available in an assistant workspace.`
+    : null
+}

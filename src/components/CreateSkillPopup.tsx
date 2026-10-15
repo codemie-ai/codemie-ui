@@ -59,6 +59,7 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
     setBundleFolders,
     isCompanionFilesLoading,
     applyBundlePreview,
+    bundlePreviewWarning,
   } = useSkillForm()
   const {
     showNewIntegration,
@@ -239,6 +240,7 @@ const CreateSkillPopup: FC<CreateSkillPopupProps> = ({
               isCompanionFilesLoading={isCompanionFilesLoading}
               onCompanionFilesChange={setCompanionFiles}
               onBundleFoldersChange={setBundleFolders}
+              savedBundleWarning={bundlePreviewWarning}
               onSuccess={handleFormSuccess}
               showNewIntegrationPopup={showNewIntegrationPopup}
               isCompactView

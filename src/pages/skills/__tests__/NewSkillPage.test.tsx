@@ -17,6 +17,9 @@ import { render, screen } from '@testing-library/react'
 import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
+import SkillForm from '@/pages/skills/components/SkillForm'
+import { useSkillForm } from '@/pages/skills/hooks/useSkillForm'
+
 import NewSkillPage from '../NewSkillPage'
 
 vi.mock('@/store/skills', () => ({
@@ -86,5 +89,18 @@ describe('NewSkillPage save button', () => {
   it('does not render a "Create Skill" button', () => {
     render(<NewSkillPage />)
     expect(screen.queryByRole('button', { name: /create skill/i })).not.toBeInTheDocument()
+  })
+})
+
+describe('NewSkillPage bundle preview warning', () => {
+  it('passes the preview warning from useSkillForm to SkillForm', () => {
+    const base = vi.mocked(useSkillForm).getMockImplementation()!
+    vi.mocked(useSkillForm).mockImplementationOnce(
+      () => ({ ...base(), bundlePreviewWarning: 'Skipped: big.bin' } as any)
+    )
+    render(<NewSkillPage />)
+    expect(vi.mocked(SkillForm).mock.calls.at(-1)?.[0]).toMatchObject({
+      savedBundleWarning: 'Skipped: big.bin',
+    })
   })
 })

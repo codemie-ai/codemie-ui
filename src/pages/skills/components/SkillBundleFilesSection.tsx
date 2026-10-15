@@ -26,18 +26,22 @@ import InfoWarning from '@/components/InfoWarning/InfoWarning'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import { InfoWarningType } from '@/constants'
-import { MAX_SKILL_BUNDLE_FILE_COUNT, MAX_SKILL_BUNDLE_SIZE_BYTES } from '@/constants/skills'
+import {
+  MAX_SKILL_BUNDLE_FILE_COUNT,
+  MAX_SKILL_BUNDLE_FILE_SIZE_BYTES,
+  MAX_SKILL_BUNDLE_SIZE_BYTES,
+} from '@/constants/skills'
 import { skillsStore } from '@/store/skills'
 import { SkillCompanionFile } from '@/types/entity/skill'
 import toaster from '@/utils/toaster'
 
 import {
+  buildBundleWarning,
   collectBundleFolders,
   fileToSkillCompanionFile,
   formatFileSize,
   getBundleFileName,
   getBundleFolderPath,
-  getBundleTotals,
   normalizeBundleFolderPath,
 } from '../utils/skillBundleUtils'
 
@@ -59,7 +63,10 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
   onFoldersChange,
 }) => {
   const { skillConfig } = useSnapshot(skillsStore)
-  const maxBundleSizeBytes = skillConfig?.bundle_seed_max_size_bytes ?? MAX_SKILL_BUNDLE_SIZE_BYTES
+  const maxBundleSizeBytes =
+    skillConfig?.bundle_seed_max_total_size_bytes ?? MAX_SKILL_BUNDLE_SIZE_BYTES
+  const maxBundleFileSizeBytes =
+    skillConfig?.bundle_seed_max_file_size_bytes ?? MAX_SKILL_BUNDLE_FILE_SIZE_BYTES
   const maxBundleFileCount = skillConfig?.bundle_seed_max_file_count ?? MAX_SKILL_BUNDLE_FILE_COUNT
 
   const uploadInputRef = useRef<HTMLInputElement>(null)
@@ -67,6 +74,12 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
   const [isAddFolderPopupVisible, setIsAddFolderPopupVisible] = useState(false)
   const [newFolderPath, setNewFolderPath] = useState('')
   const [uploadTargetFolder, setUploadTargetFolder] = useState('')
+  const [hasUserEdited, setHasUserEdited] = useState(false)
+
+  useEffect(() => {
+    setHasUserEdited(false)
+  }, [savedBundleWarning])
+
   const allFolders = useMemo(
     () => collectBundleFolders(companionFiles, folders),
     [companionFiles, folders]
@@ -92,38 +105,22 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
     }))
   }, [allFolders, companionFiles])
 
-  const bundleTotals = useMemo(() => getBundleTotals(companionFiles), [companionFiles])
-
-  const exceedsSize = bundleTotals.totalSizeBytes > maxBundleSizeBytes
-  const exceedsCount = bundleTotals.fileCount > maxBundleFileCount
-
-  const bundleCeilingWarning = useMemo(() => {
-    if (!exceedsSize && !exceedsCount) return null
-
-    if (exceedsSize && exceedsCount) {
-      return `This bundle has ${
-        bundleTotals.fileCount
-      } files (limit ${maxBundleFileCount}) and is ${formatFileSize(
-        bundleTotals.totalSizeBytes
-      )} (limit ${formatFileSize(
-        maxBundleSizeBytes
-      )}). Only files up to these limits will be copied into an assistant workspace.`
-    }
-
-    if (exceedsCount) {
-      return `This bundle has ${bundleTotals.fileCount} files (limit ${maxBundleFileCount}). Only files up to this limit will be copied into an assistant workspace.`
-    }
-
-    return `This bundle is ${formatFileSize(bundleTotals.totalSizeBytes)} (limit ${formatFileSize(
-      maxBundleSizeBytes
-    )}). Only files up to this limit will be copied into an assistant workspace.`
-  }, [exceedsSize, exceedsCount, bundleTotals, maxBundleSizeBytes, maxBundleFileCount])
+  const bundleCeilingWarning = useMemo(
+    () =>
+      buildBundleWarning(companionFiles, {
+        maxCount: maxBundleFileCount,
+        maxFileSize: maxBundleFileSizeBytes,
+        maxTotalSize: maxBundleSizeBytes,
+      }),
+    [companionFiles, maxBundleFileCount, maxBundleFileSizeBytes, maxBundleSizeBytes]
+  )
 
   const updateFolders = (updatedFolders: string[]) => {
     const normalizedFolders = Array.from(
       new Set(updatedFolders.map((folder) => normalizeBundleFolderPath(folder)))
     )
 
+    setHasUserEdited(true)
     onFoldersChange(normalizedFolders)
   }
 
@@ -183,6 +180,7 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
         filesByPath.set(file.path, file)
       })
 
+      setHasUserEdited(true)
       onCompanionFilesChange(
         Array.from(filesByPath.values()).sort((left, right) => left.path.localeCompare(right.path))
       )
@@ -195,8 +193,13 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
   }
 
   const handleRemoveFile = (path: string) => {
+    setHasUserEdited(true)
     onCompanionFilesChange(companionFiles.filter((file) => file.path !== path))
   }
+
+  const visibleWarning = hasUserEdited
+    ? bundleCeilingWarning
+    : savedBundleWarning ?? bundleCeilingWarning
 
   return (
     <div className="rounded-xl border border-border-primary bg-surface-base-content p-4">
@@ -243,12 +246,7 @@ const SkillBundleFilesSection: FC<SkillBundleFilesSectionProps> = ({
           in the current editor session until a file is added to them.
         </p>
 
-        {(bundleCeilingWarning ?? savedBundleWarning) && (
-          <InfoWarning
-            type={InfoWarningType.WARNING}
-            message={(bundleCeilingWarning ?? savedBundleWarning)!}
-          />
-        )}
+        {visibleWarning && <InfoWarning type={InfoWarningType.WARNING} message={visibleWarning} />}
 
         <div className="flex flex-col gap-3">
           {isLoading ? (

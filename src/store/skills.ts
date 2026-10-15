@@ -46,7 +46,8 @@ export interface SkillConfig {
   max_content_length: number
   min_content_length: number
   bundle_seed_max_file_count: number
-  bundle_seed_max_size_bytes: number
+  bundle_seed_max_file_size_bytes: number
+  bundle_seed_max_total_size_bytes: number
 }
 
 interface SkillsStoreType {
