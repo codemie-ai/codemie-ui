@@ -20,6 +20,7 @@ import {
   BudgetCategory,
   getBudgetCategoryLabel,
 } from '@/types/entity/budget'
+import { ProjectType } from '@/types/entity/project'
 import { BudgetSyncStatus, ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail, ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
 import { computeAnalyticsBudgetPeriod } from '@/utils/analyticsBudgetPeriod'
@@ -254,6 +255,7 @@ const ProjectOverviewSection: FC<Props> = ({
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false)
   const [routing, setRouting] = useState<RoutingImpact | null | undefined>()
   const router = useVueRouter()
+  const isPersonalProject = project.project_type === ProjectType.PERSONAL
   const description = project.description?.trim() ?? ''
   const spending = canViewBudgets ? project.spending : undefined
   const costCenterName = project.cost_center_name || '—'
@@ -490,40 +492,42 @@ const ProjectOverviewSection: FC<Props> = ({
           isModelsConfigEnabled={isModelsConfigEnabled}
         />
 
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-baseline gap-3">
-              <div className="text-sm font-semibold text-text-primary">Active budgets</div>
+        {!isPersonalProject && (
+          <section>
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <div className="flex min-w-0 items-baseline gap-3">
+                <div className="text-sm font-semibold text-text-primary">Active budgets</div>
+              </div>
+              {(budgetsAccess === 'full' || budgetsAccess === 'distribution') && (
+                <ProjectBudgetManagementControl
+                  projectName={project.name}
+                  hasBudget={projectBudgets.length > 0}
+                  onSaved={loadProjectBudgets}
+                  project={project}
+                  access={budgetsAccess}
+                  onProjectChanged={onProjectChanged}
+                />
+              )}
             </div>
-            {(budgetsAccess === 'full' || budgetsAccess === 'distribution') && (
-              <ProjectBudgetManagementControl
-                projectName={project.name}
-                hasBudget={projectBudgets.length > 0}
-                onSaved={loadProjectBudgets}
-                project={project}
-                access={budgetsAccess}
-                onProjectChanged={onProjectChanged}
-              />
+            {budgetLoadError && (
+              <p className="mb-3 text-xs text-text-error" role="alert">
+                Unable to load active budgets.
+              </p>
             )}
-          </div>
-          {budgetLoadError && (
-            <p className="mb-3 text-xs text-text-error" role="alert">
-              Unable to load active budgets.
-            </p>
-          )}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {BUDGET_CATEGORY_OPTIONS.map(({ value }) => (
-              <BudgetSummaryCard
-                key={value}
-                category={value}
-                budget={budgetByCategory.get(value)}
-                spendingRow={spendingRows.find(
-                  (row) => row.budget_id === budgetByCategory.get(value)?.budget_id
-                )}
-              />
-            ))}
-          </div>
-        </section>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {BUDGET_CATEGORY_OPTIONS.map(({ value }) => (
+                <BudgetSummaryCard
+                  key={value}
+                  category={value}
+                  budget={budgetByCategory.get(value)}
+                  spendingRow={spendingRows.find(
+                    (row) => row.budget_id === budgetByCategory.get(value)?.budget_id
+                  )}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       <Popup
