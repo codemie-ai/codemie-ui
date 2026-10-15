@@ -27,12 +27,14 @@ const TOOLTIP_OFFSET_PAST_DELETE_BTN = 32
 
 interface PinnedRowProps {
   item: NavSectionItem
+  navigationExpanded: boolean
   onDelete: (e: React.MouseEvent) => void
 }
 
-const PinnedRow: React.FC<PinnedRowProps> = ({ item, onDelete }) => {
+const PinnedRow: React.FC<PinnedRowProps> = ({ item, navigationExpanded, onDelete }) => {
   const spanRef = useRef<HTMLSpanElement>(null)
   const isTruncated = useIsTruncated(spanRef)
+  const showDelete = item.isDeletable && navigationExpanded
 
   return (
     <div className="relative group">
@@ -42,9 +44,12 @@ const PinnedRow: React.FC<PinnedRowProps> = ({ item, onDelete }) => {
           'flex w-full items-center gap-2 px-2 py-1.5 rounded-lg h-9 text-left cursor-pointer',
           'hover:bg-white/15 transition-colors text-text-specific-navigation-link',
           'focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-white/60',
-          item.isDeletable && 'pr-7'
+          showDelete && 'pr-7'
         )}
         aria-label={item.name}
+        data-tooltip-id={!navigationExpanded ? 'react-tooltip' : undefined}
+        data-tooltip-content={!navigationExpanded ? item.name : undefined}
+        data-tooltip-place="right"
         onClick={item.onClick}
       >
         <span className="flex-shrink-0">
@@ -52,16 +57,19 @@ const PinnedRow: React.FC<PinnedRowProps> = ({ item, onDelete }) => {
         </span>
         <span
           ref={spanRef}
-          className="text-sm truncate flex-1 min-w-0"
-          data-tooltip-id="react-tooltip"
-          data-tooltip-content={isTruncated ? item.name : ''}
+          className={cn(
+            'text-sm truncate flex-1 min-w-0 transition-opacity duration-200 ease-in-out transform-gpu',
+            navigationExpanded ? 'opacity-100' : 'opacity-0'
+          )}
+          data-tooltip-id={navigationExpanded ? 'react-tooltip' : undefined}
+          data-tooltip-content={navigationExpanded && isTruncated ? item.name : ''}
           data-tooltip-place="right"
           data-tooltip-offset={TOOLTIP_OFFSET_PAST_DELETE_BTN}
         >
           {item.name}
         </span>
       </button>
-      {item.isDeletable && (
+      {showDelete && (
         <button
           type="button"
           aria-label={`Unpin ${item.name}`}

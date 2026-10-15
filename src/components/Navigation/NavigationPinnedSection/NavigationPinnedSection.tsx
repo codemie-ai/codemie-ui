@@ -33,9 +33,7 @@ import OverflowButton from './OverflowButton'
 import PinnedAssistantsOverflowDropdown from './PinnedAssistantsOverflowDropdown'
 import PinnedRow from './PinnedRow'
 import {
-  CONTAINER_PB,
-  ITEM_GAP,
-  ITEM_HEIGHT,
+  computeUncollapsedSlots,
   computeCollapsedBubbles,
   computeExpandedBubbles,
   normalizeName,
@@ -60,28 +58,22 @@ const NavigationPinnedSection: React.FC = () => {
   const [isGeneratedAvatarsEnabled] = useFeatureFlag('features:generatedAssistantIcons')
   const [isPinnedAssistantsEnabled] = usePinnedAssistantsEnabled()
 
-  const containerRef = useRef<HTMLDivElement>(null)
   const overflowButtonRef = useRef<HTMLButtonElement>(null)
   const gridBlockRef = useRef<HTMLDivElement>(null)
   const gridButtonRef = useRef<HTMLButtonElement>(null)
-  const [availableHeight, setAvailableHeight] = useState(0)
   const [unpinTarget, setUnpinTarget] = useState<NavSectionItem | null>(null)
   const [overflowOpen, setOverflowOpen] = useState(false)
+  const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight)
 
   useEffect(() => {
     assistantsStore.fetchPinnedAssistants()
   }, [])
 
   useEffect(() => {
-    const el = containerRef.current
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setAvailableHeight(entry.contentRect.height)
-      }
-    })
-    if (el) observer.observe(el)
-    return () => observer.disconnect()
-  }, [navigationExpanded])
+    const handleResize = () => setViewportHeight(window.innerHeight)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const handleAssistantClick = useCallback(
     async (a: { id: string; name: string }) => {
@@ -176,11 +168,7 @@ const NavigationPinnedSection: React.FC = () => {
 
   const handleCloseOverflow = useCallback(() => setOverflowOpen(false), [])
 
-  const visibleSlots =
-    availableHeight > 0
-      ? Math.floor((availableHeight + ITEM_GAP - CONTAINER_PB) / (ITEM_HEIGHT + ITEM_GAP))
-      : 0
-  const allFit = allItems.length <= visibleSlots
+  const allFit = allItems.length <= computeUncollapsedSlots(viewportHeight)
 
   useEffect(() => {
     if (allFit) setOverflowOpen(false)
@@ -199,18 +187,23 @@ const NavigationPinnedSection: React.FC = () => {
       />
     ) : null
 
+  // Stays mounted across the collapse/expand toggle (unlike the overflow grid/bubbles below) so
+  // its label can fade via opacity like a regular NavigationLink label, instead of popping in/out.
+  const renderPinnedList = () => (
+    <ul role="list" className="list-none p-0 m-0 flex flex-col gap-1.5">
+      {allItems.map((item) => (
+        <li key={item.id}>
+          <PinnedRow
+            item={item}
+            navigationExpanded={navigationExpanded}
+            onDelete={(e) => handleDeleteClick(e, item)}
+          />
+        </li>
+      ))}
+    </ul>
+  )
+
   const renderExpandedContent = () => {
-    if (allFit) {
-      return (
-        <ul role="list" className="list-none p-0 m-0 flex flex-col gap-1.5">
-          {allItems.map((item) => (
-            <li key={item.id}>
-              <PinnedRow item={item} onDelete={(e) => handleDeleteClick(e, item)} />
-            </li>
-          ))}
-        </ul>
-      )
-    }
     const hasOverflow = expandedBubbles.overflow.length > 0
 
     const getInnerButtons = () =>
@@ -269,7 +262,7 @@ const NavigationPinnedSection: React.FC = () => {
           className="relative z-[1] list-none p-0 m-0 grid gap-2 grid-cols-[repeat(4,24px)] pointer-events-none"
         >
           {expandedBubbles.visible.map((item, index) => (
-            <li key={item.id}>
+            <li key={item.id} className="flex justify-center">
               <button
                 type="button"
                 data-inner
@@ -304,22 +297,6 @@ const NavigationPinnedSection: React.FC = () => {
   }
 
   const renderCollapsedContent = () => {
-    if (allFit) {
-      return allItems.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          aria-label={item.name}
-          data-tooltip-id="react-tooltip"
-          data-tooltip-place="right"
-          data-tooltip-content={item.name}
-          className="h-9 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-white/50"
-          onClick={item.onClick}
-        >
-          <Avatar iconUrl={item.icon_url} name={item.name} type={AvatarType.XS} />
-        </button>
-      ))
-    }
     return (
       <>
         {collapsedBubbles.visible.map((item) => (
@@ -347,17 +324,22 @@ const NavigationPinnedSection: React.FC = () => {
     )
   }
 
+  const renderContent = () => {
+    if (allFit) return renderPinnedList()
+    return navigationExpanded ? renderExpandedContent() : renderCollapsedContent()
+  }
+
   return (
-    <div ref={containerRef} className="h-full relative">
+    <div className="relative">
       {helpAssistantsFetched && allItems.length > 0 && (
         <div
           data-onboarding="prebuilt-assistants"
           className={cn(
-            'flex flex-col gap-1.5 overflow-hidden h-full justify-end pb-[18px]',
-            !navigationExpanded && 'items-center'
+            'flex flex-col gap-1.5 overflow-hidden pb-2',
+            !navigationExpanded && !allFit && 'items-center'
           )}
         >
-          {navigationExpanded ? renderExpandedContent() : renderCollapsedContent()}
+          {renderContent()}
         </div>
       )}
       {overflowOpen && (

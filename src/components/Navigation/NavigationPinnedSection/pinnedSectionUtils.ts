@@ -15,9 +15,17 @@
 
 import { NavSectionItem } from './NavigationPinnedSection'
 
-export const ITEM_HEIGHT = 36
-export const ITEM_GAP = 6
-export const CONTAINER_PB = 18
+const ITEM_HEIGHT = 36
+const ITEM_GAP = 6
+// Approximate height of the rest of the desktop navigation (logo, links, profile, expand button).
+const NAV_RESERVED_PX = 720
+const MIN_UNCOLLAPSED_ITEMS = 2
+
+export const computeUncollapsedSlots = (viewportHeight: number) =>
+  Math.max(
+    MIN_UNCOLLAPSED_ITEMS,
+    Math.floor((viewportHeight - NAV_RESERVED_PX) / (ITEM_HEIGHT + ITEM_GAP))
+  )
 
 const BUBBLE_COLS_MANY = 4
 
