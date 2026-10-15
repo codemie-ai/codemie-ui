@@ -55,6 +55,8 @@ const FEATURE_FLAG_COST_CENTERS = 'features:costCenters'
 
 const DEFAULT_PCTS: PctMap = { platform: 30, cli: 60, premium_models: 10 }
 const ZERO_PCTS: PctMap = { platform: 0, cli: 0, premium_models: 0 }
+// Smallest Platform share (%) that round2 keeps above 0.
+const PLATFORM_MIN_PCT = 0.01
 
 const roundToStep = (v: number, step: number) => Math.round(v / step) * step
 const pickSoftStep = (v: number): number => {
@@ -354,7 +356,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       setPcts((prev) => {
         const next = { ...prev }
         if (cat === 'platform') {
-          next.platform = round2(clamp(requestedPct, 0, 100 - prev.premium_models))
+          next.platform = round2(clamp(requestedPct, PLATFORM_MIN_PCT, 100 - prev.premium_models))
           next.cli = round2(Math.max(0, 100 - next.platform - prev.premium_models))
         } else if (cat === 'cli') {
           next.cli = round2(clamp(requestedPct, 0, 100 - prev.platform))
@@ -628,7 +630,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
             <UnifiedBudgetDragBar
               pcts={pcts}
               totalBudget={totalBudget}
-              platformMinPct={0}
+              platformMinPct={PLATFORM_MIN_PCT}
               onChange={onSliderChange}
               onDragStart={captureInteractionStart}
               onDragEnd={releaseInteraction}

@@ -1,0 +1,17 @@
+{
+  "decision": "approve",
+  "rationale": "Both blocking findings from code-review-final.json were fixed. CR-001: BudgetAmountInput now renders strict-positive values between 0 and 1 with cent precision (formatDraft), covered by a unit test asserting 0.10. CR-002: the CLI hard = 0 case is split into its own modal test that asserts the field value and the saved cli.pct of 0. Residual accepted by the user: totals under $50 show 0.00 at the 0.01% minimum.",
+  "confidence": "high",
+  "findings": [
+    {
+      "id": "CR-001",
+      "outcome": "fixed",
+      "notes": "formatDraft in BudgetAmountInput.tsx used by the initial state, value-sync effect and blur revert; BudgetAmountInput.test.tsx asserts 0.10."
+    },
+    {
+      "id": "CR-002",
+      "outcome": "fixed",
+      "notes": "UnifiedProjectBudgetModal.platformMin.test.tsx: 'still allows 0 for CLI hard' asserts the field value 0 and payload.categories.cli.pct === 0."
+    }
+  ]
+}

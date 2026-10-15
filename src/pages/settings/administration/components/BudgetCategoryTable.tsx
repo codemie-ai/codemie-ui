@@ -64,6 +64,7 @@ const BudgetCategoryTable: FC<BudgetCategoryTableProps> = ({
           <BudgetAmountInput
             value={hardVals[cat]}
             onCommit={(n) => onHardInputChange(cat, n)}
+            strictPositive={cat === 'platform'}
             ariaLabel={`${CATEGORY_LABELS[cat]} hard limit`}
             className={cn(
               'bg-surface-base-secondary border border-border-structural rounded',

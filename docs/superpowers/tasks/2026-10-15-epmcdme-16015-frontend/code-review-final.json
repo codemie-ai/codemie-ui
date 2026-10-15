@@ -1,0 +1,67 @@
+{
+  "decision": "request-changes",
+  "rationale": "Balanced profile: edge-case, acceptance and standards ran clean and every candidate was verified against source. 2 blocking: the Platform hard field shows positive limits under $0.50 as 0 (CR-001), and the spec Testing row is partial because the AC6 CLI-hard-0 entry is never asserted (CR-002). 1 deferred (a loaded Platform share under 0.005% rounds to 0 on save; pre-existing populate/submit path), see code-review-deferred.md; 4 dismissed as noise (spec-sanctioned legacy Premium-100% clamp, spec-mandated percent-only floor, no-message non-goal, cosmetic min attribute).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Behavior: constant PLATFORM_MIN_PCT = 0.01 (percent), independent of Total Budget", "status": "pass", "notes": "PLATFORM_MIN_PCT = 0.01 at UnifiedProjectBudgetModal.tsx:59; no totalBudget dependency" },
+    { "kind": "spec", "item": "Slider: modal passes PLATFORM_MIN_PCT as platformMinPct to UnifiedBudgetDragBar", "status": "pass", "notes": "platformMinPct={PLATFORM_MIN_PCT}; DragBar handle 1 clamps to it" },
+    { "kind": "spec", "item": "Slider: legacy platformMinPct > 100 - premium_models resolves deterministically without throwing", "status": "pass", "notes": "clamp resolves to hi; legacy Premium-100% drag test asserts no throw and pct 0" },
+    { "kind": "spec", "item": "Input: BudgetAmountInput optional strict-positive flag, default off", "status": "pass", "notes": "strictPositive default false; blur check n > 0 vs n >= 0" },
+    { "kind": "spec", "item": "Input: BudgetCategoryTable enables strict-positive on Platform hard input only", "status": "pass", "notes": "strictPositive={cat === 'platform'} on hard input only" },
+    { "kind": "spec", "item": "Input: Platform 0/negative/cleared not committed and reverts; any value > 0 accepted", "status": "pass", "notes": "rejected values skip onCommit; unit tests cover 0, -5, -0, empty, 0.4" },
+    { "kind": "spec", "item": "Input: onHardInputChange Platform branch clamps with PLATFORM_MIN_PCT", "status": "pass", "notes": "clamp(requestedPct, PLATFORM_MIN_PCT, ...) at line 359; 0.04 -> pct 0.01 test" },
+    { "kind": "spec", "item": "Behavior: Reset to Default unchanged (platform 30)", "status": "pass", "notes": "DEFAULT_PCTS and handleDefaultDistribution untouched" },
+    { "kind": "spec", "item": "Behavior: Total Budget changes leave shares alone", "status": "pass", "notes": "no totalBudget handling change; test lowers total to 10, pct 30" },
+    { "kind": "spec", "item": "Behavior: legacy Platform 0 loaded untouched, saved unchanged with pct 0, no submit gate", "status": "pass", "notes": "populateFromGroup and onFormSubmit untouched; legacy test asserts pct 0" },
+    { "kind": "spec", "item": "Behavior: distribution-only mode follows the same rules", "status": "pass", "notes": "describe.each over full form and distributionOnly" },
+    { "kind": "story-ac", "item": "AC1: Platform Hard 0/negative/cleared reverts; any > 0 accepted", "status": "pass", "notes": "modal test enters 0/-5/'' and asserts 300 and pct 30; $1 -> pct 0.1" },
+    { "kind": "story-ac", "item": "AC2: dragging Platform/CLI handle stops at 0.01%", "status": "pass", "notes": "dragHandle test asserts platform.pct 0.01 in both modes" },
+    { "kind": "story-ac", "item": "AC3: Reset gives Platform 30%; Total Budget change leaves shares unchanged", "status": "pass", "notes": "reset then total 10 asserts pct 30 and total_amount 10" },
+    { "kind": "story-ac", "item": "AC4: project page and popup render Platform max_budget 0 with no automatic change", "status": "pass", "notes": "no load-path change; popup test renders legacy plan and saves pct 0" },
+    { "kind": "story-ac", "item": "AC5: saving legacy-0 group sends platform.pct 0, backend error surfaces as today", "status": "pass", "notes": "submit path untouched; pct 0 asserted" },
+    { "kind": "story-ac", "item": "AC6: CLI Hard, Premium Hard and all Soft Limits accept 0 and save", "status": "pass", "notes": "strictPositive only on Platform hard; others keep >= 0" },
+    { "kind": "story-ac", "item": "AC7: submitted platform.pct after any Platform edit is >= 0.01", "status": "pass", "notes": "slider and typed paths floor at 0.01; legacy Premium-100% exception is spec-sanctioned" },
+    { "kind": "story-ac", "item": "AC8: distribution-only mode enforces AC1, AC2, AC7 identically", "status": "pass", "notes": "describe.each covers drag, reject and sub-minimum tests" },
+    { "kind": "spec", "item": "Non-goal: no new validation message, inline error or submit gating", "status": "pass", "notes": "none added" },
+    { "kind": "spec", "item": "Non-goal: no minimum on CLI Hard, Premium Hard or any Soft Limit", "status": "pass", "notes": "cli/premium branches clamp at 0; soft input has no flag" },
+    { "kind": "spec", "item": "Non-goal: no automatic migration of legacy Platform-0 groups", "status": "pass", "notes": "no load or totalBudget effect changes" },
+    { "kind": "spec", "item": "Non-goal: no re-raising of Platform share when Total Budget lowered", "status": "pass", "notes": "no totalBudget handling change" },
+    { "kind": "spec", "item": "Non-goal: no changes to ProjectBudgetModal.tsx", "status": "pass", "notes": "not in changed files" },
+    { "kind": "spec", "item": "Non-goal: no change to store, payload shape or types", "status": "pass", "notes": "payload build untouched" },
+    { "kind": "spec", "item": "Testing: extend modal coverage for criteria 1-8", "status": "partial", "notes": "AC6 CLI Hard 0 is entered but overwritten by the later Premium edit and never asserted (CR-002)" },
+    { "kind": "spec", "item": "Testing: unit-test BudgetAmountInput strict-positive flag", "status": "pass", "notes": "covers 0, -5, -0, empty, 0.4 and flag-off 0/empty" },
+    { "kind": "spec", "item": "Test suites pass", "status": "pending-stage-7", "notes": "execution results are Stage 7 evidence" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "2 subjects in 720240439..HEAD match the git-workflow.md regex: nonzero EPMCDME id, capitalized first word, no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no code_quality ref passed; absent standard, not a gap" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checked against 5 changed files: no HTML sinks, untrusted navigation, cross-window messages, config, secrets or nosonar; numeric validation only" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/BudgetAmountInput.tsx",
+      "line": 46,
+      "title": "Platform hard field displays sub-dollar limits as 0",
+      "problem": "BudgetAmountInput always renders its draft as String(Math.round(value)) (lines 35, 46, 82). The modal passes the unrounded Platform hard amount (totalBudget * pct / 100). After this change the Platform floor is 0.01%, and per the user's revision any amount above $0 is valid. So a Platform hard limit under $0.50 shows as \"0\": the slider minimum on the default $1000 total ($0.10), or a typed 0.4 that the strict-positive check accepts and then reverts to \"0\".",
+      "impact": "Reachable on the main path: dragging the Platform handle to its minimum on any total under $5000 shows a $0 Platform hard limit, which is exactly the value this ticket forbids. The saved pct is correct (>= 0.01), but the user is told the limit is 0, and a valid sub-dollar entry looks like it was discarded.",
+      "recommendation": "When strictPositive is set, render values in the 0 < value < 1 range with cent precision (for example `value > 0 && value < 1 ? value.toFixed(2) : String(Math.round(value))`) in all three draft setters (initial state line 35, value-sync effect line 46, blur revert line 82). Add a unit test that a strictPositive field with value 0.1 displays 0.10, and a modal test that dragging Platform to the minimum on a $1000 total does not show 0."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/__tests__/UnifiedProjectBudgetModal.platformMin.test.tsx",
+      "line": 246,
+      "title": "AC6 CLI hard 0 never asserted",
+      "problem": "The spec's Testing section requires modal coverage for criteria 1-8. The test 'still allows 0 for CLI hard, Premium hard and every soft limit' types 0 into CLI hard, then clears Premium hard. The Premium branch of onHardInputChange (UnifiedProjectBudgetModal.tsx:365-366) recomputes cli = 100 - platform - premium, so cli becomes 70. The test asserts only premium_models.pct and the soft budgets, so nothing verifies that CLI Hard accepts 0.",
+      "impact": "The spec Testing requirement is partial: the AC6 CLI-hard-0 case has no effective test. A regression that applied strictPositive or a minimum to CLI hard would pass this suite.",
+      "recommendation": "In 'still allows 0 for CLI hard, Premium hard and every soft limit', assert the CLI hard field value right after entering 0 (or save and assert `cli.pct` is 0 before the Premium edit). Alternatively, split CLI hard = 0 into its own test that saves and asserts `payload.categories.cli.pct === 0`."
+    }
+  ]
+}

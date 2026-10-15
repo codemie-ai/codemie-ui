@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-15T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 5,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "The change follows patterns that already exist in this code: BudgetAmountInput's blur-commit input and the modal's pct clamp/round2 cascade. Risk comes from tricky numbers rather than new work. There is a new strictPositive rejection path, a PLATFORM_MIN_PCT floor that has to survive round2, and cent-precision display for sub-dollar amounts. Legacy groups with Platform at 0% must also load and save unchanged. The enumerated edge cases (0, -0, negative, empty, sub-minimum, legacy groups, both modal modes) needed new parameterized tests. Nothing is security-sensitive and the change is easy to roll back. Scored M (3). This is one point above the closest bundled example, epmcdme-10102 (add validation to a form field, S/2), because of the rounding interplay and the legacy-data compatibility." },
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 5 files: 3 modified UI components (BudgetAmountInput, BudgetCategoryTable, UnifiedProjectBudgetModal) and 2 new test files (BudgetAmountInput.test.tsx, UnifiedProjectBudgetModal.platformMin.test.tsx). All are in one directory tree, settings/administration/components. 5 files maps to M under the actual-mode diffstat mapping. Most of the 438 insertions are tests; the production delta is small." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

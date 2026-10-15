@@ -20,15 +20,20 @@ export interface BudgetAmountInputProps {
   onCommit: (n: number) => void
   className: string
   ariaLabel: string
+  strictPositive?: boolean
 }
+
+const formatDraft = (value: number, strictPositive: boolean): string =>
+  strictPositive && value > 0 && value < 1 ? value.toFixed(2) : String(Math.round(value))
 
 const BudgetAmountInput: FC<BudgetAmountInputProps> = ({
   value,
   onCommit,
   className,
   ariaLabel,
+  strictPositive = false,
 }) => {
-  const [draft, setDraft] = useState<string>(() => String(Math.round(value)))
+  const [draft, setDraft] = useState<string>(() => formatDraft(value, strictPositive))
   const focusedRef = useRef(false)
   const userTypingRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -39,9 +44,9 @@ const BudgetAmountInput: FC<BudgetAmountInputProps> = ({
     // external changes (slider drag, total change) when the user hasn't
     // started editing this field since last focus.
     if (focusedRef.current && userTypingRef.current) return
-    setDraft(String(Math.round(value)))
+    setDraft(formatDraft(value, strictPositive))
     if (focusedRef.current) justSyncedWhileFocusedRef.current = true
-  }, [value])
+  }, [value, strictPositive])
 
   useLayoutEffect(() => {
     if (!justSyncedWhileFocusedRef.current) return
@@ -72,10 +77,10 @@ const BudgetAmountInput: FC<BudgetAmountInputProps> = ({
         focusedRef.current = false
         userTypingRef.current = false
         const n = Number(draft)
-        if (Number.isFinite(n) && n >= 0) {
+        if (Number.isFinite(n) && (strictPositive ? n > 0 : n >= 0)) {
           onCommit(n)
         }
-        setDraft(String(Math.round(value)))
+        setDraft(formatDraft(value, strictPositive))
       }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
