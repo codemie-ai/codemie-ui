@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15924_git-faq-manual-reindex",
+  "head": "4f0387d94de3652f770cb2ecd7842203227def6c",
+  "runner": "npm",
+  "started_at": "2026-10-15T12:30:00Z",
+  "completed_at": "2026-10-15T15:40:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 122971,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 88718,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency was added, removed, or moved. Diff vs origin/main touches only src/pages/dataSources/utils/* — package.json and package-lock.json are untouched."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 78737,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1380360,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 694 passed (694); Tests 7023 passed | 1 skipped (7024)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 515567,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 49 passed (49); Tests 558 passed | 1 skipped (559)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 180000,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Requires infrastructure not reachable here: the app stack must be up at http://localhost:8080 (guide's own precondition) and ~/.codemie/test-harness.json is absent. Three attempts (30s/90s/180s) all showed every sanity-ui case entering pytest-rerunfailures RERUN against the unreachable localhost:8080 API; killed before completion. The guide marks this 'Skip if: Never' as an MR-compliance policy, but a gate that cannot reach its target cannot be run locally — this is an owed check, not a pass. Caller/human must run this against a live stack before the MR compliance bot's '## Test harness' section is satisfied."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 5134,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Pre-commit hook runs this; not in the quality-gates.md guide list. Checked 2345 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 4033,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 but no analysis ran. Set SONAR_TOKEN (and ensure the connected-mode SonarQube host is reachable) to run this locally. PASSED outcome here means nothing local blocks the MR, not that CI's Sonar quality gate is settled — that is owed to CI."
+    },
+    {
+      "id": "ci-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(external GitLab status check, no job defined in this repo)",
+      "exit_code": null,
+      "notes": "gitlab-ci.yml's pre-ci-guard template (wait-ci-init job) waits for an externally-reported 'ci-pipeline' context via EXPECTED_CONTEXTS. Produced by another pipeline, not a command runnable in this checkout; unreachable infrastructure."
+    },
+    {
+      "id": "compliance-report",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(external GitLab status check, no job defined in this repo)",
+      "exit_code": null,
+      "notes": "Same pre-ci-guard template also waits for an externally-reported 'compliance-report' context. Produced by another pipeline/bot, not runnable locally."
+    }
+  ],
+  "failures": {}
+}

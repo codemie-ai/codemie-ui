@@ -1,0 +1,56 @@
+{
+  "decision": "approve",
+  "rationale": "All 5 acceptance criteria pass (canFullReindex/performFullReindex add a Git FAQ branch with no cron field, same error path as other KB types) and standards (commit-format, security) pass with code-quality n/a (no guide); 3 edge-case candidates were verified against source and dismissed as noise: the hardcoded INDEX_TYPES.GIT_FAQ constant matches the existing project convention for Git FAQ (useCreateIndex.ts:236), and the Force Reindex / Resume Indexing exclusions are pre-existing, consistent with most other index types (SharePoint also lacks Force Reindex; Resume Indexing is a narrow Confluence/Code-only feature), and out of this ticket's 'manual full reindex' scope. No defer, no decision_needed items remain.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "canFullReindex returns true for a Git FAQ datasource when item.completed || item.error",
+      "status": "pass",
+      "notes": "dataSourceUtils.ts:85 adds isGitFaqIndex(item) return true before !isKBIndex fallthrough; gate at line 74 unchanged; covered by test.ts:55-65"
+    },
+    {
+      "kind": "spec",
+      "item": "Triggering reindex calls updateKBIndex(INDEX_TYPES.GIT_FAQ, {name, project_name}, true), not updateApplicationIndex",
+      "status": "pass",
+      "notes": "dataSourceUtils.ts:250-258 adds Git FAQ branch calling updateKBIndex with minimal payload; test.ts:91-105 asserts updateKBIndex called, updateApplicationIndex not called"
+    },
+    {
+      "kind": "spec",
+      "item": "A failed manual reindex surfaces the existing toaster error from handleIndexResponse, no bespoke error UI",
+      "status": "pass",
+      "notes": "New branch reuses the same updateKBIndex call already routed through handleIndexResponse (dataSources.ts:279-290, unchanged); no new error-handling code added"
+    },
+    {
+      "kind": "spec",
+      "item": "Reindex payload carries no cron_expression field; configured schedule unaffected",
+      "status": "pass",
+      "notes": "dataSourceUtils.ts:251-257 payload is exactly {name, project_name}; no cron_expression field present"
+    },
+    {
+      "kind": "spec",
+      "item": "canFullReindex/performFullReindex behavior for every other index type is unchanged",
+      "status": "pass",
+      "notes": "Diff only adds new describe block 'Git FAQ reindex capabilities' and one xWiki regression test (test.ts:40-51); no existing assertion lines altered"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "1 commit subject 'EPMCDME-15924: Allow manual full reindex of Git FAQ datasources' matches the documented ^EPMCDME-\\d+:\\s[A-Z] pattern"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no code-quality guide found at .ai-run/guides/standards/code-quality.md (only quality-gates.md exists, a distinct document) and no ArtifactRef was passed"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "security-patterns.md checklist does not apply: change adds isGitFaqIndex branches calling updateKBIndex with existing item.repo_name/project_name fields; no HTML sink, navigation, cross-window messaging, new config/secret, or sonar suppression touched"
+    }
+  ],
+  "findings": []
+}

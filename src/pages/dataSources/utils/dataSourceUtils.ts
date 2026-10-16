@@ -27,6 +27,7 @@ import {
   isAzureDevOpsWorkItemIndex,
   isSharePointIndex,
   isXWikiIndex,
+  isGitFaqIndex,
   isCodeIndex,
   isProviderIndex,
   isPlatformIndex,
@@ -81,6 +82,7 @@ export const canFullReindex = (item: DataSource): boolean => {
   if (isAzureDevOpsWorkItemIndex(item)) return true
   if (isSharePointIndex(item)) return true
   if (isProviderIndex(item)) return true
+  if (isGitFaqIndex(item)) return true
 
   return !isKBIndex(item)
 }
@@ -245,6 +247,8 @@ export const performFullReindex = (
     )
   } else if (isProviderIndex(item)) {
     reindexProviderIndex(item.id)
+  } else if (isGitFaqIndex(item)) {
+    reIndexKBIndex(item.index_type, item.project_name, item.repo_name)
   } else {
     updateApplicationIndex(item.project_name, item.repo_name, true)
   }

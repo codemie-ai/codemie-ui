@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "task": "Enable manual reindex for Git FAQ datasources from the list and details views, independent of scheduler state, without regressing other datasource types or the cron schedule.",
+  "generated": "2026-10-15T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 17,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Baseline is 2 components (dataSourceUtils.ts gating/dispatch, possibly DataSourceDetails.tsx) across the UI and business-logic layers, matching the clear 'one explicit branch per index type' convention already used by 8 sibling index types — but dataSourceUtils.ts is a shared utility consumed by every datasource type's reindex action, so a change here carries blast radius beyond Git FAQ, bumping Component Scope from M to L." },
+    { "dimension": "technical_risk", "reason": "The branch-per-index-type pattern is well established (8 existing sibling implementations), so the baseline is S — but AC3 (actionable error on failure) and AC5 (no regression for other datasource types) are edge/variant cases, and technical-analysis.md's Testing Landscape/Risk Indicators confirm no test exists exercising canFullReindex/canForceReindex/performFullReindex for a Git FAQ item in an errored state. No existing test template covers this defensive scenario, so Technical Risk is bumped from S to M per the edge-case auto-bump rule." },
+    { "dimension": "requirements_clarity", "reason": "The 5 acceptance criteria are concrete and the root cause is pinpointed, but technical-analysis.md itself flags two open design questions: whether DataSourceDetails.tsx needs an independent fix (it does not visibly route through dataSourceUtils.ts), and whether performFullReindex's new Git FAQ branch must mirror createOrUpdateGitFaqIndex's exact reindex payload shape (link/branch/files_filter/setting_id)." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: fix sits inside dataSourceUtils.ts, a core shared utility used by canFullReindex/canForceReindex/performFullReindex for every datasource type, not just Git FAQ.",
+    "Technical Risk bumped from S to M: acceptance criteria enumerate an error-path case (AC3) and a cross-type regression case (AC5) for which technical-analysis.md confirms no existing test currently exercises the Git FAQ + error:true scenario."
+  ],
+  "split_recommendation": null
+}
