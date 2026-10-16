@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15915_model-list-inconsistency",
+  "head": "2d44608d40dca5090fafc1c5c023a793b6d1268e",
+  "runner": "npm",
+  "started_at": "2026-10-14T16:01:30.479083+00:00",
+  "completed_at": "2026-10-14T17:20:57.321198+00:00",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "npm-ci",
+      "command": "npm ci",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29908,
+      "exit_code": 0,
+      "evidence_path": "docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/npm-ci.log"
+    },
+    {
+      "id": "lint",
+      "command": "npm run lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 33038,
+      "exit_code": 0,
+      "evidence_path": "docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/lint.log"
+    },
+    {
+      "id": "typecheck",
+      "command": "npm run typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 23879,
+      "exit_code": 0,
+      "evidence_path": "docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/typecheck.log"
+    },
+    {
+      "id": "license",
+      "command": "npm run license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "Guide Skip if applies: no dependency added, removed, or moved in branch diff; user-modified lockfile preserved."
+    },
+    {
+      "id": "secrets",
+      "command": "npm run secrets:check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 7725,
+      "exit_code": 0,
+      "evidence_path": "docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/secrets.log"
+    },
+    {
+      "id": "unit",
+      "command": "npm run test:unit:slnt",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 831015,
+      "exit_code": 0,
+      "evidence_path": "docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/unit.log"
+    },
+    {
+      "id": "integration",
+      "command": "npm run test:integration:slnt",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 163977,
+      "exit_code": 0,
+      "evidence_path": "docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/integration.log"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "command": "FRONTEND_URL=http://localhost:5175 uvx codemie-test-harness run sanity-ui -n 2 --results-dir docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/harness-5175",
+      "status": "FAIL",
+      "duration_ms": 1796030,
+      "exit_code": 1,
+      "evidence_path": "docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/test-harness-5175.log",
+      "notes": "Runtime frontend override targets current branch server http://localhost:5175; workers reduced to 2 per local verification guide. Prior 5173 run is invalid for this task, not evidence of current-branch regression. Corrected summary: 2 failed, 90 passed, 1 error, 9 rerun in 1785.07s. Recorded Page URLs in log lines 511 and 643 confirm localhost:5175. Failures are datasource processing Error (file and zip); setup error is datasource indexing failed for webhook resource isolation. No baseline comparison or root-cause attribution performed. Session cleanup completed. Artifacts: docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/harness-5175/junit.xml and results.json."
+    },
+    {
+      "id": "staged-lint-format",
+      "command": "npx lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "Hook enforces npx lint-staged, but caller forbids source edits and formatters during final QA; run at commit time when formatting is authorized."
+    },
+    {
+      "id": "license-headers",
+      "command": "npm run license-headers:check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 810,
+      "exit_code": 0,
+      "evidence_path": "docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/license-headers.log"
+    },
+    {
+      "id": "sonar",
+      "command": "npm run sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 532,
+      "exit_code": 0,
+      "evidence_path": "docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/sonar.log",
+      "notes": "[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set. Set SONAR_TOKEN and provide reachable configured SonarQube infrastructure to run locally; CI remains unverified."
+    },
+    {
+      "id": "ci-external-guards",
+      "command": ".wait-ci-init-template (external epm-cdme/codemie-gitlab-templates@0.1.2)",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "CI includes private external pre-ci-guard.yml and waits for ci-pipeline/compliance-report MR contexts; requires GitLab MR pipeline infrastructure, not a local executable gate. Guide secrets gate covers documented gitleaks-scan."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision. Mandated test-harness ran separately; no manual browser verification was performed."
+    }
+  ],
+  "failures": {
+    "test-harness": "---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n- generated xml file: /Users/gokhan_ozdemir/.herdr/worktrees/codemie-ui/epmcdme-15915-model-list-inconsistency/docs/superpowers/tasks/2026-10-14-epmcdme-15915-model-list-inconsistency/evidence.local/verification/final-qa/harness-5175/junit.xml -\n=========================== short test summary info ============================\nFAILED tests/ui/datasource/test_create_datasource.py::test_create_file_datasource[chromium] - AssertionError: Locator expected to have text 'Completed'\nActual value: Error \nCall log:\n  - Expect \"to_have_text\" locator(\"tbody tr:has(td:nth-child(1) button.font-bold)\").filter(has_text=\"autotest-yzi_wprlsybubcxegyx\").locator(\"td:nth-child(8)\").locator(\"div.inline-flex\") with timeout 15000ms\n  - waiting for locator(\"tbody tr:has(td:nth-child(1) button.font-bold)\").filter(has_text=\"autotest-yzi_wprlsybubcxegyx\").locator(\"td:nth-child(8)\").locator(\"div.inline-flex\")\n    34 \u00d7 locator resolved to <div class=\"inline-flex flex-row gap-1.5 uppercase text-[10px] border-1 rounded-full h-[17px] justify-center items-center font-semibold px-2 bg-failed-tertiary border-failed-secondary text-failed-secondary\">\u2026</div>\n       - unexpected value \"Error\"\n\nAria snapshot:\n- text: Error\nFAILED tests/ui/datasource/test_zip_file_datasource.py::test_zip_file_datasource_shows_extracted_files_after_creation[chromium] - AssertionError: Locator expected to have text 'Completed'\nActual value: Error \nCall log:\n  - Expect \"to_have_text\" locator(\"tbody tr:has(td:nth-child(1) button.font-bold)\").filter(has_text=\"autotest-yzi_rruseuwvuzgimmu\").locator(\"td:nth-child(8)\").locator(\"div.inline-flex\") with timeout 15000ms\n  - waiting for locator(\"tbody tr:has(td:nth-child(1) button.font-bold)\").filter(has_text=\"autotest-yzi_rruseuwvuzgimmu\").locator(\"td:nth-child(8)\").locator(\"div.inline-flex\")\n    34 \u00d7 locator resolved to <div class=\"inline-flex flex-row gap-1.5 uppercase text-[10px] border-1 rounded-full h-[17px] justify-center items-center font-semibold px-2 bg-failed-tertiary border-failed-secondary text-failed-secondary\">\u2026</div>\n       - unexpected value \"Error\"\n\nAria snapshot:\n- text: Error\nERROR tests/ui/integrations/test_webhook_resource_isolation.py::test_resource_dropdown_shows_only_project_scoped_resources[chromium] - codemie_sdk.exceptions.ApiError: Datasource a47839ae-ba72-41cd-a1d6-b8b2207439b8 indexing failed\n========= 2 failed, 90 passed, 1 error, 9 rerun in 1785.07s (0:29:45) ==========\n2026-10-14 20:20:55,934 - codemie_test_harness.tests.conftest - INFO - Starting session cleanup...\n2026-10-14 20:20:56,282 - codemie_test_harness.tests.conftest - INFO - Session cleanup completed."
+  }
+}

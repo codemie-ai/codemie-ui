@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "The compact review's edge-case lens ran with no blocking findings; acceptance review was skipped because no spec/story was available. No findings were deferred or dismissed, and standards review was not expected; confidence is low because this was a no-spec review.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for this review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for this review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for this review profile." }
+  ],
+  "findings": []
+}

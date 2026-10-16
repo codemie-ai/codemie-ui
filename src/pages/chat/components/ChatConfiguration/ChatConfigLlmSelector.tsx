@@ -44,7 +44,9 @@ const ChatConfigLlmSelector: FC = () => {
         value={llmModelValue ?? undefined}
         allowEmpty
         projectId={projectId}
-        filteredModels={filteredModels.length > 0 ? filteredModels : undefined}
+        filteredModels={
+          currentChat.projectId && filteredModels.length > 0 ? filteredModels : undefined
+        }
         hint="Selecting LLM model in this field will force each assistant to use it while answering in this chat. 'Default' means using the model defined in the configuration of each assistant."
         onChange={onLlmModelChange}
       />

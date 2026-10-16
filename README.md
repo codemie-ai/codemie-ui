@@ -52,6 +52,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 - **AI-Native SDLC & Delivery** — AI agents covering every phase: discovery, architecture, development, testing, and deployment.
 - **AI Migration & Modernization** — Legacy system and mainframe modernization powered by AI-driven code analysis and transformation.
 - **AI for Business & Operations** — AI assistants for finance, HR, sales, support, and other business functions.
+- Project-less New Chat uses the user's accessible model catalog in both model selectors; project-scoped chats retain their project model restrictions.
 
 ## Technology Stack
 
