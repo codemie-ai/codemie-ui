@@ -1,0 +1,50 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance did not run (no spec/story available) so confidence is low; edge-case lens was the only applicable lens under the compact profile and ran clean. 2.3 verification confirmed three genuine defects in the newly-added project-default-fetch effect in ChatPromptLlmSelector.tsx (stale state on leaving a project chat, a race on rapid project switches, and an uncleared default on fetch failure) — all in-scope for this change per git history. One edge-case candidate (resolveInitialLlmModelType.ts future-enum fallthrough) was dismissed: the typed effective_llm_model_source union only allows 'assistant' | 'project_default' | null, so the flagged branch is unreachable under the current type contract. No defer findings; standards review was not expected for this profile.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards review not expected for the compact profile on this round." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards review not expected for the compact profile on this round." },
+    { "kind": "security", "status": "na", "notes": "Standards review not expected for the compact profile on this round." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx",
+      "line": 160,
+      "title": "Stale project default survives leaving a project chat",
+      "problem": "The project-default fetch effect only guards `if (!currentChat?.projectId) return` — when currentChat.projectId transitions to undefined (switching to a non-project chat), the effect exits without resetting projectDefaultModelId, so the previous project's default id remains in state.",
+      "impact": "defaultModel later checks `if (projectDefaultModelId)` against the now-global modelsToDisplay list; if a global model shares the same id as the stale project default, it gets wrongly marked as the live default/recommended model.",
+      "recommendation": "Clear projectDefaultModelId (set to null) in the early-return branch when currentChat?.projectId is falsy, not just skip the fetch."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx",
+      "line": 163,
+      "title": "No guard against a stale project-default fetch response",
+      "problem": "The effect that calls projectsStore.getProject(currentChat.projectId) has no guard against the user switching currentChat.projectId again before the in-flight request resolves — there is no AbortController, cancellation flag, or project-id comparison on resolution.",
+      "impact": "A stale response for a previously-selected project can overwrite projectDefaultModelId after the user has already switched to a different project, temporarily flagging the wrong model as the live default for the new project.",
+      "recommendation": "Capture the projectId at fetch start (or use a ref/cleanup flag) and ignore the response if currentChat.projectId no longer matches when the promise resolves."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx",
+      "line": 166,
+      "title": "Fetch failure leaves stale default uncleared",
+      "problem": "The catch block in the project-default fetch effect only logs the error (console.error) and never resets projectDefaultModelId.",
+      "impact": "If a fetch for project B fails after a prior successful fetch for project A set a default, the UI keeps showing project A's stale default model id for project B instead of falling back to no default.",
+      "recommendation": "Call setProjectDefaultModelId(null) in the catch block alongside the existing console.error."
+    }
+  ]
+}

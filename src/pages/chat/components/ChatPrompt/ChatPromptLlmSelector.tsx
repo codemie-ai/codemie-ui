@@ -25,6 +25,7 @@ import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { appInfoStore } from '@/store/appInfo'
 import { chatsStore } from '@/store/chats'
 import { projectsStore } from '@/store/projects'
+import { routerToModelOption } from '@/utils/routerToModelOption'
 import toaster from '@/utils/toaster'
 import { composeRowTooltip } from '@/utils/tooltipContent'
 import { cn } from '@/utils/utils'
@@ -139,6 +140,9 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
   const [projectDefaultModelId, setProjectDefaultModelId] = useState<string | null>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const notifiedModelIdRef = useRef<string | null>(null)
+  // Bumped on every dropdown-open fetch so a response for an earlier, superseded
+  // call can't overwrite state after a later call has already started or finished.
+  const dropdownFetchTokenRef = useRef(0)
 
   const { llmModels, llmRouters, getLLMModels } = useSnapshot(appInfoStore)
   const { currentChat, filteredModels: projectFilteredModels, updateChat } = useSnapshot(chatsStore)
@@ -157,16 +161,31 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
 
   // Fetch project default model on initial load
   useEffect(() => {
-    if (!currentChat?.projectId) return
+    if (!currentChat?.projectId) {
+      // Leaving project context (or no project yet) — don't let a previous
+      // project's default linger and get matched against the global list.
+      setProjectDefaultModelId(null)
+      return () => {}
+    }
+    // Guards against a response for a project we've since switched away from:
+    // the cleanup below flips this before the next effect run (or unmount),
+    // so a late-arriving response is dropped instead of overwriting state.
+    let cancelled = false
     const fetchDefaultModel = async () => {
       try {
         const project = await projectsStore.getProject(currentChat.projectId)
+        if (cancelled) return
         setProjectDefaultModelId(project.default_model ?? null)
       } catch (error) {
+        if (cancelled) return
         console.error('Failed to fetch project default model:', error)
+        setProjectDefaultModelId(null)
       }
     }
     fetchDefaultModel()
+    return () => {
+      cancelled = true
+    }
   }, [currentChat?.projectId])
 
   const projectId = currentChat?.projectId
@@ -183,8 +202,16 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
 
   const defaultModel = useMemo(() => {
     if (defaultRouter) return null
+    if (projectDefaultModelId) {
+      const liveDefaultModel = modelsToDisplay.find((m) => m.value === projectDefaultModelId)
+      if (liveDefaultModel) return liveDefaultModel
+      // The project's default can itself be a router (not necessarily the one marked
+      // isDefault globally, handled by defaultRouter above) — it only lives in llmRouters.
+      const liveDefaultRouter = llmRouters.find((r) => r.value === projectDefaultModelId)
+      if (liveDefaultRouter) return routerToModelOption(liveDefaultRouter)
+    }
     return modelsToDisplay.find((m) => m.isDefault) ?? modelsToDisplay[0] ?? null
-  }, [modelsToDisplay, defaultRouter])
+  }, [modelsToDisplay, defaultRouter, projectDefaultModelId, llmRouters])
 
   const selectedModel = useMemo(() => {
     if (!currentChat?.llmModel) return null
@@ -243,6 +270,9 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
       }
     }
     filteredRouters.forEach((r) => {
+      // The recommended router already has its own row (pushed above/below as
+      // OPTION_ID_RECOMMENDED); don't repeat it here.
+      if (recommendedShown && r.value === defaultModel?.value) return
       list.push({ id: optionIdForRouter(r.value), value: r.value })
     })
     if (isGrouped && !search && defaultModel) {
@@ -266,8 +296,11 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
 
   const handleDropdownOpen = async () => {
     if (!currentChat?.projectId) return
+    dropdownFetchTokenRef.current += 1
+    const token = dropdownFetchTokenRef.current
     try {
       const project = await projectsStore.getProject(currentChat.projectId)
+      if (dropdownFetchTokenRef.current !== token) return
       const newDefaultId = project.default_model ?? null
 
       if (newDefaultId !== projectDefaultModelId && notifiedModelIdRef.current !== newDefaultId) {
@@ -279,7 +312,9 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
 
       setProjectDefaultModelId(newDefaultId)
     } catch (error) {
+      if (dropdownFetchTokenRef.current !== token) return
       console.error('Failed to sync project default model:', error)
+      setProjectDefaultModelId(null)
     }
   }
 

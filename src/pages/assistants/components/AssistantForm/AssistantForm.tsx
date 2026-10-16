@@ -73,6 +73,7 @@ import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
 import { compareFormData } from '../../utils/compareFormData'
+import { resolveInitialLlmModelType } from '../../utils/resolveInitialLlmModelType'
 import AssistantSelector from '../AssistantSelector'
 import LLMSelector from './components/LLMSelector'
 import RefineAssistantModal from '../RefineAssistantModal/RefineAssistantModal'
@@ -293,7 +294,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           icon_url: assistant?.icon_url ?? '',
           shared: assistant?.shared ?? false,
           is_global: assistant?.is_global ?? false,
-          llm_model_type: assistant?.llm_model_type ?? '',
+          llm_model_type: resolveInitialLlmModelType(assistant),
           enable_image_generation: assistant?.enable_image_generation ?? false,
           image_generation_model: assistant?.image_generation_model ?? '',
           file_attachment_enabled: assistant?.file_attachment_enabled ?? true,

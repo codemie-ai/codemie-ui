@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15971_sync-default-model-existing-assistants",
+  "head": "360b0802bde271ad8b9b61b8dc6b3c677494f1fa",
+  "runner": "npm",
+  "started_at": "2026-10-15T11:40:05Z",
+  "completed_at": "2026-10-15T12:50:44Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 175121,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 58295,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 10779,
+      "command": "npm run license-check",
+      "exit_code": 1
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 47692,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks reported 'no leaks found' over ~38 MB scanned."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run test:unit:slnt",
+      "exit_code": null,
+      "notes": "assumed verified in CI pipeline per user instruction"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run test:integration:slnt",
+      "exit_code": null,
+      "notes": "assumed verified in CI pipeline per user instruction"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 3008501,
+      "command": "npm run test-harness",
+      "exit_code": 1
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 3783,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skipped: output was '→ No staged files found.' No files were staged in the index at run time; stage the changed files with git add before running lint-staged for it to actually lint/format them."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 4003,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2349 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Skipped per explicit user instruction mid-run; not executed, so CI's SonarQube scan remains the only source of truth for this check on this branch."
+    }
+  ],
+  "failures": {
+    "license-check": "> ai-assistant@0.0.0 license-check\n> npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;Python-2.0;CC-BY-4.0;Apache*;(MIT OR CC0-1.0);MulanPSL-2.0;MPL-2.0;LGPL-3.0-only;UNLICENSED'\n\nPackage \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted by the --onlyAllow flag. Exiting.",
+    "test-harness": "E       - status\n\ntests\\ui\\pageobject\\datasources\\datasource_page.py:301: AssertionError\n----------------------------- Captured log setup ------------------------------\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n---------------------------- Captured log teardown ----------------------------\nINFO    reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n----------------------------- Captured log setup ------------------------------\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n---------------------------- Captured log teardown ----------------------------\nINFO    reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n----------------------------- Captured log setup ------------------------------\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n---------------------------- Captured log teardown ----------------------------\nINFO    reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown ----------------------------\nINFO    reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown ----------------------------\nINFO    reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO    codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations2026-10-15 13:40:17,261 - codemie_test_harness.tests.conftest - INFO - Starting session cleanup...\n2026-10-15 13:40:18,144 - codemie_test_harness.tests.conftest - INFO - Session cleanup completed.\n\n- generated xml file: C:\\Users\\Egor_Popov\\Source\\codemie-ui\\codemie-test-reports\\junit.xml -\n=========================== short test summary info ===========================\nFAILED tests/ui/chats/test_chat_configuration.py::test_configuration_panel_structure_and_elements[chromium]\nFAILED tests/ui/chats/test_chat_functionality.py::test_message_sending_functionality[chromium]\nFAILED tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_save_button_functionality[chromium]\nFAILED tests/ui/chats/test_chat_functionality.py::test_stop_button_visible_after_resend_first_message_in_multi_message_chat[chromium]\nFAILED tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_cancel_button_functionality[chromium]\nFAILED tests/ui/chats/test_chat_input_field.py::test_chat_input_dynamic_tools_adding_web_search[chromium]\nFAILED tests/ui/chats/test_chat_input_field.py::test_chat_input_default_model_changing[chromium]\nFAILED tests/ui/chats/test_chat_prompt_draft.py::test_draft_persists_until_sent_across_chat_navigation[chromium]\nFAILED tests/ui/chats/test_chat_reload_during_generation.py::test_conversation_survives_reload_during_generation[chromium]\nFAILED tests/ui/datasource/test_create_datasource.py::test_create_file_datasource[chromium]\nFAILED tests/ui/datasource/test_zip_file_datasource.py::test_zip_file_datasource_shows_extracted_files_after_creation[chromium]\nERROR tests/ui/datasource/test_datasource_page.py::test_datasource_page_elements_visibility[chromium]\nERROR tests/ui/integrations/test_webhook_resource_isolation.py::test_resource_dropdown_shows_only_project_scoped_resources[chromium]\n======= 11 failed, 80 passed, 2 errors, 28 rerun in 2960.41s (0:49:20) ========"
+  }
+}
