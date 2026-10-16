@@ -177,33 +177,64 @@ const LLMSelector = forwardRef<
       return defaultModel ?? fallbackModel ?? {}
     }, [models])
 
-    const options = useMemo(
-      () => [
-        ...(allowEmpty ? [{ label: placeholder, value: '' }] : []),
-        ...(!allowEmpty && defaultLlmModel?.value
-          ? [
-              {
-                label: `${defaultOptionLabelPrefix}: ${defaultLlmModel?.label}`,
-                value: defaultLlmModel?.value,
-              },
-            ]
-          : []),
-        ...models.map(({ label, value, isPremium, isRouter }) => ({
+    // Gates both the synthetic row and the regular-list filter below so they can
+    // never diverge: a falsy-but-valid defaultLlmModel.value (e.g. '') must not
+    // show the row AND still filter the model out, which would make it vanish
+    // from the dropdown entirely (CR-001).
+    const showDefaultRow = !allowEmpty && !!defaultLlmModel?.value
+
+    const options = useMemo(() => {
+      const remainingModels = models
+        .filter((model) => !showDefaultRow || model.value !== defaultLlmModel?.value)
+        .map(({ label, value, isPremium, isRouter }) => ({
           label,
           value,
           isPremium,
           isRouter,
-        })),
-      ],
-      [
-        allowEmpty,
-        defaultLlmModel?.label,
-        defaultLlmModel?.value,
-        defaultOptionLabelPrefix,
-        models,
-        placeholder,
+        }))
+
+      // Mirrors MultiSelect's own sort (alphabetical, selected value floated to
+      // top) for the remaining rows: `preserveOptionOrder` below disables that
+      // sort globally so the synthetic default row can be pinned first even
+      // when a different model is selected, which MultiSelect's own logic
+      // cannot express (it floats whichever row is currently selected).
+      const sortedModels = [...remainingModels].sort((a, b) => a.label.localeCompare(b.label))
+      const selectedIndex = value ? sortedModels.findIndex((model) => model.value === value) : -1
+      const orderedModels =
+        selectedIndex > 0
+          ? [
+              sortedModels[selectedIndex],
+              ...sortedModels.slice(0, selectedIndex),
+              ...sortedModels.slice(selectedIndex + 1),
+            ]
+          : sortedModels
+
+      return [
+        ...(allowEmpty ? [{ label: placeholder, value: '' }] : []),
+        ...(showDefaultRow
+          ? [
+              {
+                label: `${defaultOptionLabelPrefix}: ${defaultLlmModel?.label}`,
+                value: defaultLlmModel?.value,
+                isPremium: defaultLlmModel?.isPremium,
+                isRouter: defaultLlmModel?.isRouter,
+              },
+            ]
+          : []),
+        ...orderedModels,
       ]
-    )
+    }, [
+      allowEmpty,
+      defaultLlmModel?.isPremium,
+      defaultLlmModel?.isRouter,
+      defaultLlmModel?.label,
+      defaultLlmModel?.value,
+      defaultOptionLabelPrefix,
+      models,
+      placeholder,
+      showDefaultRow,
+      value,
+    ])
 
     useEffect(() => {
       if (modelType === 'imageGeneration') getImageGenerationModels()
@@ -292,6 +323,7 @@ const LLMSelector = forwardRef<
           onFilter={() => {}}
           onShow={onDropdownOpen}
           renderOption={renderOption}
+          preserveOptionOrder={showDefaultRow}
           selectedItemTemplate={preserveUnavailableSelection ? getSelectedItemLabel : undefined}
           ref={selectRef}
         />

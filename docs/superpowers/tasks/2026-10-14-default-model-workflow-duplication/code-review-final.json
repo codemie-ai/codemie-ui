@@ -1,0 +1,29 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance lens: all 5 ACs met by the current diff. Blind and edge-case lenses both ran cleanly. The edge-case lens found one real regression (CR-001): the new dedup filter can silently drop a default model from the dropdown entirely when its value is falsy/empty, where the pre-fix code at least still rendered it once as a plain row. Two blind-lens findings were triaged out: a speculative router-merge concern is moot (useProjectLLMModels already merges llmRouters into the list before LLMSelector sees it, per technical-analysis.md), and a dedup-by-value-not-identity concern is low-risk since value is treated as the unique selector key everywhere else in this file. One blind-lens test-quality note (a redundant assertion in 'marks that single row as the default') is minor and not blocking. 2 dismissed, 1 deferred-as-non-blocking (minor), 1 patch finding.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "AC1 — default model displayed only once", "status": "met", "justification": "options useMemo filters models by defaultLlmModel.value whenever the synthetic default row renders (!allowEmpty, the path VirtualAssistantForm actually uses); LLMSelector.defaultDedup.test.tsx asserts exactly 1 row."},
+    {"criterion": "AC2 — default entry clearly marked as default", "status": "met", "justification": "Synthetic row label is '${defaultOptionLabelPrefix}: ${label}' ('Default: X'); covered by premiumLayout.test.tsx's new describe block."},
+    {"criterion": "AC3 — Premium label on default entry when premium", "status": "met", "justification": "defaultLlmModel.isPremium/isRouter now copied onto the synthetic row (LLMSelector.tsx:188-189); premiumLayout.test.tsx asserts the meta line text is exactly 'Premium'."},
+    {"criterion": "AC4 — other models keep labels, shown once each", "status": "met", "justification": "Only the default model's value is filtered out of models.map; defaultDedup.test.tsx confirms the non-default model renders once with no meta line."},
+    {"criterion": "AC5 — search does not return duplicates", "status": "met", "justification": "One DOM row per model means PrimeReact's built-in label filter can only match once; defaultDedup.test.tsx's search test confirms exactly 1 match."}
+  ],
+  "standards_review": [
+    {"standard": "Commit message ticket format (git-workflow.md)", "status": "pass", "notes": "Commit 7c8a5d52c is prefixed 'EPMCDME-15923: ...'."},
+    {"standard": "Security patterns (security-patterns.md)", "status": "pass", "notes": "No HTML sinks, redirects, secrets, or cross-window messaging touched by this diff."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx",
+      "line": 183,
+      "problem": "The new filter `model.value !== defaultLlmModel?.value` (line 194) is applied whenever `!allowEmpty`, but the synthetic default row only renders when `!allowEmpty && defaultLlmModel?.value` is truthy (line 183). When `defaultLlmModel.value` is a falsy-but-valid string (e.g. empty string), the synthetic row is skipped by the truthiness check, yet the filter still strictly matches and removes that same model from the regular list.",
+      "impact": "A model with a falsy `value` that resolves as the default (via explicit `isDefault: true` or the `models[0]` fallback when no model is flagged default) disappears from the dropdown entirely and becomes unselectable — a regression versus the pre-fix behavior, which at least rendered it once as a plain row.",
+      "recommendation": "Compute one shared boolean for whether the synthetic row is being shown (e.g. `const showDefaultRow = !allowEmpty && defaultLlmModel?.value`) and use it to gate both the synthetic-row ternary and the filter guard, so the two conditions can never diverge. Add a regression test with a model fixture like `{ label: 'Legacy', value: '', isDefault: true }` asserting it still renders exactly once."
+    }
+  ]
+}

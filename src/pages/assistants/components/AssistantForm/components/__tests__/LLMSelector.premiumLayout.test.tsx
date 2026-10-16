@@ -85,6 +85,15 @@ vi.mock('@/hooks/useIsTruncated', () => ({
 
 beforeEach(() => {
   mockTruncation.isTruncated = false
+  mockAppInfoStore.llmModels = [
+    {
+      label: 'Bedrock Claude Opus 4.5',
+      value: 'bedrock-claude-opus-4-5',
+      isDefault: false,
+      isPremium: true,
+    },
+    { label: 'GPT-4o', value: 'gpt-4o', isDefault: true },
+  ]
 })
 
 // The badge used to be painted over the value label as an absolute overlay, so a
@@ -117,6 +126,50 @@ describe('LLMSelector — premium badge layout', () => {
     expect(labelEl).toHaveTextContent(LONG_PREMIUM_LABEL)
     expect(labelEl.className).toContain('min-w-0')
     expect(labelEl.className).toContain('truncate')
+  })
+})
+
+// EPMCDME-15923: the one existing fixture set never combines isDefault: true
+// with isPremium: true, so this is the first test to pin that exact
+// combination — the ticket's reported defect. Deliberately does NOT reuse this
+// file's `openPanel` helper, which always passes `allowEmpty` — that skips the
+// synthetic "Default: X" row entirely (see LLMSelector.tsx:183), so it never
+// reproduces the bug. The workflow virtual-assistant panel this ticket is
+// about (VirtualAssistantForm.tsx) never passes `allowEmpty`, so this test
+// renders the same way.
+describe('LLMSelector — default model that is also premium (EPMCDME-15923)', () => {
+  const DEFAULT_PREMIUM_LABEL = 'Bedrock Claude Opus 4.5'
+  const DEFAULT_PREMIUM_VALUE = 'bedrock-claude-opus-4-5'
+
+  beforeEach(() => {
+    mockAppInfoStore.llmModels = [
+      {
+        label: DEFAULT_PREMIUM_LABEL,
+        value: DEFAULT_PREMIUM_VALUE,
+        isDefault: true,
+        isPremium: true,
+      },
+      { label: 'GPT-4o', value: 'gpt-4o', isDefault: false },
+    ]
+  })
+
+  const openWithoutAllowEmpty = () => {
+    const { container } = render(
+      <LLMSelector placeholder="Select model" value={DEFAULT_PREMIUM_VALUE} onChange={vi.fn()} />
+    )
+    fireEvent.click(container.querySelector('.p-multiselect')!)
+    return container
+  }
+
+  it('shows the Premium meta line on the single default-model row', () => {
+    openWithoutAllowEmpty()
+
+    const rows = screen
+      .getAllByTestId('llm-option-row')
+      .filter((row) => row.textContent?.includes(DEFAULT_PREMIUM_LABEL))
+
+    expect(rows).toHaveLength(1)
+    expect(rows[0].querySelector('[data-testid="llm-option-meta"]')?.textContent).toBe('Premium')
   })
 })
 

@@ -1,0 +1,21 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: showDefaultRow is now computed once and used to gate both the synthetic default-row ternary and the regular-list filter guard, so the two conditions can never diverge again. The added regression test (default model with value: '') asserts it still renders exactly once; full unit suite (692 files, 6971 passed, 1 skipped) and the 4 touched LLMSelector test files (46/46) confirm no regressions. Fix-up diff is small (shared boolean + comment + one test) with no new security, public-API, or data-loss surface, so no confirmation pass was dispatched.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "AC1 — default model displayed only once", "status": "met", "justification": "options useMemo filters models by defaultLlmModel.value whenever the synthetic default row renders (!allowEmpty, the path VirtualAssistantForm actually uses); LLMSelector.defaultDedup.test.tsx asserts exactly 1 row."},
+    {"criterion": "AC2 — default entry clearly marked as default", "status": "met", "justification": "Synthetic row label is '${defaultOptionLabelPrefix}: ${label}' ('Default: X'); covered by premiumLayout.test.tsx's new describe block."},
+    {"criterion": "AC3 — Premium label on default entry when premium", "status": "met", "justification": "defaultLlmModel.isPremium/isRouter now copied onto the synthetic row; premiumLayout.test.tsx asserts the meta line text is exactly 'Premium'."},
+    {"criterion": "AC4 — other models keep labels, shown once each", "status": "met", "justification": "Only the default model's value is filtered out of models.map; defaultDedup.test.tsx confirms the non-default model renders once with no meta line."},
+    {"criterion": "AC5 — search does not return duplicates", "status": "met", "justification": "One DOM row per model means PrimeReact's built-in label filter can only match once; defaultDedup.test.tsx's search test confirms exactly 1 match."}
+  ],
+  "standards_review": [
+    {"standard": "Commit message ticket format (git-workflow.md)", "status": "pass", "notes": "Commit 6a023ea07 is prefixed 'EPMCDME-15923: ...'."},
+    {"standard": "Security patterns (security-patterns.md)", "status": "pass", "notes": "No HTML sinks, redirects, secrets, or cross-window messaging touched by the fix-up."}
+  ],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "showDefaultRow shared boolean (LLMSelector.tsx:183) gates both the synthetic-row ternary and the filter guard identically; regression test added and passing."}
+  ],
+  "findings": []
+}
