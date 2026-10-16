@@ -130,4 +130,34 @@ describe('useProjectsFilters', () => {
     const { result } = renderHook(() => useProjectsFilters())
     expect(result.current.budgetAssignmentFilter).toBe('all')
   })
+
+  it('restores sort from localStorage', () => {
+    Object.assign(filterStore, { sort_by: 'name', sort_order: 'desc' })
+    const { result } = renderHook(() => useProjectsFilters())
+    expect(result.current.sort).toEqual({ sortKey: 'name', sortOrder: 'desc' })
+  })
+
+  it('ignores a stored sort with an unknown order', () => {
+    Object.assign(filterStore, { sort_by: 'name', sort_order: 'sideways' })
+    const { result } = renderHook(() => useProjectsFilters())
+    expect(result.current.sort).toEqual({})
+  })
+
+  it('persists sort change to localStorage', () => {
+    const { result } = renderHook(() => useProjectsFilters())
+    act(() => {
+      result.current.setSort({ sortKey: 'name', sortOrder: 'asc' })
+    })
+    expect(result.current.sort).toEqual({ sortKey: 'name', sortOrder: 'asc' })
+    expect(filterStore).toEqual({ sort_by: 'name', sort_order: 'asc' })
+  })
+
+  it('resetting the sort removes it from localStorage', () => {
+    Object.assign(filterStore, { search: 'foo', sort_by: 'name', sort_order: 'asc' })
+    const { result } = renderHook(() => useProjectsFilters())
+    act(() => {
+      result.current.setSort({})
+    })
+    expect(filterStore).toEqual({ search: 'foo' })
+  })
 })

@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 
-import { debounce } from 'lodash'
 import { FC, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
@@ -32,11 +31,12 @@ import type { AnalyticsQueryParams } from '@/types/analytics'
 import AnalyticsUserFilter from './AnalyticsUserFilter'
 import { DEFAULT_FILTERS, MIN_USER_SEARCH_LENGTH, TIME_PERIOD_OPTIONS } from '../constants'
 
+import type { FilterChangeOptions } from '../hooks/useAnalyticsFilters'
 import type { DropdownChangeEvent } from 'primereact/dropdown'
 
 interface AnalyticsFiltersProps {
   filters: AnalyticsQueryParams
-  onFiltersChange: (filters: AnalyticsQueryParams) => void
+  onFiltersChange: (filters: AnalyticsQueryParams, options?: FilterChangeOptions) => void
   /** Seed options for the user filter — keeps pre-selected users visible on
    *  initial load even before the async options list is fetched. */
   initialUserOptions?: Array<{ label: string; value: string }>
@@ -75,31 +75,15 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
     currentUserRef.current = user
   }, [user])
 
-  const debouncedFiltersChange = useMemo(
-    () =>
-      debounce(
-        (newFilters: AnalyticsQueryParams) => {
-          onFiltersChangeRef.current(newFilters)
-        },
-        2000,
-        { leading: true, trailing: true }
-      ),
-    []
-  )
-
   useEffect(() => {
     setLocalFilters(filters)
   }, [filters])
 
-  useEffect(() => {
-    return () => {
-      debouncedFiltersChange.cancel()
-    }
-  }, [debouncedFiltersChange])
-
+  // Every change is reported at once so it is saved to URL + storage before the user can leave;
+  // the parent defers only the dashboard refetch.
   const updateFilters = (newFilters: AnalyticsQueryParams) => {
     setLocalFilters(newFilters)
-    debouncedFiltersChange(newFilters)
+    onFiltersChangeRef.current(newFilters)
   }
 
   const userListFilters = useMemo(() => {
@@ -214,14 +198,9 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
   }
 
   const handleClearFilters = () => {
-    // Clearing is a discrete, deliberate action, so it bypasses the 2s debounce that
-    // exists to throttle the date pickers and rapid dropdown changes. Cancelling first
-    // drops any trailing call still pending from the change that revealed this button —
-    // otherwise unmounting within the window would cancel the clear and leave the old
-    // filters in the URL and localStorage.
-    debouncedFiltersChange.cancel()
+    // Clearing is a discrete, deliberate action, so the dashboard refetches at once.
     setLocalFilters(DEFAULT_FILTERS)
-    onFiltersChangeRef.current(DEFAULT_FILTERS)
+    onFiltersChangeRef.current(DEFAULT_FILTERS, { immediate: true })
   }
 
   const hasNonDefaultFilters = useMemo(() => {

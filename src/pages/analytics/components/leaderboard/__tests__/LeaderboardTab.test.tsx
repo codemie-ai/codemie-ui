@@ -13,10 +13,30 @@
 // limitations under the License.
 //
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { act, render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import LeaderboardTab from '../LeaderboardTab'
+
+const { mockUserStore, captured } = vi.hoisted(() => ({
+  mockUserStore: { user: { userId: 'user-1' } as { userId: string } | null },
+  captured: {
+    onFiltersChange: null as null | ((patch: Record<string, unknown>) => void),
+    onSort: null as null | ((key: string) => void),
+  },
+}))
+
+vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
+// Real storage (setupTests.unit mocks it) so the filters survive a remount.
+vi.mock('@/utils/storage', async (importOriginal) => importOriginal())
+vi.mock('../useLeaderboardSeasons', () => ({
+  useLeaderboardSeasons: () => ({
+    seasonKey: null,
+    seasons: [],
+    seasonsLoading: false,
+    setSeasonKey: vi.fn(),
+  }),
+}))
 
 const mockSetSelectedUserId = vi.fn()
 
@@ -36,7 +56,10 @@ vi.mock('react', async () => {
 })
 
 vi.mock('../LeaderboardFilters', () => ({
-  default: () => <div data-testid="leaderboard-filters" />,
+  default: ({ filters, onChange }: any) => {
+    captured.onFiltersChange = onChange
+    return <div data-testid="leaderboard-filters" data-filters={JSON.stringify(filters)} />
+  },
 }))
 
 vi.mock('../LeaderboardFrameworkDimensions', () => ({
@@ -67,10 +90,16 @@ vi.mock('../../widgets/MetricsWidget', () => ({
 
 // Mock TableWidget to expose row data via rendered buttons
 vi.mock('../../widgets/TableWidget', () => ({
-  default: ({ customRenderColumns }: any) => {
+  default: ({ customRenderColumns, filters, sort, onSort, actions }: any) => {
     const renderUserName = customRenderColumns?.user_name
+    if (onSort) captured.onSort = onSort
     return (
-      <div data-testid="table-widget">
+      <div
+        data-testid="table-widget"
+        data-filters={JSON.stringify(filters ?? null)}
+        data-sort={JSON.stringify(sort ?? null)}
+      >
+        {actions}
         {renderUserName && (
           <div data-testid="rendered-rows">
             {/* Row with user_id string */}
@@ -137,5 +166,76 @@ describe('LeaderboardTab - handleRowClick', () => {
     fireEvent.click(charlieButton!)
 
     expect(mockSetSelectedUserId).not.toHaveBeenCalled()
+  })
+})
+
+describe('LeaderboardTab - filters persist across remount (EPMCDME-16054)', () => {
+  const tableWidget = () =>
+    screen.getAllByTestId('table-widget').find((el) => el.getAttribute('data-filters') !== 'null')!
+  const tableFilters = () => JSON.parse(tableWidget().getAttribute('data-filters')!)
+  const controlFilters = () =>
+    JSON.parse(screen.getByTestId('leaderboard-filters').getAttribute('data-filters')!)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockUserStore.user = { userId: 'user-1' }
+  })
+
+  it('restores tier, search and sort after unmount and remount', () => {
+    const { unmount } = render(<LeaderboardTab />)
+    act(() => captured.onFiltersChange!({ tier: 'gold', search: 'ann' }))
+    act(() => captured.onSort!('tier_name'))
+    unmount()
+
+    render(<LeaderboardTab />)
+
+    expect(controlFilters()).toEqual(expect.objectContaining({ tier: 'gold', search: 'ann' }))
+    expect(JSON.parse(tableWidget().getAttribute('data-sort')!)).toEqual({
+      sortKey: 'tier_name',
+      sortOrder: 'desc',
+    })
+    expect(tableFilters()).toEqual(
+      expect.objectContaining({
+        tier: 'gold',
+        search: 'ann',
+        sort_by: 'tier_level',
+        sort_order: 'desc',
+      })
+    )
+  })
+
+  it('keeps a cleared filter cleared after remount', () => {
+    const { unmount } = render(<LeaderboardTab />)
+    act(() => captured.onFiltersChange!({ tier: 'gold' }))
+    act(() => captured.onFiltersChange!({ tier: undefined }))
+    unmount()
+
+    render(<LeaderboardTab />)
+
+    expect(tableFilters()).not.toHaveProperty('tier')
+  })
+
+  it('keeps a reset sort reset after remount instead of restoring the default', () => {
+    const { unmount } = render(<LeaderboardTab />)
+    // Default is total_score desc: one click flips it to asc, the next clears it.
+    act(() => captured.onSort!('total_score'))
+    act(() => captured.onSort!('total_score'))
+    expect(tableFilters()).not.toHaveProperty('sort_by')
+    unmount()
+
+    render(<LeaderboardTab />)
+
+    expect(tableFilters()).not.toHaveProperty('sort_by')
+    expect(tableFilters()).not.toHaveProperty('sort_order')
+  })
+
+  it('never writes Leaderboard filters to the URL', () => {
+    const before = window.location.search
+    render(<LeaderboardTab />)
+    act(() => captured.onFiltersChange!({ tier: 'gold', search: 'ann' }))
+    act(() => captured.onSort!('tier_name'))
+
+    expect(window.location.search).toBe(before)
   })
 })

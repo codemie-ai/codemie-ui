@@ -13,12 +13,17 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { userStore } from '@/store'
-import { AnalyticsDashboard as AnalyticsDashboardType } from '@/types/analytics'
+import { userStore as realUserStore } from '@/store/user'
+import {
+  AnalyticsDashboard as AnalyticsDashboardType,
+  type AnalyticsQueryParams,
+  TimePeriod,
+} from '@/types/analytics'
 
 import AnalyticsPage from '../AnalyticsPage'
 
@@ -64,30 +69,49 @@ vi.mock('@/store/analytics', () => ({
   },
 }))
 
-const { mockUseAnalyticsFilters } = vi.hoisted(() => ({
-  mockUseAnalyticsFilters: vi.fn(() => ({
+const { mockUseAnalyticsFilters, realHook, filtersProps } = vi.hoisted(() => ({
+  mockUseAnalyticsFilters: vi.fn((): { filters: object; handleFilterChange: unknown } => ({
     filters: {},
     handleFilterChange: vi.fn(),
   })),
+  realHook: { current: null as null | (() => { filters: object; handleFilterChange: unknown }) },
+  filtersProps: {
+    onFiltersChange: null as null | ((f: Record<string, unknown>) => void),
+  },
 }))
 
-vi.mock('../hooks/useAnalyticsFilters', () => ({
-  useAnalyticsFilters: mockUseAnalyticsFilters,
-}))
+vi.mock('../hooks/useAnalyticsFilters', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../hooks/useAnalyticsFilters')>()
+  realHook.current = actual.useAnalyticsFilters
+  return { useAnalyticsFilters: mockUseAnalyticsFilters }
+})
+
+// Real storage (setupTests.unit mocks it) so persistence survives a remount.
+vi.mock('@/utils/storage', async (importOriginal) => importOriginal())
 
 vi.mock('../components/AnalyticsDashboard', () => ({
-  default: ({ activeTab, isCliAnalyticsEnabled, isLeaderboardEnabled }) => (
+  default: ({ activeTab, isCliAnalyticsEnabled, isLeaderboardEnabled, filters }) => (
     <div
       data-testid="analytics-dashboard"
       data-active-tab={activeTab}
       data-cli-analytics-enabled={isCliAnalyticsEnabled}
       data-leaderboard-enabled={isLeaderboardEnabled}
+      data-filters={JSON.stringify(filters ?? {})}
     />
   ),
 }))
 
 vi.mock('../components/AnalyticsFilters', () => ({
-  default: () => <div data-testid="analytics-filters" />,
+  default: ({ filters, onFiltersChange, initialUserOptions }) => {
+    filtersProps.onFiltersChange = onFiltersChange
+    return (
+      <div data-testid="analytics-filters" data-filters={JSON.stringify(filters ?? {})}>
+        {(initialUserOptions ?? []).map((o: { label: string; value: string }) => (
+          <span key={o.value}>{o.label}</span>
+        ))}
+      </div>
+    )
+  },
 }))
 
 vi.mock('../components/DashboardListForm/DashboardListForm', () => ({
@@ -364,7 +388,7 @@ describe('AnalyticsPage - seed user fetch guard', () => {
     mockUserStore.getAnalyticsUsers.mockResolvedValue([])
   })
 
-  it('does NOT call getAnalyticsUsers when users param is present but projects param is absent', async () => {
+  it('calls getAnalyticsUsers unscoped when users are present without projects', async () => {
     mockUseAnalyticsFilters.mockReturnValue({
       filters: { users: ['user-abc'] },
       handleFilterChange: vi.fn(),
@@ -372,10 +396,7 @@ describe('AnalyticsPage - seed user fetch guard', () => {
 
     render(<AnalyticsPage />)
 
-    // Wait a tick for any pending microtasks
-    await vi.waitFor(() => Promise.resolve())
-
-    expect(mockUserStore.getAnalyticsUsers).not.toHaveBeenCalled()
+    await waitFor(() => expect(mockUserStore.getAnalyticsUsers).toHaveBeenCalledWith({}))
   })
 
   it('calls getAnalyticsUsers scoped to the project when both users and projects are present', async () => {
@@ -391,5 +412,99 @@ describe('AnalyticsPage - seed user fetch guard', () => {
     expect(mockUserStore.getAnalyticsUsers).toHaveBeenCalledWith(
       expect.objectContaining({ projects: ['project-x'] })
     )
+  })
+})
+
+describe('AnalyticsPage - filters persist across remount (EPMCDME-16054)', () => {
+  const STORAGE_KEY = 'user-1_filters_analytics'
+  const readProp = (testId: string): AnalyticsQueryParams =>
+    JSON.parse(screen.getByTestId(testId).getAttribute('data-filters')!)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockSearchParams.get.mockReturnValue(null)
+    mockUserStore.getAnalyticsUsers.mockResolvedValue([])
+    realUserStore.user = { userId: 'user-1', isAdmin: true } as typeof realUserStore.user
+    mockUseAnalyticsFilters.mockImplementation(() => realHook.current!())
+  })
+
+  it('restores stored users without projects and shows their labels', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ users: ['u1'] }))
+    mockUserStore.getAnalyticsUsers.mockResolvedValue([
+      { label: 'User One', value: 'u1' },
+      { label: 'Other', value: 'u2' },
+    ])
+
+    render(<AnalyticsPage />)
+
+    await waitFor(() => expect(mockUserStore.getAnalyticsUsers).toHaveBeenCalledWith({}))
+    expect(await screen.findByText('User One')).toBeInTheDocument()
+    expect(screen.queryByText('Other')).not.toBeInTheDocument()
+  })
+
+  it('keeps the chosen time period and project after unmount and remount', async () => {
+    const { unmount } = render(<AnalyticsPage />)
+    act(() =>
+      filtersProps.onFiltersChange!({ time_period: TimePeriod.LAST_7_DAYS, projects: ['p1'] })
+    )
+    unmount()
+
+    const expected = { time_period: TimePeriod.LAST_7_DAYS, projects: ['p1'] }
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(expected)
+
+    render(<AnalyticsPage />)
+
+    expect(readProp('analytics-filters')).toEqual(expected)
+    expect(readProp('analytics-dashboard')).toEqual(expected)
+  })
+
+  it('keeps cleared filters cleared after unmount and remount', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ time_period: TimePeriod.LAST_7_DAYS, projects: ['p1'], users: ['u1'] })
+    )
+    const { unmount } = render(<AnalyticsPage />)
+    act(() => filtersProps.onFiltersChange!({}))
+    unmount()
+
+    render(<AnalyticsPage />)
+
+    expect(readProp('analytics-filters')).toEqual({})
+    expect(readProp('analytics-dashboard')).toEqual({})
+  })
+
+  describe('deferred dashboard refetch', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('shows a change in the filter bar at once and applies rapid changes to the dashboard once, after 1000 ms', () => {
+      render(<AnalyticsPage />)
+      const dashboardBefore = screen.getByTestId('analytics-dashboard').getAttribute('data-filters')
+
+      act(() => filtersProps.onFiltersChange!({ projects: ['p1'] }))
+      act(() => {
+        vi.advanceTimersByTime(500)
+      })
+      act(() => filtersProps.onFiltersChange!({ projects: ['p1', 'p2'] }))
+
+      expect(readProp('analytics-filters')).toEqual({ projects: ['p1', 'p2'] })
+      act(() => {
+        vi.advanceTimersByTime(999)
+      })
+      expect(screen.getByTestId('analytics-dashboard').getAttribute('data-filters')).toBe(
+        dashboardBefore
+      )
+
+      act(() => {
+        vi.advanceTimersByTime(1)
+      })
+      expect(readProp('analytics-dashboard')).toEqual({ projects: ['p1', 'p2'] })
+    })
   })
 })

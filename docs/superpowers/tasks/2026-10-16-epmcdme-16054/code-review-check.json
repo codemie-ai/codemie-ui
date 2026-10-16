@@ -1,0 +1,80 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted check of the 3 prior blocking findings: CR-001 is resolved by the recorded human decision, and the current source implements it (immediate URL + storage writes, a 1000 ms refetch debounce, no unmount flush). CR-002 is superseded because the unmount flush and pendingFiltersRef it tested were removed. CR-003 is resolved by new cleared-budget remount tests. business_review and standards_review are carried forward unchanged, and the AC1 Projects filter reproduction is still pending Stage 7; no brief or verdict write failed.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Analytics filter bar: change within the 2 s debounce window before leaving is kept", "status": "pass", "notes": "pendingFiltersRef flushed in unmount cleanup; AnalyticsFilters flush test" },
+    { "kind": "spec", "item": "Pending Analytics value on unmount written to localStorage only, never the URL", "status": "pass", "notes": "cleanup uses storage.put; test asserts replace/push not called" },
+    { "kind": "spec", "item": "Restored users render with labels whether or not projects is restored", "status": "pass", "notes": "seed guard no longer requires projects; AnalyticsPage test" },
+    { "kind": "spec", "item": "Leaderboard filter state incl. sort restored on mount and saved on every change", "status": "pass", "notes": "useLeaderboardFilters lazy-init + persist effect; hook and remount tests" },
+    { "kind": "spec", "item": "Leaderboard saved to localStorage only under FILTER_ENTITY.ANALYTICS_LEADERBOARD", "status": "pass", "notes": "new enum value; storage-only hook; URL test" },
+    { "kind": "spec", "item": "With nothing stored, Leaderboard keeps default total_score desc", "status": "pass", "notes": "hook returns defaults when storage empty" },
+    { "kind": "spec", "item": "Projects sort saved/restored in FILTER_ENTITY.PROJECTS via URL + storage, replacing local useState({})", "status": "pass", "notes": "sort_by/sort_order in PROJECT_FILTER_KEYS.simple; local state removed" },
+    { "kind": "spec", "item": "Projects filter reset: reproduce in browser first; fix root cause or halt and report to reporter", "status": "pending-stage-7", "notes": "no guessed fix in diff; browser reproduction owed by Stage 7" },
+    { "kind": "spec", "item": "Clearing a filter or returning sort to default is saved and not restored, on every in-scope control", "status": "pass", "notes": "stored object used as-is; cleared search/sort/tier/analytics tests" },
+    { "kind": "story-ac", "item": "AC1: Projects search and budget filters restored on return, or work halted pending reporter input", "status": "pending-stage-7", "notes": "restore tests exist; browser reproduction result still owed" },
+    { "kind": "story-ac", "item": "AC2: Projects sort applied before leaving is restored on return", "status": "pass", "notes": "remount test asserts table sort and indexProjects args" },
+    { "kind": "story-ac", "item": "AC3: Analytics filter bar values restored on return, incl. change < 2 s before leaving", "status": "pass", "notes": "unmount flush + remount test; Back-button return path open as CR-001" },
+    { "kind": "story-ac", "item": "AC4: Leaderboard tier, project, search, intent, CLI-only and sort restored on return", "status": "pass", "notes": "PERSISTED_KEYS covers all seven; hook and tab remount tests" },
+    { "kind": "story-ac", "item": "AC5: every restored value visible in its control, incl. Analytics user labels", "status": "pass", "notes": "asserted in tests; visual confirmation is Stage 7" },
+    { "kind": "story-ac", "item": "AC6: request on return uses restored values", "status": "pass", "notes": "indexProjects, TableWidget and dashboard filter args asserted after remount" },
+    { "kind": "story-ac", "item": "AC7: cleared filter or reset sort stays cleared on return, every screen", "status": "pass", "notes": "Projects search/sort, Leaderboard tier/sort, Analytics cleared tests" },
+    { "kind": "story-ac", "item": "AC8: saving a pending Analytics change on unmount does not change the destination URL", "status": "pass", "notes": "storage-only write; replace/push not called" },
+    { "kind": "story-ac", "item": "AC9: tests cover unmount/remount of each screen asserting control value, request params and cleared values", "status": "partial", "notes": "no cleared Projects budget remount test (CR-003); Clear all + unmount flush untested (CR-002)" },
+    { "kind": "spec", "item": "Non-goal: no persistence for Analytics top-N, CLI toggle, Leaderboard view/season", "status": "pass", "notes": "pick() excludes view/season_key/snapshot_id/page" },
+    { "kind": "spec", "item": "Non-goal: no change to filter behaviour on other list pages", "status": "pass", "notes": "only Analytics/Projects files plus additive enum" },
+    { "kind": "spec", "item": "Non-goal: no change to URL-over-storage priority, key format or stored-filter lifetime", "status": "pass", "notes": "getFilters/setFilters untouched" },
+    { "kind": "spec", "item": "Non-goal: Leaderboard filters not reflected in the URL", "status": "pass", "notes": "storage-only hook" },
+    { "kind": "spec", "item": "Non-goal: no Projects filter fix guessed without a reproduction", "status": "pass", "notes": "useProjectsFilters changes limited to sort" },
+    { "kind": "spec", "item": "Non-goal: ProjectsManagementDefault unchanged", "status": "pass", "notes": "not in diff" },
+    { "kind": "spec", "item": "Changes to shared src/utils/filters.ts are additive only", "status": "pass", "notes": "single added enum value" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "all 4 subjects in the range match the git-workflow.md regex EPMCDME-<nonzero>: <Capital sentence>, with no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checklist applied to the 7 changed non-test sources; no sinks, redirects, message listeners, env config or secrets added; persistence stores only filter/sort values per user" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "decision",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/pages/analytics/components/AnalyticsFilters.tsx",
+      "line": 100,
+      "title": "Back navigation restores pre-flush Analytics filters",
+      "problem": "The debounce's leading call writes filter A to the URL and to storage. A trailing change B, made within 2 s of leaving, is flushed on unmount to storage only (by design, AC8). If the user returns with browser Back, the history entry still carries ?A. resolveInitialFilters and the useAnalyticsFilters effect prefer valid URL params, so A is shown, and the effect's storage.put overwrites the flushed B.",
+      "impact": "On a Back-button return, the last change before leaving is silently lost. That is the scenario AC3 targets. A fix needs a change to URL-over-storage priority or to history handling, and the spec lists URL-over-storage priority as a non-goal, so the correct behaviour needs human intent.",
+      "recommendation": "Decide whether a return through browser Back must keep the trailing change. If it must, then one of two changes is needed, and both touch spec non-goals. Either let a storage record newer than the URL win in resolveInitialFilters and the useAnalyticsFilters effect, or record the flushed value in the analytics history entry. If it need not, record that as an accepted limit of AC3 in the spec."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/AnalyticsFilters.tsx",
+      "line": 238,
+      "title": "Clear-all before unmount flush is untested",
+      "problem": "handleClearFilters sets pendingFiltersRef.current = null so the new unmount flush cannot write a stale pending change over a clear. No test clicks 'Clear all': the AnalyticsFilters flush tests cover only a pending trailing change and a single leading change. The AnalyticsPage 'keeps cleared filters cleared' test mocks AnalyticsFilters and calls onFiltersChange({}) directly, so it never exercises the real debounce plus flush path. Gap shape: regression-gap, so AC9 is only partially met.",
+      "impact": "If the reset line is dropped, the sequence change, change, Clear all, navigate away restores the old filters on return. That is the regression the ticket targets (AC7), and no test would fail. The consumer is useAnalyticsFilters.resolveInitialFilters, which reads the stored filters back on remount.",
+      "recommendation": "In AnalyticsFilters.test.tsx, under the 'flush pending change on unmount (EPMCDME-16054)' describe, add a test that: makes two project changes inside the debounce window, clicks 'Clear all', unmounts and advances timers. Assert that localStorage 'user-1_filters_analytics' does not hold the pending projects and that onFiltersChange was last called with DEFAULT_FILTERS. Optionally add an AnalyticsPage remount case that drives the real AnalyticsFilters rather than calling onFiltersChange({}) directly."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/__tests__/ProjectsManagementFull.persistence.test.tsx",
+      "title": "No remount test for cleared budget filter",
+      "problem": "AC9 requires unmount/remount tests that assert cleared values on each screen. For budget filters, the Projects persistence suite only has 'restores budget assignment and category into the first request'. It has no case where a cleared budget assignment or category stays cleared after a remount; only cleared search and reset sort are covered.",
+      "impact": "A story acceptance criterion ships only partially met. A regression that restores a cleared budget filter on return (AC7) would go undetected.",
+      "recommendation": "Add an unmount/remount test for each budget filter (assignment, category): store a value, clear it, then remount. Assert that the control shows no value and that indexProjects is called without the budget param. Model it on 'keeps a cleared search cleared after unmount and remount'."
+    }
+  ],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "fix_evidence decision recorded with rationale (immediate URL+storage save, 1000 ms refetch debounce, flush removed); source matches" },
+    { "id": "CR-002", "status": "superseded", "notes": "unmount flush and pendingFiltersRef removed; Clear all now writes URL+storage synchronously with immediate apply" },
+    { "id": "CR-003", "status": "resolved", "notes": "it.each remount test for cleared budget-assignment and budget-category asserts control value and indexProjects args" }
+  ]
+}

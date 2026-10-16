@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "task": "Fix filters resetting after navigate-away-and-back on the Projects list and Analytics screens so applied filters persist, render in the controls and drive results, while cleared filters stay cleared (EPMCDME-16054).",
+  "generated": "2026-10-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 17,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Ticket AC are clear on outcome, but the Projects root cause was not found by static reading and needs browser reproduction; scope is ambiguous on whether Leaderboard tab filters, top-N selectors and Projects sort count as 'filters', and which Projects list screen is meant (only the user-management-gated admin list has filters)." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is the existing URL + localStorage persistence in utils/filters (EPMCDME-12703, EPMCDME-15058), so the fix adapts an existing mechanism (base M). Bumped to L: AC enumerate variant cases (restore on both screens, control display, results match, clear not restored) and no existing test template covers unmount/remount or the debounce-cancel-on-unmount window; flushing the AnalyticsFilters debounce on unmount risks a URL replace() rewriting the next route's query; any change to the shared filters util has blast radius across all list pages." },
+    { "dimension": "component_scope", "reason": "useProjectsFilters + ProjectsManagementFull and useAnalyticsFilters + AnalyticsFilters (possibly LeaderboardTab), with the shared filters util as a possible touch point; two screens, one tier. Scored M, matching the bundled M calibration example (epmcdme-10203, 3 components / moderate file count)." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: AC enumerate specific edge/variant cases (clear-not-restored, control display after remount) with no existing remount or debounce-window test template"
+  ],
+  "split_recommendation": null
+}

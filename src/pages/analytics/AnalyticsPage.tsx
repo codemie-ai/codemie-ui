@@ -36,7 +36,7 @@ import {
 import AnalyticsDashboard from './components/AnalyticsDashboard'
 import AnalyticsFilters from './components/AnalyticsFilters'
 import DashboardListForm from './components/DashboardListForm/DashboardListForm'
-import { useAnalyticsFilters } from './hooks/useAnalyticsFilters'
+import { type FilterChangeOptions, useAnalyticsFilters } from './hooks/useAnalyticsFilters'
 
 const AnalyticsPage: FC = () => {
   const router = useVueRouter()
@@ -52,12 +52,12 @@ const AnalyticsPage: FC = () => {
   const isCliAnalyticsEnabled = (isAdmin || isProjectAdmin) && isCliAnalyticsConfigEnabled
 
   const [searchParams, setSearchParams] = useSearchParams()
-  const { filters, handleFilterChange } = useAnalyticsFilters()
+  const { filters, selectedFilters, handleFilterChange } = useAnalyticsFilters()
   const [showDashboardList, setShowDashboardList] = useState(false)
   const [dashboardsLoaded, setDashboardsLoaded] = useState(false)
 
   // Seed user options for pre-selected users arriving via URL (e.g. from the
-  // "View analytics" button in ProjectMembersManager).  Fetched once on mount
+  // "View analytics" button in ProjectMembersManager) or restored from storage.  Fetched once on mount
   // so the selected chip renders with a label even before the main filter load.
   const [seedUserOptions, setSeedUserOptions] = useState<Array<{ label: string; value: string }>>(
     []
@@ -82,12 +82,12 @@ const AnalyticsPage: FC = () => {
   }, [])
 
   useEffect(() => {
-    if (seedFetchedRef.current || !filters.users?.length || !filters.projects?.length) return
+    if (seedFetchedRef.current || !filters.users?.length) return
     seedFetchedRef.current = true
-    // Fetch user options scoped to the pre-selected project (broadest scope so
-    // the user appears even with no activity in the current period).
+    // Fetch user options with the broadest scope (the pre-selected projects, if any, and no
+    // time window) so the user appears even with no activity in the current period.
     userStore
-      .getAnalyticsUsers({ projects: filters.projects })
+      .getAnalyticsUsers(filters.projects?.length ? { projects: filters.projects } : {})
       .then((options) => {
         const preselected = new Set(filters.users ?? [])
         setSeedUserOptions(
@@ -118,8 +118,8 @@ const AnalyticsPage: FC = () => {
     isLeaderboardEnabled,
   ])
 
-  const handleFiltersChange = (newFilters: AnalyticsQueryParams) => {
-    handleFilterChange(newFilters)
+  const handleFiltersChange = (newFilters: AnalyticsQueryParams, options?: FilterChangeOptions) => {
+    handleFilterChange(newFilters, options)
   }
 
   const handleManageDashboards = () => {
@@ -157,7 +157,7 @@ const AnalyticsPage: FC = () => {
       {!isLeaderboardTab && (
         <Sidebar title="Analytics" description="Monitor usage metrics and performance">
           <AnalyticsFilters
-            filters={filters}
+            filters={selectedFilters}
             onFiltersChange={handleFiltersChange}
             initialUserOptions={seedUserOptions}
           />

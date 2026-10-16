@@ -14,7 +14,7 @@
 //
 
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { TimePeriod } from '@/types/analytics'
 
@@ -148,7 +148,7 @@ describe('useAnalyticsFilters', () => {
     expect(mockSetFilters).toHaveBeenCalledWith('analytics', {
       time_period: TimePeriod.LAST_7_DAYS,
     })
-    expect(result.current.filters.time_period).toBe(TimePeriod.LAST_7_DAYS)
+    expect(result.current.selectedFilters.time_period).toBe(TimePeriod.LAST_7_DAYS)
   })
 
   it('handleFilterChange with all-empty values writes DEFAULT_FILTERS', async () => {
@@ -245,5 +245,87 @@ describe('useAnalyticsFilters', () => {
       time_period: TimePeriod.LAST_7_DAYS,
     })
     expect(result.current.filters.time_period).toBe(TimePeriod.LAST_7_DAYS)
+  })
+})
+
+describe('useAnalyticsFilters - deferred refetch (EPMCDME-16054)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    mockSetFilters.mockClear()
+    mockStoragePut.mockClear()
+    mockGetFiltersFromUrl.mockReturnValue({})
+    mockGetFilters.mockReturnValue({})
+    mockUserStore.user = { userId: 'u1' }
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('saves and shows a change at once and applies it to the request filters after 1000 ms', () => {
+    const { result } = renderHook(() => useAnalyticsFilters())
+    mockSetFilters.mockClear()
+
+    act(() => {
+      result.current.handleFilterChange({ projects: ['p1'] })
+    })
+
+    expect(mockSetFilters).toHaveBeenCalledWith('analytics', { projects: ['p1'] })
+    expect(result.current.selectedFilters.projects).toEqual(['p1'])
+    expect(result.current.filters.projects).toBeUndefined()
+
+    act(() => {
+      vi.advanceTimersByTime(999)
+    })
+    expect(result.current.filters.projects).toBeUndefined()
+
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+    expect(result.current.filters.projects).toEqual(['p1'])
+  })
+
+  it('applies rapid successive changes once, with the last value', () => {
+    const applied = new Set<unknown>()
+    const { result } = renderHook(() => {
+      const hook = useAnalyticsFilters()
+      applied.add(hook.filters)
+      return hook
+    })
+    expect(applied.size).toBe(1)
+
+    act(() => {
+      result.current.handleFilterChange({ projects: ['p1'] })
+    })
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+    act(() => {
+      result.current.handleFilterChange({ projects: ['p1', 'p2'] })
+    })
+    act(() => {
+      vi.advanceTimersByTime(999)
+    })
+    expect(applied.size).toBe(1)
+
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+    expect(applied.size).toBe(2)
+    expect(result.current.filters.projects).toEqual(['p1', 'p2'])
+  })
+
+  it('applies an immediate change (Clear all) without waiting', () => {
+    mockGetFilters.mockReturnValue({ projects: ['p1'] })
+    const { result } = renderHook(() => useAnalyticsFilters())
+    expect(result.current.filters.projects).toEqual(['p1'])
+
+    act(() => {
+      result.current.handleFilterChange(DEFAULT_FILTERS, { immediate: true })
+    })
+
+    expect(mockSetFilters).toHaveBeenLastCalledWith('analytics', DEFAULT_FILTERS)
+    expect(result.current.filters.projects).toBeUndefined()
+    expect(result.current.selectedFilters.projects).toBeUndefined()
   })
 })

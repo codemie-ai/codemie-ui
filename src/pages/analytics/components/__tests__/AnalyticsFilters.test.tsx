@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest'
 
 import { userStore } from '@/store/user'
@@ -22,14 +22,25 @@ import { TimePeriod } from '@/types/analytics'
 import { DEFAULT_FILTERS } from '../../constants'
 import AnalyticsFilters from '../AnalyticsFilters'
 
-const { mockStore } = vi.hoisted(() => ({
+const { mockStore, mockReplace, mockPush } = vi.hoisted(() => ({
+  mockReplace: vi.fn(),
+  mockPush: vi.fn(),
   mockStore: {
-    user: null as { isAdmin: boolean } | null,
+    user: null as { isAdmin: boolean; userId?: string } | null,
     getAnalyticsUsers: vi.fn(),
   },
 }))
 
 vi.mock('@/store/user', () => ({ userStore: mockStore }))
+
+// Real storage (setupTests.unit mocks it) so the unmount flush is observable in localStorage.
+vi.mock('@/utils/storage', async (importOriginal) => importOriginal())
+
+vi.mock('@/hooks/useVueRouter', () => ({
+  replace: mockReplace,
+  push: mockPush,
+  parseSearchParams: vi.fn(() => ({})),
+}))
 
 let capturedProjectsOnChange: ((value: string | string[]) => void) | undefined
 
@@ -355,5 +366,74 @@ describe('AnalyticsFilters - Admin Server-Side Search', () => {
 
     // loadUsers should be called immediately on empty, but it returns early (no API call)
     expect(vi.mocked(userStore.getAnalyticsUsers)).not.toHaveBeenCalled()
+  })
+})
+
+describe('AnalyticsFilters - reports changes at once (EPMCDME-16054)', () => {
+  const mockOnFiltersChange = vi.fn()
+  const STORAGE_KEY = 'user-1_filters_analytics'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockStore.user = { isAdmin: false, userId: 'user-1' }
+    vi.mocked(userStore.getAnalyticsUsers).mockResolvedValue([])
+    capturedProjectsOnChange = undefined
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    localStorage.clear()
+  })
+
+  it('reports every change at once and writes nothing itself on unmount', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+
+    const { unmount } = render(
+      <AnalyticsFilters filters={DEFAULT_FILTERS} onFiltersChange={mockOnFiltersChange} />
+    )
+    await waitFor(() => expect(capturedProjectsOnChange).toBeDefined())
+
+    act(() => capturedProjectsOnChange!(['proj-1']))
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500)
+    })
+    act(() => capturedProjectsOnChange!(['proj-1', 'proj-2']))
+
+    expect(mockOnFiltersChange).toHaveBeenCalledTimes(2)
+    expect(mockOnFiltersChange).toHaveBeenLastCalledWith({
+      ...DEFAULT_FILTERS,
+      projects: ['proj-1', 'proj-2'],
+    })
+
+    unmount()
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(mockOnFiltersChange).toHaveBeenCalledTimes(2)
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('Clear all after changes reports DEFAULT_FILTERS for immediate apply and is not overwritten on unmount', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+
+    const { unmount } = render(
+      <AnalyticsFilters filters={DEFAULT_FILTERS} onFiltersChange={mockOnFiltersChange} />
+    )
+    await waitFor(() => expect(capturedProjectsOnChange).toBeDefined())
+
+    act(() => capturedProjectsOnChange!(['proj-1']))
+    act(() => capturedProjectsOnChange!(['proj-1', 'proj-2']))
+
+    fireEvent.click(screen.getByRole('button', { name: /clear all/i }))
+
+    unmount()
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(mockOnFiltersChange).toHaveBeenLastCalledWith(DEFAULT_FILTERS, { immediate: true })
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(mockReplace).not.toHaveBeenCalled()
+    expect(mockPush).not.toHaveBeenCalled()
   })
 })

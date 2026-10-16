@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16054_persist-filters-on-navigation",
+  "head": "fa240d0fde0a04e087edbf2a654a3678868c93d8",
+  "runner": "npm",
+  "started_at": "2026-10-16T15:00:48Z",
+  "completed_at": "2026-10-16T15:07:11Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19595,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Ran after npm ci (exit 0) per AGENTS.md reinstall rule."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 14683,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 1726,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Skip if met: no dependency added/removed/moved (package.json and package-lock.json are not in the diff). It also ran here and exited 0 with the summary table."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2896,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output quoted: 'no leaks found'. Working tree only. Also enforced by the pre-commit hook and the MR gitleaks-scan."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 136160,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  703 passed (703); Tests  7085 passed | 1 skipped (7086)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 76882,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  49 passed (49); Tests  558 passed | 1 skipped (559)"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 7873,
+      "command": "npm run test-harness",
+      "exit_code": 1,
+      "notes": "Environmental: CODEMIE_API_DOMAIN http://localhost:8080 was unreachable (curl returned 000; the UI on :5173 returned 200). Tests ERRORed after reruns and the session ended with requests.exceptions.ConnectionError. No UI test actually ran, so this is unverified, not a code failure. Start the backend stack and rerun. The guide says never skip it because it is required for MR compliance."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Nothing is staged, so lint-staged has nothing to act on. Its tasks (prettier, eslint --fix, tsc --noEmit, license headers --fix) are covered by the lint, typecheck and license-headers gates."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 362,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2357 files, 0 missing license headers. Not in the guide gate list, but enforced by .husky/pre-commit."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 292,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip, exit 0: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' To run it locally, set SONAR_TOKEN (the hook sources .env.local, which does not exist). Until then CI's Sonar analysis is still owed. The guide lists this as automatic but it never ran."
+    },
+    {
+      "id": "ci-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(external)",
+      "exit_code": null,
+      "notes": ".gitlab-ci.yml only defines no-op/wait-ci-init (pre-ci-guard template), which wait for the external 'ci-pipeline' and 'compliance-report' contexts. Those checks are not defined in this repo and cannot be run locally; only CI can settle them."
+    }
+  ],
+  "failures": {
+    "test-harness": "  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/pluggy/_execution.py\", line 167, in _multicall\n    teardown.throw(exception)\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/_pytest/logging.py\", line 873, in pytest_sessionfinish\n    return (yield)\n            ^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/pluggy/_execution.py\", line 167, in _multicall\n    teardown.throw(exception)\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/_pytest/terminal.py\", line 936, in pytest_sessionfinish\n    result = yield\n             ^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/pluggy/_execution.py\", line 167, in _multicall\n    teardown.throw(exception)\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/codemie_test_harness/results_plugin.py\", line 83, in pytest_sessionfinish\n    return (yield)\n            ^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/pluggy/_execution.py\", line 167, in _multicall\n    teardown.throw(exception)\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/_pytest/warnings.py\", line 119, in pytest_sessionfinish\n    return (yield)\n            ^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/pluggy/_execution.py\", line 147, in _multicall\n    res = hook_impl.function(*args)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/codemie_test_harness/tests/conftest.py\", line 2049, in pytest_sessionfinish\n    client = get_client()\n             ^^^^^^^^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/codemie_test_harness/tests/utils/client_factory.py\", line 16, in get_client\n    return CodeMieClient(\n           ^^^^^^^^^^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/codemie_sdk/client/client.py\", line 85, in __init__\n    self._token = self._local_auth.get_token()\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/codemie_sdk/auth/credentials.py\", line 52, in get_token\n    response = requests.post(\n               ^^^^^^^^^^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/requests/api.py\", line 134, in post\n    return request(\"post\", url, data=data, json=json, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/requests/api.py\", line 71, in request\n    return session.request(method=method, url=url, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/requests/sessions.py\", line 651, in request\n    resp = self.send(prep, **send_kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/requests/sessions.py\", line 784, in send\n    r = adapter.send(request, **kwargs)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/yanaasadchaya/.cache/uv/archive-v0/zuobd_Zu0AOuHsyQ3vMJh/lib/python3.12/site-packages/requests/adapters.py\", line 711, in send\n    raise ConnectionError(err, request=request)\nrequests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+  }
+}

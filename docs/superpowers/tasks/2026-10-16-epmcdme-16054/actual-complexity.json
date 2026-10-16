@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "generated": "2026-10-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 18,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 15,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Three filter hooks (useAnalyticsFilters, useLeaderboardFilters, useProjectsFilters) plus four consumers (AnalyticsPage, AnalyticsFilters, LeaderboardTab, ProjectsManagementFull) across two product areas (analytics, settings/projects administration), and the shared src/utils/filters.ts (new FILTER_ENTITY entries, getFilterStorageKey, per-entity FilterKeys). Base M, bumped to L for touching a core shared utility." },
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 15 files changed (946 insertions, 94 deletions): 7 production files modified, 2 new hooks (useLeaderboardFilters, useProjectsFilters) and 6 test files, in 3+ directory trees (src/pages/analytics, src/pages/settings/administration/projectsManagement, src/utils). 15 files maps to XL under the actual-mode rule." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is the existing getFilters/setFilters URL+localStorage persistence used by other list pages. It does not cover validation of untrusted URL query values, and the new sanitizeUrlFilters / isValidISODate / parseBudgetCategory / parseSort per-field validation is a divergence, so the score was bumped from S to M. The URL-echo vs restore detection (ownWriteRef), debounced apply and effect-loop avoidance add moderate behavioural risk but no performance or rollback concern. Calibration: agrees with the bundled M example epmcdme-10203 (total 15) and stays clearly below the L example epmcdme-10401, which carried a config migration." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: touches core shared utility src/utils/filters.ts",
+    "Technical Risk bumped from S to M: the closest existing filter-persistence pattern lacks the input validation now applied to URL-sourced filter values"
+  ],
+  "split_recommendation": null
+}

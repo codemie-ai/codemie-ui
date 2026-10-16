@@ -190,8 +190,9 @@ const ProjectsManagementFull: FC = () => {
     setSearch,
     setBudgetAssignmentFilter,
     setBudgetCategory,
+    sort,
+    setSort,
   } = useProjectsFilters()
-  const [sort, setSort] = useState<SortState>({})
   const [showModal, setShowModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)

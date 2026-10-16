@@ -39,6 +39,7 @@ import {
   SORT_KEY_TO_API,
 } from './tableConfig'
 import { useLeaderboardSeasons } from './useLeaderboardSeasons'
+import { useLeaderboardFilters } from '../../hooks/useLeaderboardFilters'
 import BarChartWidget from '../widgets/BarChartWidget'
 import DonutChartWidget from '../widgets/DonutChartWidget'
 import MetricsWidget from '../widgets/MetricsWidget'
@@ -57,7 +58,7 @@ const dimensionColorByLabel = (label: string): string =>
 
 const LeaderboardTab: FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
-  const [filters, setFilters] = useState<LeaderboardEntriesParams>(DEFAULT_FILTERS)
+  const [filters, setFilters] = useLeaderboardFilters(DEFAULT_FILTERS)
   const [view, setView] = useState<LeaderboardView>('current')
 
   const { seasonKey, seasons, seasonsLoading, setSeasonKey } = useLeaderboardSeasons(view)

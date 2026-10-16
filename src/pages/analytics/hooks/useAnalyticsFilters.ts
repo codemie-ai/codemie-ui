@@ -14,10 +14,11 @@
 //
 
 import isEqual from 'lodash/isEqual'
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import { useSnapshot } from 'valtio'
 
+import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { userStore } from '@/store/user'
 import { AnalyticsQueryParams, TimePeriod } from '@/types/analytics'
 import {
@@ -84,6 +85,25 @@ const sanitizeUrlFilters = (f: AnalyticsQueryParams): AnalyticsQueryParams => {
  * URL/stored filters instead of briefly fetching with a different set.
  * All writes (URL and localStorage) happen exclusively in the useEffect below.
  */
+/** Delay before a filter-bar change reaches the dashboard requests; matches Filters.tsx search. */
+const APPLY_DELAY_MS = 1000
+
+const toQueryFilters = (state: AnalyticsQueryParams): AnalyticsQueryParams => ({
+  time_period: state.time_period,
+  start_date: state.start_date,
+  end_date: state.end_date,
+  users: state.users?.length ? state.users : undefined,
+  projects: state.projects?.length ? state.projects : undefined,
+})
+
+const keepIfEqual = (next: AnalyticsQueryParams) => (prev: AnalyticsQueryParams) =>
+  isEqual(prev, next) ? prev : next
+
+export interface FilterChangeOptions {
+  /** Apply to the dashboard requests now instead of after the debounce (Clear all). */
+  immediate?: boolean
+}
+
 function resolveInitialFilters(): AnalyticsQueryParams {
   const userId = userStore.user?.userId
   if (!userId) return DEFAULT_FILTERS
@@ -98,7 +118,18 @@ export const useAnalyticsFilters = () => {
   // String dep prevents effect re-firing when React Router re-issues an identical URL string.
   const searchStr = searchParams.toString()
   const { user } = useSnapshot(userStore)
+  // filterState: what the filter bar shows, saved to URL + storage on every change.
+  // appliedState: what the dashboard requests use; trails filterState by APPLY_DELAY_MS.
   const [filterState, setFilterState] = useState<AnalyticsQueryParams>(resolveInitialFilters)
+  const [appliedState, setAppliedState] = useState<AnalyticsQueryParams>(filterState)
+  // The last value this hook wrote itself, so the URL effect can tell its own echo from a restore.
+  const ownWriteRef = useRef<AnalyticsQueryParams | null>(null)
+
+  const applyFilterState = useCallback(
+    () => setAppliedState(keepIfEqual(filterState)),
+    [filterState]
+  )
+  useDebouncedApply(filterState, APPLY_DELAY_MS, applyFilterState)
 
   useEffect(() => {
     if (!user?.userId) return
@@ -131,36 +162,36 @@ export const useAnalyticsFilters = () => {
     }
 
     // Stability guard: skip re-render when derived values equal current state.
-    setFilterState((prev) => (isEqual(prev, resolved) ? prev : resolved))
+    setFilterState(keepIfEqual(resolved))
+    // A restored or externally changed value drives the requests at once; only the echo of
+    // this hook's own write waits for the debounce.
+    if (!isEqual(ownWriteRef.current, resolved)) setAppliedState(keepIfEqual(resolved))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId, searchStr])
 
-  const filters = useMemo(
-    (): AnalyticsQueryParams => ({
-      time_period: filterState.time_period,
-      start_date: filterState.start_date,
-      end_date: filterState.end_date,
-      users: filterState.users?.length ? filterState.users : undefined,
-      projects: filterState.projects?.length ? filterState.projects : undefined,
-    }),
-    [filterState]
+  const filters = useMemo(() => toQueryFilters(appliedState), [appliedState])
+  const selectedFilters = useMemo(() => toQueryFilters(filterState), [filterState])
+
+  const handleFilterChange = useCallback(
+    async (newFilters: AnalyticsQueryParams, options: FilterChangeOptions = {}) => {
+      const cleanFilters = cleanObject(newFilters)
+      const isReset = Object.entries(newFilters).every(([_key, value]) => {
+        if (Array.isArray(value)) return value.length === 0
+        if (typeof value === 'string') return value === ''
+        return value === null || value === undefined
+      })
+      const filtersToApply = isReset ? DEFAULT_FILTERS : cleanFilters
+      try {
+        ownWriteRef.current = filtersToApply
+        setFilters(FILTER_ENTITY.ANALYTICS, filtersToApply)
+        setFilterState(filtersToApply)
+        if (options.immediate) setAppliedState(keepIfEqual(filtersToApply))
+      } catch (error) {
+        console.error('Error applying filters:', error)
+      }
+    },
+    []
   )
 
-  const handleFilterChange = useCallback(async (newFilters: AnalyticsQueryParams) => {
-    const cleanFilters = cleanObject(newFilters)
-    const isReset = Object.entries(newFilters).every(([_key, value]) => {
-      if (Array.isArray(value)) return value.length === 0
-      if (typeof value === 'string') return value === ''
-      return value === null || value === undefined
-    })
-    const filtersToApply = isReset ? DEFAULT_FILTERS : cleanFilters
-    try {
-      setFilters(FILTER_ENTITY.ANALYTICS, filtersToApply)
-      setFilterState(filtersToApply)
-    } catch (error) {
-      console.error('Error applying filters:', error)
-    }
-  }, [])
-
-  return { filters, handleFilterChange }
+  return { filters, selectedFilters, handleFilterChange }
 }

@@ -20,10 +20,11 @@ import {
   BudgetCategoryFilter,
   BUDGET_CATEGORY_OPTIONS,
 } from '@/types/entity/budget'
+import type { SortState } from '@/types/table'
 import { FILTER_ENTITY, FilterKeys, getFilters, setFilters } from '@/utils/filters'
 
 const PROJECT_FILTER_KEYS: FilterKeys = {
-  simple: ['search', 'budget_assignment', 'budget_category'],
+  simple: ['search', 'budget_assignment', 'budget_category', 'sort_by', 'sort_order'],
   boolean: [],
   multiple: [],
 }
@@ -32,6 +33,8 @@ interface StoredProjectFilters {
   search?: string
   budget_assignment?: string
   budget_category?: string
+  sort_by?: string
+  sort_order?: string
 }
 
 const parseBudgetAssignment = (value: unknown): 'all' | 'assigned' =>
@@ -40,12 +43,18 @@ const parseBudgetAssignment = (value: unknown): 'all' | 'assigned' =>
 const parseBudgetCategory = (value: unknown): BudgetCategoryFilter =>
   BUDGET_CATEGORY_OPTIONS.some((o) => o.value === value) ? (value as BudgetCategory) : 'all'
 
+const parseSort = (sortBy: unknown, sortOrder: unknown): SortState =>
+  typeof sortBy === 'string' && sortBy && (sortOrder === 'asc' || sortOrder === 'desc')
+    ? { sortKey: sortBy, sortOrder }
+    : {}
+
 const getInitialFilters = () => {
   const saved = getFilters<StoredProjectFilters>(FILTER_ENTITY.PROJECTS, PROJECT_FILTER_KEYS)
   return {
     search: typeof saved.search === 'string' ? saved.search : '',
     budgetAssignmentFilter: parseBudgetAssignment(saved.budget_assignment),
     budgetCategory: parseBudgetCategory(saved.budget_category),
+    sort: parseSort(saved.sort_by, saved.sort_order),
   }
 }
 
@@ -55,6 +64,7 @@ export const useProjectsFilters = () => {
       search: initialSearch,
       budgetAssignmentFilter: initialAssignment,
       budgetCategory: initialCategory,
+      sort: initialSort,
     },
   ] = useState(getInitialFilters)
 
@@ -63,6 +73,7 @@ export const useProjectsFilters = () => {
     initialAssignment
   )
   const [budgetCategory, setBudgetCategory] = useState<BudgetCategoryFilter>(initialCategory)
+  const [sort, setSort] = useState<SortState>(initialSort)
 
   const isMounted = useRef(false)
 
@@ -75,8 +86,12 @@ export const useProjectsFilters = () => {
     if (search) toStore.search = search
     if (budgetAssignmentFilter === 'assigned') toStore.budget_assignment = budgetAssignmentFilter
     if (budgetCategory !== 'all') toStore.budget_category = budgetCategory
+    if (sort.sortKey && sort.sortOrder) {
+      toStore.sort_by = sort.sortKey
+      toStore.sort_order = sort.sortOrder
+    }
     setFilters(FILTER_ENTITY.PROJECTS, toStore)
-  }, [search, budgetAssignmentFilter, budgetCategory])
+  }, [search, budgetAssignmentFilter, budgetCategory, sort.sortKey, sort.sortOrder])
 
   const handleSetSearch = useCallback((value: string) => setSearch(value), [])
   const handleSetBudgetAssignmentFilter = useCallback(
@@ -92,8 +107,10 @@ export const useProjectsFilters = () => {
     search,
     budgetAssignmentFilter,
     budgetCategory,
+    sort,
     setSearch: handleSetSearch,
     setBudgetAssignmentFilter: handleSetBudgetAssignmentFilter,
     setBudgetCategory: handleSetBudgetCategory,
+    setSort,
   }
 }
