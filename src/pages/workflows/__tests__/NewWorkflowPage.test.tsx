@@ -23,8 +23,6 @@ import toaster from '@/utils/toaster'
 
 import { goBackWorkflows } from '../utils/goBackWorkflows'
 
-vi.mock('@/router', () => ({ router: {} }))
-
 vi.mock('@/hooks/useFeatureFlags', () => ({
   useWorkflowAIEnabled: () => [false],
 }))

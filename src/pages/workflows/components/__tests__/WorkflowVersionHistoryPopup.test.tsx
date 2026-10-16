@@ -20,8 +20,6 @@ import type { WorkflowConfigHistoryItem } from '@/types/entity/workflow'
 
 import WorkflowVersionHistoryPopup from '../WorkflowVersionHistoryPopup'
 
-vi.mock('@/router', () => ({ router: {} }))
-
 const historyFixture: WorkflowConfigHistoryItem[] = [
   {
     date: '2026-08-10T12:00:00+00:00',

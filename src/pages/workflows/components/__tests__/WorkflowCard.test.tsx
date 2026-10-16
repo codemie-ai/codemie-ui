@@ -22,7 +22,6 @@ import WorkflowCard, { Workflow } from '../WorkflowCard'
 // react-syntax-highlighter, which crashes under this environment's ESM/CJS setup).
 // It's only reachable transitively via useVueRouter.tsx; stub it directly so this
 // test's module graph never touches that unrelated chain.
-vi.mock('@/router', () => ({ router: {} }))
 
 vi.mock('../WorkflowActions', () => ({
   default: () => null,

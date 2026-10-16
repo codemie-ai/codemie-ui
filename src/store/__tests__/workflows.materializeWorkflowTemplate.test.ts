@@ -18,8 +18,6 @@ import api from '@/utils/api'
 
 import { workflowsStore } from '../workflows'
 
-vi.mock('@/router', () => ({ router: {} }))
-
 vi.mock('@/utils/api', () => ({
   default: {
     post: vi.fn(),

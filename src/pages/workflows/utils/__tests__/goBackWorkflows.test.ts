@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { history } from '@/hooks/appLevel/useHistoryStack'
 import { goBackFromWorkflowEdit } from '@/pages/workflows/utils/goBackWorkflows'
+
+vi.mock('@/routerInstance', () => ({
+  getRouter: () => ({ state: { matches: [] }, navigate: vi.fn() }),
+}))
 
 describe('goBackFromWorkflowEdit', () => {
   beforeEach(() => {

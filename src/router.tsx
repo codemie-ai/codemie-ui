@@ -104,6 +104,7 @@ import NewWorkflowPage from '@/pages/workflows/NewWorkflowPage'
 import ViewWorkflowTemplatePage from '@/pages/workflows/ViewWorkflowTemplatePage'
 import WorkflowDetailsPage from '@/pages/workflows/WorkflowDetailsPage'
 import WorkflowsListPage from '@/pages/workflows/WorkflowsListPage'
+import { setRouter } from '@/routerInstance'
 
 import App from './App'
 import { FeatureGuard } from './components/FeatureGuard'
@@ -854,5 +855,6 @@ export const routes: RouteObject[] = [
 ]
 
 export const router = createBrowserRouter(routes, { basename: import.meta.env.BASE_URL })
+setRouter(router)
 
 export default router

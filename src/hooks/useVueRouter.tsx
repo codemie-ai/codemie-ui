@@ -23,7 +23,7 @@ import {
   useParams,
 } from 'react-router'
 
-import { router as hashRouter } from '@/router'
+import { getRouter } from '@/routerInstance'
 import { getRootPath } from '@/utils/helpers'
 
 type ParamValue = string | number | boolean | null | undefined
@@ -69,7 +69,7 @@ export const useVueRouter = () => {
 }
 
 export const findRouteObject = (routeId: string): RouteObject => {
-  const routesStack: RouteObject[] = [...hashRouter.routes]
+  const routesStack: RouteObject[] = [...getRouter().routes]
 
   while (routesStack.length > 0) {
     const route = routesStack.pop()!
@@ -81,7 +81,7 @@ export const findRouteObject = (routeId: string): RouteObject => {
 }
 
 export const findParentRouteObject = (childRouteId: string): NonIndexRouteObject => {
-  const routesStack: RouteObject[] = [...hashRouter.routes]
+  const routesStack: RouteObject[] = [...getRouter().routes]
 
   while (routesStack.length > 0) {
     const route = routesStack.pop()!
@@ -157,7 +157,7 @@ const navigate: (newRoute: Parameters<RouterPush>[0], options?: { replace?: bool
   { replace } = {}
 ) => {
   if (typeof newRoute === 'string') {
-    hashRouter.navigate(newRoute, { replace })
+    getRouter().navigate(newRoute, { replace })
     return
   }
 
@@ -165,17 +165,17 @@ const navigate: (newRoute: Parameters<RouterPush>[0], options?: { replace?: bool
 
   // if parameters does not have a route id, then modify current route
   if (!paramsToResolve.name && !paramsToResolve.path) {
-    const currentRoute = hashRouter.state.matches.at(-1)
+    const currentRoute = getRouter().state.matches.at(-1)
     paramsToResolve.name = currentRoute?.route.id
     paramsToResolve.params = currentRoute?.params
     paramsToResolve.query = newRoute.query
   }
 
   const route = resolve(paramsToResolve)
-  hashRouter.navigate({ pathname: route.path, search: route.searchParamsString }, { replace })
+  getRouter().navigate({ pathname: route.path, search: route.searchParamsString }, { replace })
 }
 
-const back = () => hashRouter.navigate(-1)
+const back = () => getRouter().navigate(-1)
 
 const push: RouterPush = (params) => {
   navigate(params, { replace: false })
@@ -198,7 +198,7 @@ const useReactRouter = (): RouterState => {
     params,
     hash: '',
     name:
-      matchRoutes(hashRouter.routes, hashRouter.state.location.pathname)?.at(-1)?.route.id ?? '',
+      matchRoutes(getRouter().routes, getRouter().state.location.pathname)?.at(-1)?.route.id ?? '',
     ...routerActions,
   }
 
@@ -211,6 +211,6 @@ const useReactRouter = (): RouterState => {
 export const router: RouterActions = routerActions
 
 export const getCurrentLocation = (): { pathname: string; search: string } => {
-  const { pathname, search } = hashRouter.state.location
+  const { pathname, search } = getRouter().state.location
   return { pathname, search: search ?? '' }
 }

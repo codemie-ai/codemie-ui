@@ -38,7 +38,7 @@ const { mockHashRouter } = vi.hoisted(() => ({
   },
 }))
 
-vi.mock('@/router', () => ({ router: mockHashRouter }))
+vi.mock('@/routerInstance', () => ({ getRouter: () => mockHashRouter }))
 
 const mockLoadAssistants = vi.fn()
 vi.mock('@/pages/assistants/hooks/useAssistants', () => ({

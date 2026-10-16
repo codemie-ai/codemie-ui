@@ -21,8 +21,6 @@ import { workflowsStore } from '@/store/workflows'
 import type { Workflow } from '@/types/entity/workflow'
 import toaster from '@/utils/toaster'
 
-vi.mock('@/router', () => ({ router: {} }))
-
 const {
   mockReplaceYamlConfig,
   mockOpenIssuesPanel,

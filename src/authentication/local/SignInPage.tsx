@@ -20,7 +20,7 @@ import { useSnapshot } from 'valtio'
 
 import Button from '@/components/Button'
 import StandaloneLayout from '@/components/Layouts/StandaloneLayout'
-import { routes } from '@/router'
+import { getRouter } from '@/routerInstance'
 import { authStore } from '@/store/auth'
 import { SignInFormData } from '@/types/auth'
 import { consumePostLoginRedirect, sanitizePostLoginRedirect } from '@/utils/postLoginRedirect'
@@ -47,7 +47,7 @@ const SignInPage: React.FC = () => {
       await authStore.login(data)
       const storedReturnUrl = consumePostLoginRedirect()
       const returnUrl = sanitizePostLoginRedirect(searchParams.get('next')) ?? storedReturnUrl
-      if (returnUrl && !matchRoutes(routes, returnUrl)) {
+      if (returnUrl && !matchRoutes(getRouter().routes, returnUrl)) {
         window.location.assign(returnUrl)
       } else {
         navigate(returnUrl ?? '/')

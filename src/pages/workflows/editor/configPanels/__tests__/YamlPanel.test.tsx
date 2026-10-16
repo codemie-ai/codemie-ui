@@ -54,8 +54,6 @@ vi.mock('@/assets/icons/collapse.svg?react', () => ({
   default: () => null,
 }))
 
-vi.mock('@/router', () => ({ router: {} }))
-
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal()
   return {

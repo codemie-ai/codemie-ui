@@ -18,8 +18,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import WorkflowConfigField from '../WorkflowConfigField'
 
-vi.mock('@/router', () => ({ router: {} }))
-
 vi.mock('@/components/AceEditor/AceEditor', () => ({
   default: ({ value, onChange }: { value: string; onChange?: (v: string) => void }) => (
     <textarea data-testid="ace-editor" value={value} onChange={(e) => onChange?.(e.target.value)} />

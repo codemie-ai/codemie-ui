@@ -23,8 +23,6 @@ import WorkflowVisualVersionHistoryPopup, {
   type WorkflowVisualVersionHistoryPopupProps,
 } from '../WorkflowVisualVersionHistoryPopup'
 
-vi.mock('@/router', () => ({ router: {} }))
-
 const VALID_YAML = 'states: []\n'
 
 const historyFixture: WorkflowConfigHistoryItem[] = [

@@ -22,7 +22,6 @@ import AssistantGrid from '../AssistantGrid'
 
 // @/router pulls in the entire page tree (katas → MarkdownEditor → react-syntax-highlighter,
 // which crashes under this environment's ESM/CJS setup). Stub it directly.
-vi.mock('@/router', () => ({ router: {} }))
 
 vi.mock('@/pages/assistants/components/AssistantList/AssistantCard', () => ({
   default: () => <div data-testid="assistant-card" />,

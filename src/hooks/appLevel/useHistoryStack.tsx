@@ -17,7 +17,7 @@ import { useEffect } from 'react'
 import { matchRoutes, useLocation, useParams } from 'react-router'
 import { proxy } from 'valtio'
 
-import { router as hashRouter } from '@/router'
+import { getRouter } from '@/routerInstance'
 
 import { ParamsType, parseSearchParams, QueryType } from '../useVueRouter'
 
@@ -49,7 +49,7 @@ export const useHistoryStack = () => {
   const params = useParams()
 
   useEffect(() => {
-    const currentRoute = matchRoutes(hashRouter.routes, location.pathname)?.at(-1)
+    const currentRoute = matchRoutes(getRouter().routes, location.pathname)?.at(-1)
     if (!currentRoute) return
 
     history.updateStack({

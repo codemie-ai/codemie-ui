@@ -24,7 +24,7 @@ import { matchPath } from 'react-router'
 
 import { history } from '@/hooks/appLevel/useHistoryStack'
 import { router, findRouteObject } from '@/hooks/useVueRouter'
-import { router as hashRouter } from '@/router'
+import { getRouter } from '@/routerInstance'
 import { appInfoStore } from '@/store/appInfo'
 import toaster from '@/utils/toaster'
 
@@ -309,7 +309,7 @@ export const navigateBack = async (...allowedRoutesArgs: AllowedRoute[]): Promis
   )
   const allowedRouteNames = allowedRoutes
     .map((route) => route.name)
-    .filter((name) => name !== hashRouter.state.matches.at(-1)?.route.id)
+    .filter((name) => name !== getRouter().state.matches.at(-1)?.route.id)
 
   const prevRoute = history.stack.findLast((item: any) => allowedRouteNames.includes(item.name))
   if (prevRoute) {
@@ -319,7 +319,7 @@ export const navigateBack = async (...allowedRoutesArgs: AllowedRoute[]): Promis
   }
 
   // If no history found, try to navigate to parent route by path parameters
-  const currentRoute = hashRouter.state.matches.at(-1)
+  const currentRoute = getRouter().state.matches.at(-1)
   const currentParams = currentRoute?.params ?? {}
 
   for (const allowedRouteName of allowedRouteNames.toReversed()) {
@@ -340,7 +340,7 @@ export const navigateBack = async (...allowedRoutesArgs: AllowedRoute[]): Promis
         Object.entries(match.params).every(([key, value]) => currentParams[key] === value)
 
       if (isAncestor && match.pathname && match.pathname !== currentRoute?.pathname) {
-        hashRouter.navigate(match.pathname)
+        getRouter().navigate(match.pathname)
         return
       }
     }
