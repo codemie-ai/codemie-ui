@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "task": "Fix the bulk budget override modal so focusing the Hard/Soft limit inputs keeps their initial values and no longer shows non-negative validation errors, while still validating genuinely invalid input (EPMCDME-16069).",
+  "generated": "2026-10-19T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Root cause is confirmed in BulkBudgetOverrideModal's focus handlers and AC1-AC4 are explicit. Two decisions are still open: how a Mixed field behaves once cleared (empty means unchanged, or an error), and AC4 is only partly reachable because the Input keyfilter strips '-' and letters, so its invalid cases fall back to empty or '.' input." },
+    { "dimension": "technical_risk", "reason": "The closest pattern is MemberAllocationOverrideModal's touched/initial-draft gating, which is well established. Risk is low on its own, with possible regressions in Mixed-field handling and Save Override gating. Bumped S->M because the AC lists specific error and variant cases and no test template covers them: BulkBudgetOverrideModal has no test file, its parent suites mock it out, and the single-member modal test has no focus or validation assertions." },
+    { "dimension": "component_scope", "reason": "The fix is confined to BulkBudgetOverrideModal (focus handlers and validation memo), possibly with a small touch to the shared BudgetOverrideCategoryCard. Both are in the UI layer. Calibration: matches the bundled S example epmcdme-10102 (11 points, add validation to form field)." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk auto-bumped from S to M: the AC enumerate edge/error cases (AC3, AC4) and no existing test template covers error-path assertions for the bulk modal"
+  ],
+  "split_recommendation": null
+}

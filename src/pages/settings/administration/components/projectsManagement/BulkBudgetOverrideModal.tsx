@@ -1,7 +1,7 @@
 // Copyright 2026 EPAM Systems, Inc. ("EPAM")
 // Licensed under the Apache License, Version 2.0
 
-import { FC, useEffect, useMemo, useState } from 'react'
+import { FC, FocusEvent, useEffect, useMemo, useState } from 'react'
 
 import Button from '@/components/Button'
 import Input from '@/components/form/Input'
@@ -22,6 +22,7 @@ import {
 } from './budgetNumber'
 import BudgetOverrideCategoryCard, {
   BudgetAllocationState,
+  BudgetOverrideField,
   formatBudgetMoney,
 } from './BudgetOverrideCategoryCard'
 import BudgetOverrideCategoryTable from './BudgetOverrideCategoryTable'
@@ -57,6 +58,9 @@ interface PendingCategoryValues {
 type PendingValues = Record<BudgetCategory, PendingCategoryValues>
 type CurrentCategoryValues = Record<BudgetCategory, { max: number[]; soft: number[] }>
 type FieldErrors = { max?: string; soft?: string }
+type ClearedMixedKey = `${BudgetCategory}-${BudgetOverrideField}`
+
+const LIMIT_INPUT_ID_PATTERN = /^bulk-(platform|cli|premium_models)-(max|soft)$/
 
 const categoryOptions = [
   { label: 'Platform', value: 'platform' as BudgetCategory },
@@ -96,10 +100,11 @@ const getFieldDisplayValue = (
   dirty: boolean,
   value: string,
   mixed: boolean,
-  currentValue: number | undefined
+  currentValue: number | undefined,
+  clearedForTyping: boolean
 ) => {
   if (dirty) return value
-  if (mixed) return 'Mixed'
+  if (mixed) return clearedForTyping ? '' : 'Mixed'
   return String(currentValue ?? '')
 }
 
@@ -150,6 +155,7 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
 }) => {
   const [pending, setPending] = useState<PendingValues>(emptyPendingValues)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [clearedMixed, setClearedMixed] = useState<Partial<Record<ClearedMixedKey, true>>>({})
 
   const currentValuesByCategory = useMemo(
     () =>
@@ -271,6 +277,7 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
     if (!visible) return
     setPending(emptyPendingValues())
     setIsSubmitting(false)
+    setClearedMixed({})
     // Initialize only when the modal opens so external budget refreshes do not
     // discard edits already made in the bulk form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -301,6 +308,22 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
         [`${field}Dirty`]: true,
       },
     }))
+  }
+
+  const clearMixedForTyping = (key: ClearedMixedKey) =>
+    setClearedMixed((current) => ({ ...current, [key]: true }))
+
+  const restoreMixedText = (key: ClearedMixedKey) =>
+    setClearedMixed((current) => {
+      if (!current[key]) return current
+      const next = { ...current }
+      delete next[key]
+      return next
+    })
+
+  const handleFieldBlur = (event: FocusEvent<HTMLDivElement>) => {
+    const match = LIMIT_INPUT_ID_PATTERN.exec(event.target.id)
+    if (match) restoreMixedText(`${match[1]}-${match[2]}` as ClearedMixedKey)
   }
 
   const handleSubmit = async () => {
@@ -377,7 +400,7 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
         </div>
       }
     >
-      <div className="space-y-4">
+      <div className="space-y-4" onBlur={handleFieldBlur}>
         <div className="text-xs text-text-quaternary">
           Mixed values remain unchanged unless edited.
         </div>
@@ -391,7 +414,7 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
               const maxMixed = !valuesAreEqual(current.max)
               const softMixed = !valuesAreEqual(current.soft)
               const fieldErrors = validationByCategory[value]
-              const revertField = (field: 'max' | 'soft') =>
+              const revertField = (field: BudgetOverrideField) =>
                 setPending((currentPending) => ({
                   ...currentPending,
                   [value]: {
@@ -408,34 +431,43 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
                     values.maxDirty,
                     values.max,
                     maxMixed,
-                    current.max[0]
+                    current.max[0],
+                    Boolean(clearedMixed[`${value}-max`])
                   )}
                   softValue={getFieldDisplayValue(
                     values.softDirty,
                     values.soft,
                     softMixed,
-                    current.soft[0]
+                    current.soft[0],
+                    Boolean(clearedMixed[`${value}-soft`])
                   )}
                   maxAvailable={availableCapacityByCategory[value].max}
                   softAvailable={availableCapacityByCategory[value].soft}
                   availableLabel="Max available per user"
                   maxError={fieldErrors.max}
                   softError={fieldErrors.soft}
-                  maxDirty={values.maxDirty}
-                  softDirty={values.softDirty}
+                  maxDirty={isCategoryFieldDirty(values.max, values.maxDirty, current.max)}
+                  softDirty={isCategoryFieldDirty(values.soft, values.softDirty, current.soft)}
                   allocationState={getAllocationState(value)}
                   hasActionRow={false}
                   maxId={`bulk-${value}-max`}
                   softId={`bulk-${value}-soft`}
-                  onMaxChange={(nextValue) => updateCategory(value, 'max', nextValue)}
-                  onSoftChange={(nextValue) => updateCategory(value, 'soft', nextValue)}
-                  onMaxFocus={() => {
-                    if (!values.maxDirty) updateCategory(value, 'max', '')
+                  onMaxChange={(nextValue) =>
+                    maxMixed && !nextValue
+                      ? revertField('max')
+                      : updateCategory(value, 'max', nextValue)
+                  }
+                  onSoftChange={(nextValue) =>
+                    softMixed && !nextValue
+                      ? revertField('soft')
+                      : updateCategory(value, 'soft', nextValue)
+                  }
+                  onMaxFocus={() => clearMixedForTyping(`${value}-max`)}
+                  onSoftFocus={() => clearMixedForTyping(`${value}-soft`)}
+                  onRevert={(field) => {
+                    revertField(field)
+                    restoreMixedText(`${value}-${field}`)
                   }}
-                  onSoftFocus={() => {
-                    if (!values.softDirty) updateCategory(value, 'soft', '')
-                  }}
-                  onRevert={revertField}
                 />
               )
             })}

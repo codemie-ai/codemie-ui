@@ -15,6 +15,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  getNonNegativeLimitErrors,
   normalizeBudgetInput,
   parseBudgetNumber,
 } from '../../../components/projectsManagement/budgetNumber'
@@ -36,5 +37,31 @@ describe('budget number parsing', () => {
 
   it('parses normalized numeric values', () => {
     expect(parseBudgetNumber('1 024,75')).toBe(1024.75)
+  })
+})
+
+describe('getNonNegativeLimitErrors', () => {
+  it('accepts zero and positive limits', () => {
+    expect(getNonNegativeLimitErrors(0, 0)).toEqual({})
+    expect(getNonNegativeLimitErrors(5, 3)).toEqual({})
+  })
+
+  it('flags only a negative hard limit', () => {
+    expect(getNonNegativeLimitErrors(-1, 2)).toEqual({
+      max: 'Hard limit must be a non-negative number',
+    })
+  })
+
+  it('flags only a negative soft limit', () => {
+    expect(getNonNegativeLimitErrors(2, -0.5)).toEqual({
+      soft: 'Soft limit must be a non-negative number',
+    })
+  })
+
+  it('flags both limits when neither parses', () => {
+    expect(getNonNegativeLimitErrors(null, null)).toEqual({
+      max: 'Hard limit must be a non-negative number',
+      soft: 'Soft limit must be a non-negative number',
+    })
   })
 })

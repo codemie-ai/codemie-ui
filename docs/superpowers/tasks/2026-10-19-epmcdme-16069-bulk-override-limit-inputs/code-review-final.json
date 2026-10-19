@@ -1,0 +1,38 @@
+{
+  "decision": "approve",
+  "rationale": "Approved after the code-review.check round (approve/high): CR-001 resolved in 809fc0df9 (focus handlers attached unconditionally, regression test added); user approved both code-review.final and code-review.check gates. Original round: request-changes. Compact profile: edge-case and acceptance ran (blind and verification-gap not in profile; standards not expected, rows na with no coverage gap); AC1-AC6 pass and AC7 test execution is pending Stage 7. One blocking finding survives: CR-001, conditional Mixed focus handlers introduced by this change, whose budgets-refresh race has unconfirmed reachability so it is capped at major. 0 deferred; 1 dismissed (hardcoded category regex has no live trigger with the current three categories).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1: untouched non-mixed Hard input keeps value on focus, no error, Save/Revert unchanged", "status": "pass", "notes": "onMaxFocus undefined when not mixed (BulkBudgetOverrideModal.tsx:465); pending untouched; covered by focus test" },
+    { "kind": "story-ac", "item": "AC2: untouched non-mixed Soft input keeps value on focus, no error", "status": "pass", "notes": "onSoftFocus undefined when not mixed (:466); same focus test covers both inputs" },
+    { "kind": "story-ac", "item": "AC3: valid non-negative edit of either field shows no non-negative error", "status": "pass", "notes": "updateCategory path unchanged; valid hard/soft edit tests" },
+    { "kind": "story-ac", "item": "AC4: empty, '.', '1.2.3' show '<Hard|Soft> limit must be a non-negative number' and disable Save", "status": "pass", "notes": "Non-mixed onChange routes '' to updateCategory; parseBudgetNumber returns null; it.each tests for both fields" },
+    { "kind": "story-ac", "item": "AC5: focusing a Mixed field clears text without error or Save change; blur without typing shows Mixed again", "status": "pass", "notes": "Display-only clearedMixed flag set on focus, removed on bubbling blur keyed by input id (:324-327, :403); tests cover it" },
+    { "kind": "story-ac", "item": "AC6: typing then emptying a Mixed field gives no error/edited state, Mixed on blur, users keep current values", "status": "pass", "notes": "maxMixed && !nextValue calls revertField; submit uses per-user getAllocationValue for non-dirty field; payload test" },
+    { "kind": "story-ac", "item": "AC7: BulkBudgetOverrideModal.test.tsx covers AC1-AC6; getNonNegativeLimitErrors unit tests include negatives", "status": "pass", "notes": "Test file under projectsManagement/__tests__/; budgetNumber.test.ts adds negative max/soft cases" },
+    { "kind": "story-ac", "item": "AC7 execution: new and extended tests pass", "status": "pending-stage-7", "notes": "Requires running vitest" },
+    { "kind": "spec", "item": "All changes in BulkBudgetOverrideModal.tsx; BudgetOverrideCategoryCard props unchanged", "status": "pass", "notes": "Only the modal and tests change; card props reused as-is" },
+    { "kind": "spec", "item": "Cleared-for-typing state does not feed categoryDirty, validationByCategory, isDirty or submit payload", "status": "pass", "notes": "clearedMixed read only in getFieldDisplayValue" },
+    { "kind": "spec", "item": "budgetNumber.ts helpers and keyfilter unchanged", "status": "pass", "notes": "budgetNumber.ts not in diff; card keyfilter untouched" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Not audited: compact review profile omits the standards audit" },
+    { "kind": "code-quality", "status": "na", "notes": "Not audited: compact review profile omits the standards audit" },
+    { "kind": "security", "status": "na", "notes": "Not audited: compact review profile omits the standards audit" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/projectsManagement/BulkBudgetOverrideModal.tsx",
+      "line": 465,
+      "title": "Mixed focus flag skipped after budgets refresh",
+      "problem": "onMaxFocus/onSoftFocus are now attached only when the field is already mixed at render time. If the budgets prop refreshes while a uniform, untouched field has focus and the selected users' values diverge, the field becomes mixed but its focus handler never ran, so clearedMixed is unset and getFieldDisplayValue renders 'Mixed' in the focused input. The card keyfilter allows digits, so typing appends to it ('Mixed7'), which goes through updateCategory as a dirty value that parseBudgetNumber rejects. Before this change the focus handler was unconditional.",
+      "impact": "The user sees 'Mixed' in a field they are editing, and typing produces an edited field with a non-negative validation error and a disabled Save until they clear it manually, which is the class of spurious error EPMCDME-16069 is meant to remove. Reachability is unconfirmed: the modal deliberately stays initialized across external budgets refreshes (useEffect keyed only on visible), but no trigger was found that refreshes budgets while a limit input has focus.",
+      "recommendation": "Attach the focus handlers unconditionally: onMaxFocus={() => clearMixedForTyping(`${value}-max`)} and onSoftFocus={() => clearMixedForTyping(`${value}-soft`)}. The flag is only read when the field is mixed and is removed on blur, so non-mixed behaviour (AC1/AC2) is unchanged. Add a test that rerenders with budgets that make a focused uniform field mixed, types a digit, and expects no non-negative error."
+    }
+  ]
+}

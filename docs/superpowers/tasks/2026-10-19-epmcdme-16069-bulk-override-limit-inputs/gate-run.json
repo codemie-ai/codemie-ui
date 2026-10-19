@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16069_bulk-override-limit-inputs",
+  "head": "809fc0df9e9db64521cf540b02fd0768fdc95bd5",
+  "runner": "custom",
+  "started_at": "2026-10-19T09:11:22Z",
+  "completed_at": "2026-10-19T09:21:15Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 39913, "command": "npm run lint", "exit_code": 0},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 20084, "command": "npm run typecheck", "exit_code": 0},
+    {"id": "license-check", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": "npm run license-check", "exit_code": null, "notes": "Guide Skip-if met: no dependency added/removed/moved (package.json and package-lock.json not in diff)."},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 21519, "command": "npm run secrets:check", "exit_code": 0, "notes": "Gitleaks ran via container engine; output: 'no leaks found'. Scans working tree only, not git history."},
+    {"id": "unit", "source": "guide", "status": "PASS", "duration_ms": 306043, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "708 files, 7160 passed, 1 skipped. The full suite had already finished when the user asked for focused tests only."},
+    {"id": "integration", "source": "guide", "status": "PASS", "duration_ms": 163669, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "50 files, 564 passed, 1 skipped. The full suite had already finished when the user asked for focused tests only."},
+    {"id": "focused-tests", "source": "guide", "status": "PASS", "duration_ms": 10218, "command": "npx vitest run src/pages/settings/administration/components/projectsManagement/__tests__/BulkBudgetOverrideModal.test.tsx src/pages/settings/administration/projectsManagement/components/__tests__/budgetNumber.test.ts", "exit_code": 0, "notes": "User asked for this mid-run: the 2 test files changed in the diff, 26 tests passed."},
+    {"id": "test-harness", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": "npm run test-harness", "exit_code": null, "notes": "Guide says Skip if: Never, but prerequisites are missing: ~/.codemie/test-harness.json does not exist and the codemie backend/UI containers are not running (only elasticsearch, postgres, litellm are up). Unverified, not passed; the MR '## Test harness' compliance section is still owed."},
+    {"id": "ui", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": "", "exit_code": null, "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."},
+    {"id": "lint-staged", "source": "hook", "status": "SKIPPED", "duration_ms": 2125, "command": "npx lint-staged", "exit_code": 0, "notes": "Self-skip: '→ No staged files found.' Changed files checked separately with 'npx prettier --check <3 diff files>': all use Prettier style; eslint and tsc are covered by the lint and typecheck gates."},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 2119, "command": "npm run license-headers:check", "exit_code": 0, "notes": "Checked 2363 files, 0 missing license headers."},
+    {"id": "sonar-local", "source": "hook", "status": "SKIPPED", "duration_ms": 1160, "command": "npm run sonar-local", "exit_code": 0, "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN (e.g. in .env.local) with access to the server in .sonarlint/connectedMode.json to run it locally; until then only CI can settle it."},
+    {"id": "ci-wait-ci-init", "source": "ci", "status": "N/A", "duration_ms": 0, "command": ".gitlab-ci.yml wait-ci-init (external contexts: ci-pipeline, compliance-report)", "exit_code": null, "notes": "The CI job only waits for external pipeline statuses (ci-pipeline, compliance-report) through a remote template, so it can't run locally. The guide's secrets note names an MR-pipeline 'gitleaks-scan' task that is not in this repo's .gitlab-ci.yml; it lives in the external ci-pipeline."}
+  ],
+  "failures": {}
+}
