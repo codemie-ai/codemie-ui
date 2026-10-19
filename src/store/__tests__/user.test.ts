@@ -525,6 +525,43 @@ describe('userStore', () => {
     })
   })
 
+  describe('getUsers — sort params', () => {
+    const getQuery = () => new URLSearchParams((mockGet.mock.calls[0][0] as string).split('?')[1])
+
+    beforeEach(() => {
+      mockGet.mockResolvedValue({
+        json: () => Promise.resolve({ data: [], pagination: { total: 0, page: 0, per_page: 10 } }),
+      })
+    })
+
+    it('sends sort_by and sort_order when sortBy is given', async () => {
+      const { userStore } = await import('@/store/user')
+      await userStore.getUsers({ page: 0, perPage: 10, sortBy: 'name', sortOrder: 'asc' })
+
+      const query = getQuery()
+      expect(query.get('sort_by')).toBe('name')
+      expect(query.get('sort_order')).toBe('asc')
+    })
+
+    it('sends no sort params when sortBy is omitted', async () => {
+      const { userStore } = await import('@/store/user')
+      await userStore.getUsers({ page: 0, perPage: 10 })
+
+      const query = getQuery()
+      expect(query.has('sort_by')).toBe(false)
+      expect(query.has('sort_order')).toBe(false)
+    })
+
+    it('ignores sortOrder without sortBy', async () => {
+      const { userStore } = await import('@/store/user')
+      await userStore.getUsers({ sortOrder: 'desc' })
+
+      const query = getQuery()
+      expect(query.has('sort_by')).toBe(false)
+      expect(query.has('sort_order')).toBe(false)
+    })
+  })
+
   describe('setDefaultProject', () => {
     it('PUTs the default endpoint and resolves on success', async () => {
       const { userStore } = await import('@/store/user')
