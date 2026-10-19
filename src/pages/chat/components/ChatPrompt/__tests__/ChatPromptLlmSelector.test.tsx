@@ -36,6 +36,8 @@ const { mockChatsStore, mockAppInfoStore, mockProjectsStore, mockOverlayHide, mo
         updateChat: vi.fn(),
         getModelsForCurrentChat: vi.fn().mockResolvedValue([]),
         filteredModels: [] as ModelOption[],
+        filteredRouters: [] as LLMRouterOption[],
+        filteredModelsProjectId: null as string | null,
       },
       mockAppInfoStore: {
         llmModels: [
@@ -839,6 +841,8 @@ describe('ChatPromptLlmSelector — project filtering', () => {
     mockChatsStore.updateChat = vi.fn()
     mockChatsStore.getModelsForCurrentChat = vi.fn().mockResolvedValue([])
     mockChatsStore.filteredModels = []
+    mockChatsStore.filteredRouters = []
+    mockChatsStore.filteredModelsProjectId = null
     mockAppInfoStore.getLLMModels = vi.fn()
     mockAppInfoStore.llmModels = [
       { label: 'GPT-4', value: 'gpt-4', isDefault: true },
@@ -869,6 +873,7 @@ describe('ChatPromptLlmSelector — project filtering', () => {
     mockChatsStore.filteredModels = [
       { label: 'GPT-4', value: 'gpt-4', isDefault: true },
     ] as ModelOption[]
+    mockChatsStore.filteredModelsProjectId = 'zoo'
 
     render(<ChatPromptLlmSelector />)
 

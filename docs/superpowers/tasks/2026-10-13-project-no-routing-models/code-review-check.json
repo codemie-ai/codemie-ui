@@ -1,0 +1,20 @@
+{
+  "decision": "approve",
+  "rationale": "Follow-up round (increment 2, chat-side router enforcement) reviewed with the same three-lens process: blind, edge-case, acceptance. Acceptance lens: all 4 derived criteria pass (disabled router hidden in chat; allowed router still shown; non-project chats unaffected; disabled-router selection resets with the same toast as a disabled model), each backed by a real test. Blind and edge-case lenses independently surfaced the same real issue — CR-101 — a race window from two sequential `await getFilteredModelsForProject(...)` calls, where `chatsStore.filteredModels` could commit while `chatsStore.filteredRouters` was still empty/stale, risking a false 'router unavailable' reset purely from fetch ordering. Fixed by switching to `Promise.all` so both lists commit atomically; pinned with a new store test ('commits filteredModels and filteredRouters together...') that fails under the old sequential implementation (confirmed RED before the fix) and passes after. Also fixed CR-102, a stale code comment on `isGrouped` that described deployment-wide router existence instead of the now project-scoped list. The remaining lens observations (doubled network round-trips inherent to calling getProject twice, the model-specific wording in `getFilteredModelsForProject`'s zero-match console.warn, a pre-existing dangling `clearProjectConfigCache` mock unrelated to this diff, and naming-proliferation style notes) are deferred — none are required-criterion failures, security issues, or regressions introduced by this diff; they're pre-existing or cosmetic. Full unit (6949) and integration (558) suites pass, lint and typecheck clean.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "id": 1, "status": "pass", "justification": "A router excluded by the project's allowed-models is excluded from chatsStore.filteredRouters (chats.ts) and therefore from routersToDisplay/items in ChatPromptLlmSelector.tsx; covered by the new 'resets a chat model that is a project-disabled router' test." },
+    { "id": 2, "status": "pass", "justification": "An allowed router stays in filteredRouters/routersToDisplay and remains selectable; covered by 'keeps a chat on a router the project still allows'." },
+    { "id": 3, "status": "pass", "justification": "routersToDisplay falls back to the raw global llmRouters when projectId is unset, unchanged; the pre-existing router describe block in ChatPromptLlmSelector.test.tsx runs with no projectId and still passes, protecting this path." },
+    { "id": 4, "status": "pass", "justification": "unavailableModel now also checks routersToDisplay.length > 0 and triggers the same reset+toast path for a disabled router as for a disabled model; covered by the new projectModels.test.tsx case asserting the exact toast text and updateChat(..., { llmModel: null })." }
+  ],
+  "standards_review": [
+    { "standard": "commit-message-format", "status": "pass", "notes": "'EPMCDME-15905: filter routers by project allowed-models in chat, same as models' follows the required 'EPMCDME-XXXX: Capital sentence' format." }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-101", "status": "resolved" },
+    { "id": "CR-102", "status": "resolved" }
+  ]
+}

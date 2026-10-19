@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ModelOption } from '@/types/entity/configuration'
@@ -21,14 +21,21 @@ import { Conversation } from '@/types/entity/conversation'
 
 import ChatPromptLlmSelector from '../ChatPromptLlmSelector'
 
-const { mockChatsStore, mockToastInfo } = vi.hoisted(() => ({
+const { mockChatsStore, mockAppInfoStore, mockToastInfo } = vi.hoisted(() => ({
   mockChatsStore: {
     currentChat: null as Conversation | null,
     llmModels: [] as ModelOption[],
     llmRouters: [] as ModelOption[],
     filteredModels: [] as ModelOption[],
+    filteredRouters: [] as ModelOption[],
+    filteredModelsProjectId: null as string | null,
     updateChat: vi.fn(),
     getModelsForCurrentChat: vi.fn(),
+  },
+  mockAppInfoStore: {
+    llmModels: [] as ModelOption[],
+    llmRouters: [] as ModelOption[],
+    getLLMModels: vi.fn(),
   },
   mockToastInfo: vi.fn(),
 }))
@@ -40,7 +47,7 @@ vi.mock('valtio', () => ({
 }))
 
 vi.mock('@/store/appInfo', () => ({
-  appInfoStore: { llmModels: [], llmRouters: [], getLLMModels: vi.fn() },
+  appInfoStore: mockAppInfoStore,
 }))
 
 vi.mock('@/store/chats', () => ({ chatsStore: mockChatsStore }))
@@ -71,7 +78,10 @@ describe('ChatPromptLlmSelector — project model settings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockChatsStore.filteredModels = ALLOWED
+    mockChatsStore.filteredRouters = []
+    mockChatsStore.filteredModelsProjectId = 'restricted'
     mockChatsStore.getModelsForCurrentChat.mockResolvedValue(ALLOWED)
+    mockAppInfoStore.llmRouters = []
   })
 
   afterEach(cleanup)
@@ -108,5 +118,114 @@ describe('ChatPromptLlmSelector — project model settings', () => {
     render(<ChatPromptLlmSelector />)
 
     expect(mockChatsStore.updateChat).not.toHaveBeenCalled()
+  })
+
+  it('resets a chat model that is a project-disabled router, same as a disabled model', () => {
+    // The router still exists globally — only the project's filtered list excludes it.
+    // Proves the lookup uses the project-scoped list, not the raw global router catalog.
+    mockAppInfoStore.llmRouters = [
+      { value: 'disabled-router', label: 'Disabled Router', isDefault: false },
+    ]
+    mockChatsStore.filteredRouters = []
+    mockChatsStore.currentChat = chat('disabled-router')
+
+    const { rerender } = render(<ChatPromptLlmSelector />)
+    rerender(<ChatPromptLlmSelector />)
+
+    expect(mockChatsStore.updateChat).toHaveBeenCalledWith('chat-1', { llmModel: null })
+    expect(mockToastInfo).toHaveBeenCalledWith(
+      'Model disabled-router is not available in project restricted. The default model will be used.'
+    )
+  })
+
+  it('keeps a chat on a router the project still allows', () => {
+    mockChatsStore.filteredRouters = [
+      { value: 'smart-router', label: 'Smart Router', isDefault: false },
+    ]
+    mockChatsStore.currentChat = chat('smart-router')
+
+    render(<ChatPromptLlmSelector />)
+
+    expect(screen.getByRole('button', { name: 'Smart Router' })).toBeInTheDocument()
+    expect(mockChatsStore.updateChat).not.toHaveBeenCalled()
+    expect(mockToastInfo).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { kind: 'router', value: 'smart-router', label: 'Smart Router', isDefault: false },
+    { kind: 'model', value: 'model-c', label: 'Model C', isDefault: false },
+  ])(
+    'keeps the saved $kind when switching projects while the new list loads',
+    async (selection) => {
+      mockChatsStore.currentChat = chat('model-a')
+      const { rerender } = render(<ChatPromptLlmSelector />)
+
+      let resolveLists!: () => void
+      const pending = new Promise<void>((resolve) => {
+        resolveLists = resolve
+      })
+      mockChatsStore.getModelsForCurrentChat.mockImplementationOnce(async () => {
+        await pending
+        mockChatsStore.filteredModels = selection.kind === 'model' ? [selection] : ALLOWED
+        mockChatsStore.filteredRouters = selection.kind === 'router' ? [selection] : []
+        mockChatsStore.filteredModelsProjectId = 'other-project'
+      })
+      mockChatsStore.currentChat = {
+        ...chat(selection.value),
+        id: 'chat-b',
+        projectId: 'other-project',
+        project: 'Other Project',
+      }
+
+      rerender(<ChatPromptLlmSelector />)
+
+      expect(mockChatsStore.updateChat).not.toHaveBeenCalled()
+      expect(mockToastInfo).not.toHaveBeenCalled()
+
+      await act(async () => resolveLists())
+      rerender(<ChatPromptLlmSelector />)
+
+      expect(screen.getByRole('button', { name: selection.label })).toBeInTheDocument()
+      expect(mockChatsStore.updateChat).not.toHaveBeenCalled()
+      expect(mockToastInfo).not.toHaveBeenCalled()
+    }
+  )
+
+  it('only resets an excluded router after the new project list arrives', async () => {
+    mockChatsStore.currentChat = chat('model-a')
+    const { rerender } = render(<ChatPromptLlmSelector />)
+
+    let resolveLists!: () => void
+    const pending = new Promise<void>((resolve) => {
+      resolveLists = resolve
+    })
+    mockChatsStore.getModelsForCurrentChat.mockImplementationOnce(async () => {
+      await pending
+      mockChatsStore.filteredModels = ALLOWED
+      mockChatsStore.filteredRouters = []
+      mockChatsStore.filteredModelsProjectId = 'other-project'
+    })
+    mockChatsStore.currentChat = {
+      ...chat('disabled-router'),
+      id: 'chat-b',
+      projectId: 'other-project',
+      project: 'Other Project',
+    }
+
+    rerender(<ChatPromptLlmSelector />)
+
+    expect(mockChatsStore.updateChat).not.toHaveBeenCalled()
+    expect(mockToastInfo).not.toHaveBeenCalled()
+
+    await act(async () => resolveLists())
+    rerender(<ChatPromptLlmSelector />)
+    rerender(<ChatPromptLlmSelector />)
+
+    expect(mockChatsStore.updateChat).toHaveBeenCalledTimes(1)
+    expect(mockChatsStore.updateChat).toHaveBeenCalledWith('chat-b', { llmModel: null })
+    expect(mockToastInfo).toHaveBeenCalledTimes(1)
+    expect(mockToastInfo).toHaveBeenCalledWith(
+      'Model disabled-router is not available in project Other Project. The default model will be used.'
+    )
   })
 })

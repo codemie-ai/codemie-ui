@@ -26,6 +26,8 @@ const { mockChatsStore, mockAppInfoStore, mockProjectsStore } = vi.hoisted(() =>
   mockChatsStore: {
     currentChat: null as Conversation | null,
     filteredModels: [] as ModelOption[],
+    filteredRouters: [] as ModelOption[],
+    filteredModelsProjectId: null as string | null,
     updateChat: vi.fn(),
     getModelsForCurrentChat: vi.fn(),
   },
@@ -85,9 +87,12 @@ const chat = (llmModel: string | null): Conversation =>
 describe('ChatPromptLlmSelector — live project default', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockProjectsStore.getProject.mockReset()
     mockAppInfoStore.llmModels = []
     mockAppInfoStore.llmRouters = []
     mockChatsStore.filteredModels = MODELS
+    mockChatsStore.filteredRouters = []
+    mockChatsStore.filteredModelsProjectId = 'proj'
     mockChatsStore.getModelsForCurrentChat.mockResolvedValue(MODELS)
     mockProjectsStore.getProject.mockResolvedValue({ default_model: 'new-default' })
     Element.prototype.scrollIntoView = vi.fn()

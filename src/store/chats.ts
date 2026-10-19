@@ -37,7 +37,7 @@ import {
   FeedbackSubmission,
   FolderListItem,
 } from '@/types/entity'
-import { ModelOption } from '@/types/entity/configuration'
+import { LLMRouterOption, ModelOption } from '@/types/entity/configuration'
 import api, { sanitizeFileName } from '@/utils/api'
 import { transformChatBEtoFE } from '@/utils/chatHelpers'
 import { chatSkillsKey, removeChatStorage, sweepOrphanedChatKeys } from '@/utils/chatStorageUtils'
@@ -167,6 +167,7 @@ interface NewChatParams {
 }
 
 let chatsAndFoldersRefreshCount = 0
+let modelListsRequestId = 0
 
 const refreshChatsAndFolders = async () => {
   chatsAndFoldersRefreshCount += 1
@@ -197,6 +198,8 @@ export interface ChatsStoreType {
   isNewChat: boolean
   newChatParams: NewChatParams | null
   filteredModels: ModelOption[]
+  filteredRouters: LLMRouterOption[]
+  filteredModelsProjectId: string | null
   loading: boolean
   error: string | null
 
@@ -311,6 +314,8 @@ export const chatsStore = proxy<ChatsStoreType>({
   newChatParams: null,
   abortControllers: {},
   filteredModels: [],
+  filteredRouters: [],
+  filteredModelsProjectId: null,
   loading: false,
   error: null,
 
@@ -1051,25 +1056,41 @@ export const chatsStore = proxy<ChatsStoreType>({
   },
 
   async getModelsForCurrentChat() {
+    modelListsRequestId += 1
+    const requestId = modelListsRequestId
+    const projectId = chatsStore.currentChat?.projectId
+    const isCurrentRequest = () =>
+      requestId === modelListsRequestId && chatsStore.currentChat?.projectId === projectId
+
     try {
       chatsStore.loading = true
       chatsStore.error = null
-      const projectId = chatsStore.currentChat?.projectId
       if (!appInfoStore.llmModels || appInfoStore.llmModels.length === 0) {
         await appInfoStore.getLLMModels()
       }
-      chatsStore.filteredModels = (await getFilteredModelsForProject(
-        projectId,
-        appInfoStore.llmModels
-      )) as ModelOption[]
-      return chatsStore.filteredModels
+      // Fetched together so the two lists always commit atomically — awaiting them one after
+      // another would leave a render window where one list reflects the new project and the
+      // other still holds the previous (or empty) one.
+      const [filteredModels, filteredRouters] = await Promise.all([
+        getFilteredModelsForProject(projectId, appInfoStore.llmModels),
+        getFilteredModelsForProject(projectId, appInfoStore.llmRouters),
+      ])
+      // A late response must not replace the lists for the newly opened project.
+      if (isCurrentRequest()) {
+        chatsStore.filteredModels = filteredModels as ModelOption[]
+        chatsStore.filteredRouters = filteredRouters as LLMRouterOption[]
+        chatsStore.filteredModelsProjectId = projectId ?? null
+      }
+      return filteredModels as ModelOption[]
     } catch (error) {
-      chatsStore.error = error instanceof Error ? error.message : 'Failed to filter models'
-      console.error('Error filtering models for chat:', error)
-      toaster.error(chatsStore.error)
+      if (isCurrentRequest()) {
+        chatsStore.error = error instanceof Error ? error.message : 'Failed to filter models'
+        console.error('Error filtering models for chat:', error)
+        toaster.error(chatsStore.error)
+      }
       throw error
     } finally {
-      chatsStore.loading = false
+      if (requestId === modelListsRequestId) chatsStore.loading = false
     }
   },
 })

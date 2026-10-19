@@ -23,6 +23,7 @@ import {
 
 import {
   describeRouterAvailability,
+  getChecklistModels,
   getConfigurableModels,
   getNewModelsPolicy,
   getRouterModels,
@@ -45,11 +46,23 @@ const settings = (extra: Partial<ProjectModelSettings> = {}): ProjectModelSettin
 })
 
 describe('projectModelConfiguration', () => {
-  it('separates routers from the configurable checklist', () => {
+  it('separates routers from the default-model candidates', () => {
     const models = [...MODELS, model('router', { isRouter: true })]
 
     expect(getConfigurableModels(models).map((m) => m.value)).toEqual(['a', 'b', 'premium'])
     expect(getRouterModels(models).map((m) => m.value)).toEqual(['router'])
+  })
+
+  it('includes routers in the checklist alongside regular models', () => {
+    const models = [...MODELS, model('router', { isRouter: true })]
+
+    expect(getChecklistModels(models).map((m) => m.value)).toEqual(['a', 'b', 'premium', 'router'])
+  })
+
+  it('keeps only the first entry when a model and router share the same value', () => {
+    const models = [model('shared'), model('shared', { isRouter: true })]
+
+    expect(getChecklistModels(models)).toEqual([model('shared')])
   })
 
   it('maps the list mode to the new-models policy', () => {

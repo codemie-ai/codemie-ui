@@ -26,6 +26,8 @@ const { mockChatsStore, mockAppInfoStore, mockProjectsStore } = vi.hoisted(() =>
   mockChatsStore: {
     currentChat: null as Conversation | null,
     filteredModels: [] as ModelOption[],
+    filteredRouters: [] as LLMRouterOption[],
+    filteredModelsProjectId: null as string | null,
     updateChat: vi.fn(),
     getModelsForCurrentChat: vi.fn(),
   },
@@ -100,9 +102,12 @@ const chat = (llmModel: string | null): Conversation =>
 describe('ChatPromptLlmSelector — project default stored as a router (CR-001)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockProjectsStore.getProject.mockReset()
     mockAppInfoStore.llmModels = []
     mockAppInfoStore.llmRouters = [ROUTER]
     mockChatsStore.filteredModels = MODELS
+    mockChatsStore.filteredRouters = [ROUTER]
+    mockChatsStore.filteredModelsProjectId = 'proj'
     mockChatsStore.getModelsForCurrentChat.mockResolvedValue(MODELS)
     mockProjectsStore.getProject.mockResolvedValue({ default_model: 'smart-router' })
     Element.prototype.scrollIntoView = vi.fn()
@@ -141,6 +146,7 @@ describe('ChatPromptLlmSelector — project default stored as a router (CR-001)'
 
   it('still lets the global router-default guard win when a router is marked isDefault', async () => {
     mockAppInfoStore.llmRouters = [{ ...ROUTER, isDefault: true, value: 'global-router' }]
+    mockChatsStore.filteredRouters = mockAppInfoStore.llmRouters
     mockProjectsStore.getProject.mockResolvedValue({ default_model: 'smart-router' })
     mockChatsStore.currentChat = chat(null)
 
@@ -152,5 +158,6 @@ describe('ChatPromptLlmSelector — project default stored as a router (CR-001)'
 
     // defaultRouter guard still returns null for defaultModel first — no recommended row at all.
     expect(document.getElementById('chat-llm-selector-option-recommended')).toBeNull()
+    expect(screen.getByRole('option', { name: /Smart Router Recommended/ })).toBeInTheDocument()
   })
 })

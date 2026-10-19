@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -26,6 +26,8 @@ const { mockChatsStore, mockAppInfoStore, mockProjectsStore } = vi.hoisted(() =>
   mockChatsStore: {
     currentChat: null as Conversation | null,
     filteredModels: [] as ModelOption[],
+    filteredRouters: [] as ModelOption[],
+    filteredModelsProjectId: null as string | null,
     updateChat: vi.fn(),
     getModelsForCurrentChat: vi.fn(),
   },
@@ -88,9 +90,12 @@ const openDropdown = () => fireEvent.click(screen.getByRole('button', { name: 'D
 describe('ChatPromptLlmSelector — dropdown-open default refetch (CR-002)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockProjectsStore.getProject.mockReset()
     mockAppInfoStore.llmModels = []
     mockAppInfoStore.llmRouters = []
     mockChatsStore.filteredModels = MODELS
+    mockChatsStore.filteredRouters = []
+    mockChatsStore.filteredModelsProjectId = 'proj'
     mockChatsStore.getModelsForCurrentChat.mockResolvedValue(MODELS)
     mockChatsStore.currentChat = chat()
     Element.prototype.scrollIntoView = vi.fn()
@@ -128,9 +133,7 @@ describe('ChatPromptLlmSelector — dropdown-open default refetch (CR-002)', () 
     })
 
     // The first call's response lands late; it must not clobber the second call's result.
-    resolveFirst({ default_model: 'first-response' })
-    await Promise.resolve()
-    await Promise.resolve()
+    await act(async () => resolveFirst({ default_model: 'first-response' }))
 
     const recommendedRow = document.getElementById('chat-llm-selector-option-recommended')
     expect(recommendedRow).toHaveTextContent('Second Response')

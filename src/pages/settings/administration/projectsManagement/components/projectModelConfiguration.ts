@@ -12,12 +12,22 @@ export type NewModelsPolicy = 'enable' | 'disable'
 export const getNewModelsPolicy = (mode: ModelAvailabilityMode): NewModelsPolicy =>
   mode === 'allow_list' ? 'disable' : 'enable'
 
-/** Routers are governed by the auto-routing switch, not by the model checklist. */
+/** Candidates eligible to become the project's default model; routers can't be a default. */
 export const getConfigurableModels = (models: readonly ModelOption[]) =>
   models.filter((model) => !model.isRouter)
 
 export const getRouterModels = (models: readonly ModelOption[]) =>
   models.filter((model) => model.isRouter)
+
+/** Every entry shown in the model checklist — models and routers together, listed once each. */
+export const getChecklistModels = (models: readonly ModelOption[]): ModelOption[] => {
+  const seen = new Set<string>()
+  return models.filter((model) => {
+    if (seen.has(model.value)) return false
+    seen.add(model.value)
+    return true
+  })
+}
 
 /** Checklist state derived from the stored list; premium hiding is applied separately. */
 export const settingsToSelection = (

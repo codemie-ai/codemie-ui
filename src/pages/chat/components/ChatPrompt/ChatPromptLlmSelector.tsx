@@ -145,7 +145,13 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
   const dropdownFetchTokenRef = useRef(0)
 
   const { llmModels, llmRouters, getLLMModels } = useSnapshot(appInfoStore)
-  const { currentChat, filteredModels: projectFilteredModels, updateChat } = useSnapshot(chatsStore)
+  const {
+    currentChat,
+    filteredModels: projectFilteredModels,
+    filteredRouters: projectFilteredRouters,
+    filteredModelsProjectId,
+    updateChat,
+  } = useSnapshot(chatsStore)
 
   // Only fetch global models when there is no project context.
   // For project chats we must display project-scoped models only.
@@ -189,16 +195,28 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
   }, [currentChat?.projectId])
 
   const projectId = currentChat?.projectId
+  const hasCurrentProjectModels = !projectId || filteredModelsProjectId === projectId
 
+  // Wait for this project's lists; the store may still contain the previous project's lists.
   // IMPORTANT: never fall back to global model list for project chats.
   const modelsToDisplay = useMemo(() => {
-    if (projectId) return projectFilteredModels
+    if (projectId) return hasCurrentProjectModels ? projectFilteredModels : []
     return llmModels
-  }, [projectId, projectFilteredModels, llmModels])
+  }, [projectId, hasCurrentProjectModels, projectFilteredModels, llmModels])
+
+  // Routers get the same project-scoped treatment as models: a project that disables a
+  // router must hide it here too, not just in the Models tab checklist.
+  const routersToDisplay = useMemo(() => {
+    if (projectId) return hasCurrentProjectModels ? projectFilteredRouters : []
+    return llmRouters
+  }, [projectId, hasCurrentProjectModels, projectFilteredRouters, llmRouters])
 
   // A router marked default wins, matching the backend's router-first global default.
   // It is recommended on its own row in the Routers section, so no model row is.
-  const defaultRouter = useMemo(() => llmRouters.find((r) => r.isDefault) ?? null, [llmRouters])
+  const defaultRouter = useMemo(
+    () => routersToDisplay.find((r) => r.isDefault) ?? null,
+    [routersToDisplay]
+  )
 
   const defaultModel = useMemo(() => {
     if (defaultRouter) return null
@@ -217,15 +235,19 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     if (!currentChat?.llmModel) return null
     return (
       modelsToDisplay.find((m) => m.value === currentChat.llmModel) ??
-      llmRouters.find((r) => r.value === currentChat.llmModel) ??
+      routersToDisplay.find((r) => r.value === currentChat.llmModel) ??
       null
     )
-  }, [currentChat?.llmModel, modelsToDisplay, llmRouters])
+  }, [currentChat?.llmModel, modelsToDisplay, routersToDisplay])
 
-  // A model the project's model settings hid after it was picked would otherwise read as
-  // "Default" here while the backend quietly ran a different model; say so and clear it.
+  // A model (or router) the project's model settings hid after it was picked would
+  // otherwise read as "Default" here while the backend quietly ran a different model;
+  // say so and clear it.
   const unavailableModel =
-    currentChat?.llmModel && modelsToDisplay.length > 0 && !selectedModel
+    currentChat?.llmModel &&
+    hasCurrentProjectModels &&
+    (modelsToDisplay.length > 0 || routersToDisplay.length > 0) &&
+    !selectedModel
       ? currentChat.llmModel
       : null
   const announcedUnavailableRef = useRef<string | null>(null)
@@ -249,16 +271,16 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
   }, [modelsToDisplay, search])
 
   const filteredRouters = useMemo(() => {
-    if (!search.trim()) return llmRouters
+    if (!search.trim()) return routersToDisplay
     const q = search.toLowerCase()
-    return llmRouters.filter((r) => r.label.toLowerCase().includes(q))
-  }, [llmRouters, search])
+    return routersToDisplay.filter((r) => r.label.toLowerCase().includes(q))
+  }, [routersToDisplay, search])
 
   // Grouped layout (Default / Routers / Models, with the recommended model as
-  // the Models section's first row) only kicks in once this deployment has at
-  // least one router — with none, the list stays exactly the old flat shape
-  // (Default, Recommended, then every model), unchanged.
-  const isGrouped = llmRouters.length > 0
+  // the Models section's first row) only kicks in once there's at least one router to show
+  // *in this project* — with none visible here (none deployed, or the project disabled all of
+  // them), the list stays exactly the old flat shape (Default, Recommended, then every model).
+  const isGrouped = routersToDisplay.length > 0
 
   const items = useMemo<ComboboxItem<LlmValue>[]>(() => {
     const list: ComboboxItem<LlmValue>[] = []
@@ -416,7 +438,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
         />
       )
     }
-    const router = llmRouters.find((r) => r.value === item.value)
+    const router = routersToDisplay.find((r) => r.value === item.value)
     if (router) {
       return (
         <ModelOptionRow

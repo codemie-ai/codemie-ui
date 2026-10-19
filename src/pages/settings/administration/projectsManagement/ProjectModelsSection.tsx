@@ -21,6 +21,7 @@ import toaster from '@/utils/toaster'
 import DefaultModelsSelector from './components/DefaultModelsSelector'
 import ModelConfigurationTable from './components/ModelConfigurationTable'
 import {
+  getChecklistModels,
   getConfigurableModels,
   isModelAvailable,
   ProjectModelSetting,
@@ -65,10 +66,14 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
   const [resetConfirmVisible, setResetConfirmVisible] = useState(false)
   const [navigationDialogVisible, setNavigationDialogVisible] = useState(false)
 
-  const models = useMemo(() => getConfigurableModels(catalog), [catalog])
+  const defaultModelCandidates = useMemo(() => getConfigurableModels(catalog), [catalog])
+  const checklistModels = useMemo(() => getChecklistModels(catalog), [catalog])
   const globalDefaultModel = useMemo(
-    () => models.find((model) => model.isDefault)?.value ?? models[0]?.value ?? '',
-    [models]
+    () =>
+      defaultModelCandidates.find((model) => model.isDefault)?.value ??
+      defaultModelCandidates[0]?.value ??
+      '',
+    [defaultModelCandidates]
   )
 
   const loadProjectModels = useCallback(async () => {
@@ -91,9 +96,10 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
           ...appInfoStore.llmRouters.map(routerToModelOption),
         ]
         const configurable = getConfigurableModels(platformCatalog)
+        const checklist = getChecklistModels(platformCatalog)
         const globalDefault =
           configurable.find((model) => model.isDefault)?.value ?? configurable[0]?.value ?? ''
-        const nextDraft = toDraft(settings, configurable, globalDefault)
+        const nextDraft = toDraft(settings, checklist, globalDefault)
         setCatalog(platformCatalog)
         setSavedSettings(settings)
         setDraft(nextDraft)
@@ -110,13 +116,16 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
 
   const hasChanges = !!draft && !!initialDraft && !isSameDraft(draft, initialDraft)
   const defaultsDraft = useMemo(
-    () => toDraft(DEFAULT_PROJECT_MODEL_SETTINGS, models, globalDefaultModel),
-    [globalDefaultModel, models]
+    () => toDraft(DEFAULT_PROJECT_MODEL_SETTINGS, checklistModels, globalDefaultModel),
+    [globalDefaultModel, checklistModels]
   )
   const isAtDefaults = !!draft && isSameDraft(draft, defaultsDraft)
   const availableModels = draft
-    ? models.filter((model) => isModelAvailable(model, draft.selection, false))
+    ? defaultModelCandidates.filter((model) => isModelAvailable(model, draft.selection, false))
     : []
+  const checklistAvailableCount = draft
+    ? checklistModels.filter((model) => isModelAvailable(model, draft.selection, false)).length
+    : 0
   const defaultIsValid = availableModels.some((model) => model.value === draft?.defaultModel)
   const defaultModelError =
     !defaultIsValid && draft?.defaultModel ? 'Selected model is not available' : undefined
@@ -175,7 +184,7 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
     setSaving(true)
     try {
       const saved = await projectModelSettingsStore.saveSettings(projectName, nextSettings)
-      const savedDraft = toDraft(saved, models, globalDefaultModel)
+      const savedDraft = toDraft(saved, checklistModels, globalDefaultModel)
       setSavedSettings(saved)
       setDraft(savedDraft)
       setInitialDraft(savedDraft)
@@ -232,7 +241,7 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
             <div className="flex items-baseline gap-4">
               <h2 className="text-base font-semibold text-text-primary">Model configuration</h2>
               <span className="text-xs text-text-quaternary">
-                {availableModels.length} of {models.length} models available
+                {checklistAvailableCount} of {checklistModels.length} models available
               </span>
             </div>
             <p className="mt-1 text-sm text-text-quaternary">
@@ -271,7 +280,7 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
       />
 
       <ModelConfigurationTable
-        models={models}
+        models={checklistModels}
         getSelectionState={(model) =>
           isModelAvailable(model, draft.selection, false) ? 'checked' : 'unchecked'
         }

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ModelOption } from '@/types/entity/configuration'
@@ -61,6 +61,19 @@ vi.mock('../components/ModelConfigurationTable', () => ({
   ),
 }))
 
+vi.mock('../components/DefaultModelsSelector', () => ({
+  default: ({ models, defaultModelError }: any) => (
+    <div>
+      <ul data-testid="default-model-options">
+        {models.map((model: ModelOption) => (
+          <li key={model.value}>{model.value}</li>
+        ))}
+      </ul>
+      {defaultModelError && <p>{defaultModelError}</p>}
+    </div>
+  ),
+}))
+
 const CATALOG: ModelOption[] = [
   { label: 'Model A', value: 'model-a', isDefault: true },
   { label: 'Model B', value: 'model-b', isDefault: false },
@@ -91,11 +104,41 @@ describe('ProjectModelsSection', () => {
 
   afterEach(cleanup)
 
-  it('counts the concrete models available to the project', async () => {
+  it('counts all models and routers available to the project', async () => {
     await renderSection()
 
-    expect(screen.getByText('3 of 3 models available')).toBeInTheDocument()
+    expect(screen.getByText('4 of 4 models available')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled()
+  })
+
+  it('shows the router in the checklist exactly once, enabled by default', async () => {
+    await renderSection()
+
+    expect(screen.getAllByRole('button', { name: 'router:on' })).toHaveLength(1)
+  })
+
+  it('persists a toggled-off router in the saved allow list, same as a regular model', async () => {
+    await renderSection()
+
+    fireEvent.click(screen.getByRole('button', { name: 'router:on' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }))
+
+    await waitFor(() => expect(mockSettingsStore.saveSettings).toHaveBeenCalled())
+    const [, saved] = mockSettingsStore.saveSettings.mock.calls[0]
+    expect(saved).toMatchObject({ mode: 'allow_list', models: ['model-a', 'model-b', 'premium'] })
+  })
+
+  it('keeps the default-model picker router-free', async () => {
+    await renderSection()
+
+    const defaultModelOptions = within(screen.getByTestId('default-model-options')).getAllByRole(
+      'listitem'
+    )
+    expect(defaultModelOptions.map((el) => el.textContent)).toEqual([
+      'model-a',
+      'model-b',
+      'premium',
+    ])
   })
 
   it('saves a disabled model as an explicit allow list and keeps member overrides', async () => {
@@ -109,7 +152,7 @@ describe('ProjectModelsSection', () => {
     expect(project).toBe('team')
     expect(saved).toMatchObject({
       mode: 'allow_list',
-      models: ['model-a', 'premium'],
+      models: ['model-a', 'premium', 'router'],
       default_model: null,
     })
     expect(saved.member_overrides).toEqual(STORED.member_overrides)

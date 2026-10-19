@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { cleanup, render, waitFor } from '@testing-library/react'
+import { act, cleanup, render, waitFor } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -26,6 +26,8 @@ const { mockChatsStore, mockAppInfoStore, mockProjectsStore } = vi.hoisted(() =>
   mockChatsStore: {
     currentChat: null as Conversation | null,
     filteredModels: [] as ModelOption[],
+    filteredRouters: [] as ModelOption[],
+    filteredModelsProjectId: null as string | null,
     updateChat: vi.fn(),
     getModelsForCurrentChat: vi.fn(),
   },
@@ -90,9 +92,12 @@ const chat = (projectId: string | null): Conversation =>
 describe('ChatPromptLlmSelector — project-default-fetch effect resilience', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockProjectsStore.getProject.mockReset()
     mockAppInfoStore.llmModels = []
     mockAppInfoStore.llmRouters = []
     mockChatsStore.filteredModels = MODELS
+    mockChatsStore.filteredRouters = []
+    mockChatsStore.filteredModelsProjectId = 'proj-a'
     mockChatsStore.getModelsForCurrentChat.mockResolvedValue(MODELS)
     Element.prototype.scrollIntoView = vi.fn()
   })
@@ -140,6 +145,7 @@ describe('ChatPromptLlmSelector — project-default-fetch effect resilience', ()
 
     // Switch to project B before project A's fetch resolves.
     mockChatsStore.currentChat = chat('proj-b')
+    mockChatsStore.filteredModelsProjectId = 'proj-b'
     rerender(<ChatPromptLlmSelector />)
 
     await waitFor(() => {
@@ -148,9 +154,7 @@ describe('ChatPromptLlmSelector — project-default-fetch effect resilience', ()
     })
 
     // The stale project-A response lands late; it must not clobber project B's default.
-    resolveProjectA({ default_model: 'proj-a-default' })
-    await Promise.resolve()
-    await Promise.resolve()
+    await act(async () => resolveProjectA({ default_model: 'proj-a-default' }))
 
     const recommendedRow = document.getElementById('chat-llm-selector-option-recommended')
     expect(recommendedRow).toHaveTextContent('Proj B Default')
@@ -171,6 +175,7 @@ describe('ChatPromptLlmSelector — project-default-fetch effect resilience', ()
     })
 
     mockChatsStore.currentChat = chat('proj-b')
+    mockChatsStore.filteredModelsProjectId = 'proj-b'
     rerender(<ChatPromptLlmSelector />)
 
     await waitFor(() => {

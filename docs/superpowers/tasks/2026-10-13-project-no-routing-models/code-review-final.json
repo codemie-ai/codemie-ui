@@ -1,0 +1,17 @@
+{
+  "decision": "approve",
+  "rationale": "Three lenses ran: blind, edge-case (repo read access), and acceptance (against the ticket's 4 AC + the two user-confirmed scope decisions). Acceptance lens: all 4 criteria pass, scope decisions honored (DefaultModelsSelector stays router-free via defaultModelCandidates; router rows are checkable like regular models with no read-only special-casing). Edge-case lens traced every former use of the old single `models` variable and confirmed each was correctly split, hook deps are complete, and settingsToSelection/selectionToSettings/isModelAvailable key purely on `.value` with no router branching. Blind and edge-case both independently raised the same low-likelihood dedup-collision concern (a router and a model sharing `.value` would silently drop one entry in getChecklistModels); this is deferred, not blocking — the research backing this plan confirmed the current data model never produces that overlap (getLLMModels partitions router/model data with no overlap today), and the plan's own test ('keeps only the first entry when a model and router share the same value') already pins the chosen first-wins behavior deterministically rather than leaving it accidental. Blind lens's other observations (reversed design comment, router counted in the 'models available' label, pre-existing duplication between the component's useMemo and its load effect, no proof of downstream model-vs-router-id assumptions) are the deliberate, user-confirmed scope of this fix (routers checkable like regular models, persisted the same way) or pre-existing/cosmetic, not defects introduced by this diff — dismissed. Commit messages ('EPMCDME-15905: ...') match the required format. 0 patch/decision_needed findings, 1 defer, 4 dismiss.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "id": 1, "status": "pass", "justification": "checklistModels = getChecklistModels(platformCatalog), where platformCatalog includes appInfoStore.llmRouters mapped via routerToModelOption, is passed to ModelConfigurationTable — routing models reach the checklist." },
+    { "id": 2, "status": "pass", "justification": "The checklist is sourced from the same appInfoStore.llmRouters feed consumed by the chat dropdown's working pattern (useProjectLLMModels), so the routing-model set matches." },
+    { "id": 3, "status": "pass", "justification": "getChecklistModels dedupes by `.value` via a Set keeping the first occurrence; covered by a dedicated unit test." },
+    { "id": 4, "status": "pass", "justification": "checklistModels is built from the full catalog (models + routers), so regular models remain displayed alongside routers; defaultModelCandidates (router-free) is unaffected." }
+  ],
+  "standards_review": [
+    { "standard": "commit-message-format", "status": "pass", "notes": "Both commits follow 'EPMCDME-15905: Capital sentence' per .ai-run/guides/standards/git-workflow.md." },
+    { "standard": "security-patterns", "status": "na", "notes": "No dangerouslySetInnerHTML, redirect, secret, or config handling touched by this diff." }
+  ],
+  "findings": []
+}
