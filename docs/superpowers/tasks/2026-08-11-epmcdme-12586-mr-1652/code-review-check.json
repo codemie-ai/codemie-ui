@@ -1,0 +1,96 @@
+{
+  "decision": "approved",
+  "version": "1.0",
+  "ticket": "EPMCDME-12586",
+  "merge_request": "!1652",
+  "reviewed_at": "2026-08-12T14:50:00Z",
+  "reviewer": {
+    "name": "Claude Code (mr-code-review skill)",
+    "type": "automated"
+  },
+  "review_summary": {
+    "status": "approved",
+    "critical_issues": 0,
+    "major_issues": 0,
+    "minor_issues": 0,
+    "total_findings": 0
+  },
+  "findings": [],
+  "resolved_findings": [
+    {
+      "id": 1,
+      "severity": "major",
+      "category": "testing",
+      "title": "Missing test coverage for credential type reset skip logic",
+      "file": "src/pages/integrations/components/SettingsForm/SettingsForm.tsx",
+      "line": "327-338",
+      "description": "The new `if (editing) return` guard prevents credential type auto-switching during edit mode, which is a critical behavioral change that protects loaded credential values from being discarded. However, there are no tests covering this specific scenario.",
+      "resolution": "Test coverage added in src/pages/integrations/components/SettingsForm/__tests__/SettingsForm.credentialTypeReset.test.tsx. Tests validate both edit mode (no reset) and create mode (reset) scenarios.",
+      "resolved_at": "2026-08-12T14:45:00Z",
+      "status": "resolved"
+    },
+    {
+      "id": 2,
+      "severity": "minor",
+      "category": "code_quality",
+      "title": "Consider extracting detailed comment into documentation",
+      "file": "src/pages/integrations/components/SettingsForm/SettingsForm.tsx",
+      "line": "328-331",
+      "description": "The inline comment explaining the `if (editing) return` logic is helpful but quite detailed (4 lines).",
+      "resolution": "Comment is appropriate for this subtle guard logic. Provides essential context for maintainability.",
+      "resolved_at": "2026-08-12T14:45:00Z",
+      "status": "accepted"
+    }
+  ],
+  "quality_gates_checked": [
+    {
+      "gate": "security",
+      "status": "passed",
+      "notes": "No security vulnerabilities identified. No hardcoded credentials, XSS risks, or unvalidated inputs."
+    },
+    {
+      "gate": "correctness",
+      "status": "passed",
+      "notes": "Logic is sound. The guard correctly prevents credential reset during edit mode while preserving the behavior during create mode."
+    },
+    {
+      "gate": "type_safety",
+      "status": "passed",
+      "notes": "TypeScript types are properly maintained. The `editing` prop is correctly added to the useEffect dependency array."
+    },
+    {
+      "gate": "error_handling",
+      "status": "passed",
+      "notes": "No new error handling required for this change."
+    },
+    {
+      "gate": "performance",
+      "status": "passed",
+      "notes": "Early return in useEffect is a good performance practice."
+    },
+    {
+      "gate": "testing",
+      "status": "passed",
+      "notes": "Comprehensive test coverage added. Tests cover both edit mode (no reset) and create mode (reset) scenarios for the credential type guard."
+    },
+    {
+      "gate": "code_quality",
+      "status": "passed",
+      "notes": "Code is clear and well-commented. Inline comment provides valuable context."
+    }
+  ],
+  "changes_summary": {
+    "files_changed": 3,
+    "lines_added": 144,
+    "lines_removed": 2,
+    "description": "Enables the Project field during edit mode by removing `editing` from the disabled condition. Adds a guard to prevent credential type auto-reset when project changes during editing, protecting loaded credential values from being discarded. Includes comprehensive test coverage."
+  },
+  "recommendation": "Approved for merge. All quality gates passed. The fix correctly addresses EPMCDME-12586 with proper test coverage to prevent future regressions.",
+  "notes": [
+    "Test coverage added in SettingsForm.credentialTypeReset.test.tsx validates the fix.",
+    "All previous review concerns have been resolved.",
+    "CI/CD pipeline passed all checks.",
+    "SonarQube quality gate passed with 0 new issues.",
+    "Test harness: 79 tests passed, 4 rerun."
+  ]
+}

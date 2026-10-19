@@ -16,6 +16,7 @@
 import { useEffect, useState, useRef } from 'react'
 
 import Button from '@/components/Button'
+import ConfirmationModal from '@/components/ConfirmationModal'
 import PageLayout from '@/components/Layouts/Layout'
 import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
@@ -74,13 +75,14 @@ const EditSettingPageBase = ({
   const [setting, setSetting] = useState<EditableSetting | null>(null)
   const [credentialValues, setCredentialValues] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(true)
+  const [pendingValues, setPendingValues] = useState<Record<string, unknown> | null>(null)
   const formRef = useRef<SettingsFormRef>(null)
 
   const allowedBackRoutes = projectName
     ? [{ name: PROJECTS_MANAGEMENT_INTEGRATIONS, params: { projectName } }, backRoute]
     : [backRoute]
 
-  const handleUpdate = async (values: Record<string, unknown>) => {
+  const performUpdate = async (values: Record<string, unknown>) => {
     if (!setting) return
 
     try {
@@ -96,6 +98,26 @@ const EditSettingPageBase = ({
     } catch (error: unknown) {
       toaster.error(getErrorMessage(error))
     }
+  }
+
+  const handleUpdate = async (values: Record<string, unknown>) => {
+    if (!setting) return
+
+    // Moving the integration to another project stops every assistant, skill,
+    // workflow, and data source in the current project that relies on it — confirm
+    // before submitting when the project actually changes (EPMCDME-12586).
+    if (values.project_name !== setting.project_name) {
+      setPendingValues(values)
+      return
+    }
+
+    await performUpdate(values)
+  }
+
+  const confirmProjectChange = async () => {
+    const values = pendingValues
+    setPendingValues(null)
+    if (values) await performUpdate(values)
   }
 
   const handleBack = () => {
@@ -192,6 +214,18 @@ const EditSettingPageBase = ({
           </div>
         )}
       </PageLayout>
+
+      {setting && (
+        <ConfirmationModal
+          visible={pendingValues !== null}
+          header="Change integration project?"
+          message={`Assistants, skills, workflows, and data sources in "${setting.project_name}" that use this integration will stop working immediately. This cannot be undone from here.`}
+          confirmText="Change project"
+          confirmButtonType={ButtonType.DELETE}
+          onCancel={() => setPendingValues(null)}
+          onConfirm={confirmProjectChange}
+        />
+      )}
     </div>
   )
 }

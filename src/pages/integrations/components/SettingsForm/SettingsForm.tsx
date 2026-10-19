@@ -464,12 +464,17 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
 
   useEffect(() => {
     if (!customerConfig) return
+    // Skip while editing: changing Project can drop the current credentialType out of
+    // CREDENTIAL_TYPES (admin-only types filtered by the newly selected project), and
+    // Credential Type is already locked during edit — auto-switching it here would
+    // silently reset() and discard the loaded credential values (EPMCDME-12586).
+    if (editing) return
     if (!CREDENTIAL_TYPES.includes(credentialType) && CREDENTIAL_TYPES.length > 0) {
       handleCredentialTypeChange(CREDENTIAL_TYPES[0])
     }
     // handleCredentialTypeChange intentionally uses current form state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [CREDENTIAL_TYPES, credentialType, customerConfig])
+  }, [CREDENTIAL_TYPES, credentialType, customerConfig, editing])
 
   useEffect(() => {
     return registerCredentialTypeCallback(handleCredentialTypeChange)
@@ -596,7 +601,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
               setProjectName(val)
             }}
             label="Project"
-            disabled={editing || disableProject || isGlobal}
+            disabled={disableProject || isGlobal}
             adminOnly={settingType === SETTING_TYPE_PROJECT}
           />
 
