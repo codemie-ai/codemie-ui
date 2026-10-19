@@ -12,9 +12,9 @@ export type NewModelsPolicy = 'enable' | 'disable'
 export const getNewModelsPolicy = (mode: ModelAvailabilityMode): NewModelsPolicy =>
   mode === 'allow_list' ? 'disable' : 'enable'
 
-/** Candidates eligible to become the project's default model; routers can't be a default. */
+/** Regular models and routers share the project allow-list; show each model ID once. */
 export const getConfigurableModels = (models: readonly ModelOption[]) =>
-  models.filter((model) => !model.isRouter)
+  Array.from(new Map(models.map((model) => [model.value, model])).values())
 
 export const getRouterModels = (models: readonly ModelOption[]) =>
   models.filter((model) => model.isRouter)

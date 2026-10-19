@@ -46,11 +46,23 @@ const settings = (extra: Partial<ProjectModelSettings> = {}): ProjectModelSettin
 })
 
 describe('projectModelConfiguration', () => {
-  it('separates routers from the default-model candidates', () => {
+  it('includes regular models and routers in the default-model candidates', () => {
     const models = [...MODELS, model('router', { isRouter: true })]
 
-    expect(getConfigurableModels(models).map((m) => m.value)).toEqual(['a', 'b', 'premium'])
+    expect(getConfigurableModels(models).map((m) => m.value)).toEqual([
+      'a',
+      'b',
+      'premium',
+      'router',
+    ])
     expect(getRouterModels(models).map((m) => m.value)).toEqual(['router'])
+  })
+
+  it('shows each model ID once when the model and router catalogs overlap', () => {
+    const router = model('router', { isRouter: true, label: 'Router' })
+    const models = [...MODELS, model('router'), MODELS[0], router, router]
+
+    expect(getConfigurableModels(models)).toEqual([...MODELS, router])
   })
 
   it('includes routers in the checklist alongside regular models', () => {
@@ -59,7 +71,7 @@ describe('projectModelConfiguration', () => {
     expect(getChecklistModels(models).map((m) => m.value)).toEqual(['a', 'b', 'premium', 'router'])
   })
 
-  it('keeps only the first entry when a model and router share the same value', () => {
+  it('keeps only the first checklist entry when a model and router share the same value', () => {
     const models = [model('shared'), model('shared', { isRouter: true })]
 
     expect(getChecklistModels(models)).toEqual([model('shared')])

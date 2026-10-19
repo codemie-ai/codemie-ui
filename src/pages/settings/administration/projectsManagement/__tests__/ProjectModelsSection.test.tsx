@@ -61,19 +61,6 @@ vi.mock('../components/ModelConfigurationTable', () => ({
   ),
 }))
 
-vi.mock('../components/DefaultModelsSelector', () => ({
-  default: ({ models, defaultModelError }: any) => (
-    <div>
-      <ul data-testid="default-model-options">
-        {models.map((model: ModelOption) => (
-          <li key={model.value}>{model.value}</li>
-        ))}
-      </ul>
-      {defaultModelError && <p>{defaultModelError}</p>}
-    </div>
-  ),
-}))
-
 const CATALOG: ModelOption[] = [
   { label: 'Model A', value: 'model-a', isDefault: true },
   { label: 'Model B', value: 'model-b', isDefault: false },
@@ -87,13 +74,15 @@ const STORED: ProjectModelSettings = {
 }
 
 const renderSection = async () => {
-  render(<ProjectModelsSection projectName="team" />)
+  const rendered = render(<ProjectModelsSection projectName="team" />)
   await screen.findByText('Model configuration')
+  return rendered
 }
 
 describe('ProjectModelsSection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAppInfoStore.llmRouters = []
     mockAppInfoStore.getLLMModels.mockResolvedValue(CATALOG)
     mockAppInfoStore.getProjectLLMModels.mockResolvedValue(CATALOG)
     mockSettingsStore.fetchSettings.mockResolvedValue(STORED)
@@ -104,41 +93,52 @@ describe('ProjectModelsSection', () => {
 
   afterEach(cleanup)
 
-  it('counts all models and routers available to the project', async () => {
+  it('counts regular models and routers available to the project', async () => {
     await renderSection()
 
     expect(screen.getByText('4 of 4 models available')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'router:on' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled()
   })
 
-  it('shows the router in the checklist exactly once, enabled by default', async () => {
-    await renderSection()
+  it('offers an overlapping router once in the table and project default dropdown and saves it as default', async () => {
+    mockAppInfoStore.llmRouters = [{ value: 'router', label: 'Router' }]
+    const { container } = await renderSection()
 
     expect(screen.getAllByRole('button', { name: 'router:on' })).toHaveLength(1)
+    expect(screen.getByText('4 of 4 models available')).toBeInTheDocument()
+
+    fireEvent.click(container.querySelector('#project-default-model')!)
+    expect(
+      await within(await screen.findByRole('listbox')).findAllByRole('option', { name: 'Router' })
+    ).toHaveLength(1)
+    fireEvent.click(within(screen.getByRole('listbox')).getByRole('option', { name: 'Router' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }))
+
+    await waitFor(() =>
+      expect(mockSettingsStore.saveSettings).toHaveBeenCalledWith(
+        'team',
+        expect.objectContaining({
+          default_model: 'router',
+          models: ['model-a', 'model-b', 'premium', 'router'],
+        })
+      )
+    )
   })
 
-  it('persists a toggled-off router in the saved allow list, same as a regular model', async () => {
+  it('removes a disabled router from the saved allow list', async () => {
     await renderSection()
 
     fireEvent.click(screen.getByRole('button', { name: 'router:on' }))
+    expect(screen.getByText('3 of 4 models available')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }))
 
-    await waitFor(() => expect(mockSettingsStore.saveSettings).toHaveBeenCalled())
-    const [, saved] = mockSettingsStore.saveSettings.mock.calls[0]
-    expect(saved).toMatchObject({ mode: 'allow_list', models: ['model-a', 'model-b', 'premium'] })
-  })
-
-  it('keeps the default-model picker router-free', async () => {
-    await renderSection()
-
-    const defaultModelOptions = within(screen.getByTestId('default-model-options')).getAllByRole(
-      'listitem'
+    await waitFor(() =>
+      expect(mockSettingsStore.saveSettings).toHaveBeenCalledWith(
+        'team',
+        expect.objectContaining({ models: ['model-a', 'model-b', 'premium'] })
+      )
     )
-    expect(defaultModelOptions.map((el) => el.textContent)).toEqual([
-      'model-a',
-      'model-b',
-      'premium',
-    ])
   })
 
   it('saves a disabled model as an explicit allow list and keeps member overrides', async () => {
@@ -166,6 +166,7 @@ describe('ProjectModelsSection', () => {
     fireEvent.click(screen.getByRole('button', { name: 'model-a:on' }))
     fireEvent.click(screen.getByRole('button', { name: 'model-b:on' }))
     fireEvent.click(screen.getByRole('button', { name: 'premium:on' }))
+    fireEvent.click(screen.getByRole('button', { name: 'router:on' }))
 
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled()
   })
