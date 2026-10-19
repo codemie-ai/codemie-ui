@@ -34,6 +34,7 @@ interface SelectProps<TValue extends string | number | null = string | number | 
   placeholder?: string
   className?: string
   valueTemplate?: ReactNode
+  itemTemplate?: (option: FilterOption) => ReactNode
   rootClassName?: string
   classNameValue?: string
   disabled?: boolean
@@ -55,6 +56,31 @@ interface SelectProps<TValue extends string | number | null = string | number | 
   filterBy?: string
   filterPlaceholder?: string
 }
+
+interface DefaultOptionTemplateProps {
+  option: FilterOption
+}
+
+const DefaultOptionTemplate = ({ option }: DefaultOptionTemplateProps) => {
+  const optionEl = useRef<HTMLParagraphElement>(null)
+  const isTruncated = useIsTruncated(optionEl)
+
+  return (
+    <p
+      ref={optionEl}
+      data-tooltip-id="react-tooltip"
+      data-tooltip-content={isTruncated ? option.label : ''}
+      data-tooltip-class-name="max-w-2xl"
+      className="px-2.5 py-1.5 truncate"
+    >
+      {option.label}
+    </p>
+  )
+}
+
+const renderDefaultOptionTemplate = (option: FilterOption) => (
+  <DefaultOptionTemplate option={option} />
+)
 
 // PrimeReact returns the full option object when the selected value is an empty
 // string (a known bug). This helper always returns a safe primitive.
@@ -82,6 +108,7 @@ const Select = forwardRef(
       classNameValue = '',
       disabled = false,
       valueTemplate,
+      itemTemplate,
       panelFooterTemplate,
       showClear,
       label,
@@ -100,22 +127,7 @@ const Select = forwardRef(
     }: SelectProps<TValue>,
     ref: Ref<Dropdown>
   ) => {
-    const OptionTemplate = (option) => {
-      const optionEl = useRef<HTMLParagraphElement>(null)
-      const isTruncated = useIsTruncated(optionEl)
-
-      return (
-        <p
-          ref={optionEl}
-          data-tooltip-id="react-tooltip"
-          data-tooltip-content={isTruncated ? option.label : ''}
-          data-tooltip-class-name="max-w-2xl"
-          className="px-2.5 py-1.5 truncate"
-        >
-          {option.label}
-        </p>
-      )
-    }
+    const ResolvedOptionTemplate = itemTemplate ?? renderDefaultOptionTemplate
 
     const handleChange = (e: DropdownChangeEvent) => {
       onChange?.(e)
@@ -157,7 +169,7 @@ const Select = forwardRef(
                 placeholder={placeholder}
                 panelFooterTemplate={panelFooterTemplate}
                 valueTemplate={valueTemplate}
-                itemTemplate={OptionTemplate}
+                itemTemplate={ResolvedOptionTemplate}
                 loading={loading}
                 appendTo={appendTo}
                 filter={filter}

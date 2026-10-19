@@ -29,6 +29,7 @@ export interface FilterOption {
   value: string | number | boolean | null
   id?: string
   badge?: string
+  isPremium?: boolean
 }
 
 export interface SelectOption<

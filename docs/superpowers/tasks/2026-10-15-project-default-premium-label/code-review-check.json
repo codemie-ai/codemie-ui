@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 is resolved: DefaultModelOptionRow now mirrors LlmOptionRow's truncation pattern (label ref + useIsTruncated, data-tooltip-id/data-tooltip-content set only when truncated), verified by two new tests (truncated and not-truncated cases) with the hook mocked. The fix-up diff is small and purely additive (a ref, a hook call, a conditional spread) with no security, public-API, or build/runtime risk, so no confirmation-pass dispatch was needed.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "Project default model dropdown: each premium model has the Premium label", "status": "pass", "notes": "covered by DefaultModelsSelector.test.tsx."},
+    {"kind": "story-ac", "item": "CLI default model dropdown: each premium model has the Premium label", "status": "pass", "notes": "same itemTemplate applied to cli-default-model Select."},
+    {"kind": "story-ac", "item": "Non-premium models do not have the Premium label", "status": "pass", "notes": "test asserts GPT-4o row has no meta node."},
+    {"kind": "story-ac", "item": "Selected Project default model, if premium, is visually highlighted", "status": "pass", "notes": "isDefaultModelPremium drives PremiumSelectionNote."},
+    {"kind": "story-ac", "item": "Selected CLI default model, if premium, is visually highlighted", "status": "pass", "notes": "isCodeDefaultModelPremium drives the analogous note."},
+    {"kind": "story-ac", "item": "No premium highlight when the selected default model is not premium", "status": "pass", "notes": "test asserts both testids absent."},
+    {"kind": "story-ac", "item": "Set of models in dropdowns and default-selection logic unchanged", "status": "pass", "notes": "modelOptions still maps 1:1 over the same models prop."},
+    {"kind": "spec", "item": "Select.itemTemplate is additive and must not change behavior for existing consumers", "status": "pass", "notes": "ResolvedOptionTemplate fallback preserved; verified by Select.test.tsx."},
+    {"kind": "spec", "item": "Selected-value highlight is a text note + tooltip + link, not a badge or ring/border", "status": "pass", "notes": "PremiumSelectionNote renders plain text + TooltipButton + Link."},
+    {"kind": "spec", "item": "No type/store/API changes beyond ModelOption.isPremium and new optional FilterOption.isPremium", "status": "pass", "notes": "Only src/types/filters.ts changed."},
+    {"kind": "spec", "item": "New DefaultModelsSelector test file covering row label and selected-value note for both fields independently", "status": "pass", "notes": "New test file asserts both fields independently."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "Commits follow 'EPMCDME-15973: Capital sentence'."},
+    {"kind": "code-quality", "status": "pass", "notes": "No file exceeds documented size limits; follows existing premium-indication convention."},
+    {"kind": "security", "status": "na", "notes": "Pure presentation-layer change."}
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "DefaultModelOptionRow now sets data-tooltip-id/data-tooltip-content via useIsTruncated, matching LlmOptionRow's convention. Verified by 2 new tests mocking the hook for truncated and non-truncated cases; full suite (150 tests) passes with no regressions."
+    }
+  ]
+}

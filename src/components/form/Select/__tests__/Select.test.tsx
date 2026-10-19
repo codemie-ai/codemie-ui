@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import Select from '../Select'
@@ -103,6 +103,37 @@ describe('Select', () => {
       const secondAlert = screen.getByRole('alert')
       expect(secondAlert).toHaveTextContent('Pick another project')
       expect(secondAlert).not.toBe(firstAlert)
+    })
+  })
+
+  describe('custom item rendering', () => {
+    it('uses itemTemplate to render each option row when provided', () => {
+      const { container } = render(
+        <Select
+          id="project"
+          name="project"
+          value={null}
+          options={options}
+          onChange={noop}
+          itemTemplate={(option) => <span data-testid="custom-row">{option.label}-custom</span>}
+        />
+      )
+
+      fireEvent.click(container.querySelector('.p-dropdown')!)
+
+      const rows = screen.getAllByTestId('custom-row')
+      expect(rows.map((row) => row.textContent)).toEqual(['Option A-custom', 'Option B-custom'])
+    })
+
+    it('falls back to the default truncating row when itemTemplate is not provided', () => {
+      const { container } = render(
+        <Select id="project" name="project" value={null} options={options} onChange={noop} />
+      )
+
+      fireEvent.click(container.querySelector('.p-dropdown')!)
+
+      expect(screen.getByText('Option A')).toBeInTheDocument()
+      expect(screen.queryByTestId('custom-row')).not.toBeInTheDocument()
     })
   })
 })

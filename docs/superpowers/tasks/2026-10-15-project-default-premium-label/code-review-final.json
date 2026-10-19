@@ -1,0 +1,37 @@
+{
+  "decision": "request-changes",
+  "rationale": "All 11 acceptance criteria (7 story-AC + 4 plan decisions) pass per the acceptance lens, and the edge-case lens found zero unguarded reachable paths. One real defect survived triage: the new premium-row renderer in DefaultModelsSelector.tsx drops the truncation tooltip the default Select row previously provided for every option, regressing recoverability of long model names exactly in the two dropdowns this ticket targets. 10 blind-lens concerns were dismissed as speculative, pre-existing elsewhere in the codebase, or already refuted by the edge-case lens's confirmation that the itemTemplate fallback is additive and that RTL unmount() correctly tears down portaled dropdown panels. 0 findings deferred.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "Project default model dropdown: each premium model has the Premium label", "status": "pass", "notes": "DefaultModelsSelector.tsx itemTemplate={renderDefaultModelOption} renders a Premium meta-line when option.isPremium; covered by DefaultModelsSelector.test.tsx."},
+    {"kind": "story-ac", "item": "CLI default model dropdown: each premium model has the Premium label", "status": "pass", "notes": "Same renderDefaultModelOption itemTemplate applied to the cli-default-model Select; covered by the same parametrized test."},
+    {"kind": "story-ac", "item": "Non-premium models do not have the Premium label", "status": "pass", "notes": "DefaultModelOptionRow only renders the meta span when isPremium is true; test asserts the GPT-4o row has no meta node."},
+    {"kind": "story-ac", "item": "Selected Project default model, if premium, is visually highlighted", "status": "pass", "notes": "isDefaultModelPremium drives PremiumSelectionNote testId=project-default-model-premium-note; covered by test."},
+    {"kind": "story-ac", "item": "Selected CLI default model, if premium, is visually highlighted", "status": "pass", "notes": "isCodeDefaultModelPremium drives the analogous note testId=cli-default-model-premium-note; covered by test."},
+    {"kind": "story-ac", "item": "No premium highlight when the selected default model is not premium", "status": "pass", "notes": "findIsPremium returns false for non-premium selections; explicit test asserts both testids absent."},
+    {"kind": "story-ac", "item": "Set of models in dropdowns and default-selection logic unchanged", "status": "pass", "notes": "modelOptions still maps 1:1 over the same models prop (only adds isPremium passthrough); onDefaultChange/onCodeDefaultChange/local state logic untouched."},
+    {"kind": "spec", "item": "Select.itemTemplate is additive and must not change behavior for existing consumers that don't pass it", "status": "pass", "notes": "ResolvedOptionTemplate = itemTemplate ?? DefaultOptionTemplate preserves prior default rendering; verified by Select.test.tsx fallback case and independently confirmed by the edge-case lens."},
+    {"kind": "spec", "item": "Selected-value highlight is a text note + tooltip + link, not a badge or ring/border on the trigger", "status": "pass", "notes": "PremiumSelectionNote renders plain text + TooltipButton + Link; Select's rootClassName is unchanged by premium state, so no trigger border/ring is added."},
+    {"kind": "spec", "item": "No type/store/API changes beyond ModelOption.isPremium (pre-existing) and new optional FilterOption.isPremium", "status": "pass", "notes": "Only src/types/filters.ts changes, adding one optional field."},
+    {"kind": "spec", "item": "New DefaultModelsSelector test file covering row label and selected-value note for both fields independently", "status": "pass", "notes": "New test file asserts both fields independently in both the row-label and selected-note describe blocks."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "All 3 commits follow 'EPMCDME-15973: Capital sentence' per .ai-run/guides/standards/git-workflow.md."},
+    {"kind": "code-quality", "status": "pass", "notes": "No file exceeds documented size limits; no new abstractions beyond what the task required; follows existing MultiSelect/LLMSelector premium-indication convention."},
+    {"kind": "security", "status": "na", "notes": "Pure presentation-layer change; no auth, secrets, or injection surface touched."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/DefaultModelsSelector.tsx",
+      "line": 10,
+      "title": "Premium rows lose default truncation tooltip",
+      "problem": "DefaultModelOptionRow (used via itemTemplate for both dropdowns) renders the label with only a CSS `truncate` class. The Select component it replaces (DefaultOptionTemplate) used `useIsTruncated` to show the full label in a tooltip whenever the text was clipped. That recovery mechanism is lost for every row in these two dropdowns now that itemTemplate is supplied.",
+      "impact": "A long model label (e.g. 'Bedrock Claude Opus 4.5', or longer premium model names) that overflows the row width is silently clipped with no way for the user to read the full name — a regression specifically affecting the premium models this ticket is about surfacing clearly.",
+      "recommendation": "Mirror LlmOptionRow's pattern in src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx: add a label ref + useIsTruncated(labelRef), and set data-tooltip-id/data-tooltip-content on the row (or label span) when truncated, matching the project's established truncation-tooltip convention."
+    }
+  ]
+}
