@@ -33,6 +33,7 @@ interface ProjectModelSettingsStore {
     projectName: string,
     settings: ProjectModelSettings
   ) => Promise<ProjectModelSettings>
+  resetSettings: (projectName: string) => Promise<ProjectModelSettings>
   saveMemberOverrides: (
     projectName: string,
     overrides: Record<string, MemberModelOverride | null>
@@ -102,6 +103,28 @@ export const projectModelSettingsStore = proxy<ProjectModelSettingsStore>({
       return data
     } catch (error: any) {
       const message = getErrorMessage(error, 'Failed to update model settings')
+      this.error = message
+      toaster.error(message)
+      throw error
+    } finally {
+      this.saving = false
+    }
+  },
+
+  /** Clears the project's allow-list and default model back to the platform's global settings. */
+  async resetSettings(projectName) {
+    this.saving = true
+    this.error = null
+    try {
+      const response = await api.delete(allowedModelsUrl(projectName), undefined, {
+        skipErrorHandling: true,
+      })
+      const data = fromProjectResponse(await response.json())
+      this.settingsByProject[projectName] = data
+      appInfoStore.invalidateProjectLLMModels(projectName)
+      return data
+    } catch (error: any) {
+      const message = getErrorMessage(error, 'Failed to reset model settings')
       this.error = message
       toaster.error(message)
       throw error

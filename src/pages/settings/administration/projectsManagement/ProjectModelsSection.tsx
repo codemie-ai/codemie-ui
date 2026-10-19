@@ -19,7 +19,7 @@ import { routerToModelOption } from '@/utils/routerToModelOption'
 import toaster from '@/utils/toaster'
 
 import DefaultModelsSelector from './components/DefaultModelsSelector'
-import ModelConfigurationTable from './components/ModelConfigurationTable'
+import ModelConfigurationTable, { ModelSelectionState } from './components/ModelConfigurationTable'
 import {
   getChecklistModels,
   getConfigurableModels,
@@ -60,7 +60,6 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
   const [initialDraft, setInitialDraft] = useState<DraftState | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [resetConfirmVisible, setResetConfirmVisible] = useState(false)
   const [navigationDialogVisible, setNavigationDialogVisible] = useState(false)
 
   const defaultModelCandidates = useMemo(() => getConfigurableModels(catalog), [catalog])
@@ -163,42 +162,53 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
         : current
     )
 
+  const resetToDefaults = () => {
+    setDraft(defaultsDraft)
+  }
+
+  const applySaved = (saved: ProjectModelSettings) => {
+    const savedDraft = toDraft(saved, checklistModels, globalDefaultModel)
+    setSavedSettings(saved)
+    setDraft(savedDraft)
+    setInitialDraft(savedDraft)
+  }
+
   const persistDraft = async (targetDraft: DraftState) => {
     if (!savedSettings) return false
 
-    const nextSettings: ProjectModelSettings = {
-      // 'disable' always materializes an explicit allow-list of the enabled models — the only
-      // shape the backend's flat `allowed_models` can represent (it has no deny-list concept).
-      ...selectionToSettings(savedSettings, targetDraft.selection, 'disable'),
-      default_model:
-        targetDraft.defaultModel === globalDefaultModel ? null : targetDraft.defaultModel,
-    }
-
     setSaving(true)
     try {
-      const saved = await projectModelSettingsStore.saveSettings(projectName, nextSettings)
-      const savedDraft = toDraft(saved, checklistModels, globalDefaultModel)
-      setSavedSettings(saved)
-      setDraft(savedDraft)
-      setInitialDraft(savedDraft)
+      const saved = await projectModelSettingsStore.saveSettings(projectName, {
+        ...selectionToSettings(savedSettings, targetDraft.selection, 'disable'),
+        default_model:
+          targetDraft.defaultModel === globalDefaultModel ? null : targetDraft.defaultModel,
+      })
+      applySaved(saved)
       await loadProjectModels()
       toaster.success('Model settings updated')
       return true
-    } catch {
-      // store already reported the error
-      return false
     } finally {
       setSaving(false)
     }
   }
 
-  const resetToDefaults = async () => {
-    setResetConfirmVisible(false)
-    await persistDraft(defaultsDraft)
+  const persistReset = async () => {
+    setSaving(true)
+    try {
+      const saved = await projectModelSettingsStore.resetSettings(projectName)
+      applySaved(saved)
+      await loadProjectModels()
+      toaster.success('Model settings updated')
+      return true
+    } finally {
+      setSaving(false)
+    }
   }
 
   const saveChanges = async () => {
     if (!draft || !hasChanges || !defaultIsValid) return false
+
+    if (isSameDraft(draft, defaultsDraft)) return persistReset()
     return persistDraft(draft)
   }
 
@@ -256,7 +266,7 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
             <Button
               size={ButtonSize.MEDIUM}
               variant={ButtonType.SECONDARY}
-              onClick={() => setResetConfirmVisible(true)}
+              onClick={resetToDefaults}
               disabled={isAtDefaults || saving}
             >
               Reset to global settings
@@ -283,33 +293,13 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
       <ModelConfigurationTable
         models={checklistModels}
         getSelectionState={(model) =>
-          isModelAvailable(model, draft.selection, false) ? 'checked' : 'unchecked'
+          isModelAvailable(model, draft.selection, false)
+            ? ModelSelectionState.Checked
+            : ModelSelectionState.Unchecked
         }
         getDisabledReason={() => undefined}
         onSelectionChange={setModelEnabled}
       />
-
-      <Popup
-        visible={resetConfirmVisible}
-        header="Reset model configuration?"
-        onHide={() => setResetConfirmVisible(false)}
-        limitWidth
-        footerContent={
-          <div className="flex justify-end gap-3">
-            <Button variant={ButtonType.BASE} onClick={() => setResetConfirmVisible(false)}>
-              Cancel
-            </Button>
-            <Button variant={ButtonType.PRIMARY} onClick={resetToDefaults}>
-              Reset to global settings
-            </Button>
-          </div>
-        }
-      >
-        <p className="mb-2 text-sm text-text-quaternary">
-          This enables every platform model, restores the global default model, shows premium models
-          and turns automatic routing on. Apply changes to save.
-        </p>
-      </Popup>
 
       <Popup
         visible={navigationDialogVisible}

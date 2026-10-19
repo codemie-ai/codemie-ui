@@ -36,6 +36,7 @@ vi.mock('@/utils/toaster', () => ({ default: { success: vi.fn(), error: vi.fn() 
 
 // The table has its own tests; each model becomes a toggle showing its tri-state.
 vi.mock('../ModelConfigurationTable', () => ({
+  ModelSelectionState: { Checked: 'checked', Unchecked: 'unchecked', Mixed: 'mixed' },
   default: ({ models, getSelectionState, onSelectionChange }: any) => (
     <ul>
       {models.map((model: ModelOption) => {

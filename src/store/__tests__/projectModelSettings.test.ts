@@ -20,6 +20,7 @@ import { DEFAULT_PROJECT_MODEL_SETTINGS } from '@/types/entity/projectModelSetti
 
 const mockGet = vi.fn()
 const mockPatch = vi.fn()
+const mockDelete = vi.fn()
 const mockInvalidate = vi.fn()
 const mockToastError = vi.fn()
 
@@ -27,6 +28,7 @@ vi.mock('@/utils/api', () => ({
   default: {
     get: (...args: unknown[]) => mockGet(...args),
     patch: (...args: unknown[]) => mockPatch(...args),
+    delete: (...args: unknown[]) => mockDelete(...args),
   },
 }))
 
@@ -121,6 +123,30 @@ describe('projectModelSettingsStore', () => {
     ).rejects.toBeTruthy()
 
     expect(mockToastError).toHaveBeenCalledWith('Every enabled model is hidden')
+    expect(projectModelSettingsStore.saving).toBe(false)
+  })
+
+  it('clears the allow-list and default model through the reset endpoint', async () => {
+    mockDelete.mockResolvedValue(respond({ allowed_models: null, default_model: null }))
+
+    const saved = await projectModelSettingsStore.resetSettings('p')
+
+    expect(mockDelete).toHaveBeenCalledWith('v1/projects/p/allowed-models', undefined, {
+      skipErrorHandling: true,
+    })
+    expect(saved).toEqual(DEFAULT_PROJECT_MODEL_SETTINGS)
+    expect(mockInvalidate).toHaveBeenCalledWith('p')
+    expect(projectModelSettingsStore.settingsByProject.p).toEqual(DEFAULT_PROJECT_MODEL_SETTINGS)
+  })
+
+  it('toasts the backend detail when a reset is rejected', async () => {
+    mockDelete.mockRejectedValue({
+      parsedError: { message: 'Failed to reset model settings' },
+    })
+
+    await expect(projectModelSettingsStore.resetSettings('p')).rejects.toBeTruthy()
+
+    expect(mockToastError).toHaveBeenCalledWith('Failed to reset model settings')
     expect(projectModelSettingsStore.saving).toBe(false)
   })
 })

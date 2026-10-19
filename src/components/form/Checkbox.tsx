@@ -98,7 +98,7 @@ export const Checkbox = forwardRef<HTMLInputElement, Props>(
               <div className="flex items-center gap-x-1">
                 <label
                   htmlFor={idKey}
-                  className={cn('text-sm ml-2 transition', {
+                  className={cn('text-sm ml-2 transition select-none', {
                     'cursor-pointer hover:text-border-accent': !disabled && checked,
                     'cursor-not-allowed': disabled,
                   })}

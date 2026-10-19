@@ -202,8 +202,8 @@ const ProjectMemberModelOverrideModal: FC<Props> = ({
 
   const getSelectionState = (model: ModelOption): ModelSelectionState => {
     const value = overrides[model.value] ?? 'project'
-    if (value === 'mixed') return 'mixed'
-    return value === 'disabled' ? 'unchecked' : 'checked'
+    if (value === 'mixed') return ModelSelectionState.Mixed
+    return value === 'disabled' ? ModelSelectionState.Unchecked : ModelSelectionState.Checked
   }
 
   const setModelEnabled = (model: ModelOption, checked: boolean) => {

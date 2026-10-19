@@ -10,7 +10,11 @@ import StatusBadge, { StatusEnum } from '@/components/StatusBadge'
 import { ModelOption } from '@/types/entity/configuration'
 import { cn } from '@/utils/utils'
 
-export type ModelSelectionState = 'checked' | 'unchecked' | 'mixed'
+export enum ModelSelectionState {
+  Checked = 'checked',
+  Unchecked = 'unchecked',
+  Mixed = 'mixed',
+}
 
 interface ModelConfigurationTableProps {
   models: ModelOption[]
@@ -52,6 +56,7 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
   const [query, setQuery] = useState('')
   const [provider, setProvider] = useState<string | number | null>('all')
   const [premiumOnly, setPremiumOnly] = useState(false)
+  const [selectedOnly, setSelectedOnly] = useState(false)
 
   const hasPremiumMetadata = models.some((model) => model.isPremium)
 
@@ -73,14 +78,17 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
       (model) =>
         `${model.label} ${model.value}`.toLowerCase().includes(normalizedQuery) &&
         (provider === 'all' || model.provider === provider) &&
-        (!premiumOnly || model.isPremium)
+        (!premiumOnly || model.isPremium) &&
+        (!selectedOnly || getSelectionState(model) !== ModelSelectionState.Unchecked)
     )
-  }, [models, premiumOnly, provider, query])
+  }, [getSelectionState, models, premiumOnly, provider, query, selectedOnly])
 
   const enabledVisibleCount = filteredModels.filter(
-    (model) => getSelectionState(model) === 'checked'
+    (model) => getSelectionState(model) === ModelSelectionState.Checked
   ).length
-  const hasMixedVisibleState = filteredModels.some((model) => getSelectionState(model) === 'mixed')
+  const hasMixedVisibleState = filteredModels.some(
+    (model) => getSelectionState(model) === ModelSelectionState.Mixed
+  )
   const allVisibleEnabled =
     filteredModels.length > 0 && enabledVisibleCount === filteredModels.length
   const someVisibleEnabled = hasMixedVisibleState || (enabledVisibleCount > 0 && !allVisibleEnabled)
@@ -95,7 +103,7 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
   return (
     <div className={className}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-4">
           <Input
             aria-label="Search models"
             placeholder="Search models"
@@ -110,14 +118,24 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
             options={providerOptions}
             rootClassName="w-44"
           />
-          {hasPremiumMetadata && (
+
+          <div className="flex gap-4 ml-2">
+            {hasPremiumMetadata && (
+              <Checkbox
+                label="Premium only"
+                checked={premiumOnly}
+                onChange={setPremiumOnly}
+                rootClassName="self-center gap-0"
+              />
+            )}
+
             <Checkbox
-              label="Premium only"
-              checked={premiumOnly}
-              onChange={setPremiumOnly}
-              rootClassName="self-center"
+              label="Selected only"
+              checked={selectedOnly}
+              onChange={setSelectedOnly}
+              rootClassName="self-center gap-0"
             />
-          )}
+          </div>
         </div>
       </div>
 
@@ -166,8 +184,8 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
                   >
                     <Checkbox
                       label=""
-                      checked={selectionState === 'checked'}
-                      mixed={selectionState === 'mixed'}
+                      checked={selectionState === ModelSelectionState.Checked}
+                      mixed={selectionState === ModelSelectionState.Mixed}
                       disabled={!!disabledReason}
                       onChange={(checked) => onSelectionChange(model, checked)}
                     />

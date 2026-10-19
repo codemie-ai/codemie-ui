@@ -31,7 +31,7 @@ const { mockAppInfoStore, mockSettingsStore, mockToastSuccess } = vi.hoisted(() 
     getProjectLLMModels: vi.fn(),
     invalidateProjectLLMModels: vi.fn(),
   },
-  mockSettingsStore: { fetchSettings: vi.fn(), saveSettings: vi.fn() },
+  mockSettingsStore: { fetchSettings: vi.fn(), saveSettings: vi.fn(), resetSettings: vi.fn() },
   mockToastSuccess: vi.fn(),
 }))
 
@@ -45,6 +45,7 @@ vi.mock('react-router', async (importOriginal) => ({
 
 // The table has its own tests; here each model is a toggle so the section's policy logic is visible.
 vi.mock('../components/ModelConfigurationTable', () => ({
+  ModelSelectionState: { Checked: 'checked', Unchecked: 'unchecked', Mixed: 'mixed' },
   default: ({ models, getSelectionState, onSelectionChange }: any) => (
     <ul>
       {models.map((model: ModelOption) => {
@@ -157,6 +158,23 @@ describe('ProjectModelsSection', () => {
     })
     expect(saved.member_overrides).toEqual(STORED.member_overrides)
     expect(mockAppInfoStore.invalidateProjectLLMModels).toHaveBeenCalledWith('team')
+    expect(mockToastSuccess).toHaveBeenCalledWith('Model settings updated')
+  })
+
+  it('clears the allow list through the reset endpoint when applying global defaults', async () => {
+    mockSettingsStore.fetchSettings.mockResolvedValue({
+      ...DEFAULT_PROJECT_MODEL_SETTINGS,
+      mode: 'allow_list',
+      models: ['model-a', 'model-b', 'router'],
+    })
+    mockSettingsStore.resetSettings.mockResolvedValue(DEFAULT_PROJECT_MODEL_SETTINGS)
+    await renderSection()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to global settings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }))
+
+    await waitFor(() => expect(mockSettingsStore.resetSettings).toHaveBeenCalledWith('team'))
+    expect(mockSettingsStore.saveSettings).not.toHaveBeenCalled()
     expect(mockToastSuccess).toHaveBeenCalledWith('Model settings updated')
   })
 
