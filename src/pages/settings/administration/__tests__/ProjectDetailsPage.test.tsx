@@ -178,6 +178,30 @@ describe('ProjectDetailsPage', () => {
     routeState.name = 'projects-management-detail'
   })
 
+  it('keeps the tab navigation mounted when switching into and out of Members', async () => {
+    const { rerender } = render(<ProjectDetailsPage />)
+
+    const membersTab = await screen.findByRole('tab', { name: 'Members' })
+    act(() => membersTab.focus())
+
+    routeState.name = 'projects-management-members'
+    rerender(<ProjectDetailsPage />)
+    await screen.findByTestId('project-members-manager')
+
+    expect(screen.getByRole('tab', { name: 'Members' })).toBe(membersTab)
+    expect(membersTab).toHaveFocus()
+
+    const overviewTab = screen.getByRole('tab', { name: 'Overview' })
+    act(() => overviewTab.focus())
+
+    routeState.name = 'projects-management-overview'
+    rerender(<ProjectDetailsPage />)
+    expect(screen.queryByTestId('project-members-manager')).not.toBeInTheDocument()
+
+    expect(screen.getByRole('tab', { name: 'Overview' })).toBe(overviewTab)
+    expect(overviewTab).toHaveFocus()
+  })
+
   it('renders the no-value placeholder when the project description is null (EPMCDME-14336)', async () => {
     projectsStore.getProject = vi.fn().mockResolvedValue({
       ...mockProject,

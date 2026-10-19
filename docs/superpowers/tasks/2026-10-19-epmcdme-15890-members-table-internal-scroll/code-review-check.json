@@ -1,0 +1,33 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted check of the single prior blocking finding: CR-001 is resolved at HEAD 04c90c509 — ProjectDetailsPage.tsx:328 now renders the content root as a div on every tab (bounded classes only on Members), so ProjectDetailsNavigation is reconciled rather than remounted, and ProjectDetailsPage.test.tsx asserts tab node identity and focus survive a members <-> overview switch. Business and standards rows are carried forward from the final round (no spec, standards not run under the compact profile); no new findings are discovered on this round.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Not run: compact review profile omits the standards audit." },
+    { "kind": "code-quality", "status": "na", "notes": "Not run: compact review profile omits the standards audit." },
+    { "kind": "security", "status": "na", "notes": "Not run: compact review profile omits the standards audit." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/ProjectDetailsPage.tsx",
+      "line": 327,
+      "title": "Members tab toggle remounts the tab navigation",
+      "problem": "SettingsLayout's content is `<div className=\"flex h-full flex-col\">{tabContent}</div>` on the Members tab and the bare `tabContent` fragment on every other tab. Overview, members, budgets and integrations routes all render the same ProjectDetailsPage instance (router.tsx), so switching between Members and another tab changes the element type at the content root (div vs Fragment) and React unmounts and remounts the whole subtree, including ProjectDetailsNavigation.",
+      "impact": "Every switch into or out of the Members tab destroys and recreates the tablist: the tab button the user just activated with the keyboard loses focus (focus drops to the document body, so the next Tab restarts from the top of the page), and the horizontally scrollable tablist (`overflow-x-auto`) resets its scroll position on narrow widths. This is an accessibility/lifecycle regression introduced by this change; other tab switches keep the nav mounted.",
+      "recommendation": "Keep the content root element type stable across tabs, e.g. always render `<div className={cn(isMembersView && 'flex h-full flex-col')}>{tabContent}</div>` (or apply the bounded classes to a wrapper that exists on every tab), so ProjectDetailsNavigation is reconciled rather than remounted when the active tab crosses the Members boundary. Add a test asserting the nav node (or focus on the activated tab) survives a members <-> overview switch."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "HEAD source: content root is always <div className={cn(isMembersView && 'flex h-full flex-col')}> (line 328, cn imported); new test asserts tab identity and focus across members <-> overview."
+    }
+  ]
+}

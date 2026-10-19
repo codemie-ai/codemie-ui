@@ -57,7 +57,7 @@ const ProjectDetailsNavigation: FC<Props> = ({ projectName, activeTab, visibleTa
   return (
     <nav
       aria-label="Project sections"
-      className="sticky top-0 z-20 -mx-6 border-b border-border-structural bg-surface-base-primary px-6"
+      className="sticky top-0 z-20 -mx-6 shrink-0 border-b border-border-structural bg-surface-base-primary px-6"
     >
       <div className="flex gap-1 overflow-x-auto" role="tablist">
         {tabs.map((tab) => {

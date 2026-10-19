@@ -39,6 +39,7 @@ import { ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
+import { cn } from '@/utils/utils'
 
 import ProjectBudgetsSection, {
   ProjectBudgetsAccess,
@@ -243,6 +244,72 @@ const ProjectDetailsPage = () => {
     )
   }
 
+  const isMembersView = activeTab === 'members' && canOpenActiveTab
+
+  const tabContent = (
+    <>
+      <ProjectDetailsNavigation
+        projectName={project.name}
+        activeTab={activeTab}
+        visibleTabs={visibleTabs}
+      />
+      {activeTab === 'overview' && (
+        <ProjectOverviewSection
+          project={project}
+          onCostCenterOpen={handleCostCenterOpen}
+          budgetsAccess={budgetsAccess}
+          isChargebackFeatureEnabled={isChargebackFeatureEnabled}
+          costCentersEnabled={isCostCentersEnabled}
+          canViewBudgets={canViewBudgets}
+          canManageProject={canManageProject}
+          isModelsConfigEnabled={isModelsConfigEnabled}
+          spendingRows={canViewBudgets ? project.spending_widget?.data?.rows : undefined}
+          onProjectChanged={loadProject}
+        />
+      )}
+      {activeTab === 'models' && canOpenActiveTab && (
+        <ProjectModelsSection projectName={project.name} />
+      )}
+      {activeTab === 'integrations' && canOpenActiveTab && (
+        <ProjectIntegrationsSection projectName={project.name} />
+      )}
+      {isMembersView && (
+        <div className="flex min-h-0 flex-1 flex-col pt-5 pb-8">
+          <ProjectMembersManager
+            project={project}
+            onMembersChanged={loadProject}
+            budgets={isMaintainer || isProjectAdmin ? budgets : undefined}
+            onBudgetsChanged={isMaintainer || isProjectAdmin ? setBudgets : undefined}
+            // Per-member model overrides have no backend support yet (EPMCDME-14349
+            // scoped the FE to the flat project-level allow-list); keep this entry
+            // point hidden regardless of the Models tab's own feature flag.
+            isModelsConfigEnabled={false}
+          />
+        </div>
+      )}
+      {activeTab === 'budgets' && canOpenActiveTab && (
+        <div className="pt-5 pb-8">
+          <ProjectBudgetsSection
+            projectName={project.name}
+            project={project}
+            access={budgetsAccess}
+            onProjectChanged={loadProject}
+            spendingRows={project.spending_widget?.data?.rows}
+            onBudgetsChanged={isMaintainer || isProjectAdmin ? setBudgets : undefined}
+            spending={project.spending}
+          />
+        </div>
+      )}
+      {!canOpenActiveTab && (
+        <div className="pt-6 text-sm text-text-quaternary">
+          {isPersonalProject
+            ? 'This section is not available for personal projects.'
+            : 'You do not have access to this section.'}
+        </div>
+      )}
+    </>
+  )
+
   return (
     <>
       <SettingsLayout
@@ -255,69 +322,7 @@ const ProjectDetailsPage = () => {
             </Button>
           ) : null
         }
-        content={
-          <>
-            <ProjectDetailsNavigation
-              projectName={project.name}
-              activeTab={activeTab}
-              visibleTabs={visibleTabs}
-            />
-            {activeTab === 'overview' && (
-              <ProjectOverviewSection
-                project={project}
-                onCostCenterOpen={handleCostCenterOpen}
-                budgetsAccess={budgetsAccess}
-                isChargebackFeatureEnabled={isChargebackFeatureEnabled}
-                costCentersEnabled={isCostCentersEnabled}
-                canViewBudgets={canViewBudgets}
-                canManageProject={canManageProject}
-                isModelsConfigEnabled={isModelsConfigEnabled}
-                spendingRows={canViewBudgets ? project.spending_widget?.data?.rows : undefined}
-                onProjectChanged={loadProject}
-              />
-            )}
-            {activeTab === 'models' && canOpenActiveTab && (
-              <ProjectModelsSection projectName={project.name} />
-            )}
-            {activeTab === 'integrations' && canOpenActiveTab && (
-              <ProjectIntegrationsSection projectName={project.name} />
-            )}
-            {activeTab === 'members' && canOpenActiveTab && (
-              <div className="pt-5 pb-8">
-                <ProjectMembersManager
-                  project={project}
-                  onMembersChanged={loadProject}
-                  budgets={isMaintainer || isProjectAdmin ? budgets : undefined}
-                  onBudgetsChanged={isMaintainer || isProjectAdmin ? setBudgets : undefined}
-                  // Per-member model overrides have no backend support yet (EPMCDME-14349
-                  // scoped the FE to the flat project-level allow-list); keep this entry
-                  // point hidden regardless of the Models tab's own feature flag.
-                  isModelsConfigEnabled={false}
-                />
-              </div>
-            )}
-            {activeTab === 'budgets' && canOpenActiveTab && (
-              <div className="pt-5 pb-8">
-                <ProjectBudgetsSection
-                  projectName={project.name}
-                  project={project}
-                  access={budgetsAccess}
-                  onProjectChanged={loadProject}
-                  spendingRows={project.spending_widget?.data?.rows}
-                  onBudgetsChanged={isMaintainer || isProjectAdmin ? setBudgets : undefined}
-                  spending={project.spending}
-                />
-              </div>
-            )}
-            {!canOpenActiveTab && (
-              <div className="pt-6 text-sm text-text-quaternary">
-                {isPersonalProject
-                  ? 'This section is not available for personal projects.'
-                  : 'You do not have access to this section.'}
-              </div>
-            )}
-          </>
-        }
+        content={<div className={cn(isMembersView && 'flex h-full flex-col')}>{tabContent}</div>}
       />
 
       <ProjectModal

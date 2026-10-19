@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15890_fix-members-table-sticky-overlap",
+  "head": "5781c47c27ed99fa427d1ddf8c0b4ad153a95e70",
+  "runner": "custom",
+  "started_at": "2026-10-19T07:54:02Z",
+  "completed_at": "2026-10-19T08:11:29Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 28318,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 21496,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if condition met: package.json and package-lock.json unchanged vs merge base (no dependency added, removed, or moved)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 31292,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output contains 'no leaks found' (gitleaks via docker); also enforced by .husky/pre-commit. Scans working tree only."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 367615,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  697 passed (697); Tests  7045 passed | 1 skipped (7046)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 130181,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  49 passed (49); Tests  558 passed | 1 skipped (559)"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 403340,
+      "command": "npm run test-harness",
+      "exit_code": 1,
+      "notes": "1 failed, 92 passed, 8 rerun: FAILED tests/ui/chats/test_chat_input_field.py::test_chat_input_default_model_changing[chromium] (Locator.wait_for timeout on option 'GPT-4.1 mini 2025-04-14'). Guide: reproduce on main with the same config before calling it unrelated. No Auto-fix defined."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1252,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: '→ No staged files found.' Hook runs prettier --write, eslint --fix, tsc --noEmit on staged files plus license-header --fix on staged src files; eslint/tsc covered by lint/typecheck, prettier formatting not independently verified. Enable by staging the changed files before running."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 860,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2348 files, 0 missing license headers. Hook-only gate not listed in guide gate list."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 462,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip (exit 0): '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' No .env.local present (hook sources it). Enable by setting SONAR_TOKEN (e.g. in .env.local). Still owed: Sonar analysis only CI can settle until then."
+    },
+    {
+      "id": "ci-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "GitLab MR pipeline contexts ci-pipeline + compliance-report (via .gitlab-ci.yml wait-ci-init)",
+      "exit_code": null,
+      "notes": "Local .gitlab-ci.yml only runs pre-ci-guard (wait-ci-init) awaiting external contexts ci-pipeline and compliance-report (incl. server-side gitleaks-scan, harness compliance bot); requires remote infrastructure, cannot be run locally."
+    }
+  ],
+  "failures": {
+    "test-harness": "        self._api_zone.set(parsed_st)\n        try:\n            return await cb()\n        except Exception as error:\n>           raise rewrite_error(error, f\"{parsed_st['apiName']}: {error}\") from None\nE           playwright._impl._errors.TimeoutError: Locator.wait_for: Timeout 5000ms exceeded.\nE           Call log:\nE             - waiting for get_by_role(\"option\", name=\"GPT-4.1 mini 2025-04-14\", exact=True).first to be visible\n\n../playwright/_impl/_connection.py:636: TimeoutError\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/conversations/d2ea5d11-4114-495c-b59b-847bb787ae42\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_chat_input_default_model_changing[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/conversations/2fb83075-a416-4234-9c6a-2f022b285903\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_chat_input_default_model_changing[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/conversations/d2ea5d11-4114-495c-b59b-847bb787ae42\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_chat_input_default_model_changing[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/conversations/2fb83075-a416-4234-9c6a-2f022b285903\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_chat_input_default_model_changing[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/conversations/438d486c-c7a5-4586-8f7f-37d41f9e7eae\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_chat_input_default_model_changing[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n- generated xml file: /Users/bohdan_maliar/Projects/codemie-dev/codemie-ui/codemie-test-reports/junit.xml -\n=========================== short test summary info ============================\nFAILED tests/ui/chats/test_chat_input_field.py::test_chat_input_default_model_changing[chromium]\n============== 1 failed, 92 passed, 8 rerun in 378.48s (0:06:18) ===============\n2026-10-19 11:10:50,024 - codemie_test_harness.tests.conftest - INFO - Starting session cleanup...\n2026-10-19 11:10:50,632 - codemie_test_harness.tests.conftest - INFO - Session cleanup completed."
+  }
+}

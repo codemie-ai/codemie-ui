@@ -291,11 +291,17 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
 
   const tableContainerRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (node) {
-        setHasScroll(node.scrollHeight > node.clientHeight)
+      const measure = () => {
+        if (node) setHasScroll(node.scrollHeight > node.clientHeight)
       }
+      const observer = new ResizeObserver(measure)
+      if (node) {
+        measure()
+        observer.observe(node)
+      }
+      return () => observer.disconnect()
     },
-    [users]
+    [users, loading]
   )
 
   const isAdmin = currentUser?.isAdmin ?? false
@@ -867,8 +873,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
 
   return (
     <>
-      <section>
-        <div className="flex justify-between items-center mb-5">
+      <section className="flex min-h-0 flex-1 flex-col">
+        <div className="flex shrink-0 justify-between items-center mb-5">
           <div>
             <div className="text-sm font-semibold text-text-primary">Project members</div>
             <div className="text-xs text-text-quaternary mt-1">
@@ -878,7 +884,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           {headerActions}
         </div>
 
-        <div className="mb-5">
+        <div className="shrink-0 mb-5">
           <ProjectMembersFilters
             initialFilters={filters}
             onFilterChange={handleFiltersChange}
@@ -887,7 +893,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         </div>
 
         {canManageProject && (
-          <div className="mb-4 flex justify-end">
+          <div className="mb-4 flex shrink-0 justify-end">
             <ProjectMembersBulkActions
               projectName={project.name}
               selectedUsers={selected}
@@ -908,14 +914,18 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           </div>
         )}
 
-        <div ref={tableContainerRef} className="overflow-y-auto show-scroll min-h-0 mb-5 relative">
+        <div
+          ref={tableContainerRef}
+          data-testid="project-members-table-scroll"
+          className="overflow-y-auto show-scroll flex-1 min-h-60 mb-5 relative"
+        >
           {loading ? (
             <div className="flex items-center justify-center min-h-[220px]">
               <Spinner inline rootClassName="min-h-0" />
             </div>
           ) : (
             <div className={hasScroll ? 'pr-4' : ''}>
-              <div className="rounded-lg overflow-hidden relative">
+              <div className="rounded-lg overflow-clip relative isolate">
                 <Table
                   idPath="id"
                   {...(canManageProject ? selection : {})}
@@ -953,7 +963,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             setPage={handlePageChange}
             perPage={pagination.per_page}
             perPageOptions={DECIMAL_PAGINATION_OPTIONS}
-            className="w-full !bg-transparent !border-t-0 !p-0 !mb-4 !bg-none"
+            className="w-full shrink-0 !bg-transparent !border-t-0 !p-0 !mb-4 !bg-none"
           />
         )}
       </section>
