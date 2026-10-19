@@ -1,5 +1,118 @@
 [
   {
+  "version": "2.60.0",
+  "date": "2026-10-19",
+  "sections": [
+    {
+      "code": "highlights",
+      "items": []
+    },
+    {
+      "code": "features",
+      "items": [
+        {
+          "title": "More resilient Git FAQ data-source indexing",
+          "description": "Prevents manual reindexing when a scheduled reindex fails.",
+          "issues": [
+            {
+              "key": "EPMCDME-15924",
+              "type": "STORY",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15924"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "fixes",
+      "items": [
+        {
+          "title": "Bulk budget override improvements",
+          "description": "Enables project administrators to apply bulk budget overrides and correctly recalculates remaining budget fields after manual edits.",
+          "issues": [
+            {
+              "key": "EPMCDME-16014",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-16014"
+            },
+            {
+              "key": "EPMCDME-16057",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-16057"
+            }
+          ]
+        },
+        {
+          "title": "Member list ordering",
+          "description": "Sorts the Project Details member list by default.",
+          "issues": [
+            {
+              "key": "EPMCDME-16070",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-16070"
+            }
+          ]
+        },
+        {
+          "title": "Member-table scrolling",
+          "description": "Keeps scrolling within the Users table instead of scrolling the entire page.",
+          "issues": [
+            {
+              "key": "EPMCDME-15890",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15890"
+            }
+          ]
+        },
+        {
+          "title": "Bulk override input values",
+          "description": "Preserves initial hard- and soft-limit values when their fields receive focus.",
+          "issues": [
+            {
+              "key": "EPMCDME-16069",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-16069"
+            }
+          ]
+        },
+        {
+          "title": "Filter persistence",
+          "description": "Prevents filters from resetting after navigating away and returning.",
+          "issues": [
+            {
+              "key": "EPMCDME-16054",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-16054"
+            }
+          ]
+        },
+        {
+          "title": "Claude Opus 5.5 output limits",
+          "description": "Corrects the configured output-token limit for Bedrock Claude Opus 5.5.",
+          "issues": [
+            {
+              "key": "EPMCDME-15787",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15787"
+            }
+          ]
+        },
+        {
+          "title": "Marketplace assistant metrics",
+          "description": "Displays accurate usage and clone metrics on favorite Marketplace assistant cards.",
+          "issues": [
+            {
+              "key": "EPMCDME-15284",
+              "type": "BUG",
+              "link": "https://jiraeu.epam.com/browse/EPMCDME-15284"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+},
+  {
     "version": "2.59.0",
     "date": "2026-10-15",
     "sections": [
