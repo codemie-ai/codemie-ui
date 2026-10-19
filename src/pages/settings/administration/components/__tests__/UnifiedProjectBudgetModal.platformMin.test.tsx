@@ -195,6 +195,7 @@ describe('UnifiedProjectBudgetModal platform minimum', () => {
       await renderPopulated({ distributionOnly })
 
       await enter(user, PLATFORM_HARD, '0.04')
+      await enter(user, 'CLI hard limit', '900')
       const payload = await save(user)
 
       expect(payload.categories.platform.pct).toBe(0.01)
@@ -206,6 +207,7 @@ describe('UnifiedProjectBudgetModal platform minimum', () => {
     await renderPopulated()
 
     await enter(user, PLATFORM_HARD, '1')
+    await enter(user, 'CLI hard limit', '899')
     const payload = await save(user)
 
     expect(payload.categories.platform.pct).toBe(0.1)
@@ -240,6 +242,7 @@ describe('UnifiedProjectBudgetModal platform minimum', () => {
 
     await enter(user, 'CLI hard limit', '0')
     expect(screen.getByLabelText('CLI hard limit')).toHaveValue(0)
+    await enter(user, 'Premium Models hard limit', '700')
     const payload = await save(user)
 
     expect(payload.categories.cli.pct).toBe(0)
@@ -250,6 +253,7 @@ describe('UnifiedProjectBudgetModal platform minimum', () => {
     await renderPopulated()
 
     await enter(user, 'Premium Models hard limit', '')
+    await enter(user, 'CLI hard limit', '700')
     await enter(user, 'Platform soft limit', '0')
     await enter(user, 'CLI soft limit', '')
     await enter(user, 'Premium Models soft limit', '0')

@@ -32,6 +32,21 @@ interface UnifiedBudgetDragBarProps {
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(Math.max(v, lo), hi)
 
+// Typed Hard Limits can leave the categories summing to more or less than 100%.
+// The bands are drawn with flex weights, i.e. normalized to that sum, so all drag
+// maths work in this visual space: hit-testing matches what the user sees and the
+// first drag move rebalances the total to exactly 100%.
+const toVisual = (p: PctMap): PctMap => {
+  const sum = p.platform + p.cli + p.premium_models
+  if (sum <= 0 || sum === 100) return p
+  const scale = 100 / sum
+  return {
+    platform: p.platform * scale,
+    cli: p.cli * scale,
+    premium_models: p.premium_models * scale,
+  }
+}
+
 const SNAP_ENTER_ZONE = 0.2
 const SNAP_EXIT_ZONE = 0.4
 const SLOW_VELOCITY_PCT_PER_MS = 0.05
@@ -199,7 +214,7 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
         const rect = host.getBoundingClientRect()
         const clickPct =
           ((clientX - rect.left - BORDER_WIDTH) / (rect.width - 2 * BORDER_WIDTH)) * 100
-        const { current } = pctsRef
+        const current = toVisual(pctsRef.current)
         const handlePct = handle === 1 ? current.platform : current.platform + current.cli
         dragStartRef.current = { clickPct, handlePct }
       }
@@ -220,7 +235,7 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
     if (!host) return 1
     const rect = host.getBoundingClientRect()
     const pct = ((clientX - rect.left - BORDER_WIDTH) / (rect.width - 2 * BORDER_WIDTH)) * 100
-    const { current } = pctsRef
+    const current = toVisual(pctsRef.current)
     const h1 = current.platform
     const h2 = current.platform + current.cli
     const d1 = Math.abs(pct - h1)
@@ -279,22 +294,30 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
       const snap = computeSnap(rawPct, velocityPctPerMs, lastSnapPctRef.current, magneticPctStep)
       lastSnapPctRef.current = snap.held
       const pct = clamp(snap.pct, 0, 100)
-      const { current } = pctsRef
+      const current = toVisual(pctsRef.current)
 
       if (handle === 1) {
-        const newPlatform = clamp(pct, platformMinPct, 100 - current.premium_models)
+        // Platform never drops below its minimum; when Premium leaves no room for it,
+        // Premium gives way so the result still totals 100%. A legacy Platform-0 group
+        // whose Premium fills the bar keeps Platform at 0 (EPMCDME-16015).
+        const floor = current.platform > 0 ? platformMinPct : 0
+        const hi = Math.max(floor, 100 - current.premium_models)
+        const newPlatform = clamp(pct, platformMinPct, hi)
         const newCli = Math.max(0, 100 - newPlatform - current.premium_models)
         onChange({
           platform: newPlatform,
           cli: newCli,
-          premium_models: current.premium_models,
+          premium_models: Math.max(0, 100 - newPlatform - newCli),
         })
       } else {
-        const boundary = clamp(pct, current.platform, 100)
-        const newCli = Math.max(0, boundary - current.platform)
-        const newPremium = Math.max(0, 100 - current.platform - newCli)
+        // Rescaling a far-over-100% state can shrink Platform below its minimum, which
+        // would save as 0; hold it at the minimum unless it is a legacy Platform-0 group.
+        const platform = current.platform > 0 ? Math.max(current.platform, platformMinPct) : 0
+        const boundary = clamp(pct, platform, 100)
+        const newCli = Math.max(0, boundary - platform)
+        const newPremium = Math.max(0, 100 - platform - newCli)
         onChange({
-          platform: current.platform,
+          platform,
           cli: newCli,
           premium_models: newPremium,
         })

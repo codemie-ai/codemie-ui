@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16057_budget-manual-entry",
+  "head": "0c225fdf78315d09f527a34431da6f9db2d9fc9e",
+  "runner": "npm",
+  "started_at": "2026-10-16T14:12:44Z",
+  "completed_at": "2026-10-16T14:33:59Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "install",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm ci",
+      "exit_code": null,
+      "notes": "User constraint: node_modules installed and in use by a dev server from this checkout; AGENTS.md reinstall-before-trusting step not run. Suites demonstrably executed (unit 6 files/68 tests, integration 49 files/558 tests)."
+    },
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 44617,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 23058,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 6543,
+      "command": "npm run license-check",
+      "exit_code": 1,
+      "notes": "Skip-if met: no dependency added/removed/moved (package.json and package-lock.json untouched in diff). Command was run before skip evaluation and exited 1 with Package \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted - a Windows cmd.exe quoting artifact (single quotes are literal, so the first allow-list entry becomes 'MIT), not a dependency issue."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 18965,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output confirms real scan via podman: 'no leaks found' (~28.24 MB scanned). Also covers the husky pre-commit secrets:check and the MR gitleaks-scan task (working tree only, not history)."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 57592,
+      "command": "npx vitest related --run --project unit --silent=true src/pages/settings/administration/components/UnifiedBudgetDragBar.tsx src/pages/settings/administration/components/UnifiedProjectBudgetModal.tsx src/pages/settings/administration/components/__tests__/UnifiedProjectBudgetModal.platformMin.test.tsx src/pages/settings/administration/components/__tests__/UnifiedProjectBudgetModal.typedEdits.test.tsx",
+      "exit_code": 0,
+      "notes": "Scoped per caller instruction to unit tests related to changed files: 6 files, 68 tests passed. A full-suite run of npm run test:unit:slnt was started then aborted per caller instruction; no result recorded for it."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 185640,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "49 files passed; 558 passed, 1 skipped."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 596707,
+      "command": "CODEMIE_API_DOMAIN=http://localhost:8080 FRONTEND_URL=http://localhost:5173 AUTH_USERNAME=admin@codemie.ai AUTH_PASSWORD=*** npm run test-harness",
+      "exit_code": 0,
+      "notes": "Run against local stack (pytest_configure CODEMIE_API_DOMAIN: http://localhost:8080; UI dev server from this checkout on :5173) via env overrides; ~/.codemie/test-harness.json absent and not created. sanity-ui -n 8: 93 passed, 6 rerun in 557.14s (pytest); total wall time 596.7s (~9m57s). junit at codemie-test-reports/junit.xml (gitignored)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "(none)",
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision. (Harness sanity-ui ran separately and passed.)"
+    },
+    {
+      "id": "lint-staged-prettier",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1974,
+      "command": "npx prettier --check src/pages/settings/administration/components/UnifiedBudgetDragBar.tsx src/pages/settings/administration/components/UnifiedProjectBudgetModal.tsx src/pages/settings/administration/components/__tests__/UnifiedProjectBudgetModal.platformMin.test.tsx src/pages/settings/administration/components/__tests__/UnifiedProjectBudgetModal.typedEdits.test.tsx",
+      "exit_code": 0,
+      "notes": "Non-mutating equivalent of the lint-staged prettier --write step on the 4 changed files (nothing staged; npx lint-staged would no-op and mutates files). The chain eslint --fix and tsc --noEmit steps are covered by lint/typecheck; the license-header --fix step is covered by license-headers."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1979,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2355 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1416,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Exit 0 but self-skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Enable locally by exporting SONAR_TOKEN (or setting it in .env.local) for https://sonar.core.kuberocketci.io. Still owed: only CI can settle it."
+    },
+    {
+      "id": "ci-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(external)",
+      "exit_code": null,
+      "notes": ".gitlab-ci.yml only runs pre-ci-guard wait-ci-init, which waits for external contexts ci-pipeline and compliance-report; those run on remote infrastructure not reachable locally. Still owed to CI."
+    }
+  ],
+  "failures": {}
+}

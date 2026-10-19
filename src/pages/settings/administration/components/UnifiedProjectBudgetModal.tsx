@@ -203,8 +203,9 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
 
   const hasSoftError = Object.values(softErrors).some(Boolean)
 
-  const sumPctError =
-    Math.abs(round2(pcts.platform) + round2(pcts.cli) + round2(pcts.premium_models) - 100) > 0.5
+  const pctSum = round2(pcts.platform) + round2(pcts.cli) + round2(pcts.premium_models)
+  const sumPctError = Math.abs(pctSum - 100) > 0.5
+  const sumDiffAmount = (Math.abs(pctSum - 100) / 100) * totalBudget
 
   // Chargeback (enable + attribution) is only persisted when the feature is on
   // and the user can edit. The cost center itself is linked on the project edit
@@ -348,25 +349,12 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     (cat: BudgetCategory, val: number) => {
       if (totalBudget <= 0) return
       const requestedPct = (val / totalBudget) * 100
-      // Cascade: editing one Hard adjusts CLI for Platform/Premium edits,
-      // adjusts Premium for CLI edits — matches the v3-mockup intent.
-      // Soft scaling is handled by the [totalBudget, pcts] effect, which
-      // applies the proportional rule to every cat whose hard changes —
-      // including cascade-affected peers, not just the typed cat.
-      setPcts((prev) => {
-        const next = { ...prev }
-        if (cat === 'platform') {
-          next.platform = round2(clamp(requestedPct, PLATFORM_MIN_PCT, 100 - prev.premium_models))
-          next.cli = round2(Math.max(0, 100 - next.platform - prev.premium_models))
-        } else if (cat === 'cli') {
-          next.cli = round2(clamp(requestedPct, 0, 100 - prev.platform))
-          next.premium_models = round2(Math.max(0, 100 - prev.platform - next.cli))
-        } else {
-          next.premium_models = round2(clamp(requestedPct, 0, 100 - prev.platform))
-          next.cli = round2(Math.max(0, 100 - prev.platform - next.premium_models))
-        }
-        return next
-      })
+      const minPct = cat === 'platform' ? PLATFORM_MIN_PCT : 0
+      const nextPct = round2(Math.max(requestedPct, minPct))
+      // Typed edits change only their own category and rescale no soft: pre-setting
+      // prevHardsRef makes the [totalBudget, pcts] effect's no-op guard skip every cat.
+      prevHardsRef.current = { ...prevHardsRef.current, [cat]: (totalBudget * nextPct) / 100 }
+      setPcts((prev) => ({ ...prev, [cat]: nextPct }))
     },
     [totalBudget]
   )
@@ -637,8 +625,9 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
             />
             {sumPctError && (
               <p className="text-xs text-failed-secondary mt-2">
-                Distribution must sum to 100% (currently{' '}
-                {Math.round(pcts.platform + pcts.cli + pcts.premium_models)}%)
+                Category limits are ${formatAmount(sumDiffAmount)}{' '}
+                {pctSum < 100 ? 'below' : 'above'} the Total Budget ({Math.round(pctSum)}%). Adjust
+                the values to total 100%.
               </p>
             )}
           </div>
@@ -672,8 +661,9 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   )
 }
 
-function clamp(v: number, lo: number, hi: number): number {
-  return Math.min(Math.max(v, lo), hi)
+// Matches how BudgetAmountInput shows a Hard Limit: whole dollars, cents below $1.
+function formatAmount(v: number): string {
+  return v > 0 && v < 1 ? v.toFixed(2) : String(Math.round(v))
 }
 
 function round2(v: number): number {

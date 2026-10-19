@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "task": "Remove the typed-hard-limit cascade in the Create/Update Budget modal so Platform/CLI/Premium edits change only their own field, show an under/over distribution warning instead, keep drag-and-drop redistribution, and preserve the EPMCDME-16015 Platform minimum.",
+  "generated": "2026-10-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Six concrete ACs, but open points remain: AC5 (no auto-correction) conflicts with AC6 (16015 Platform minimum is itself a correction), whether the per-category upper clamp (100 - peer) is removed or capped at 100%, whether the typed category's own soft-limit rescale counts as auto-correction, and how drag behaves from an unbalanced state. These are 1-2 light decisions, not architectural ones." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is the existing sumPctError inline message plus submitDisabled gating in UnifiedProjectBudgetModal, and the backend already rejects non-100 sums, so the change is mostly removing onHardInputChange cascade logic (baseline S). Bumped to M: ACs enumerate edge/variant cases (set-to-0, under vs over) and no existing test covers the cascade absence, sum-warning messaging, submit gating or soft-rescale on typed edits; four platformMin tests implicitly depend on the cascade and must be rewritten. Calibrated against bundled S example epmcdme-10102-add-validation-to-form-field (total 11), which agrees." },
+    { "dimension": "file_change_estimate", "reason": "UnifiedProjectBudgetModal.tsx plus possibly BudgetCategoryTable.tsx for under/over messaging, the platformMin test file to rewrite, and likely one new test file - all within the administration/components directory and its __tests__." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

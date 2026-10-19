@@ -1,0 +1,63 @@
+{
+  "decision": "request-changes",
+  "rationale": "Compact profile: edge-case and acceptance ran (blind and verification-gap not in profile, standards audit not expected), and all 4 candidates were checked against source. 3 blocking defects share one cause: removing the typed-edit cap makes platform+premium > 100% and an unbalanced sum reachable, and the unchanged drag-bar maths do not handle these states (Platform can be dragged to 0 or negative and saved, breaking AC6; handle 2 cannot rebalance, breaking AC3; handle hit-testing ignores the unbalanced sum). 0 deferred; 1 dismissed (a stale typed draft that commits after a drag is caught by the sum warning and blocked at submit; the commit-on-blur contract is unchanged).",
+  "confidence": "high",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1: typing a Hard Limit for Platform, CLI or Premium leaves the other two Hard Limits unchanged", "status": "pass", "notes": "onHardInputChange sets only [cat]; the cascade and clamp are removed; typedEdits test covers all three categories." },
+    { "kind": "story-ac", "item": "AC2: typing 0 for CLI/Premium leaves others unchanged; Platform 0 or empty reverts", "status": "pass", "notes": "minPct is 0 for cli/premium; Platform revert still enforced by BudgetAmountInput strictPositive; tests cover CLI=0 and Premium=0." },
+    { "kind": "story-ac", "item": "AC3: dragging still redistributes; from an unbalanced total one drag restores 100% and clears the warning", "status": "partial", "notes": "Works for moderate imbalance. Fails when Platform > 100% (handle 2 zeroes CLI/Premium) and when Premium >= ~100% (handle 1 clamps Platform <= 0). See CR-002, CR-003." },
+    { "kind": "story-ac", "item": "AC4: under/over 100% shows the below/above message with $ diff and current %, submit disabled", "status": "pass", "notes": "Message uses formatAmount(sumDiffAmount) and Math.round(pctSum); submitDisabled includes sumPctError; tests assert both." },
+    { "kind": "story-ac", "item": "AC5: a typed Hard edit changes no other value automatically (no peer Hard, no Soft)", "status": "pass", "notes": "prevHardsRef pre-set before setPcts makes the effect's no-op guard skip every category; tests cover soft unchanged." },
+    { "kind": "story-ac", "item": "AC6: 16015 Platform behaviour unchanged (no 0/empty, sub-0.01% raised to 0.01%, legacy Platform-0 preserved)", "status": "partial", "notes": "Typed path keeps PLATFORM_MIN_PCT and strictPositive, but Premium typed >= 99.99% lets a Platform-handle drag set Platform to 0 or negative with submit enabled. See CR-002." },
+    { "kind": "spec", "item": "Behavior 1: typed value has no upper bound", "status": "pass", "notes": "Only a lower bound (minPct) is applied; test keeps Premium 2000 on a 1000 total." },
+    { "kind": "spec", "item": "Behavior 4: proportional Soft rescaling still runs on drag, Total Budget change and Reset to Default", "status": "pass", "notes": "Effect, interaction capture/release and handleDefaultDistribution untouched." },
+    { "kind": "spec", "item": "Behavior 6: <diff> formatted like modal amounts; styling text-xs text-failed-secondary", "status": "pass", "notes": "formatAmount mirrors BudgetAmountInput formatDraft; className unchanged." },
+    { "kind": "spec", "item": "Testing: rewrite the four platformMin cases with compensating values", "status": "pass", "notes": "Four hunks add a compensating CLI or Premium entry before save." },
+    { "kind": "spec", "item": "Testing: add tests for AC1/AC2, AC4, AC5, AC3", "status": "pass", "notes": "New typedEdits test file covers each; pass/fail awaits the Stage 7 run." },
+    { "kind": "spec", "item": "Gates: lint, type-check and full Vitest run", "status": "pending-stage-7", "notes": "Needs gate execution." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of the compact review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of the compact review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of the compact review profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/UnifiedBudgetDragBar.tsx",
+      "line": 224,
+      "title": "Drag handle maths ignore unbalanced sum",
+      "problem": "Typed Hard edits can now leave platform + cli + premium != 100% because the cascade in onHardInputChange was removed. The bands are drawn with flex weights, which normalizes them to the sum. pickHandle (h1 = platform, h2 = platform + cli) and startDrag's handlePct still use raw percentages, so they no longer match the boundaries on screen.",
+      "impact": "When the total is unbalanced, a mousedown can pick the wrong handle and the boundary jumps away from the cursor on the first move. Drag is the primary redistribution method (AC3), and it becomes erratic in exactly the state where the user needs it to rebalance.",
+      "recommendation": "Convert between visual and raw percentage space in the drag bar. Compute const scale = 100 / (platform + cli + premium_models) (guard against 0), use h1 * scale and h2 * scale in pickHandle and for handlePct in startDrag, and map the drag position back. Add a test that drags from an unbalanced state."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/UnifiedBudgetDragBar.tsx",
+      "line": 285,
+      "title": "Platform drag can reach zero or negative",
+      "problem": "Typed values are no longer capped at 100 - peer, so Premium can be typed to 99.99% or more of the Total. A handle-1 drag then computes clamp(pct, platformMinPct, 100 - premium_models) with hi < lo. clamp is min(max(v, lo), hi), so it returns hi: Platform becomes 0 or negative and newCli becomes 0. platform + premium is then exactly 100, so sumPctError clears.",
+      "impact": "The modal reaches a Platform Hard Limit of 0 or a negative value with submit enabled, because submitDisabled checks only sumPctError and soft errors. That allows saving a budget below the EPMCDME-16015 Platform minimum (AC6 partial). This state was unreachable before the typed-edit cap was removed.",
+      "recommendation": "Keep Platform >= platformMinPct on a handle-1 drag in every typed state. For example, use const hi = Math.max(platformMinPct, 100 - current.premium_models) and reduce Premium (or block handle 1) when it leaves no room. Consider also blocking submit while Platform < PLATFORM_MIN_PCT. Add a test that types Premium >= Total Budget, drags the Platform handle, and asserts Platform stays at or above the minimum."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/UnifiedBudgetDragBar.tsx",
+      "line": 293,
+      "title": "Handle-2 drag cannot rebalance when Platform exceeds 100%",
+      "problem": "The typed path now applies only a lower bound, so Platform can be typed above the Total Budget (> 100%). A handle-2 drag then computes boundary = clamp(pct, current.platform, 100) = 100 with lo > hi. newCli = max(0, 100 - platform) and newPremium = max(0, 100 - platform - newCli) both come out as 0.",
+      "impact": "Dragging the CLI/Premium handle wipes CLI and Premium to 0 while the total stays above 100%. The warning persists and this handle cannot restore the distribution, so AC3 (drag remains the primary redistribution method; one drag rebalances an unbalanced total) is only partially met.",
+      "recommendation": "Handle current.platform >= 100 on a handle-2 drag: either rebalance Platform first so the boundary has room, or disable handle 2 until Platform < 100. One drag should then restore a 100% total instead of zeroing CLI and Premium. Add a test that types Platform above Total Budget and then drags the CLI/Premium handle."
+    }
+  ]
+}

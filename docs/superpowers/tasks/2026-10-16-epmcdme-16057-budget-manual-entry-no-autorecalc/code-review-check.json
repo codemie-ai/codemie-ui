@@ -1,0 +1,14 @@
+{
+  "decision": "approve",
+  "rationale": "Approved by the author (human) at the code-review.check gate. The automated check round at reviewed_head 3cc55f01 found CR-001 and CR-003 resolved and CR-002 still open on the CLI/Premium handle path. CR-002 was then fixed in 'EPMCDME-16057: Keep budget drag bar correct for unbalanced typed totals' with a regression test that failed before the fix and passes after (Platform 0.01%, Premium 150%, drag CLI/Premium handle, save, platform.pct >= 0.01). Per the author's decision that fix was not re-run through the automated reviewer; it was verified by the Stage 7 gates (lint, typecheck, related unit tests 68/68, integration, test-harness 93 passed) and by the author's manual check.",
+  "approved_by": "human (MR author) at gate code-review.check",
+  "automated_reverification": false,
+  "confidence": "medium",
+  "risk_flags": ["breaking-change"],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "Verified by the automated check round: hit-testing and drag maths use the flex-normalized share space; test drags from an unbalanced state." },
+    { "id": "CR-002", "status": "resolved", "notes": "Handle 1 verified by the automated check round. Handle-2 residual fixed afterwards (Platform kept >= platformMinPct when > 0, legacy Platform-0 preserved) with a red-to-green regression test; not re-verified by the automated reviewer." },
+    { "id": "CR-003", "status": "resolved", "notes": "Verified by the automated check round: the CLI/Premium handle rebalances when Platform > 100% without zeroing CLI/Premium; test added." }
+  ]
+}

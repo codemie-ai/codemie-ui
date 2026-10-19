@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "generated": "2026-10-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 13,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "The spec scoped the drag bar out, but removing the typed-edit cap and peer cascade in UnifiedProjectBudgetModal let category sums go above or below 100%. That exposed UnifiedBudgetDragBar hit-testing and rebalance maths, so code review needed a fix-up and then a residual fix. This is a real gap in the scope, though a minor one." },
+    { "dimension": "technical_risk", "reason": "There was no exact precedent for the new toVisual normalization (drag maths in flex-weighted visual space), the Platform-minimum floor while rescaling far-over-100% states, or the legacy Platform-0 guard. The tests are large parameterized edge-case tables (it.each over categories and full-form vs distribution-only modes, plus boundary values such as 0, negative, empty, sub-minimum and over-total). They follow the existing modal test template, so no auto-bump applies. The change has no security, auth or persistence-contract impact, and the save payload shape is unchanged." },
+    { "dimension": "file_change_estimate", "reason": "The diffstat shows 4 files (+418/-34), which maps to M on the 4-6 band. Two are production components (UnifiedProjectBudgetModal, UnifiedBudgetDragBar) and two are test suites. All four are in one directory, src/pages/settings/administration/components/. Most of the inserted lines are tests." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
