@@ -30,28 +30,16 @@ const models: ModelOption[] = [
 ]
 
 const renderSelector = () =>
-  render(
-    <DefaultModelsSelector
-      models={models}
-      defaultModel="gpt-4o"
-      onDefaultChange={vi.fn()}
-      codeDefaultModel="gpt-4o"
-      onCodeDefaultChange={vi.fn()}
-    />
-  )
+  render(<DefaultModelsSelector models={models} defaultModel="gpt-4o" onDefaultChange={vi.fn()} />)
 
 describe('DefaultModelsSelector — premium row label', () => {
-  it('shows a Premium meta-line only on the premium option row, in both dropdowns', () => {
-    ;['project-default-model', 'cli-default-model'].forEach((id) => {
-      const { container, unmount } = renderSelector()
-      fireEvent.click(container.querySelector(`#${id}`)!)
+  it('shows a Premium meta-line only on the premium option row', () => {
+    const { container } = renderSelector()
+    fireEvent.click(container.querySelector('#project-default-model')!)
 
-      const metas = screen.getAllByTestId('default-model-option-meta')
-      expect(metas).toHaveLength(1)
-      expect(metas[0]).toHaveTextContent('Premium')
-
-      unmount()
-    })
+    const metas = screen.getAllByTestId('default-model-option-meta')
+    expect(metas).toHaveLength(1)
+    expect(metas[0]).toHaveTextContent('Premium')
   })
 
   it('does not render a Premium label for a non-premium option row', () => {
@@ -100,50 +88,25 @@ const renderWithRouter = (ui: Parameters<typeof render>[0]) =>
   render(<MemoryRouter>{ui}</MemoryRouter>)
 
 describe('DefaultModelsSelector — selected-value premium highlight', () => {
-  it('shows a Premium note under the Project default model field when it is premium, and not under CLI default model', () => {
+  it('shows a Premium note under the Project default model field when it is premium', () => {
     renderWithRouter(
       <DefaultModelsSelector
         models={models}
         defaultModel="bedrock-claude-opus-4-5"
         onDefaultChange={vi.fn()}
-        codeDefaultModel="gpt-4o"
-        onCodeDefaultChange={vi.fn()}
       />
     )
 
     expect(screen.getByTestId('project-default-model-premium-note')).toHaveTextContent(
       'Premium model'
     )
-    expect(screen.queryByTestId('cli-default-model-premium-note')).not.toBeInTheDocument()
   })
 
-  it('shows a Premium note under the CLI default model field when it is premium, and not under Project default model', () => {
+  it('shows no premium note when the selected model is non-premium', () => {
     renderWithRouter(
-      <DefaultModelsSelector
-        models={models}
-        defaultModel="gpt-4o"
-        onDefaultChange={vi.fn()}
-        codeDefaultModel="bedrock-claude-opus-4-5"
-        onCodeDefaultChange={vi.fn()}
-      />
-    )
-
-    expect(screen.getByTestId('cli-default-model-premium-note')).toHaveTextContent('Premium model')
-    expect(screen.queryByTestId('project-default-model-premium-note')).not.toBeInTheDocument()
-  })
-
-  it('shows no premium note under either field when both selected models are non-premium', () => {
-    renderWithRouter(
-      <DefaultModelsSelector
-        models={models}
-        defaultModel="gpt-4o"
-        onDefaultChange={vi.fn()}
-        codeDefaultModel="gpt-4o"
-        onCodeDefaultChange={vi.fn()}
-      />
+      <DefaultModelsSelector models={models} defaultModel="gpt-4o" onDefaultChange={vi.fn()} />
     )
 
     expect(screen.queryByTestId('project-default-model-premium-note')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('cli-default-model-premium-note')).not.toBeInTheDocument()
   })
 })

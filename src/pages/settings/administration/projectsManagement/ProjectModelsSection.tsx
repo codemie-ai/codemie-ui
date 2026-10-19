@@ -36,7 +36,6 @@ interface Props {
 interface DraftState {
   selection: Record<string, ProjectModelSetting>
   defaultModel: string
-  codeDefaultModel: string
 }
 
 const toDraft = (
@@ -46,12 +45,10 @@ const toDraft = (
 ): DraftState => ({
   selection: settingsToSelection(settings, models),
   defaultModel: settings.default_model ?? globalDefault,
-  codeDefaultModel: settings.default_model ?? globalDefault,
 })
 
 const isSameDraft = (a: DraftState, b: DraftState) =>
   a.defaultModel === b.defaultModel &&
-  a.codeDefaultModel === b.codeDefaultModel &&
   Object.keys({ ...a.selection, ...b.selection }).every(
     (model) => a.selection[model] === b.selection[model]
   )
@@ -166,19 +163,15 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
         : current
     )
 
-  const resetToDefaults = () => {
-    setDraft(defaultsDraft)
-    setResetConfirmVisible(false)
-  }
-
-  const saveChanges = async () => {
-    if (!draft || !savedSettings || !hasChanges || !defaultIsValid) return false
+  const persistDraft = async (targetDraft: DraftState) => {
+    if (!savedSettings) return false
 
     const nextSettings: ProjectModelSettings = {
       // 'disable' always materializes an explicit allow-list of the enabled models — the only
       // shape the backend's flat `allowed_models` can represent (it has no deny-list concept).
-      ...selectionToSettings(savedSettings, draft.selection, 'disable'),
-      default_model: draft.defaultModel === globalDefaultModel ? null : draft.defaultModel,
+      ...selectionToSettings(savedSettings, targetDraft.selection, 'disable'),
+      default_model:
+        targetDraft.defaultModel === globalDefaultModel ? null : targetDraft.defaultModel,
     }
 
     setSaving(true)
@@ -197,6 +190,16 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
     } finally {
       setSaving(false)
     }
+  }
+
+  const resetToDefaults = async () => {
+    setResetConfirmVisible(false)
+    await persistDraft(defaultsDraft)
+  }
+
+  const saveChanges = async () => {
+    if (!draft || !hasChanges || !defaultIsValid) return false
+    return persistDraft(draft)
   }
 
   const cancelNavigation = () => {
@@ -274,8 +277,6 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
         models={availableModels}
         defaultModel={draft.defaultModel}
         onDefaultChange={(defaultModel) => updateDraft({ defaultModel })}
-        codeDefaultModel={draft.codeDefaultModel}
-        onCodeDefaultChange={(codeDefaultModel) => updateDraft({ codeDefaultModel })}
         defaultModelError={defaultModelError}
       />
 

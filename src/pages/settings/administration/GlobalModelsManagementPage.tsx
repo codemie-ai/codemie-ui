@@ -37,7 +37,6 @@ const GlobalModelsManagementPage: FC = () => {
   const [status, setStatus] = useState<string | number | null>('all')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [globalDefault, setGlobalDefault] = useState<string | null>('GPT-5 2025-08-07')
-  const [cliDefault, setCliDefault] = useState<string | null>('GPT-5 2025-08-07')
 
   useEffect(() => {
     getLLMModels()
@@ -112,11 +111,6 @@ const GlobalModelsManagementPage: FC = () => {
           onDefaultChange={(value) => {
             setGlobalDefault(value)
             console.log(`Set global default model to: ${value}`)
-          }}
-          codeDefaultModel={cliDefault ?? ''}
-          onCodeDefaultChange={(value) => {
-            setCliDefault(value)
-            console.log(`Set CLI default model to: ${value}`)
           }}
         />
       </div>

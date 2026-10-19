@@ -64,32 +64,21 @@ interface DefaultModelsSelectorProps {
   models: ModelOption[]
   defaultModel: string
   onDefaultChange: (model: string) => void
-  codeDefaultModel: string
-  onCodeDefaultChange: (model: string) => void
   defaultModelError?: string
-  codeDefaultModelError?: string
 }
 
 const DefaultModelsSelector: FC<DefaultModelsSelectorProps> = ({
   models,
   defaultModel,
   onDefaultChange,
-  codeDefaultModel,
-  onCodeDefaultChange,
   defaultModelError,
-  codeDefaultModelError,
 }) => {
   const [localDefaultModel, setLocalDefaultModel] = useState(defaultModel)
-  const [localCodeDefaultModel, setLocalCodeDefaultModel] = useState(codeDefaultModel)
 
   // Preserve current values when component mounts
   useEffect(() => {
     setLocalDefaultModel(defaultModel)
   }, [defaultModel])
-
-  useEffect(() => {
-    setLocalCodeDefaultModel(codeDefaultModel)
-  }, [codeDefaultModel])
 
   const modelOptions = useMemo(
     () =>
@@ -105,14 +94,10 @@ const DefaultModelsSelector: FC<DefaultModelsSelectorProps> = ({
     () => findIsPremium(models, localDefaultModel),
     [models, localDefaultModel]
   )
-  const isCodeDefaultModelPremium = useMemo(
-    () => findIsPremium(models, localCodeDefaultModel),
-    [models, localCodeDefaultModel]
-  )
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border-structural bg-surface-base-secondary p-4 md:flex-row md:gap-6">
-      <div className="flex-1">
+      <div className="flex-1 lg:w-1/2 lg:flex-none">
         <label
           htmlFor="project-default-model"
           className="mb-2 block text-xs font-medium text-text-quaternary"
@@ -136,34 +121,6 @@ const DefaultModelsSelector: FC<DefaultModelsSelectorProps> = ({
         {defaultModelError && <p className="mt-1 text-xs text-text-error">{defaultModelError}</p>}
         {isDefaultModelPremium && (
           <PremiumSelectionNote testId="project-default-model-premium-note" />
-        )}
-      </div>
-      <div className="flex-1">
-        <label
-          htmlFor="cli-default-model"
-          className="mb-2 block text-xs font-medium text-text-quaternary"
-        >
-          CLI default model
-        </label>
-        <Select
-          id="cli-default-model"
-          value={localCodeDefaultModel}
-          onChangeValue={(value) => {
-            if (value) {
-              setLocalCodeDefaultModel(value)
-              onCodeDefaultChange(value)
-            }
-          }}
-          options={modelOptions}
-          itemTemplate={renderDefaultModelOption}
-          placeholder="Select a model"
-          rootClassName="w-full"
-        />
-        {codeDefaultModelError && (
-          <p className="mt-1 text-xs text-text-error">{codeDefaultModelError}</p>
-        )}
-        {isCodeDefaultModelPremium && (
-          <PremiumSelectionNote testId="cli-default-model-premium-note" />
         )}
       </div>
     </div>
