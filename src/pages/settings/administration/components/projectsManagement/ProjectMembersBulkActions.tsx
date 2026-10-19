@@ -41,9 +41,11 @@ interface ProjectMembersBulkActionsProps {
   canManageProject: boolean
   isProjectAdmin: boolean
   canManageBudgets: boolean
+  canResetBudgets: boolean
   onClearSelection: () => void
   refresh: () => void
   onSuccess?: () => void
+  onBudgetsChanged?: () => void | Promise<void>
   onOverrideModels: () => void
   isModelsConfigEnabled?: boolean
   budgets: ProjectBudget[]
@@ -60,9 +62,11 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
   canManageProject,
   isProjectAdmin,
   canManageBudgets,
+  canResetBudgets,
   onClearSelection,
   refresh,
   onSuccess,
+  onBudgetsChanged,
   onOverrideModels,
   isModelsConfigEnabled = false,
   budgets,
@@ -75,7 +79,8 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
     (action: ActivePopup): boolean => {
       if (
         !canManageProject ||
-        (['overrideBudgets', 'resetBudgets'].includes(action) && !canManageBudgets)
+        (action === 'overrideBudgets' && !canManageBudgets) ||
+        (action === 'resetBudgets' && !canResetBudgets)
       ) {
         toaster.error('You do not have permission to perform this action')
         return false
@@ -91,7 +96,14 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
       }
       return true
     },
-    [canManageProject, canManageBudgets, isProjectAdmin, currentUserId, selectedUsers]
+    [
+      canManageProject,
+      canManageBudgets,
+      canResetBudgets,
+      isProjectAdmin,
+      currentUserId,
+      selectedUsers,
+    ]
   )
 
   const openPopup = useCallback(
@@ -115,6 +127,16 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
     },
     [refresh, onClearSelection, onSuccess]
   )
+
+  const finishBudgetAction = useCallback(async () => {
+    try {
+      await onBudgetsChanged?.()
+    } catch {
+      // Toaster already shown by the store; the bulk action itself succeeded
+    } finally {
+      closePopup(true)
+    }
+  }, [onBudgetsChanged, closePopup])
 
   const bulkActionItems = useMemo(
     () => [
@@ -223,22 +245,26 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
                 `Failed to update budgets for ${failedUsers.length} user(s): ${failedNames}`
               )
             }
-            closePopup(true)
+            await finishBudgetAction()
           }}
-          onResetUsage={(category) => {
-            setResetCategories(category ? [category] : [])
-            setActivePopup('resetBudgets')
-          }}
+          onResetUsage={
+            canResetBudgets
+              ? (category) => {
+                  setResetCategories(category ? [category] : [])
+                  setActivePopup('resetBudgets')
+                }
+              : undefined
+          }
         />
       )}
 
-      {canManageBudgets && (
+      {canResetBudgets && (
         <BulkResetBudgetsPopup
           selectedUsers={selectedUsers}
           categories={resetCategories}
           isOpen={activePopup === 'resetBudgets'}
           onClose={() => closePopup()}
-          onSave={() => closePopup(true)}
+          onSave={finishBudgetAction}
         />
       )}
     </>

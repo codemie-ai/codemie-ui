@@ -1,0 +1,27 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 re-verified as fixed: finishBudgetAction now catches the refresh error (commit a0608a068) and a test covers the rejecting refetch; no open findings. Original review: Edge-case lens ran; acceptance skipped (no spec), so confidence is low and criteria were not audited; standards omitted by the compact profile. One blocking defect survived (two edge reports merged); 0 deferred, 0 dismissed. Brief and fix pack written; no deferred backlog.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of the compact review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of the compact review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of the compact review profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "resolution": "fixed in a0608a068",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/projectsManagement/ProjectMembersBulkActions.tsx",
+      "line": 121,
+      "title": "Budget refresh failure escapes as unhandled rejection",
+      "problem": "finishBudgetAction awaits onBudgetsChanged (refreshBudgets -> projectBudgetsStore.listProjectBudgets, which toasts and rethrows on failure) in try/finally with no catch. In the bulk reset path BulkResetBudgetsPopup calls onSave() un-awaited, so the rejection is an unhandled promise rejection. In the bulk override path (line 236) the rejection propagates into BulkBudgetOverrideModal's submit handler, after the success/partial-failure toast was already shown.",
+      "impact": "A failed budget refresh after a successful bulk override or reset surfaces as an uncaught error (console/global error handlers) even though the store already toasted it. Reachability confirmed: listProjectBudgets rethrows and the reset popup does not await onSave.",
+      "recommendation": "Catch refresh errors inside finishBudgetAction since the store already toasts: try { await onBudgetsChanged?.() } catch { /* store already toasts */ } finally { closePopup(true) }."
+    }
+  ]
+}

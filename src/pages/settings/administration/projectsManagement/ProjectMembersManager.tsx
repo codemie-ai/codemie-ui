@@ -306,6 +306,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   const isPersonal = project.project_type === ProjectType.PERSONAL
 
   const showBudgets = !!budgets?.length
+  const canManageBudgets = showBudgets && (!!currentUser?.isMaintainer || canManageProject)
+  const canResetBudgets = canManageBudgets && !!currentUser?.isMaintainer
 
   const budgetAllocationLookup = useMemo(() => {
     if (!budgets?.length) return null
@@ -786,9 +788,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             icon: <CurrencySvg className="w-[18px] h-[18px]" />,
             onClick: () =>
               setOverrideContext({ userId: user.id, userName: user.name, category: null }),
-            // Member allocation overrides are maintainer-only on the backend; the page passes
-            // `budgets` only to maintainers, so without it there is no dialog to open.
-            hidden: !showBudgets,
+            // Follows canManageBudgets: maintainer or project admin with budgets loaded.
+            hidden: !canManageBudgets,
           },
           {
             title: 'Override models',
@@ -833,7 +834,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       getUserRole,
       handleRoleChange,
       budgets,
-      showBudgets,
+      canManageBudgets,
       userModelOverrides,
       isModelsConfigEnabled,
     ]
@@ -893,10 +894,12 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
               currentUserId={currentUser?.userId}
               canManageProject={canManageProject}
               isProjectAdmin={isProjectAdmin}
-              canManageBudgets={canManageProject && !!currentUser?.isMaintainer}
+              canManageBudgets={canManageBudgets}
+              canResetBudgets={canResetBudgets}
               onClearSelection={clearSelection}
               refresh={refreshFromFirstPage}
               onSuccess={onMembersChanged}
+              onBudgetsChanged={refreshBudgets}
               onOverrideModels={() => openModelOverrides(selected)}
               isModelsConfigEnabled={isModelsConfigEnabled}
               budgets={budgets ?? []}
@@ -992,7 +995,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         onSuccess={handleImportSuccess}
       />
 
-      {showBudgets && budgets && (
+      {canManageBudgets && budgets && (
         <MemberAllocationOverrideModal
           visible={!!overrideContext}
           userId={overrideContext?.userId ?? null}
@@ -1004,11 +1007,15 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           initialCategory={overrideContext?.category ?? null}
           onHide={() => setOverrideContext(null)}
           onSubmit={handleOverrideMember}
-          onResetUsage={async () => {
-            const user = users.find((item) => item.id === overrideContext?.userId)
-            setOverrideContext(null)
-            setResetBudgetUser(user ?? null)
-          }}
+          onResetUsage={
+            canResetBudgets
+              ? async () => {
+                  const user = users.find((item) => item.id === overrideContext?.userId)
+                  setOverrideContext(null)
+                  setResetBudgetUser(user ?? null)
+                }
+              : undefined
+          }
         />
       )}
 
