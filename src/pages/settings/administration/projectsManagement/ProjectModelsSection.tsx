@@ -180,8 +180,7 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
     try {
       const saved = await projectModelSettingsStore.saveSettings(projectName, {
         ...selectionToSettings(savedSettings, targetDraft.selection, 'disable'),
-        default_model:
-          targetDraft.defaultModel === globalDefaultModel ? null : targetDraft.defaultModel,
+        default_model: targetDraft.defaultModel,
       })
       applySaved(saved)
       await loadProjectModels()

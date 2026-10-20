@@ -154,7 +154,7 @@ describe('ProjectModelsSection', () => {
     expect(saved).toMatchObject({
       mode: 'allow_list',
       models: ['model-a', 'premium', 'router'],
-      default_model: null,
+      default_model: 'model-a',
     })
     expect(saved.member_overrides).toEqual(STORED.member_overrides)
     expect(mockAppInfoStore.invalidateProjectLLMModels).toHaveBeenCalledWith('team')
