@@ -36,32 +36,61 @@ const DropzoneArea: FC<DropzoneAreaProps> = ({
   const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } =
     useDragAndDrop({ onFilesDrop })
 
-  return (
-    <div
-      onDragEnter={disabled ? undefined : handleDragEnter}
-      onDragOver={disabled ? undefined : handleDragOver}
-      onDragLeave={disabled ? undefined : handleDragLeave}
-      onDrop={disabled ? undefined : handleDrop}
-      onClick={disabled ? undefined : onClick}
-      className={cn(
-        'relative overflow-hidden flex flex-col items-center justify-center gap-2.5 p-5 rounded-lg transition-colors',
-        isDragging ? 'bg-surface-base-dropzone-hover' : 'bg-surface-base-dropzone',
-        disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
-        className
-      )}
-    >
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" fill="none">
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          rx="8"
-          stroke="rgb(var(--colors-border-specific-dropzone))"
-          strokeDasharray="6 6"
-        />
-      </svg>
+  const layoutClasses = 'flex flex-col items-center justify-center gap-2.5 p-5'
 
+  const sharedProps = {
+    onDragEnter: disabled ? undefined : handleDragEnter,
+    onDragOver: disabled ? undefined : handleDragOver,
+    onDragLeave: disabled ? undefined : handleDragLeave,
+    onDrop: disabled ? undefined : handleDrop,
+    className: cn(
+      'relative overflow-hidden rounded-lg transition-colors',
+      !onClick && layoutClasses,
+      isDragging ? 'bg-surface-base-dropzone-hover' : 'bg-surface-base-dropzone',
+      disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+      className
+    ),
+  }
+
+  const dashedBorder = (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" fill="none">
+      <rect
+        x="0"
+        y="0"
+        width="100%"
+        height="100%"
+        rx="8"
+        stroke="rgb(var(--colors-border-specific-dropzone))"
+        strokeDasharray="6 6"
+      />
+    </svg>
+  )
+
+  // The interactive variant keeps the visual surface on a wrapper div and puts a native button
+  // inside it, so keyboard operation comes from the browser and the surface stays a div.
+  if (onClick) {
+    return (
+      <div {...sharedProps}>
+        {dashedBorder}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onClick}
+          className={cn(
+            'relative w-full h-full rounded-lg cursor-[inherit]',
+            layoutClasses,
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]'
+          )}
+        >
+          {children(isDragging)}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div {...sharedProps}>
+      {dashedBorder}
       {children(isDragging)}
     </div>
   )

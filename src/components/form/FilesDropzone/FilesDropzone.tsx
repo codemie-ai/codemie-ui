@@ -16,6 +16,7 @@
 import { FC, useEffect, useId, useMemo, useRef } from 'react'
 
 import Announcement from '@/components/Announcement'
+import { buildFileAnnouncements } from '@/components/form/FilesDropzone/announcements'
 import { FileDropArea } from '@/components/form/FilesDropzone/components/FileDropArea'
 import { FileDropzoneErrors } from '@/components/form/FilesDropzone/components/FileDropzoneErrors'
 import { FileList } from '@/components/form/FilesDropzone/components/FileList'
@@ -67,24 +68,22 @@ const FilesDropzone: FC<Props> = ({
 
   const hasErrors = errorsMessages.length > 0
 
-  const filesCount = files.length + uploadedFiles.length
-  const previousFilesCount = useRef<number | null>(null)
+  const fileNames = useMemo(
+    () => [...uploadedFiles, ...files.map((file) => file.name)],
+    [files, uploadedFiles]
+  )
+  const previousFileNames = useRef<string[] | null>(null)
   const { announcement, announce } = useAnnouncementQueue()
 
   useEffect(() => {
-    if (previousFilesCount.current === null) {
-      previousFilesCount.current = filesCount
+    const previousNames = previousFileNames.current
 
-      return
-    }
+    previousFileNames.current = fileNames
 
-    if (previousFilesCount.current !== filesCount) {
-      previousFilesCount.current = filesCount
-      announce(
-        filesCount === 0 ? 'No files selected' : `${filesCount} of ${maxFiles} files selected`
-      )
-    }
-  }, [announce, filesCount, maxFiles])
+    if (previousNames === null) return
+
+    buildFileAnnouncements(previousNames, fileNames, maxFiles).forEach(announce)
+  }, [announce, fileNames, maxFiles])
 
   return (
     <div className="flex flex-col gap-3">

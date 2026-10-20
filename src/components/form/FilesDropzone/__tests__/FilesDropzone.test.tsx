@@ -249,5 +249,60 @@ describe('FilesDropzone', () => {
 
       await expectAnnouncement('2 of 10 files selected')
     })
+
+    it('announces the name of the added file', async () => {
+      const { rerender } = render(<FilesDropzone name="files" files={[]} onChange={noop} />)
+
+      rerender(<FilesDropzone name="files" files={[makeFile('report.pdf')]} onChange={noop} />)
+
+      await expectAnnouncement('report.pdf added. 1 of 10 files selected')
+    })
+
+    it('announces the name of the removed file', async () => {
+      const { rerender } = render(
+        <FilesDropzone
+          name="files"
+          files={[makeFile('a.txt'), makeFile('b.txt')]}
+          onChange={noop}
+        />
+      )
+
+      rerender(<FilesDropzone name="files" files={[makeFile('a.txt')]} onChange={noop} />)
+
+      await expectAnnouncement('b.txt removed. 1 of 10 files selected')
+    })
+
+    it('announces a replacement that leaves the count unchanged', async () => {
+      const { rerender } = render(
+        <FilesDropzone name="files" files={[makeFile('a.txt')]} onChange={noop} />
+      )
+
+      rerender(<FilesDropzone name="files" files={[makeFile('b.txt')]} onChange={noop} />)
+
+      await expectAnnouncement('b.txt added. 1 of 10 files selected')
+    })
+
+    it('names an already uploaded file that is removed', async () => {
+      const { rerender } = render(
+        <FilesDropzone name="files" files={[]} onChange={noop} uploadedFiles={['old.txt']} />
+      )
+
+      rerender(<FilesDropzone name="files" files={[]} onChange={noop} uploadedFiles={[]} />)
+
+      await expectAnnouncement('old.txt removed. No files selected')
+    })
+
+    it('stays silent when the same files are re-rendered as new objects', async () => {
+      const { rerender } = render(
+        <FilesDropzone name="files" files={[makeFile('a.txt')]} onChange={noop} />
+      )
+
+      rerender(<FilesDropzone name="files" files={[makeFile('a.txt')]} onChange={noop} />)
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 50)
+      })
+      expect(screen.getByRole('status')).toHaveTextContent('')
+    })
   })
 })

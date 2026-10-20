@@ -12,6 +12,8 @@ node_modules
 dist-ssr
 coverage
 *.local
+__pycache__/
+*.pyc
 
 /cypress/videos/
 /cypress/screenshots/

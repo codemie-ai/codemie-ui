@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "task": "EPMCDME-8561 — make the Data Sources file dropzone live region name added and removed files (WCAG SC 4.1.3) via a pure message builder and a multiset diff over file names.",
+  "generated": "2026-09-03",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "Announcement correctness depends on the existing useAnnouncementQueue timing (messages play about a second apart), so several files added at once had to be aggregated into one message instead of one per file. The multiset diff also has to treat same-name replacements as a real change. Extracting buildFileAnnouncements as a pure function kept the risk contained and fully unit-testable; base score S (2) bumped to M (3) by the accessibility-conformance red flag." },
+    { "dimension": "file_change_estimate", "reason": "4 files changed, 202 insertions / 13 deletions, all inside src/components/form/FilesDropzone/: FilesDropzone.tsx modified, announcements.ts added, plus the two matching test files. Two of the four are new, and both new files are tests-or-pure-logic with no cross-directory reach." },
+    { "dimension": "component_scope", "reason": "Single presentational component plus one new sibling helper module. No shared utility, store, API client, or route touched; the component's public props are unchanged, so no caller in Data Sources or elsewhere needed edits." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S (2) to M (3): the change exists to satisfy a WCAG 2.1 SC 4.1.3 accessibility-compliance requirement, which the guide treats as a compliance red flag."
+  ],
+  "split_recommendation": null
+}

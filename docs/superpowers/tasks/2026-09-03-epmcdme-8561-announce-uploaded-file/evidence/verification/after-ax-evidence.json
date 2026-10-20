@@ -1,0 +1,30 @@
+{
+  "live_region_before": {
+    "present": true,
+    "role": "output",
+    "ariaLive": "polite",
+    "ariaAtomic": "true",
+    "hiddenBy": null,
+    "display": "block",
+    "visibility": "visible",
+    "text": ""
+  },
+  "live_region_after": {
+    "present": true,
+    "role": "output",
+    "ariaLive": "polite",
+    "ariaAtomic": "true",
+    "hiddenBy": null,
+    "display": "block",
+    "visibility": "visible",
+    "text": "quarterly-report.pdf added. 1 of 10 files selected"
+  },
+  "announced_on_add": [
+    "Oops! Something went wrong Oops! Something went wrong",
+    "quarterly-report.pdf added. 1 of 10 files selected quarterly-report.pdf added. 1 of 10 files selected"
+  ],
+  "announced_on_remove": [
+    "Oops! Something went wrong Oops! Something went wrong",
+    "quarterly-report.pdf removed. No files selected quarterly-report.pdf removed. No files selected"
+  ]
+}
