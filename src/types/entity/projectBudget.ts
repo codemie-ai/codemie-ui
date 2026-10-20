@@ -41,6 +41,7 @@ export interface ProjectBudget {
   is_active?: boolean
   member_count: number
   allocated_member_budget_total: number
+  zero_limit_member_count?: number
   member_allocations: ProjectBudgetMemberAllocation[]
   created_at?: string | null
   updated_at?: string | null

@@ -59,6 +59,7 @@ export interface CategoryBudgetDetail {
   budget_duration: string
   member_count: number
   allocated_member_budget_total: number
+  zero_limit_member_count?: number
   provider_sync_status: BudgetSyncStatus | null
   budget_reset_at?: string | null
   created_at?: string | null

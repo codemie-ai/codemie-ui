@@ -18,8 +18,10 @@ import { FC, useCallback, useEffect, useMemo, useState } from 'react'
 import ConfirmationModal from '@/components/ConfirmationModal'
 import DropdownButton from '@/components/DropdownButton/DropdownButton'
 import Hint from '@/components/Hint'
+import InfoWarning from '@/components/InfoWarning'
 import Spinner from '@/components/Spinner'
 import Table from '@/components/Table'
+import { InfoWarningType } from '@/constants'
 import { PROJECTS_MANAGEMENT_MEMBERS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingProgressBar'
@@ -58,9 +60,16 @@ interface BudgetCardData {
   overrideCount: number
   memberCount: number | null
   allocatedMemberBudgetTotal: number | null
+  /** Equal-share members whose enforced limit is $0.00, so they cannot spend. */
+  zeroLimitMemberCount: number
   /** Spend left behind by a budget that was later removed or redistributed. */
   unassignedSpend: number | null
 }
+
+const zeroLimitWarningMessage = (category: BudgetCategory, count: number): string =>
+  `${getBudgetCategoryLabel(category)} budget is too small to split across members: ${count} ${
+    count === 1 ? 'member has' : 'members have'
+  } a $0.00 limit and cannot spend. Increase the budget or turn off Enforce member spend limits.`
 
 const formatResetPeriod = (duration: string | null | undefined): string => {
   if (!duration) return '—'
@@ -497,6 +506,7 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
       memberCount: scope?.member_count ?? budget?.member_count ?? null,
       allocatedMemberBudgetTotal:
         scope?.allocated_member_budget_total ?? budget?.allocated_member_budget_total ?? null,
+      zeroLimitMemberCount: scope?.zero_limit_member_count ?? budget?.zero_limit_member_count ?? 0,
       unassignedSpend,
     }
   })
@@ -577,6 +587,16 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
               <div className="mt-1 text-base font-semibold text-text-primary">{timeUntilReset}</div>
             </div>
           </div>
+          {budgetCards
+            .filter((data) => data.zeroLimitMemberCount > 0)
+            .map((data) => (
+              <InfoWarning
+                key={`zero-limit-${data.category}`}
+                type={InfoWarningType.WARNING}
+                className="mb-3"
+                message={zeroLimitWarningMessage(data.category, data.zeroLimitMemberCount)}
+              />
+            ))}
           <div className="mb-3 flex items-center justify-between gap-4">
             <div className="text-sm font-semibold text-text-primary">Budget categories</div>
             <button

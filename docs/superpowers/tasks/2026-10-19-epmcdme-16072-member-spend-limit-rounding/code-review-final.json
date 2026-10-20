@@ -1,0 +1,152 @@
+{
+  "decision": "approve",
+  "rationale": "Approved after the code-review.check round (approve/high); the user approved both code-review.final and code-review.check gates. Original round: request-changes with two blocking findings, both resolved in fix-up commit 'EPMCDME-16072: Warn on zero equal share in budget backfill': CR-001 (the budget_service.py backfill path had no zero-share warning; it now calls _log_zero_equal_share, with a $0.30/70 backfill seam test) and CR-002 (the resync seam test now asserts the shared child is seeded with 0.0/0.0). All three lenses ran with the spec and story present; all 5 story ACs pass. Review covered both repos: codemie backend and codemie-ui (ProjectBudgetsSection banner, types, tests). 3 findings deferred as pre-existing (toggle-on keeps stale rows when FIXED overrides exceed the budget; no range check on huge budget amounts before Decimal quantize; the UI does not reload budgets after the enforcement toggle in the Edit Project modal). 17 findings dismissed after verification. The round-1 verdict is preserved in decisions.jsonl.",
+  "confidence": "high",
+  "risk_flags": [
+    "public-api"
+  ],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: 70 members, $1 budget, enforcement on: no negative member limit",
+      "status": "pass",
+      "notes": "_equal_share floors with ROUND_DOWN and clamps at 0; the $1/70 case gives 0.01 each (parametrized test)"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: sum of member limits <= platform budget",
+      "status": "pass",
+      "notes": "uniform floored share, leftover cents unallocated; tests assert sum <= budget for max and soft"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: same rounding/distribution rule for all members",
+      "status": "pass",
+      "notes": "every EQUAL row gets an identical (max, soft); tests assert a single distinct value"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: small budgets / large member counts follow the same rule",
+      "status": "pass",
+      "notes": "single _equal_share path, no special casing; cases from 0.30/70 to 1000/1000"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC5: regression tests cover small budgets and large member counts",
+      "status": "pass",
+      "notes": "test_project_budget_allocation_rounding.py"
+    },
+    {
+      "kind": "spec",
+      "item": "G1 uniform floor_to_cent equal share",
+      "status": "pass",
+      "notes": "both helpers use _equal_share"
+    },
+    {
+      "kind": "spec",
+      "item": "G2 sum never exceeds budget",
+      "status": "pass",
+      "notes": "no remainder assignment"
+    },
+    {
+      "kind": "spec",
+      "item": "G3 soft = min(floor soft share, max share)",
+      "status": "pass",
+      "notes": "covered by two tests"
+    },
+    {
+      "kind": "spec",
+      "item": "G4 same rule for all sizes",
+      "status": "pass",
+      "notes": "no thresholds"
+    },
+    {
+      "kind": "spec",
+      "item": "G5 backend WARNING log at allocation time when enforced EQUAL shares are $0.00",
+      "status": "pass",
+      "notes": "logged on create, group create, new category, resync, recompute and (after fix-up commit 'EPMCDME-16072: Warn on zero equal share in budget backfill') the budget_service.py backfill path"
+    },
+    {
+      "kind": "spec",
+      "item": "G5 API zero_limit_member_count on both responses, 0 when enforcement off",
+      "status": "pass",
+      "notes": "logged on create, group create, new category, resync, recompute and (after fix-up commit 'EPMCDME-16072: Warn on zero equal share in budget backfill') the budget_service.py backfill path"
+    },
+    {
+      "kind": "spec",
+      "item": "G5 UI InfoWarning per category",
+      "status": "pass",
+      "notes": "logged on create, group create, new category, resync, recompute and (after fix-up commit 'EPMCDME-16072: Warn on zero equal share in budget backfill') the budget_service.py backfill path"
+    },
+    {
+      "kind": "spec",
+      "item": "G5a row-based count, FIXED excluded",
+      "status": "pass",
+      "notes": "_zero_limit_member_count"
+    },
+    {
+      "kind": "spec",
+      "item": "G5b toggle-on recompute, ValidationException logged, toggle never fails, off unchanged",
+      "status": "pass",
+      "notes": "recompute_equal_shares + runtime sync hook; tested"
+    },
+    {
+      "kind": "spec",
+      "item": "G6 regression + seam tests asserting the shared child seeded value at create and resync",
+      "status": "pass",
+      "notes": "the create seam asserts 0.01; after fix-up commit 'EPMCDME-16072: Warn on zero equal share in budget backfill' the resync seam asserts the shared child is seeded with 0.0/0.0"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goals / anti-goals respected",
+      "status": "pass",
+      "notes": "no migration, no add/remove rebalance, no modal warning, no UI math, FIXED $0 not counted"
+    },
+    {
+      "kind": "spec",
+      "item": "Risky resolutions documented in both MR descriptions",
+      "status": "pass",
+      "notes": "documented in codemie !4573 and codemie-ui !2162 Reviewer notes"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "all 5 commits use the 'EPMCDME-16072: description' prefix; the guide example capitalizes the description (non-blocking), so capitalize when rewording before push"
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "ruff clean; typed signatures; license header on new test file; the new methods sit in the service that owns the allocation math"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "no secrets or PII logged; new log lines carry project name, budget id and count only"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "codemie/src/codemie/service/budget/budget_service.py",
+      "line": 1546,
+      "title": "Backfill split lacks zero-share warning",
+      "problem": "_create_backfilled_project_budget calls project_budget_service._allocate_equal and seeds the shared child, but never calls _log_zero_equal_share, so spec G5's allocation-time WARNING is missing on this path.",
+      "impact": "When a legacy budget is migrated with enforcement on and the floored share is $0.00, members cannot spend and nothing is logged on the backend.",
+      "recommendation": "Call project_budget_service._log_zero_equal_share(project_name, budget_id, (r.allocated_max_budget for r in allocation_rows), enforce_limit) right after the _allocate_equal call, and add a seam test."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie/tests/codemie/service/budget/test_project_budget_allocation_rounding.py",
+      "title": "Resync seam test omits seeded value",
+      "problem": "test_resync_logs_warning_when_equal_share_is_zero patches _ensure_shared_child_budget but asserts only the warning log, not the per_member_max_budget/per_member_soft_budget seeded into the shared child, which spec G6 requires for the resync seam.",
+      "impact": "A regression that seeds the shared LiteLLM budget with a non-uniform or remainder value on rebalance would go undetected.",
+      "recommendation": "Capture the _ensure_shared_child_budget mock and assert per_member_max_budget == 0.0 and per_member_soft_budget == 0.0 for the $0.30/70 case."
+    }
+  ]
+}

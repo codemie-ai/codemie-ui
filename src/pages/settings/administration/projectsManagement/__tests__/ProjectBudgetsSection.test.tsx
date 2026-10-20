@@ -16,6 +16,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail, ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
 
 import ProjectBudgetsSection from '../ProjectBudgetsSection'
@@ -147,5 +148,54 @@ describe('ProjectBudgetsSection unassigned category spend', () => {
     await waitFor(() => expect(listProjectBudgets).toHaveBeenCalled())
     expect(await screen.findAllByText('— not assigned —')).toHaveLength(3)
     expect(screen.queryByText('$0.14')).not.toBeInTheDocument()
+  })
+})
+
+const platformBudget = (zeroLimitMemberCount?: number): ProjectBudget => ({
+  budget_id: 'p1-platform',
+  name: 'Platform budget',
+  project_name: 'p1',
+  budget_category: 'platform',
+  soft_budget: 0.24,
+  max_budget: 0.3,
+  budget_duration: '30d',
+  provider_sync_status: null,
+  member_count: 70,
+  allocated_member_budget_total: 0,
+  member_allocations: [],
+  ...(zeroLimitMemberCount === undefined ? {} : { zero_limit_member_count: zeroLimitMemberCount }),
+})
+
+describe('ProjectBudgetsSection zero member limit warning', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    listProjectBudgetGroups.mockResolvedValue([])
+  })
+
+  it('warns when members of a category have a $0.00 limit', async () => {
+    listProjectBudgets.mockResolvedValue([platformBudget(70)])
+    render(<ProjectBudgetsSection projectName="p1" access="view" />)
+
+    expect(
+      await screen.findByText(
+        'Platform budget is too small to split across members: 70 members have a $0.00 limit and cannot spend. Increase the budget or turn off Enforce member spend limits.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('uses singular wording for one member', async () => {
+    listProjectBudgets.mockResolvedValue([platformBudget(1)])
+    render(<ProjectBudgetsSection projectName="p1" access="view" />)
+
+    expect(await screen.findByText(/1 member has a \$0\.00 limit/)).toBeInTheDocument()
+  })
+
+  it.each([0, undefined])('does not warn when zero_limit_member_count is %s', async (count) => {
+    listProjectBudgets.mockResolvedValue([platformBudget(count)])
+    render(<ProjectBudgetsSection projectName="p1" access="view" />)
+
+    await waitFor(() => expect(listProjectBudgets).toHaveBeenCalled())
+    expect(await screen.findByText('Budget categories')).toBeInTheDocument()
+    expect(screen.queryByText(/\$0\.00 limit/)).not.toBeInTheDocument()
   })
 })

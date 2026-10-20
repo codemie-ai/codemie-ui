@@ -1,0 +1,142 @@
+{
+  "decision": "approve",
+  "rationale": "Both blocking findings from code-review.final are resolved in fix-up commit 7b9bfd4dc. CR-001: _create_backfilled_project_budget now calls _log_zero_equal_share, and a new seam test covers the $0.30/70 backfill. CR-002: the resync seam test now asserts the shared child is seeded with 0.0/0.0; the test fake now mutates the updated row like the real repository. The fix-up diff only adds one log call plus tests, so no new high-risk surface; 232 budget and runtime-sync tests pass.",
+  "confidence": "high",
+  "risk_flags": [
+    "public-api"
+  ],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: 70 members, $1 budget, enforcement on: no negative member limit",
+      "status": "pass",
+      "notes": "_equal_share floors with ROUND_DOWN and clamps at 0; the $1/70 case gives 0.01 each (parametrized test)"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: sum of member limits <= platform budget",
+      "status": "pass",
+      "notes": "uniform floored share, leftover cents unallocated; tests assert sum <= budget for max and soft"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: same rounding/distribution rule for all members",
+      "status": "pass",
+      "notes": "every EQUAL row gets an identical (max, soft); tests assert a single distinct value"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: small budgets / large member counts follow the same rule",
+      "status": "pass",
+      "notes": "single _equal_share path, no special casing; cases from 0.30/70 to 1000/1000"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC5: regression tests cover small budgets and large member counts",
+      "status": "pass",
+      "notes": "test_project_budget_allocation_rounding.py"
+    },
+    {
+      "kind": "spec",
+      "item": "G1 uniform floor_to_cent equal share",
+      "status": "pass",
+      "notes": "both helpers use _equal_share"
+    },
+    {
+      "kind": "spec",
+      "item": "G2 sum never exceeds budget",
+      "status": "pass",
+      "notes": "no remainder assignment"
+    },
+    {
+      "kind": "spec",
+      "item": "G3 soft = min(floor soft share, max share)",
+      "status": "pass",
+      "notes": "covered by two tests"
+    },
+    {
+      "kind": "spec",
+      "item": "G4 same rule for all sizes",
+      "status": "pass",
+      "notes": "no thresholds"
+    },
+    {
+      "kind": "spec",
+      "item": "G5 backend WARNING log at allocation time when enforced EQUAL shares are $0.00",
+      "status": "partial",
+      "notes": "logged on create, group create, new category, resync and recompute; missing on the budget_service.py backfill _allocate_equal call"
+    },
+    {
+      "kind": "spec",
+      "item": "G5 API zero_limit_member_count on both responses, 0 when enforcement off",
+      "status": "pass",
+      "notes": "router tests cover on/off, FIXED exclusion, legacy negative row, group category"
+    },
+    {
+      "kind": "spec",
+      "item": "G5 UI InfoWarning per category",
+      "status": "pass",
+      "notes": "copy matches the spec; singular form tested"
+    },
+    {
+      "kind": "spec",
+      "item": "G5a row-based count, FIXED excluded",
+      "status": "pass",
+      "notes": "_zero_limit_member_count"
+    },
+    {
+      "kind": "spec",
+      "item": "G5b toggle-on recompute, ValidationException logged, toggle never fails, off unchanged",
+      "status": "pass",
+      "notes": "recompute_equal_shares + runtime sync hook; tested"
+    },
+    {
+      "kind": "spec",
+      "item": "G6 regression + seam tests asserting the shared child seeded value at create and resync",
+      "status": "partial",
+      "notes": "the create seam asserts 0.01; the resync seam test asserts only the log, not the seeded value"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goals / anti-goals respected",
+      "status": "pass",
+      "notes": "no migration, no add/remove rebalance, no modal warning, no UI math, FIXED $0 not counted"
+    },
+    {
+      "kind": "spec",
+      "item": "Risky resolutions documented in both MR descriptions",
+      "status": "na",
+      "notes": "MR not yet created; checked at MR creation"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "all 5 commits use the 'EPMCDME-16072: description' prefix; the guide example capitalizes the description (non-blocking), so capitalize when rewording before push"
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "ruff clean; typed signatures; license header on new test file; the new methods sit in the service that owns the allocation math"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "no secrets or PII logged; new log lines carry project name, budget id and count only"
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "budget_service.py backfill logs member_share_below_minimum; test_backfilled_project_budget_logs_warning_when_equal_share_is_zero RED then GREEN"
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "test_resync_logs_warning_when_equal_share_is_zero asserts per_member_max/soft == 0.0"
+    }
+  ]
+}
