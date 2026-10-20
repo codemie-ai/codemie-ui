@@ -16,6 +16,7 @@
 import React, { useCallback, useMemo } from 'react'
 
 import Filters from '@/components/Filters'
+import ProjectSelector from '@/components/ProjectSelector'
 import {
   SchedulerFilterOptions,
   SchedulerLastRunStatus,
@@ -63,11 +64,6 @@ const LAST_RUN_STATUS_OPTIONS: FilterOption[] = [
 ]
 
 const SchedulerFilters: React.FC<Props> = ({ filterOptions, values, onApply }) => {
-  const projectOptions: FilterOption[] = useMemo(
-    () => filterOptions.projects.map((p) => ({ label: p.name || p.id, value: p.id })),
-    [filterOptions.projects]
-  )
-
   const resourceOptions: FilterOption[] = useMemo(
     () => filterOptions.resources.map((r) => ({ label: r.name || r.id, value: r.id })),
     [filterOptions.resources]
@@ -85,8 +81,8 @@ const SchedulerFilters: React.FC<Props> = ({ filterOptions, values, onApply }) =
       {
         name: 'projectId',
         label: 'Project',
-        type: FilterDefinitionType.Multiselect,
-        options: projectOptions,
+        type: FilterDefinitionType.Custom,
+        options: [],
         value: values.projectId ? [values.projectId] : [],
       },
       {
@@ -111,7 +107,7 @@ const SchedulerFilters: React.FC<Props> = ({ filterOptions, values, onApply }) =
         value: values.lastRunStatus ?? '',
       },
     ],
-    [projectOptions, resourceOptions, values]
+    [resourceOptions, values]
   )
 
   const areFiltersEmpty = useMemo(
@@ -141,6 +137,26 @@ const SchedulerFilters: React.FC<Props> = ({ filterOptions, values, onApply }) =
     [onApply]
   )
 
+  const renderCustomFilter = useCallback(
+    (
+      definition: FilterDefinition,
+      value: unknown,
+      updateValue: (value: unknown) => void
+    ): React.ReactNode => {
+      if (definition.name !== 'projectId') return null
+      return (
+        <ProjectSelector
+          multiple
+          fullWidth
+          label=""
+          value={value as string[]}
+          onChange={(v) => updateValue(v)}
+        />
+      )
+    },
+    []
+  )
+
   return (
     <Filters
       filterDefinitions={filterDefinitions}
@@ -148,6 +164,7 @@ const SchedulerFilters: React.FC<Props> = ({ filterOptions, values, onApply }) =
       searchPlaceholder="Search schedulers"
       searchValue={values.search ?? ''}
       areFiltersEmpty={areFiltersEmpty}
+      renderCustomFilter={renderCustomFilter}
       onApply={handleApply}
       refreshOnValuesUpdate
     />

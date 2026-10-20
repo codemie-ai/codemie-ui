@@ -1,0 +1,22 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case lens returned no findings and acceptance reported every criterion as pass, so there were no candidates to verify; 0 deferred, 0 dismissed. Blind and verification-gap lenses were not part of the compact profile; test, lint and type-check execution is pending-stage-7. Brief written to code-review-brief.md.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "1. Project filter dropdown contains a search input", "status": "pass", "notes": "ProjectSelector passes onFilter to MultiSelect, which renders the filter input; tests assert the input." },
+    { "kind": "story-ac", "item": "2. Typing filters the list; clearing restores the full list", "status": "pass", "notes": "Inherited from ProjectSelector (debounced loadProjects); no typing test in the diff." },
+    { "kind": "story-ac", "item": "3. Rendered by shared ProjectSelector, no Filters/ProjectSelector source change", "status": "pass", "notes": "Diff touches only SchedulerFilters.tsx and two test files." },
+    { "kind": "story-ac", "item": "4. Selection sets projectId, uncheck/clear removes it, reload keeps it", "status": "pass", "notes": "Array value kept; handleApply still takes [0]; tests cover select and uncheck." },
+    { "kind": "spec", "item": "5. Typing in the search box does not trigger a filter apply", "status": "pass", "notes": "Search is local to ProjectSelector; apply fires only on a filters change." },
+    { "kind": "spec", "item": "6. Resource and other filters behave as before", "status": "pass", "notes": "resourceOptions and other definitions untouched; projectOptions memo removed only." },
+    { "kind": "spec", "item": "7. Existing tests updated, new coverage for search input and onApply", "status": "pass", "notes": "Tests mock userStore.getProjects and v1/user; search-input and onApply tests added." },
+    { "kind": "spec", "item": "Test, lint and type-check execution", "status": "pending-stage-7", "notes": "Needs running the two test files, lint and tsc." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of the compact review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of the compact review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of the compact review profile." }
+  ],
+  "findings": []
+}

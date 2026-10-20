@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Replace the generic checkbox-only Multiselect for the Scheduler page Project filter with the shared ProjectSelector (with search), preserving select/deselect and URL behaviour (EPMCDME-16068).",
+  "generated": "2026-10-19T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Acceptance criteria are defined, but open decisions remain: single vs multiple ProjectSelector mode (deselect and selectDefault behaviour), and the option source changing from projects-with-schedulers to the user's projects. Scored M, not higher, because the multiple + array-value reading is the low-risk default." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is the Filters Custom/renderCustomFilter dispatch (Assistants, Skills, Workflows) plus the Analytics ProjectSelector embed (label='' fullWidth multiple). No page embeds ProjectSelector inside Filters, and the array vs string value contract with handleApply (?.[0]) is a real trap. No security, performance or irreversible concerns; the change is a trivial rollback. Scored M." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

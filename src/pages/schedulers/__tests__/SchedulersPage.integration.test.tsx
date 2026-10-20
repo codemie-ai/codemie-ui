@@ -65,14 +65,29 @@ describe('SchedulersPage', () => {
     expect(screen.getByText('Sales Pipeline Sync')).toBeInTheDocument()
   })
 
-  it('shows project names in the Project filter dropdown', async () => {
+  it('shows project names and a search input in the Project filter dropdown', async () => {
+    mockAPI('GET', 'v1/user', {
+      user_id: 'user-id',
+      email: 'user@example.com',
+      name: 'Regular User',
+      username: 'regularuser',
+      is_admin: false,
+      is_maintainer: false,
+      user_type: 'INTERNAL',
+      applications: ['demo'],
+      applications_admin: [],
+      projects: [{ name: 'Platform Team', is_project_admin: false }],
+    })
     const { container } = renderPage('/schedulers')
     await waitFor(() => {
       expect(schedulersStore.filterOptions.projects).toHaveLength(1)
     })
     const triggers = container.querySelectorAll('.p-multiselect')
     fireEvent.click(triggers[0])
-    expect(screen.getByText('Platform Team')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('Platform Team')).toBeInTheDocument()
+    })
+    expect(document.querySelector('.p-multiselect-panel input[type="text"]')).toBeInTheDocument()
   })
 
   it('accepts ownerType in fetchSchedulers query', async () => {

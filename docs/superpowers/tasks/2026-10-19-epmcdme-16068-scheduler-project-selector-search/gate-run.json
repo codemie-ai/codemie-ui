@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16068_scheduler-project-selector-search",
+  "head": "b79d51773524df4f65a49886a6f49cf2847ce385",
+  "runner": "npm",
+  "started_at": "2026-10-19T12:20:00Z",
+  "completed_at": "2026-10-19T14:15:00Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 739000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 120000,
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "notes": "duration approximate; ran under CPU/IO contention"
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "N/A",
+      "command": "npm run license-check",
+      "notes": "Guide Skip-if: no dependency added/removed/moved (diff touches only 3 src/pages/schedulers files)"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 15000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks actually ran: 'scanned ~28783601 bytes (28.78 MB) in 12.5s' / 'no leaks found'"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 3683000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "709/710 files passed, 7189 passed, 2 failed, 1 skipped. Both failures in src/__tests__/router.test.tsx (not in branch diff): 'Test timed out in 30000ms' on dynamic import('@/router'). Re-ran that file alone with no other load: same 2 failures (164s). Looks environmental (cold transform on /mnt/c WSL2) but not verified on merge base."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 886000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "50 files, 564 passed, 1 skipped (includes SchedulersPage.integration.test.tsx)"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 10000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2365 files, 0 missing license headers"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "command": "npm run sonar-local",
+      "notes": "Pre-commit hook gate; needs SonarQube server/connected-mode token not available to this runner; CI/hook only. Not run locally."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "npm run test-harness",
+      "notes": "Needs the full stack up (docker unavailable here; a uvicorn backend is running but harness/uvx not exercised). Unverified, not passed; MR compliance bot checks the Test harness section."
+    }
+  ],
+  "failures": {
+    "unit": "\n RUN  v5.0.2 /mnt/c/Users/AleksandrBudanov/Projects/EPMCDME-16068/codemie-ui\n      Running tests with seed \"1792418609821\"\n\n\nwarn - As of Tailwind CSS v3.3, the `@tailwindcss/line-clamp` plugin is now included by default.\nwarn - Remove it from the `plugins` array in your configuration to eliminate this warning.\n \u276f |unit| src/__tests__/router.test.tsx (5 tests | 2 failed) 152172ms\n   \u276f workflowRoutes - WOKRFLOW_EXECUTIONS optional executionId (2)\n     \u00d7 matches the bare executions-list path with no executionId param 60005ms (retry x1)\n     \u00d7 still matches the path with an executionId param 60004ms (retry x1)\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af Failed Tests 2 \u23af\u23af\u23af\u23af\u23af\u23af\u23af\n\n FAIL  |unit| src/__tests__/router.test.tsx > workflowRoutes - WOKRFLOW_EXECUTIONS optional executionId > matches the bare executions-list path with no executionId param\n FAIL  |unit| src/__tests__/router.test.tsx > workflowRoutes - WOKRFLOW_EXECUTIONS optional executionId > matches the bare executions-list path with no executionId param\nError: Test timed out in 30000ms.\nIf this is a long-running test, pass a timeout value as the last argument or configure it globally with \"testTimeout\".\n \u276f src/__tests__/router.test.tsx:37:3\n     35|\n     36| describe('workflowRoutes - WOKRFLOW_EXECUTIONS optional executionId', \u2026\n     37|   it('matches the bare executions-list path with no executionId param'\u2026\n       |   ^\n     38|     const { routes } = await import('@/router')\n     39|     const matches = matchRoutes(routes, '/workflows/wf-123/workflow-ex\u2026\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af[1/4]\u23af\n\n FAIL  |unit| src/__tests__/router.test.tsx > workflowRoutes - WOKRFLOW_EXECUTIONS optional executionId > still matches the path with an executionId param\n FAIL  |unit| src/__tests__/router.test.tsx > workflowRoutes - WOKRFLOW_EXECUTIONS optional executionId > still matches the path with an executionId param\nError: Test timed out in 30000ms.\nIf this is a long-running test, pass a timeout value as the last argument or configure it globally with \"testTimeout\".\n \u276f src/__tests__/router.test.tsx:46:3\n     44|   }, 30000)\n     45|\n     46|   it('still matches the path with an executionId param', async () => {\n       |   ^\n     47|     const { routes } = await import('@/router')\n     48|     const matches = matchRoutes(routes, '/workflows/wf-123/workflow-ex\u2026\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af[2/4]\u23af\n\n\n Test Files  1 failed (1)\n      Tests  2 failed | 3 passed (5)\n   Start at  19:03:51\n   Duration  164.27s (tests 93%, environment 4%, setup 2%, transform 1%)\n\n"
+  }
+}
