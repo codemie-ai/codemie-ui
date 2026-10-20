@@ -1,0 +1,13 @@
+{"schema":1,"branch":"EPMCDME-8478_semantic-card-lists","head":"5a306234774679675520b7fddd3f1fb908006514","runner":"npm","started_at":"2026-10-16T12:25:00Z","completed_at":"2026-10-16T12:49:00Z","status":"BLOCKED","drift_detected":false,
+"gates":[
+{"id":"lint","source":"guide","status":"PASS","duration_ms":66633,"command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":39153,"command":"npm run typecheck","exit_code":0},
+{"id":"license-check","source":"guide","status":"FAIL","duration_ms":9060,"command":"npm run license-check","exit_code":1,"notes":"Likely Windows cmd quoting artifact: npm run passes single quotes literally so MIT is rejected. Same license-checker command run directly in bash exits 0."},
+{"id":"secrets","source":"guide","status":"PASS","duration_ms":20715,"command":"npm run secrets:check","exit_code":0,"notes":"output: no leaks found"},
+{"id":"unit","source":"guide","status":"PASS","duration_ms":947606,"command":"npm run test:unit:slnt","exit_code":0,"notes":"696 files, 7045 passed, 1 skipped"},
+{"id":"integration","source":"guide","status":"PASS","duration_ms":300280,"command":"npm run test:integration:slnt","exit_code":0,"notes":"49 files, 558 passed, 1 skipped"},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":2020,"command":"npm run license-headers:check","exit_code":0,"notes":"0 missing headers"},
+{"id":"sonar-local","source":"hook","status":"N/A","command":"npm run sonar-local","notes":"Needs SonarQube server connection (connectedMode.json); not run. CI/hook will settle it."},
+{"id":"test-harness","source":"guide","status":"N/A","command":"npm run test-harness","notes":"Needs running stack and ~/.codemie/test-harness.json; unverified, not passed."}
+],
+"failures":{"license-check":"Package \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted by the --onlyAllow flag. Exiting."}}

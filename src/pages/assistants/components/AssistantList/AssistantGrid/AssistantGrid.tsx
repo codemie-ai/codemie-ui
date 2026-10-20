@@ -68,7 +68,8 @@ const AssistantGrid: React.FC<AssistantGridProps> = ({
         </h2>
       )}
 
-      <div
+      <ul
+        aria-label={isTemplate ? 'Templates' : 'Assistants'}
         className={cn(
           'min-w-80 grid auto-rows-min grid-cols-1 card-grid-2:grid-cols-2 card-grid-3:grid-cols-3 gap-2.5 justify-items-center',
           {
@@ -81,30 +82,31 @@ const AssistantGrid: React.FC<AssistantGridProps> = ({
         {assistantList.map((assistant) => {
           const { description, isShared, isOwned, name } = getAssistantCardInfo(assistant, user)
           return (
-            <AssistantCard
-              key={assistant.id || assistant.slug}
-              assistant={assistant}
-              description={description}
-              isShared={isShared}
-              isOwned={isOwned}
-              name={name}
-              isTemplate={isTemplate}
-              reloadAssistants={reloadAssistants}
-              navigation={
-                !isTemplate && (
-                  <AssistantActions
-                    assistant={assistant}
-                    onView={showAssistant}
-                    onExport={exportAssistant}
-                    reloadAssistants={reloadAssistants}
-                  />
-                )
-              }
-              onViewAssistant={() => showAssistant(assistant)}
-            />
+            <li key={assistant.id || assistant.slug} className="w-full">
+              <AssistantCard
+                assistant={assistant}
+                description={description}
+                isShared={isShared}
+                isOwned={isOwned}
+                name={name}
+                isTemplate={isTemplate}
+                reloadAssistants={reloadAssistants}
+                navigation={
+                  !isTemplate && (
+                    <AssistantActions
+                      assistant={assistant}
+                      onView={showAssistant}
+                      onExport={exportAssistant}
+                      reloadAssistants={reloadAssistants}
+                    />
+                  )
+                }
+                onViewAssistant={() => showAssistant(assistant)}
+              />
+            </li>
           )
         })}
-      </div>
+      </ul>
     </section>
   )
 }

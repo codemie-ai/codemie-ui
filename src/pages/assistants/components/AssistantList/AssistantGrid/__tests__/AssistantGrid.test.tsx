@@ -105,3 +105,31 @@ describe('AssistantGrid count heading', () => {
     expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
   })
 })
+
+describe('AssistantGrid list semantics', () => {
+  it('exposes assistants as a named list with one listitem per card', () => {
+    const second = { id: '3', slug: 'c' } as unknown as Assistant
+    render(
+      <AssistantGrid
+        {...baseProps}
+        assistants={[stubAssistant, second]}
+        totalCount={2}
+        isTemplate={false}
+      />
+    )
+    expect(screen.getByRole('list', { name: 'Assistants' })).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+  })
+
+  it('names the list "Templates" in template mode', () => {
+    render(
+      <AssistantGrid {...baseProps} assistantTemplates={[stubTemplate]} totalCount={1} isTemplate />
+    )
+    expect(screen.getByRole('list', { name: 'Templates' })).toBeInTheDocument()
+  })
+
+  it('renders no list when empty', () => {
+    render(<AssistantGrid {...baseProps} />)
+    expect(screen.queryByRole('list')).toBeNull()
+  })
+})
