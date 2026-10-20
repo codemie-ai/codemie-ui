@@ -1,0 +1,137 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16025_cli-analytics-project-gate",
+  "head": "986f27aee7840b3292f4ce9d104054c27b264957",
+  "merge_base": "fd947fc38c56f8ef6800f3aa8bdf6176bb8ef326",
+  "runner": "npm",
+  "started_at": "2026-10-16T05:23:32Z",
+  "completed_at": "2026-10-16T05:33:10Z",
+  "status": "PASSED_EXECUTED_GATES_WITH_SKIPPED_OWED",
+  "status_note": "Edited by the coordinator. Original run: BLOCKED because unit-full hit the 5-minute rule (TIMEOUT). After the user approved one long run, unit-full-long PASSED (695 files, 7052 passed, 1 skipped, exit 0). Still SKIPPED and owed before the MR: secrets:check (ran only inside the pre-commit hook per the implementer report, not independently verified), sonar-local (no SONAR_TOKEN), integration, test-harness (needs the stack and ~/.codemie/test-harness.json) and the browser end-to-end check. This is not a full PASS.",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 4000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2346 files, 0 missing license headers. Start 2026-10-16T05:23:32Z, end 05:23:36Z."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 23000,
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "notes": "Silent tsc --noEmit. Start 2026-10-16T05:23:41Z, end 05:24:04Z."
+    },
+    {
+      "id": "lint-changed",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 6000,
+      "command": "npx eslint src/pages/settings/administration/ProjectDetailsPage.tsx src/pages/settings/administration/__tests__/ProjectDetailsPage.test.tsx src/pages/settings/administration/projectsManagement/ProjectModal.tsx src/pages/settings/administration/projectsManagement/ProjectOverviewSection.tsx src/pages/settings/administration/projectsManagement/__tests__/ProjectModal.test.tsx src/pages/settings/administration/projectsManagement/__tests__/ProjectOverviewSection.test.tsx src/pages/settings/administration/projectsManagement/__tests__/ProjectsManagementFull.editFlow.test.tsx src/store/__tests__/projects.test.ts src/store/projects.ts src/types/entity/project.ts src/types/entity/projectManagement.ts --ext .ts,.tsx",
+      "exit_code": 0,
+      "notes": "Empty output, all 11 .ts/.tsx files changed by fd947fc38..HEAD. Start 2026-10-16T05:24:10Z, end 05:24:16Z."
+    },
+    {
+      "id": "lint-all",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 53000,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "eslint . with --ignore-path .gitignore; empty output, exit 0 (including the untracked src/pages/commandCenter/, no lint errors there). Start 2026-10-16T05:24:30Z, end 05:25:23Z."
+    },
+    {
+      "id": "unit-targeted",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 49000,
+      "command": "npm run test:unit -- src/pages/settings/administration/projectsManagement/__tests__/ProjectOverviewSection.test.tsx src/pages/settings/administration/projectsManagement/__tests__/ProjectModal.test.tsx src/pages/settings/administration/projectsManagement/__tests__/ProjectsManagementFull.editFlow.test.tsx src/pages/settings/administration/__tests__/ProjectDetailsPage.test.tsx src/store/__tests__/projects.test.ts",
+      "exit_code": 0,
+      "notes": "5 files passed, 122 tests passed. Start 2026-10-16T05:25:29Z, end 05:26:18Z."
+    },
+    {
+      "id": "unit-full-long",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 911000,
+      "command": "npm --prefix C:/codemie-dev/codemie-ui run test:unit",
+      "exit_code": 0,
+      "started_at": "2026-10-16T05:38:15Z",
+      "notes": "Added by the coordinator after the user approved a single long run (limit 20 min) via the bridge. 695 test files passed, 7052 tests passed, 1 skipped, duration 911 s, exit code 0 as reported by the background task completion. Raw output: evidence/gates/unit-full-long.log (only the final reporter summary; there was no -- reporter flag for per-test lines). HEAD unchanged (986f27aee) before and after. The first attempt below stays recorded as TIMEOUT (5-minute rule), it is not rewritten.",
+      "run_in_background_task": "bog962ge2"
+    },
+    {
+      "id": "unit-full",
+      "source": "guide",
+      "status": "TIMEOUT",
+      "duration_ms": 318000,
+      "command": "npm run test:unit",
+      "exit_code": null,
+      "notes": "Hit the 300000 ms tool timeout (2026-10-16T05:26:24Z start, timeout 05:31:24Z); the tool moved it to background with no test summary printed (only the header and 2 tailwind warnings were written), so the runner killed the vitest process tree (taskkill /T /F /PID 43892, ~05:31:42Z). The exit=1 in unit-full.meta is an artifact of that kill, not a test result. No retry per instructions. Suite outcome UNKNOWN: no failures were observed, hence no baseline_comparison. The tool's own ~5 min window is shorter than the full suite on this machine; the full unit suite must be run by the implementer or CI."
+    },
+    {
+      "id": "build",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 44000,
+      "command": "npm run build",
+      "exit_code": 0,
+      "notes": "tsc --noEmit + vite build, built in 15.34s; only a rolldown INEFFECTIVE_DYNAMIC_IMPORT warning (src/store/chatGeneration.ts). dist/ did not exist before (git check-ignore: .gitignore:31 dist, 0 tracked files); the build created it and the runner deleted it. git status --short afterwards: only the untracked run_dir and src/pages/commandCenter/. Start 2026-10-16T05:32:07Z, end 05:32:51Z."
+    },
+    {
+      "id": "secrets",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run secrets:check",
+      "exit_code": null,
+      "notes": "over 5 min, ran inside the pre-commit hook at commit time per the implementer report (not independently verified). Not run. The pipeline also runs a server-side gitleaks-scan task per the quality-gates guide."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Needs SONAR_TOKEN (and a Sonar server); not run. Enable locally by providing SONAR_TOKEN (e.g. in .env.local, which the pre-commit hook sources). Only CI/pre-commit settles this."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run test:integration",
+      "exit_code": null,
+      "notes": "Not run: unit-full alone did not finish in 5 min, so integration (renders components with Component->Store->API flow) is not trivially fast; the guide's command is npm run test:integration:slnt. No playwright/e2e script exists in package.json scripts (grep of test:*/test-harness showed only test:unit, test:integration and test-harness). Must be run by the implementer before the MR."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs the stack up and ~/.codemie/test-harness.json (uvx codemie-test-harness run sanity-ui -n 8). The MR must carry the '## Test harness' section checked by the auto_epm-cdme_vcs bot; the implementer must run it. Not run here."
+    }
+  ],
+  "failures": {
+    "unit-full": "(status TIMEOUT, not FAIL; raw partial output, nothing more was printed before the kill)\n\n> ai-assistant@0.0.0 test:unit\n> vitest run --project unit\n\n\n RUN  v5.0.2 C:/codemie-dev/codemie-ui\n      Running tests with seed \"1792128389630\"\n\n\nwarn - As of Tailwind CSS v3.3, the `@tailwindcss/line-clamp` plugin is now included by default.\nwarn - Remove it from the `plugins` array in your configuration to eliminate this warning.\n"
+  },
+  "baseline_comparison": null,
+  "ci_pipeline": {
+    "file": ".gitlab-ci.yml",
+    "jobs": [
+      "wait-ci-init (target branch main; waits on external status contexts ci-pipeline and compliance-report from the shared template codemie-gitlab-templates@0.1.2 pre-ci-guard.yml)",
+      "no-op (non-main target)"
+    ],
+    "notes": "The repo's own pipeline defines no lint/test/build job; the real checks are the external contexts ci-pipeline and compliance-report (not visible locally; the guide mentions server-side gitleaks-scan and the MR '## Test harness' check). No .github/workflows exists. Not run locally: ci-pipeline, compliance-report, gitleaks-scan, sonar-local, test-harness, integration, and a full unit run."
+  },
+  "pre_commit_hook": ".husky/pre-commit = lint-staged, license-headers:check, secrets:check, sonar-local; lint-staged is staged-files-only and was not applicable (nothing staged)."
+}

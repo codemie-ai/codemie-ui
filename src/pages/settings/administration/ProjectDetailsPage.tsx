@@ -195,6 +195,7 @@ const ProjectDetailsPage = () => {
         cost_center_id: payload.cost_center_id,
         clear_cost_center: payload.clear_cost_center,
         enforce_member_spend_limits: payload.enforce_member_spend_limits,
+        cli_analytics_enabled: payload.cli_analytics_enabled,
         chargeback_attribution: payload.chargeback_attribution,
       })
       toaster.info(`Project ${updatedProject.name} updated successfully`)

@@ -107,8 +107,18 @@ vi.mock('@/components/form/Input', () => ({
 }))
 
 vi.mock('@/components/form/Switch', () => ({
-  default: ({ id, label }: { id: string; label: string }) => (
-    <div data-testid={`switch-${id}`}>{label}</div>
+  default: ({ id, label, value, disabled, onChange }: any) => (
+    <div data-testid={`switch-${id}`}>
+      {label}
+      <input
+        type="checkbox"
+        role="switch"
+        data-testid={`switch-input-${id}`}
+        checked={!!value}
+        disabled={disabled}
+        onChange={onChange}
+      />
+    </div>
   ),
 }))
 
@@ -491,5 +501,229 @@ describe('ProjectModal — cost center removal', () => {
         })
       )
     })
+  })
+})
+
+// ─── CLI analytics toggle (EPMCDME-16025) ──────────────────────────────────────
+
+const CLI_SWITCH = 'switch-cli_analytics_enabled'
+const CLI_INPUT = 'switch-input-cli_analytics_enabled'
+const READ_ONLY_TOOLTIP = 'Only Global Administrators and Maintainers can change this setting'
+
+const cliProject = (overrides: Record<string, unknown> = {}) =>
+  ({
+    id: 'proj-1',
+    name: 'existing-project',
+    display_name: 'Existing Project',
+    description: 'desc',
+    project_type: 'shared',
+    user_count: 2,
+    admin_count: 1,
+    cli_analytics_enabled: true,
+    ...overrides,
+  } as any)
+
+const setUser = (user: Record<string, unknown>) => Object.assign(userStore, { user })
+
+describe('ProjectModal — CLI analytics toggle render (EPMCDME-16025)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useFeatureFlagMock.mockReturnValue([false, true])
+  })
+
+  afterEach(() => {
+    setUser({ isAdmin: false, isMaintainer: false })
+  })
+
+  it('M1 renders an enabled toggle reflecting the project value for a Global Administrator', () => {
+    setUser({ isAdmin: true, isMaintainer: false })
+    renderModal({ project: cliProject({ cli_analytics_enabled: true }) })
+
+    expect(screen.getByTestId(CLI_SWITCH)).toBeTruthy()
+    const input = screen.getByTestId<HTMLInputElement>(CLI_INPUT)
+    expect(input.disabled).toBe(false)
+    expect(input.checked).toBe(true)
+    expect(document.querySelector(`[data-tooltip-content="${READ_ONLY_TOOLTIP}"]`)).toBeNull()
+  })
+
+  it('M2 renders an enabled toggle without a read-only tooltip for a Maintainer who is not a Global Administrator', () => {
+    setUser({ isAdmin: false, isMaintainer: true })
+    renderModal({ project: cliProject({ cli_analytics_enabled: false }) })
+
+    const input = screen.getByTestId<HTMLInputElement>(CLI_INPUT)
+    expect(input.disabled).toBe(false)
+    expect(input.checked).toBe(false)
+    expect(document.querySelector(`[data-tooltip-content="${READ_ONLY_TOOLTIP}"]`)).toBeNull()
+  })
+
+  it('M3 renders a disabled toggle with the value and a tooltip for a Project Admin of this project', () => {
+    setUser({ isAdmin: false, isMaintainer: false, applicationsAdmin: ['existing-project'] })
+    renderModal({ project: cliProject({ cli_analytics_enabled: true }) })
+
+    const input = screen.getByTestId<HTMLInputElement>(CLI_INPUT)
+    expect(input.disabled).toBe(true)
+    expect(input.checked).toBe(true)
+    expect(document.querySelector(`[data-tooltip-content="${READ_ONLY_TOOLTIP}"]`)).not.toBeNull()
+  })
+
+  it.each([
+    ['Project Admin of another project', { applicationsAdmin: ['other-project'] }],
+    ['Member', {}],
+    ['Auditor', { isAuditor: true }],
+  ])('M4 renders nothing for a %s when the key is absent', (_role, flags) => {
+    setUser({ isAdmin: false, isMaintainer: false, ...flags })
+    renderModal({ project: cliProject({ cli_analytics_enabled: undefined }) })
+
+    expect(screen.queryByTestId(CLI_SWITCH)).toBeNull()
+  })
+
+  it('M5 renders no toggle for a writer on a personal project', () => {
+    setUser({ isAdmin: true, isMaintainer: true })
+    renderModal({ project: cliProject({ project_type: 'personal', cli_analytics_enabled: false }) })
+
+    expect(screen.queryByTestId(CLI_SWITCH)).toBeNull()
+  })
+
+  it('M6 renders no toggle in create mode, even for a writer', () => {
+    setUser({ isAdmin: true, isMaintainer: true })
+    renderModal({ project: null })
+
+    expect(screen.queryByTestId(CLI_SWITCH)).toBeNull()
+  })
+})
+
+describe('ProjectModal — CLI analytics payload (EPMCDME-16025)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useFeatureFlagMock.mockReturnValue([false, true])
+  })
+
+  afterEach(() => {
+    setUser({ isAdmin: false, isMaintainer: false })
+  })
+
+  const submit = async () => {
+    await act(async () => {
+      screen.getByRole('button', { name: /submit/i }).click()
+    })
+  }
+
+  const submittedPayload = async (onSubmit: ReturnType<typeof vi.fn>) => {
+    await vi.waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+    return onSubmit.mock.calls[0][0]
+  }
+
+  it.each([
+    ['Global Administrator', { isAdmin: true, isMaintainer: false }],
+    ['Maintainer', { isAdmin: false, isMaintainer: true }],
+  ])('S1 omits the key when a %s saves other fields without touching the toggle', async (_r, u) => {
+    setUser(u)
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({ project: cliProject({ cli_analytics_enabled: true }) })
+
+    await user.type(screen.getByTestId('description'), ' more')
+    await submit()
+
+    const payload = await submittedPayload(onSubmit)
+    expect(payload.cli_analytics_enabled).toBeUndefined()
+  })
+
+  it.each([
+    ['Global Administrator', false, true, { isAdmin: true, isMaintainer: false }],
+    ['Global Administrator', true, false, { isAdmin: true, isMaintainer: false }],
+    ['Maintainer', false, true, { isAdmin: false, isMaintainer: true }],
+    ['Maintainer', true, false, { isAdmin: false, isMaintainer: true }],
+  ])('S2 sends the new value when a %s changes the toggle %s -> %s', async (_r, from, to, u) => {
+    setUser(u)
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({ project: cliProject({ cli_analytics_enabled: from }) })
+
+    await user.click(screen.getByTestId(CLI_INPUT))
+    await submit()
+
+    const payload = await submittedPayload(onSubmit)
+    expect(payload.cli_analytics_enabled).toBe(to)
+  })
+
+  it('S3 omits the key when a Project Admin of this project saves other fields', async () => {
+    setUser({ isAdmin: false, isMaintainer: false, applicationsAdmin: ['existing-project'] })
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({ project: cliProject({ cli_analytics_enabled: true }) })
+
+    await user.type(screen.getByTestId('description'), ' more')
+    await submit()
+
+    const payload = await submittedPayload(onSubmit)
+    expect(payload.cli_analytics_enabled).toBeUndefined()
+  })
+
+  it('S4 cannot change the value as a Project Admin: the toggle is disabled and the payload has no key', async () => {
+    setUser({ isAdmin: false, isMaintainer: false, applicationsAdmin: ['existing-project'] })
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({ project: cliProject({ cli_analytics_enabled: false }) })
+
+    await user.click(screen.getByTestId(CLI_INPUT))
+    await user.type(screen.getByTestId('description'), ' more')
+    await submit()
+
+    const payload = await submittedPayload(onSubmit)
+    expect(screen.getByTestId<HTMLInputElement>(CLI_INPUT).checked).toBe(false)
+    expect(payload.cli_analytics_enabled).toBeUndefined()
+  })
+
+  it.each([
+    ['Project Admin of another project', { applicationsAdmin: ['other-project'] }],
+    ['Member', {}],
+    ['Auditor', { isAuditor: true }],
+  ])('S3 omits the key for a %s when the project carries no key', async (_role, flags) => {
+    setUser({ isAdmin: false, isMaintainer: false, ...flags })
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({ project: cliProject({ cli_analytics_enabled: undefined }) })
+
+    await user.type(screen.getByTestId('description'), ' more')
+    await submit()
+
+    const payload = await submittedPayload(onSubmit)
+    expect(payload.cli_analytics_enabled).toBeUndefined()
+  })
+
+  it('S5 omits the key when a writer toggles on and then back off', async () => {
+    setUser({ isAdmin: true, isMaintainer: false })
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({ project: cliProject({ cli_analytics_enabled: false }) })
+
+    await user.click(screen.getByTestId(CLI_INPUT))
+    await user.click(screen.getByTestId(CLI_INPUT))
+    await user.type(screen.getByTestId('description'), ' more')
+    await submit()
+
+    const payload = await submittedPayload(onSubmit)
+    expect(payload.cli_analytics_enabled).toBeUndefined()
+  })
+
+  it('C1 sends undefined in create mode, even for a writer', async () => {
+    setUser({ isAdmin: true, isMaintainer: true })
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({ project: null })
+
+    await user.type(screen.getByTestId('name'), 'brand-new')
+    await submit()
+
+    const payload = await submittedPayload(onSubmit)
+    expect(payload.cli_analytics_enabled).toBeUndefined()
+  })
+
+  it('omits the key for a writer on a personal project even if the form value were changed', async () => {
+    setUser({ isAdmin: true, isMaintainer: true })
+    const user = userEvent.setup()
+    const { onSubmit } = renderModal({
+      project: cliProject({ project_type: 'personal', cli_analytics_enabled: false }),
+    })
+
+    await user.type(screen.getByTestId('description'), ' more')
+    await submit()
+
+    const payload = await submittedPayload(onSubmit)
+    expect(payload.cli_analytics_enabled).toBeUndefined()
   })
 })

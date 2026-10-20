@@ -223,6 +223,17 @@ describe('projectsStore', () => {
       expect(result.name).toBe('returned-project')
     })
 
+    it('never sends cli_analytics_enabled on create, even when the caller passes it (EPMCDME-16025)', async () => {
+      mockPost.mockResolvedValue({ json: async () => ({ name: 'new-project' }) })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.createProject({ name: 'new-project', cli_analytics_enabled: true })
+
+      const body = JSON.parse(JSON.stringify(mockPost.mock.calls[0][1]))
+      expect(body).not.toHaveProperty('cli_analytics_enabled')
+      expect(body).toHaveProperty('name', 'new-project')
+    })
+
     it('sets loading to false and throws on API error', async () => {
       mockPost.mockRejectedValue(new Error('Server error'))
 
@@ -260,6 +271,35 @@ describe('projectsStore', () => {
         },
         { skipErrorHandling: true }
       )
+    })
+
+    it.each([
+      ['true', true],
+      ['false', false],
+    ])(
+      'S6 sends cli_analytics_enabled in the PATCH body when passed as %s (EPMCDME-16025)',
+      async (_l, value) => {
+        mockPatch.mockResolvedValue({ json: async () => ({ name: 'my-project' }) })
+
+        const { projectsStore } = await import('@/store/projects')
+        await projectsStore.updateProject('my-project', {
+          name: 'my-project',
+          cli_analytics_enabled: value,
+        })
+
+        const body = JSON.parse(JSON.stringify(mockPatch.mock.calls[0][1]))
+        expect(body.cli_analytics_enabled).toBe(value)
+      }
+    )
+
+    it('S6 leaves cli_analytics_enabled out of the PATCH body when not passed (EPMCDME-16025)', async () => {
+      mockPatch.mockResolvedValue({ json: async () => ({ name: 'my-project' }) })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.updateProject('my-project', { name: 'my-project' })
+
+      const body = JSON.parse(JSON.stringify(mockPatch.mock.calls[0][1]))
+      expect(body).not.toHaveProperty('cli_analytics_enabled')
     })
 
     it('includes display_name in the update payload', async () => {

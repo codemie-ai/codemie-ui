@@ -1,0 +1,33 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: ProjectModal.test.tsx now exercises a Maintainer with isAdmin false (M2 render, S1 and S2 submit rows), so narrowing the predicate at ProjectModal.tsx:86 to isAdmin would fail those cases. Only the test file changed; no new findings discovered on this targeted round.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "3 subjects in the review range match the documented EPMCDME-XXXX: Capital sentence format (non-zero ID, uppercase first word, no trailing period)" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide passed and .ai-run/guides/standards/code-quality.md is absent from the repo (standards dir holds only git-workflow.md); absent standard, not a gap" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checked against the 11 changed files; boolean cli_analytics_enabled added with no HTML sinks, untrusted navigation, postMessage, config, secrets or Sonar suppressions" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/__tests__/ProjectModal.test.tsx",
+      "line": 549,
+      "title": "Maintainer-only writer path untested",
+      "problem": "The writer predicate is `isAdmin || isMaintainer` (ProjectModal.tsx:86), but every Maintainer test case (M2 at line 549, the S1 Maintainer row) sets isAdmin: true as well. A user with isAdmin false and isMaintainer true is never exercised for render or submit.",
+      "impact": "Narrowing the predicate to `isAdmin` would pass the whole suite while locking real Maintainers out of a setting the backend lets them write (is_admin_or_maintainer). The claimed role x surface matrix cell for Maintainer is not actually covered.",
+      "recommendation": "Add a maintainer-only case (isAdmin false, isMaintainer true, no applicationsAdmin) asserting an enabled toggle with no read-only tooltip and that a changed value reaches onSubmit. Change M2 and S1's Maintainer row to isAdmin false."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Current test source: M2 (:550) uses isAdmin false/isMaintainer true and asserts enabled input and no read-only tooltip; S1 Maintainer row (:618) and S2 Maintainer rows (:634-635) use the same user and assert the submitted payload. Predicate at ProjectModal.tsx:86 gates disabled (:267) and payload (:158), so an isAdmin-only predicate would disable the toggle and fail M2 and S2."
+    }
+  ]
+}

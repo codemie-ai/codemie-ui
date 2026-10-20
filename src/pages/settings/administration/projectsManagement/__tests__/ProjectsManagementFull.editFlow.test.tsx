@@ -212,6 +212,27 @@ describe('ProjectsManagementFull — edit save flow', () => {
     )
   })
 
+  it('forwards the modal cli_analytics_enabled payload to updateProject unchanged (EPMCDME-16025)', async () => {
+    render(<ProjectsManagementFull />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+
+    const { onSubmit } = projectModalMock.mock.calls.at(-1)![0]
+    await act(async () => {
+      await onSubmit({ name: 'my-project', cli_analytics_enabled: true })
+    })
+    expect(projectsStore.updateProject).toHaveBeenLastCalledWith(
+      'my-project',
+      expect.objectContaining({ cli_analytics_enabled: true })
+    )
+
+    await act(async () => {
+      await onSubmit({ name: 'my-project', cli_analytics_enabled: undefined })
+    })
+    const lastPayload = vi.mocked(projectsStore.updateProject).mock.calls.at(-1)![1]
+    expect(lastPayload.cli_analytics_enabled).toBeUndefined()
+  })
+
   it('shows the project name in the success toast when name is omitted from the payload (EPMCDME-13165)', async () => {
     render(<ProjectsManagementFull />)
 

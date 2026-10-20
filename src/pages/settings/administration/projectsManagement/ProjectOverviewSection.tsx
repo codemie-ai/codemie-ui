@@ -407,6 +407,12 @@ const ProjectOverviewSection: FC<Props> = ({
                   }
                 />
                 <InfoItem label="Admins" value={project.admin_count} />
+                {project.cli_analytics_enabled !== undefined && (
+                  <InfoItem
+                    label="CLI Analytics"
+                    value={project.cli_analytics_enabled ? 'Enabled' : 'Disabled'}
+                  />
+                )}
                 {isCostCentersEnabled && (
                   <InfoItem
                     label="Cost center"

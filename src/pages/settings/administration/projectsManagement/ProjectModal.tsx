@@ -28,7 +28,7 @@ import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { costCentersStore } from '@/store/costCenters'
 import { userStore } from '@/store/user'
-import { ChargebackAttribution, Project } from '@/types/entity/project'
+import { ChargebackAttribution, Project, ProjectType } from '@/types/entity/project'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { FilterOption } from '@/types/filters'
 
@@ -48,6 +48,7 @@ export interface ProjectFormData {
   cost_center_id?: string | null
   clear_cost_center?: boolean
   enforce_member_spend_limits?: boolean
+  cli_analytics_enabled?: boolean
   chargeback_attribution?: ChargebackAttribution
 }
 
@@ -57,6 +58,7 @@ interface ProjectModalFormValues {
   description: string
   cost_center_id: string
   enforce_member_spend_limits: boolean
+  cli_analytics_enabled: boolean
 }
 
 const PROJECT_NAME_REGEX = /^[a-z0-9][a-z0-9_-]*$/
@@ -76,6 +78,12 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
   const isNameDisabled = (project?.user_count ?? 0) > 0
   const isAdmin = user?.isAdmin ?? false
   const isMaintainer = user?.isMaintainer ?? false
+  // The backend sends the key only to viewers; a writer is a Global Administrator or Maintainer.
+  const showCliAnalytics =
+    !!project &&
+    project.cli_analytics_enabled !== undefined &&
+    project.project_type !== ProjectType.PERSONAL
+  const canWriteCliAnalytics = isAdmin || isMaintainer
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAGS.COST_CENTERS)
   const [costCenterOptions, setCostCenterOptions] = useState<FilterOption[]>([])
 
@@ -92,6 +100,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       description: '',
       cost_center_id: '',
       enforce_member_spend_limits: false,
+      cli_analytics_enabled: false,
     },
   })
 
@@ -103,6 +112,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
         description: project.description || '',
         cost_center_id: project.cost_center_id || '',
         enforce_member_spend_limits: !!project.enforce_member_spend_limits,
+        cli_analytics_enabled: !!project.cli_analytics_enabled,
       })
     } else if (visible && !project) {
       reset({
@@ -111,6 +121,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
         description: '',
         cost_center_id: '',
         enforce_member_spend_limits: false,
+        cli_analytics_enabled: false,
       })
     }
   }, [visible, project, reset])
@@ -141,6 +152,11 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
     // whenever the clear removes the cost center it was attributed to.
     const needsAttributionReset =
       clearingCostCenter && project?.chargeback_attribution === 'cost_center'
+    // Only a writer's real change ever reaches the wire: undefined is dropped by JSON.stringify.
+    const cliAnalyticsChanged =
+      showCliAnalytics &&
+      canWriteCliAnalytics &&
+      data.cli_analytics_enabled !== !!project?.cli_analytics_enabled
     await onSubmit({
       name: isNameDisabled ? undefined : data.name,
       display_name: trimmedDisplayName || undefined,
@@ -150,6 +166,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       cost_center_id: data.cost_center_id || null,
       clear_cost_center: clearingCostCenter,
       enforce_member_spend_limits: project ? data.enforce_member_spend_limits : undefined,
+      cli_analytics_enabled: cliAnalyticsChanged ? data.cli_analytics_enabled : undefined,
       chargeback_attribution: needsAttributionReset ? 'project' : undefined,
     })
     reset()
@@ -227,6 +244,36 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
             />
           )}
         />
+
+        {showCliAnalytics && (
+          <Controller
+            name="cli_analytics_enabled"
+            control={control}
+            render={({ field: { value, onChange, onBlur, ref } }) => (
+              <div
+                data-tooltip-id="react-tooltip"
+                data-tooltip-place="bottom"
+                data-tooltip-content={
+                  canWriteCliAnalytics
+                    ? undefined
+                    : 'Only Global Administrators and Maintainers can change this setting'
+                }
+              >
+                <Switch
+                  id="cli_analytics_enabled"
+                  label="Enable CLI Analytics"
+                  hint="Allow analytics ingestion for this project. Turning this off discards incoming analytics; existing data remains available."
+                  value={value}
+                  disabled={!canWriteCliAnalytics}
+                  styledDisabled
+                  onBlur={onBlur}
+                  ref={ref}
+                  onChange={(event) => onChange((event.target as HTMLInputElement).checked)}
+                />
+              </div>
+            )}
+          />
+        )}
 
         {isAdmin && isCostCentersEnabled && (
           <Controller

@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "No spec supplied, so acceptance was skipped (confidence low); all other lenses and standards ran with no gaps. Source verification confirmed the write gating is sound on every request path; one test gap blocks: the maintainer-only writer path is never exercised. 0 deferred, 13 dismissed as noise or contradicted by source (BE omits the key via a serializer pop, Switch onChange/ref are correct). Fix pack: code-review-fix-pack.local.md.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "3 subjects in the review range match the documented EPMCDME-XXXX: Capital sentence format (non-zero ID, uppercase first word, no trailing period)" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide passed and .ai-run/guides/standards/code-quality.md is absent from the repo (standards dir holds only git-workflow.md); absent standard, not a gap" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checked against the 11 changed files; boolean cli_analytics_enabled added with no HTML sinks, untrusted navigation, postMessage, config, secrets or Sonar suppressions" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/__tests__/ProjectModal.test.tsx",
+      "line": 549,
+      "title": "Maintainer-only writer path untested",
+      "problem": "The writer predicate is `isAdmin || isMaintainer` (ProjectModal.tsx:86), but every Maintainer test case (M2 at line 549, the S1 Maintainer row) sets isAdmin: true as well. A user with isAdmin false and isMaintainer true is never exercised for render or submit.",
+      "impact": "Narrowing the predicate to `isAdmin` would pass the whole suite while locking real Maintainers out of a setting the backend lets them write (is_admin_or_maintainer). The claimed role x surface matrix cell for Maintainer is not actually covered.",
+      "recommendation": "Add a maintainer-only case (isAdmin false, isMaintainer true, no applicationsAdmin) asserting an enabled toggle with no read-only tooltip and that a changed value reaches onSubmit. Change M2 and S1's Maintainer row to isAdmin false."
+    }
+  ]
+}

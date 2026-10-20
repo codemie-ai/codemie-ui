@@ -43,6 +43,7 @@ export interface ProjectListItem {
   cost_center_name?: string | null
   enforce_member_spend_limits?: boolean
   chargeback_enabled?: boolean
+  cli_analytics_enabled?: boolean
   chargeback_attribution?: ChargebackAttribution
   budgets?: ProjectAssignedBudgetSummary[] | null
 }

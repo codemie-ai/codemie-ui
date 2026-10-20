@@ -291,6 +291,29 @@ describe('ProjectDetailsPage', () => {
     )
   })
 
+  it('forwards cli_analytics_enabled to updateProject for a writer payload and leaves it undefined otherwise (EPMCDME-16025)', async () => {
+    render(<ProjectDetailsPage />)
+
+    await waitFor(() => {
+      expect(projectModalMock).toHaveBeenCalled()
+    })
+
+    const { onSubmit } = projectModalMock.mock.calls[0][0]
+    await act(async () => {
+      await onSubmit({ name: 'Test Project', cli_analytics_enabled: true })
+    })
+    expect(projectsStore.updateProject).toHaveBeenLastCalledWith(
+      'Test Project',
+      expect.objectContaining({ cli_analytics_enabled: true })
+    )
+
+    await act(async () => {
+      await onSubmit({ name: 'Test Project', display_name: 'Other' })
+    })
+    const lastPayload = vi.mocked(projectsStore.updateProject).mock.calls.at(-1)![1]
+    expect(lastPayload.cli_analytics_enabled).toBeUndefined()
+  })
+
   it('shows the project name in the success toast when name is omitted from the payload (EPMCDME-13165)', async () => {
     const { default: toaster } = await import('@/utils/toaster')
 

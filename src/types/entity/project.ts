@@ -58,6 +58,7 @@ export interface Project {
   cost_center_name?: string | null
   enforce_member_spend_limits?: boolean
   chargeback_enabled?: boolean
+  cli_analytics_enabled?: boolean
   spending?: ProjectSpendingSummaryCompact | null
   budgets?: ProjectAssignedBudgetSummary[] | null
   chargeback_attribution?: ChargebackAttribution
@@ -75,6 +76,7 @@ export interface ProjectRequest {
   clear_cost_center?: boolean
   enforce_member_spend_limits?: boolean
   chargeback_enabled?: boolean
+  cli_analytics_enabled?: boolean
   chargeback_attribution?: ChargebackAttribution
 }
 
