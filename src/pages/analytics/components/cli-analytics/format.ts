@@ -16,6 +16,13 @@
 import { ColumnType, MetricFormat, type Metric } from '@/types/analytics'
 import type { RepositoryRow } from '@/types/cliAnalytics'
 
+// session_count/cost_usd/files_changed/net_lines/tool_success_rate are shared by RepositoryRow
+// and RepositoryBranchRow, so either can be passed without reshaping into the other's type.
+type RepoMetricsSource = Pick<
+  RepositoryRow,
+  'session_count' | 'cost_usd' | 'files_changed' | 'net_lines' | 'tool_success_rate'
+>
+
 export function formatDuration(ms: number | null | undefined): string {
   if (ms == null || !Number.isFinite(ms) || ms <= 0) return '—'
   if (ms < 1000) return `${Math.round(ms)}ms`
@@ -35,7 +42,7 @@ export function truncateModelName(name: string, max = 25): string {
   return name.length > max ? `${name.slice(0, max)}…` : name
 }
 
-export function buildRepoMetrics(row: RepositoryRow): Metric[] {
+export function buildRepoMetrics(row: RepoMetricsSource): Metric[] {
   return [
     { id: 'session_count', label: 'Sessions', type: ColumnType.INTEGER, value: row.session_count },
     {

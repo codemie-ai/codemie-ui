@@ -1,0 +1,50 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance did not run (no spec/story artifact for this fix), which caps confidence at low. Two patch-level findings in the new calcToolSuccessRate helper (src/pages/analytics/components/cli-analytics/format.ts) need fixes: it can render the literal 'NaN%' when tool_calls_success is missing, and it does not clamp its output when counts are corrupt/inconsistent, so an impossible percentage (negative or >100%) could be displayed. Three findings were dismissed as noise: aggregateRepos' new tool_calls/tool_calls_success reduces lack a Number.isFinite guard but are consistent with every other summed field in that same function (session_count, turns, etc. have never been guarded either); a cross-repo backend/frontend rollout-timing concern is already acknowledged by the task's explicit two-repo review split; and a claim that RepositoriesTable.tsx still references the removed tool_success_rate field was checked against source and is false — that table has no Tool Success column at all. Standards review passed commit-format and security with no blocking findings and no coverage gap.",
+  "confidence": "low",
+  "risk_flags": ["breaking-change"],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Sole commit subject 'EPMCDME-15585: Aggregate repository tool success from raw counts, not per-branch percentages' matches the documented EPMCDME-XXXX: Capital sentence pattern."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality standards guide exists in this repo and no code_quality ArtifactRef was passed, so there is no documented blocking standard to adjudicate against."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Change only reworks a numeric aggregation; touches none of the HTML-sink/redirect/postMessage/config/secret surfaces in the security-patterns checklist. No concrete security issue found."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/cli-analytics/format.ts",
+      "line": 38,
+      "title": "calcToolSuccessRate renders literal NaN% on missing count",
+      "problem": "calcToolSuccessRate(calls, successCalls) computes successCalls / calls * 100 with no check that successCalls is a finite number. If tool_calls_success is undefined/null on a row (e.g. a partial API payload, or a transient mismatch while the paired backend repo's half of this fix is deployed), the division produces NaN.",
+      "impact": "formatMetricValue(NaN, PERCENTAGE) renders the literal string 'NaN%' in both the per-repo and per-branch Tool Success columns of the Repositories view (RepositoriesView.tsx), confusing anyone reading the analytics.",
+      "recommendation": "Guard the inputs, e.g. `const n = Number(successCalls); return calls > 0 && Number.isFinite(n) ? (n / calls) * 100 : 0`, so a missing/non-numeric count degrades to 0% instead of 'NaN%'."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/cli-analytics/format.ts",
+      "line": 38,
+      "title": "Tool success percentage not clamped to 0-100%",
+      "problem": "calcToolSuccessRate returns (successCalls / calls) * 100 with no bound on the result. If tool_calls_success is negative or exceeds tool_calls for a row (corrupt/inconsistent aggregated counts), the function returns a value outside the valid 0-100 range.",
+      "impact": "The Tool Success column (per-repo and per-branch, via buildRepoMetrics and the inline calls in RepositoriesView.tsx) can display an impossible percentage such as -20.00% or 150.00%, misleading anyone reading the analytics.",
+      "recommendation": "Clamp the result, e.g. `return calls > 0 ? Math.min(100, Math.max(0, (successCalls / calls) * 100)) : 0`."
+    }
+  ]
+}

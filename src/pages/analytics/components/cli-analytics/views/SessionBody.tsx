@@ -103,7 +103,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
 
   const toolCallsOkLabel: string | undefined =
     session.tool_calls_success != null && (session.tool_call_count ?? 0) > 0
-      ? `${Math.round((session.tool_calls_success / session.tool_call_count) * 100)}% ok`
+      ? `${session.tool_success_rate ?? 0}% ok`
       : undefined
 
   const costMetrics: Metric[] = [

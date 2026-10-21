@@ -64,6 +64,8 @@ const MOCK_ROW: RepositoryRow = {
   lines_added: 200,
   lines_removed: 80,
   net_lines: 120,
+  tool_calls: 20,
+  tool_calls_success: 19,
   tool_success_rate: 95.0,
 }
 

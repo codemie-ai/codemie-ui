@@ -17,7 +17,11 @@ import { Fragment, type FC, useCallback, useMemo, useRef, useState } from 'react
 
 import { UNATTRIBUTED_LABEL } from '@/constants/cliAnalytics'
 import { MetricFormat, type AnalyticsQueryParams } from '@/types/analytics'
-import type { ExtendedSessionsTarget, RepositoryRow } from '@/types/cliAnalytics'
+import type {
+  ExtendedSessionsTarget,
+  RepositoryBranchRow,
+  RepositoryRow,
+} from '@/types/cliAnalytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { formatCliAnalyticsCost } from '@/utils/currency'
 
@@ -26,65 +30,27 @@ import { buildRepoMetrics } from '../format'
 import ExtendedSessionsModal from './ExtendedSessionsModal'
 import { useCliAnalyticsRepositories } from '../hooks/useCliAnalyticsRepositories'
 
-interface RepoSummary {
-  repository: string | null
-  session_count: number
-  turns: number
-  files_changed: number
-  net_lines: number
-  tool_success_rate: number
-  cost_usd: number
-  project_name?: string | null
-  branches: RepositoryRow[]
-}
-
 interface ProjectGroup {
   project_name: string | null
-  repos: RepoSummary[]
+  repos: RepositoryRow[]
 }
 
-function aggregateRepos(rows: RepositoryRow[]): ProjectGroup[] {
-  const projectMap = new Map<string | null, Map<string | null, RepositoryRow[]>>()
-
+// Pure grouping by project, nothing more: the backend already rolls branches up into each
+// repository row (tool_success_rate included, EPMCDME-15585) and sorts the rows, so this
+// must not re-sum or re-sort anything -- that duplicated math is exactly what caused the bug.
+function groupReposByProject(rows: RepositoryRow[]): ProjectGroup[] {
+  const projectMap = new Map<string | null, RepositoryRow[]>()
   for (const row of rows) {
     const projectKey = row.project_name || null
-    if (!projectMap.has(projectKey)) {
-      projectMap.set(projectKey, new Map())
-    }
-    const repoMap = projectMap.get(projectKey)!
-    const group = repoMap.get(row.repository) ?? []
+    const group = projectMap.get(projectKey) ?? []
     group.push(row)
-    repoMap.set(row.repository, group)
+    projectMap.set(projectKey, group)
   }
 
-  const groups: ProjectGroup[] = []
-  for (const [projectName, repoMap] of projectMap) {
-    const repos: RepoSummary[] = []
-    for (const [repository, branches] of repoMap) {
-      const session_count = branches.reduce((s, b) => s + b.session_count, 0)
-      const turns = branches.reduce((s, b) => s + b.turns, 0)
-      const files_changed = branches.reduce((s, b) => s + b.files_changed, 0)
-      const net_lines = branches.reduce((s, b) => s + b.net_lines, 0)
-      const cost_usd = branches.reduce((s, b) => s + b.cost_usd, 0)
-      const tool_success_rate =
-        session_count > 0
-          ? branches.reduce((s, b) => s + b.tool_success_rate * b.session_count, 0) / session_count
-          : 0
-      repos.push({
-        repository,
-        session_count,
-        turns,
-        files_changed,
-        net_lines,
-        tool_success_rate,
-        cost_usd,
-        project_name: projectName,
-        branches,
-      })
-    }
-    repos.sort((a, b) => b.session_count - a.session_count)
-    groups.push({ project_name: projectName, repos })
-  }
+  const groups: ProjectGroup[] = Array.from(projectMap, ([project_name, repos]) => ({
+    project_name,
+    repos,
+  }))
 
   return groups.sort((a, b) => {
     const aName = a.project_name || '(no project)'
@@ -109,7 +75,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
   const [selectedTarget, setSelectedTarget] = useState<ExtendedSessionsTarget | null>(null)
   const clearSelectionRef = useRef<(() => void) | null>(null)
 
-  const projectGroups = useMemo(() => aggregateRepos(rows), [rows])
+  const projectGroups = useMemo(() => groupReposByProject(rows), [rows])
 
   const toggleExpand = (key: string) => {
     setExpanded((prev) => {
@@ -124,15 +90,10 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
   }
 
   const handleRepoClick = useCallback(
-    (repo: RepoSummary) => {
+    (repo: RepositoryRow) => {
       setSelectedTarget({
         title: repo.repository ?? UNATTRIBUTED_LABEL,
-        metrics: buildRepoMetrics({
-          ...repo,
-          branch: null,
-          lines_added: 0,
-          lines_removed: 0,
-        }),
+        metrics: buildRepoMetrics(repo),
         sessionFilters: filters,
         repositories: repo.repository != null ? [repo.repository] : undefined,
         isUnattributed: repo.repository === null,
@@ -144,7 +105,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
   )
 
   const handleBranchClick = useCallback(
-    (repo: RepoSummary, branch: RepositoryRow) => {
+    (repo: RepositoryRow, branch: RepositoryBranchRow) => {
       if (repo.repository === null) {
         setSelectedTarget({
           title: UNATTRIBUTED_LABEL,
@@ -282,7 +243,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
                                 </td>
                               </tr>
                               {expanded.has(repoKey) &&
-                                repo.branches.map((b) => (
+                                (repo.branches ?? []).map((b) => (
                                   <tr
                                     key={`${repo.repository ?? UNATTRIBUTED_LABEL}::${b.branch}`}
                                     className="cursor-pointer [&_td]:hover:bg-surface-base-secondary"

@@ -15,7 +15,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { formatDuration, truncateModelName } from '../format'
+import { buildRepoMetrics, formatDuration, truncateModelName } from '../format'
 
 describe('formatDuration', () => {
   it('returns em-dash for null', () => {
@@ -50,5 +50,22 @@ describe('truncateModelName', () => {
   })
   it('respects custom max', () => {
     expect(truncateModelName('hello-world', 5)).toBe('hello…')
+  })
+})
+
+describe('buildRepoMetrics', () => {
+  // EPMCDME-15585 review follow-up: the backend is now the only producer of
+  // tool_success_rate (repository, branch and single-session levels alike), so this must
+  // render the value exactly as given, not recompute it from raw counts.
+  it('passes the backend-computed tool_success_rate straight through', () => {
+    const metrics = buildRepoMetrics({
+      session_count: 4,
+      cost_usd: 1,
+      files_changed: 2,
+      net_lines: 10,
+      tool_success_rate: 28.8,
+    })
+    const toolSuccess = metrics.find((m) => m.id === 'tool_success_rate')
+    expect(toolSuccess?.value).toBe(28.8)
   })
 })

@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-10-09T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 8,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Diffstat reports 8 files changed, which maps to the L band (7-10 files) under the actual-mode diffstat rule. Only 3 are production code (format.ts, RepositoriesView.tsx, types/cliAnalytics.ts); the other 5 are pre-existing test files (OverviewView, RepositoriesTable, RepositoriesView, format, useCliAnalyticsRepositories) whose RepositoryRow mocks had to add tool_calls/tool_calls_success fields to match the type change. No new files were created. The bundled S-band calibration example (epmcdme-10102, total 11) scored a comparably narrow validation fix at file_change_estimate=S because it counted only 3 modified production files; this task's score diverges upward purely because the diffstat-based rule counts ripple test-mock edits alongside production files."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "The actual change is narrowly scoped: calcToolSuccessRate() in format.ts was changed to aggregate raw tool_calls/tool_calls_success counts (with input guarding/clamping) instead of averaging per-branch percentages, and RepositoriesView.tsx's aggregateRepos() now sums the raw counts before computing the rate. Everything stays within the UI layer (no API/service/DB touched), matching an S-level self-contained fix."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

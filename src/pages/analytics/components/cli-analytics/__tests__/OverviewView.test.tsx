@@ -118,7 +118,9 @@ vi.mock('../views/RepositoriesTable', () => ({
               lines_added: 20,
               lines_removed: 5,
               net_lines: 15,
-              tool_success_rate: 90,
+              tool_calls: 10,
+              tool_calls_success: 9,
+              tool_success_rate: 90.0,
             })
           }
         />
@@ -280,7 +282,9 @@ describe('OverviewView', () => {
         lines_added: 1,
         lines_removed: 0,
         net_lines: 1,
-        tool_success_rate: 100,
+        tool_calls: 1,
+        tool_calls_success: 1,
+        tool_success_rate: 100.0,
       })),
       pagination: { page: 0, per_page: 20, total_count: 2, has_more: false },
     }

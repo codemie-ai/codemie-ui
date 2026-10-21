@@ -1,0 +1,37 @@
+{
+  "decision": "approve",
+  "rationale": "Fix-up commit 2890254739ad6a3c66e7f83a9b3267a6acbc76ef (EPMCDME-15585: Guard and clamp calcToolSuccessRate against bad inputs) resolves both blocking findings from the final round: calcToolSuccessRate now short-circuits to 0 when calls/successCalls are non-finite or calls <= 0, and clamps the result to [0, 100] otherwise. 6 new unit tests cover the NaN and out-of-range cases. User approved via 'continue' at 2026-10-09T08:55:14Z.",
+  "confidence": "high",
+  "risk_flags": ["breaking-change"],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Fix-up commit subject 'EPMCDME-15585: Guard and clamp calcToolSuccessRate against bad inputs' matches the documented EPMCDME-XXXX: Capital sentence pattern."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality standards guide exists in this repo and no code_quality ArtifactRef was passed, so there is no documented blocking standard to adjudicate against."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Fix-up only tightens numeric guards in an existing aggregation helper; touches none of the HTML-sink/redirect/postMessage/config/secret surfaces in the security-patterns checklist."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "format.ts:38-39 now guards with Number.isFinite(calls) and Number.isFinite(successCalls), returning 0 instead of NaN. Verified against current source at commit 2890254739ad6a3c66e7f83a9b3267a6acbc76ef and covered by new tests in __tests__/format.test.ts."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "format.ts:39 clamps the result with Math.min(100, Math.max(0, ...)), bounding the output to [0, 100] even for corrupt/inconsistent counts. Verified against current source at commit 2890254739ad6a3c66e7f83a9b3267a6acbc76ef and covered by new tests in __tests__/format.test.ts."
+    }
+  ]
+}

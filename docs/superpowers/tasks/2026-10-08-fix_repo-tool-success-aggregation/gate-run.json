@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15585_fix_repo-tool-success-aggregation",
+  "head": "2890254739ad6a3c66e7f83a9b3267a6acbc76ef",
+  "runner": "npm",
+  "started_at": "2026-10-09T09:07:12Z",
+  "completed_at": "2026-10-09T13:14:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 308794,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 211975,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 22035,
+      "command": "npm run license-check",
+      "exit_code": 1,
+      "notes": "Skip if: no dependency was added, removed, or moved in this diff (confirmed via `git diff --name-only <merge_base>...HEAD -- package.json package-lock.json` = empty). Gate ran and exited 1 on a pre-existing, unrelated finding: \"Package \\\"@adobe/css-tools@4.5.0\\\" is licensed under \\\"MIT\\\" which is not permitted by the --onlyAllow flag. Exiting.\" Not caused by this branch; recorded SKIPPED per the guide's literal Skip-if clause, not treated as blocking."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 126917,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2306771,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 677 passed (677); Tests 6923 passed | 1 skipped (6924)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 595578,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 49 passed (49); Tests 556 passed | 1 skipped (557)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 5527,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2320 files, 0 missing license headers. Not covered by any guide gate (distinct from license-check); added from .husky/pre-commit."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2780,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip detected: \"[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.\" Exit 0 without doing the scan work -> SKIPPED, not PASS. To enable locally, set SONAR_TOKEN (and SONAR_HOST_URL if required) in the environment before running. This check is still owed to the real SonarQube pass in CI/pre-commit; local PASSED status does not substitute for it."
+    },
+    {
+      "id": "ci-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "notes": "GitLab CI pipeline (.gitlab-ci.yml) only includes a remote template (epm-cdme/codemie-gitlab-templates @0.1.2) defining wait-ci-init / ci-pipeline / compliance-report status checks, gated on CI_MERGE_REQUEST_TARGET_BRANCH_NAME and run server-side against an actual MR. Not reachable or runnable from this local checkout; owed to the real GitLab MR pipeline."
+    }
+  ],
+  "failures": {}
+}

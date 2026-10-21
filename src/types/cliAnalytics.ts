@@ -96,6 +96,7 @@ export interface SessionDetail extends SessionRow {
   skill_count?: number
   cache_read_cost_usd?: number
   tool_calls_success?: number
+  tool_success_rate?: number
   tools?: ToolWithSuccessRow[]
   dispatches?: DispatchRow[]
 }
@@ -136,9 +137,8 @@ export interface CliAnalyticsOverviewData {
   model_breakdown: ModelBreakdownItem[]
 }
 
-export interface RepositoryRow {
-  repository: string | null
-  branch?: string | null
+export interface RepositoryBranchRow {
+  branch: string | null
   session_count: number
   turns: number
   cost_usd: number
@@ -146,8 +146,27 @@ export interface RepositoryRow {
   lines_added: number
   lines_removed: number
   net_lines: number
+  tool_calls: number
+  tool_calls_success: number
+  tool_success_rate: number
+}
+
+export interface RepositoryRow {
+  repository: string | null
+  session_count: number
+  turns: number
+  cost_usd: number
+  files_changed: number
+  lines_added: number
+  lines_removed: number
+  net_lines: number
+  tool_calls: number
+  tool_calls_success: number
   tool_success_rate: number
   project_name?: string | null
+  // Present only when include_branches=True: this repository's branches, each with its own
+  // backend-computed tool_success_rate (EPMCDME-15585) -- never re-aggregated client-side.
+  branches?: RepositoryBranchRow[] | null
 }
 
 export interface CliAnalyticsRepositoriesData {

@@ -65,34 +65,53 @@ vi.mock('../../AnalyticsWidget', () => ({
 
 const MOCK_FILTERS: AnalyticsQueryParams = { start_date: '2026-07-01', end_date: '2026-07-17' }
 
+// Nested shape: the backend rolls branches up into each repository row and computes
+// tool_success_rate itself (EPMCDME-15585) -- these fixtures mirror exactly what the real
+// handler returns, not a flat per-branch list the UI would have to re-aggregate.
 const MOCK_ROWS: RepositoryRow[] = [
   {
     repository: 'repo-a',
-    branch: 'main',
-    session_count: 5,
-    turns: 10,
-    cost_usd: 0.5,
-    files_changed: 3,
-    lines_added: 80,
-    lines_removed: 20,
-    net_lines: 60,
-    tool_success_rate: 80,
-  },
-  {
-    repository: 'repo-a',
-    branch: 'dev',
-    session_count: 2,
-    turns: 4,
-    cost_usd: 0.1,
-    files_changed: 1,
-    lines_added: 25,
-    lines_removed: 5,
-    net_lines: 20,
-    tool_success_rate: 90,
+    session_count: 7,
+    turns: 14,
+    cost_usd: 0.6,
+    files_changed: 4,
+    lines_added: 105,
+    lines_removed: 25,
+    net_lines: 80,
+    tool_calls: 20,
+    tool_calls_success: 17,
+    tool_success_rate: 85.0,
+    branches: [
+      {
+        branch: 'main',
+        session_count: 5,
+        turns: 10,
+        cost_usd: 0.5,
+        files_changed: 3,
+        lines_added: 80,
+        lines_removed: 20,
+        net_lines: 60,
+        tool_calls: 10,
+        tool_calls_success: 8,
+        tool_success_rate: 80.0,
+      },
+      {
+        branch: 'dev',
+        session_count: 2,
+        turns: 4,
+        cost_usd: 0.1,
+        files_changed: 1,
+        lines_added: 25,
+        lines_removed: 5,
+        net_lines: 20,
+        tool_calls: 10,
+        tool_calls_success: 9,
+        tool_success_rate: 90.0,
+      },
+    ],
   },
   {
     repository: 'repo-b',
-    branch: 'main',
     session_count: 3,
     turns: 6,
     cost_usd: 0.2,
@@ -100,7 +119,68 @@ const MOCK_ROWS: RepositoryRow[] = [
     lines_added: 40,
     lines_removed: 10,
     net_lines: 30,
-    tool_success_rate: 70,
+    tool_calls: 10,
+    tool_calls_success: 7,
+    tool_success_rate: 70.0,
+    branches: [
+      {
+        branch: 'main',
+        session_count: 3,
+        turns: 6,
+        cost_usd: 0.2,
+        files_changed: 2,
+        lines_added: 40,
+        lines_removed: 10,
+        net_lines: 30,
+        tool_calls: 10,
+        tool_calls_success: 7,
+        tool_success_rate: 70.0,
+      },
+    ],
+  },
+]
+
+const SWEEP_ROWS: RepositoryRow[] = [
+  {
+    repository: 'repo-x',
+    session_count: 2,
+    turns: 2,
+    cost_usd: 0.2,
+    files_changed: 2,
+    lines_added: 2,
+    lines_removed: 0,
+    net_lines: 2,
+    tool_calls: 4,
+    tool_calls_success: 3,
+    tool_success_rate: 75.0,
+    branches: [
+      {
+        branch: 'sweep-cd',
+        session_count: 1,
+        turns: 1,
+        cost_usd: 0.1,
+        files_changed: 1,
+        lines_added: 1,
+        lines_removed: 0,
+        net_lines: 1,
+        tool_calls: 1,
+        tool_calls_success: 0,
+        tool_success_rate: 0.0,
+      },
+      {
+        branch: 'sweep-cd-b',
+        session_count: 1,
+        turns: 1,
+        cost_usd: 0.1,
+        files_changed: 1,
+        lines_added: 1,
+        lines_removed: 0,
+        net_lines: 1,
+        tool_calls: 3,
+        tool_calls_success: 3,
+        tool_success_rate: 100.0,
+      },
+    ],
   },
 ]
 
@@ -253,5 +333,15 @@ describe('RepositoriesView', () => {
       true,
       0
     )
+  })
+
+  it('aggregates repository tool_success_rate from raw counts, not a session-weighted average of percentages', () => {
+    vi.mocked(useCliAnalyticsRepositories).mockReturnValue({
+      ...EMPTY_HOOK_RESULT,
+      rows: SWEEP_ROWS,
+    })
+    render(<RepositoriesView filters={MOCK_FILTERS} />)
+    expect(screen.getByText('75.00%')).toBeInTheDocument()
+    expect(screen.queryByText('50.00%')).not.toBeInTheDocument()
   })
 })
