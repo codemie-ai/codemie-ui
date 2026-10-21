@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Fix the Models table on Project details so all rows have uniform height and provider text no longer overlaps capability tags.",
+  "generated": "2026-10-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Acceptance criteria (uniform row height, no provider/capability overlap) are clear, but technical-analysis flags an open design decision: the existing uncommitted h-12 + flex-wrap patch is only a floor and doesn't guarantee single-line content, so the right combination of truncate/flex-nowrap/column-width needs to be settled before implementation." },
+    { "dimension": "technical_risk", "reason": "Pure Tailwind/CSS layout fix on an existing table component — well-established styling pattern, no security or performance implications, trivial rollback. Scored S rather than XS because the correct fix must be verified across two call sites (inline section vs. popup) and because the tech-analysis highlights that the naive h-12 approach can still regress under flex-wrap." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16055_models-table-inconsistent",
+  "head": "d00b8e2f33272d57b2d141bb513db26189f3ab04",
+  "runner": "npm",
+  "started_at": "2026-10-21T10:34:24Z",
+  "completed_at": "2026-10-21T10:40:30Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "reinstall",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 10000,
+      "command": "npm ci",
+      "exit_code": 0,
+      "notes": "Reinstalled from lock file before trusting any other gate per quality-gates.md guidance; 46 pre-existing audit advisories reported (not in gate scope)."
+    },
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16849,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 18627,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1512,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8895,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 127804,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 57782,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": null,
+      "exit_code": null,
+      "notes": "Diff touches a .tsx file (ModelConfigurationTable.tsx) matching ui_globs, but no configured UI test script exists in package.json; browser verification is a separate caller decision (feature-verification / local-verification.md)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 265,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Runs in the Husky pre-commit hook; guide's explicit gate list did not include it. Checked 2371 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 152,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 but no analysis ran. Set SONAR_TOKEN (and SONAR_HOST_URL if required) to run this locally; CI's compliance-report job runs the real Sonar scan."
+    }
+  ],
+  "failures": {}
+}

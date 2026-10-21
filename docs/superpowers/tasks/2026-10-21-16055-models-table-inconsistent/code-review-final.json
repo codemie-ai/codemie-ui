@@ -1,0 +1,32 @@
+{
+  "decision": "request-changes",
+  "rationale": "Edge-case and acceptance lenses ran cleanly and were verified against source. AC4 (model/provider text vs. capability-tag overlap) remains partial: the 14% capabilities colgroup width and the pill span's lack of truncate/ellipsis styling were flagged by the spec itself (verify/widen step) but not addressed in this diff, so at narrow widths (ProjectMemberModelOverrideModal popup) a second tag can be hard-clipped mid-character — 1 blocking finding (CR-001). The ticket's own verification step (resize both call sites in a browser) is pending-stage-7 and cannot be settled from static reading. 1 speculative robustness suggestion (pairing h-12 with max-h-12 for future long content) was dismissed as unconfirmed against current code. standards_expected is false for this profile, so no standards audit ran or was required.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1: all rows have the same size", "status": "pass", "notes": "tr uses fixed h-12 and every cell truncates or uses flex-nowrap instead of wrapping." },
+    { "kind": "story-ac", "item": "AC2: row size does not depend on number of capability tags", "status": "pass", "notes": "Capabilities container changed from flex-col to flex-nowrap, so tags render on one line instead of stacking." },
+    { "kind": "story-ac", "item": "AC3: no row visibly wider/narrower than others when scrolled", "status": "pass", "notes": "table-fixed with unchanged colgroup already fixes column widths identically; untouched by this diff." },
+    { "kind": "story-ac", "item": "AC4: model/provider text does not overlap capability tags on a 2-tag row", "status": "partial", "notes": "Text-overlap fixed via truncate on model/provider cells, but 14% capabilities column width and pill truncation flagged by spec were not revisited — see CR-001." },
+    { "kind": "story-ac", "item": "Verification: check both call sites and resize the narrower popup", "status": "pending-stage-7", "notes": "Requires rendering ProjectModelsSection and ProjectMemberModelOverrideModal in a browser; not resolvable from static code." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "standards_expected is false for this profile; no audit required." },
+    { "kind": "code-quality", "status": "na", "notes": "standards_expected is false for this profile; no audit required." },
+    { "kind": "security", "status": "na", "notes": "standards_expected is false for this profile; no audit required." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/ModelConfigurationTable.tsx",
+      "line": 206,
+      "title": "Capabilities column lacks truncation at narrow widths",
+      "problem": "The capabilities colgroup stays fixed at 14% (line 148) and the capability pill <span> (lines 210-215) has no truncate/ellipsis styling. The spec explicitly called for verifying/widening this column for the two-tag case at the narrower call site, but the diff only changed the flex direction (flex-col to flex-nowrap) and did not address width or per-pill truncation.",
+      "impact": "At narrow viewport widths (e.g. the ProjectMemberModelOverrideModal popup, which can render below its max-w-6xl cap), two capability tags such as \"multimodal\" + \"tools\" may not fit in the 14% column. Because the td already has overflow-hidden and the pills no longer wrap, an overflowing tag is hard-clipped mid-character instead of truncating gracefully, leaving the acceptance criterion on tag/text overlap only partially satisfied.",
+      "recommendation": "Add truncate/text-ellipsis styling to the capability <span>, and check at both call sites (full-width ProjectModelsSection.tsx and the narrower ProjectMemberModelOverrideModal.tsx popup) whether the 14% capabilities colgroup width needs widening, adjusting the Cost column proportionally if so."
+    }
+  ]
+}

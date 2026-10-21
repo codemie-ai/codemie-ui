@@ -143,10 +143,10 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
         <table className="w-full table-fixed text-left">
           <colgroup>
             <col className="w-[4%]" />
-            <col className="w-[31%]" />
-            <col className="w-[16%]" />
-            <col className="w-[14%]" />
-            <col className="w-[35%]" />
+            <col className="w-[33%]" />
+            <col className="w-[18%]" />
+            <col className="w-[23%]" />
+            <col className="w-[22%]" />
           </colgroup>
           <thead className="bg-surface-base-secondary text-xs text-text-quaternary">
             <tr>
@@ -158,12 +158,10 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
                   onChange={toggleVisibleSelection}
                 />
               </th>
-              <th className="px-4 py-3 font-medium">Model</th>
-              <th className="px-4 py-3 font-medium">Provider</th>
-              <th className="px-4 py-3 font-medium">Capabilities</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">
-                Cost / 1M tokens (IN / OUT)
-              </th>
+              <th className="truncate px-4 py-3 font-medium">Model</th>
+              <th className="truncate px-4 py-3 font-medium">Provider</th>
+              <th className="truncate px-4 py-3 font-medium">Capabilities</th>
+              <th className="truncate px-4 py-3 font-medium">Cost / 1M tokens (IN / OUT)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-structural">
@@ -175,7 +173,7 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
               return (
                 <tr
                   key={model.value}
-                  className={cn(model.isPremium && 'bg-yellow-500/5', 'text-sm')}
+                  className={cn(model.isPremium && 'bg-yellow-500/5', 'text-sm h-12')}
                 >
                   <td
                     className="px-4 py-3 align-middle"
@@ -190,24 +188,26 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
                       onChange={(checked) => onSelectionChange(model, checked)}
                     />
                   </td>
-                  <td className="break-words px-4 py-3 font-medium text-text-primary">
-                    <span>{model.label}</span>
-                    {model.isPremium && (
-                      <span className="ml-2 inline-flex">
-                        <StatusBadge status={StatusEnum.Warning} text="Premium" />
-                      </span>
-                    )}
+                  <td className="px-4 py-3 font-medium text-text-primary">
+                    <div className="flex min-w-0 items-center">
+                      <span className="flex-1 truncate">{model.label}</span>
+                      {model.isPremium && (
+                        <span className="ml-2 inline-flex shrink-0">
+                          <StatusBadge status={StatusEnum.Warning} text="Premium" />
+                        </span>
+                      )}
+                    </div>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-text-quaternary">
+                  <td className="overflow-hidden truncate px-4 py-3 text-text-quaternary">
                     {getProviderLabel(model.provider)}
                   </td>
-                  <td className="px-4 py-3 align-middle">
-                    <div className="flex flex-col items-start gap-1">
+                  <td className="overflow-hidden px-4 py-3 align-middle">
+                    <div className="flex min-w-0 flex-nowrap items-center gap-1">
                       {capabilities.length ? (
                         capabilities.map((capability) => (
                           <span
                             key={capability}
-                            className="whitespace-nowrap rounded-full border border-border-structural px-2 py-0.5 text-xs text-text-quaternary"
+                            className="max-w-full truncate rounded-full border border-border-structural px-2 py-0.5 text-xs text-text-quaternary"
                           >
                             {capability}
                           </span>

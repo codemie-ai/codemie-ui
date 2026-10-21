@@ -1,0 +1,23 @@
+{
+  "decision": "approve",
+  "rationale": "New follow-up commit (d00b8e2f3) replaces whitespace-nowrap on the Cost header with truncate on all four thead text cells (Model, Provider, Capabilities, Cost / 1M tokens). Table is table-fixed with explicit colgroup widths, so truncate's overflow:hidden/text-overflow:ellipsis/white-space:nowrap applies correctly on each th. This mirrors the already-approved body-cell truncation pattern (CR-001, resolved) and keeps header text from overflowing/wrapping after the column rebalance (Cost 35%->22%). Scoped, minimal, no regressions.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1: all rows have the same size", "status": "pass" },
+    { "kind": "story-ac", "item": "AC2: row size does not depend on number of capability tags", "status": "pass" },
+    { "kind": "story-ac", "item": "AC3: no row visibly wider/narrower than others when scrolled", "status": "pass" },
+    { "kind": "story-ac", "item": "AC4: model/provider text does not overlap capability tags on a 2-tag row", "status": "pass" },
+    { "kind": "story-ac", "item": "Follow-up: header cells truncate instead of overflowing/wrapping after column rebalance", "status": "pass" },
+    { "kind": "story-ac", "item": "Verification: check both call sites and resize the narrower popup", "status": "pending-stage-7" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na" },
+    { "kind": "code-quality", "status": "na" },
+    { "kind": "security", "status": "na" }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved" }
+  ]
+}
