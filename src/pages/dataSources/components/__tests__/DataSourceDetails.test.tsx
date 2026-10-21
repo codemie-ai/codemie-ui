@@ -13,10 +13,11 @@
 // limitations under the License.
 //
 
-import { render } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { dataSourceStore } from '@/store/dataSources'
+import { userStore } from '@/store/user'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 
 import DataSourceDetails from '../DataSourceDetails'
@@ -25,8 +26,10 @@ vi.mock('@/hooks/useProjectDisplayNames', () => ({
   useProjectDisplayNames: () => new Map([['my-project', 'My Display Name']]),
 }))
 
+const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }))
+
 vi.mock('@/hooks/useVueRouter', () => ({
-  useVueRouter: () => ({ push: vi.fn() }),
+  useVueRouter: () => ({ push: pushMock }),
 }))
 
 vi.mock('valtio', () => ({
@@ -65,6 +68,7 @@ vi.mock('../SharePointReindexAuthPopup', () => ({ default: () => null }))
 
 vi.mock('@/pages/dataSources/components/DataSourceTypeIcon', () => ({ default: () => null }))
 
+vi.mock('@/assets/icons/copy.svg?react', () => ({ default: () => null }))
 vi.mock('@/assets/icons/delete.svg?react', () => ({ default: () => null }))
 vi.mock('@/assets/icons/edit.svg?react', () => ({ default: () => null }))
 vi.mock('@/assets/icons/info.svg?react', () => ({ default: () => null }))
@@ -195,5 +199,33 @@ describe('DataSourceDetails — xWiki properties', () => {
       <DataSourceDetails dataSource={{ ...xwikiDataSource, xwiki: { space: 'KB' } }} />
     )
     expect(getByText('xwiki')).toBeInTheDocument()
+  })
+})
+
+describe('DataSourceDetails — clone button', () => {
+  beforeEach(() => {
+    pushMock.mockClear()
+    userStore.user = { isAdmin: false, applications: ['my-project'] } as typeof userStore.user
+  })
+
+  it('routes to the clone path for a view-only user', () => {
+    const { getByRole } = render(
+      <DataSourceDetails dataSource={{ ...dataSource, user_abilities: ['read'] }} />
+    )
+    fireEvent.click(getByRole('button', { name: 'Clone' }))
+    expect(pushMock).toHaveBeenCalledWith('/data-sources/ds1/clone')
+  })
+
+  it('is absent for a Bedrock source', () => {
+    const { queryByRole } = render(
+      <DataSourceDetails dataSource={{ ...dataSource, index_type: 'bedrock_kb' }} />
+    )
+    expect(queryByRole('button', { name: 'Clone' })).not.toBeInTheDocument()
+  })
+
+  it('is absent when the user has no creatable project', () => {
+    userStore.user = { isAdmin: false, applications: [] } as typeof userStore.user
+    const { queryByRole } = render(<DataSourceDetails dataSource={dataSource} />)
+    expect(queryByRole('button', { name: 'Clone' })).not.toBeInTheDocument()
   })
 })

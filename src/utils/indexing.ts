@@ -19,6 +19,7 @@ import {
   INDEX_TYPE_CODE,
   INDEX_TYPES,
   MAX_FILE_SIZE,
+  PLATFORM_INDEX_PREFIX,
 } from '@/constants/dataSources'
 import { ContextType } from '@/types/entity/assistant'
 
@@ -76,8 +77,12 @@ export const isProviderIndex = (info: IndexInfo): boolean => {
   return info.index_type.includes(INDEX_TYPES.PROVIDER)
 }
 
+export const isBedrockIndex = (info: IndexInfo): boolean => {
+  return !!info.index_type?.toLowerCase().includes(INDEX_TYPES.BEDROCK)
+}
+
 export const isPlatformIndex = (info: IndexInfo): boolean => {
-  return info.index_type?.startsWith('platform_') ?? false
+  return info.index_type?.startsWith(PLATFORM_INDEX_PREFIX) ?? false
 }
 
 export const isGitIndex = (type: string): boolean => {

@@ -59,6 +59,7 @@ export const ROUTE_ID_TO_PAGE_ID: Record<string, HelpPageId> = {
   // Data Sources forms
   'edit-data-source': HelpPageId.DATASOURCES,
   'create-data-source': HelpPageId.DATASOURCES,
+  'clone-data-source': HelpPageId.DATASOURCES,
 }
 
 export const HELP_TOOLTIP_TEXT: Record<HelpPageId, string> = {

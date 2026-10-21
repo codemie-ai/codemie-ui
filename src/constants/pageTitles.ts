@@ -62,6 +62,7 @@ export const ROUTE_ID_TO_TITLE: Record<string, string> = {
   'data-source-details': 'Data Source',
   'edit-data-source': 'Edit Data Source',
   'create-data-source': 'New Data Source',
+  'clone-data-source': 'Clone Data Source',
 
   // AI Katas
   katas: 'AI Katas',

@@ -21,12 +21,23 @@ import IndexProviderForm from '../../IndexProviderForm'
 interface Props {
   control: any
   index: any
+  /** Clone mode: values the form already holds are kept instead of being overwritten by defaults. */
+  isClone?: boolean
+  getValues?: (name: string) => any
   projectName: string
   errors?: Record<string, any>
   setValue?: (name: string, value: any, options?: any) => void
 }
 
-const IndexTypeProvider: FC<Props> = ({ index, control, projectName, errors = {}, setValue }) => {
+const IndexTypeProvider: FC<Props> = ({
+  index,
+  isClone,
+  getValues,
+  control,
+  projectName,
+  errors = {},
+  setValue,
+}) => {
   return (
     <div data-onboarding="datasource-provider-fields">
       <Controller
@@ -38,6 +49,8 @@ const IndexTypeProvider: FC<Props> = ({ index, control, projectName, errors = {}
               dataProvider={field.value}
               projectName={projectName}
               values={index?.provider_fields}
+              isClone={isClone}
+              getValues={getValues}
               control={control}
               errors={errors}
               setValue={setValue}

@@ -37,6 +37,7 @@ import { copyToClipboard } from '@/utils/helpers'
 
 import DataSourceDeleteModal from './DataSourceDeleteModal'
 import SharePointReindexAuthPopup from './SharePointReindexAuthPopup'
+import { canCloneDataSource, hasCreatableProject } from '../utils/canCloneDataSource'
 import {
   canFullReindex,
   canIncrementalReindex,
@@ -162,6 +163,12 @@ const DataSourceActions: FC<Props> = ({ item }) => {
       icon: <EditSvg />,
       hidden: !canEdit(item),
       onClick: () => router.push(`/data-sources/${item.id}/edit`),
+    },
+    {
+      title: 'Clone',
+      icon: <CopySvg />,
+      hidden: !canCloneDataSource(item, { hasCreatableProject: hasCreatableProject(user) }),
+      onClick: () => router.push(`/data-sources/${item.id}/clone`),
     },
     {
       title: 'Incremental Index',

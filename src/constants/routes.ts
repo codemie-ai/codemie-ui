@@ -48,6 +48,7 @@ export const SCHEDULERS = 'schedulers'
 
 export const DATASOURCES = 'data-sources'
 export const DATASOURCE_DETAILS = 'data-source-details'
+export const CLONE_DATA_SOURCE = 'clone-data-source'
 
 export const ANALYTICS = 'analytics'
 export const ANALYTICS_NEW_DASHBOARD = 'analytics-new-dashboard'

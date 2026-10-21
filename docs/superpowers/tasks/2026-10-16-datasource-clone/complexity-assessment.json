@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "task": "Add a frontend-only Clone action to Data Sources (list + details) that opens the create form prefilled from an existing Data Source and saves a new independent one.",
+  "generated": "2026-10-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 17,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Routing/constants, DataSourceActions, DataSourceDetails, a clone page, plus the shared DataSourceForm / useEditPopupForm / useCreateIndex where `index` doubles as the edit-mode switch in about 10 places; a non-edit prefill path is needed." },
+    { "dimension": "technical_risk", "reason": "Closest precedent is assistant/workflow clone (route + GET + strip identity + reuse create), but it does not cover secret handling: provider SECRET fields come back masked and the create path would persist the mask, so they must be blanked. Other traps: wrongly wiring Save as an update of the source, OAuth-only SharePoint token, Bedrock hidden, and thin test coverage on form prefill." },
+    { "dimension": "file_change_estimate", "reason": "About 6-9 UI source files modified plus 1-2 new (clone page, tests) across pages, constants, router and form hooks; no backend files." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: nearest existing clone pattern does not cover secret handling (masked provider secrets)."
+  ],
+  "split_recommendation": null
+}

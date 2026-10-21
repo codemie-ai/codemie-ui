@@ -23,6 +23,7 @@ import {
   ANALYTICS,
   ANALYTICS_EDIT_DASHBOARD,
   ANALYTICS_NEW_DASHBOARD,
+  CLONE_DATA_SOURCE,
   VIEW_WORKFLOW,
   WOKRFLOW_EXECUTIONS,
 } from '@/constants/routes'
@@ -315,6 +316,15 @@ const dataSourceRoutes: RouteObject[] = [
     element: (
       <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
         <DataSourceEditPage />
+      </FeatureGuard>
+    ),
+  },
+  {
+    id: CLONE_DATA_SOURCE,
+    path: 'data-sources/:id/clone',
+    element: (
+      <FeatureGuard featureFlags={dataSourcesSurfaceFlags} match="any">
+        <DataSourceCreatePage />
       </FeatureGuard>
     ),
   },

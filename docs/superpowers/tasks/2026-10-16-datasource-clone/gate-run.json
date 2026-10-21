@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15790_clone-data-source",
+  "head": "37bd7d9164e1fca288161e3144b5dda82ada65db",
+  "runner": "npm",
+  "started_at": "2026-10-16T18:22:00Z",
+  "completed_at": "2026-10-16T15:34:23.189Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 32666,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16869,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency added/removed/moved (package.json/package-lock.json unchanged)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9190,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output: \"no leaks found\"."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 470799,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "11 failed tests in 6 files, all locale-formatting (e.g. expected $1,234.50 got \"$1 234,50\") in budgets/currency/skills/workflow files; none in dataSources."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 174240,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs running stack and ~/.codemie/test-harness.json; unverified, owed before MR."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1301,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1450,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "\"[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.\" Set SONAR_TOKEN to run locally."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Operates on staged files only; nothing staged, covered by lint gate."
+    }
+  ],
+  "failures": {
+    "unit": "     32|   })\n     33| })\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/22]⎯\n\n FAIL  |unit| src/utils/__tests__/analyticsFormatters.test.ts > analyticsFormatters > formatMetricValue > formats currency values with two decimal places\n FAIL  |unit| src/utils/__tests__/analyticsFormatters.test.ts > analyticsFormatters > formatMetricValue > formats currency values with two decimal places\nAssertionError: expected '$1 234,50' to be '$1,234.50' // Object.is equality\n\nExpected: \"$1,234.50\"\nReceived: \"$1 234,50\"\n\n ❯ src/utils/__tests__/analyticsFormatters.test.ts:30:64\n     28|\n     29|     it('formats currency values with two decimal places', () => {\n     30|       expect(formatMetricValue(1234.5, MetricFormat.CURRENCY)).toBe('$…\n       |                                                                ^\n     31|     })\n     32|\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/22]⎯\n\n FAIL  |unit| src/utils/__tests__/analyticsFormatters.test.ts > analyticsFormatters > formatMetricValue > formats numbers with locale separators when no explicit format is provided\n FAIL  |unit| src/utils/__tests__/analyticsFormatters.test.ts > analyticsFormatters > formatMetricValue > formats numbers with locale separators when no explicit format is provided\nAssertionError: expected '12 500' to be '12,500' // Object.is equality\n\nExpected: \"12,500\"\nReceived: \"12 500\"\n\n ❯ src/utils/__tests__/analyticsFormatters.test.ts:56:40\n     54|\n     55|     it('formats numbers with locale separators when no explicit format…\n     56|       expect(formatMetricValue(12500)).toBe('12,500')\n       |                                        ^\n     57|     })\n     58|\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/22]⎯\n\n\n Test Files  6 failed | 693 passed (699)\n      Tests  11 failed | 7067 passed | 1 skipped (7079)\n   Start at  18:23:17\n   Duration  466.09s (import 48%, environment 19%, tests 15%, transform 10%, setup 8%)\n\n     Import  |unit| 2929 modules were evaluated 432544 times · 622.86s total, 48% of tracked time\n             ~204.13s faster with isolate: false — shared modules are evaluated once per worker instead of once per file\n             learn more: https://vitest.dev/guide/improving-performance#test-isolation\n\n"
+  }
+}

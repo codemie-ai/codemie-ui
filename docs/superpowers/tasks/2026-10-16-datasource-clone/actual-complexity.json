@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 18,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 22,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "New DataSourceClonePage plus changes to DataSourceActions, DataSourceDetails, DataSourceForm, IndexTypeProvider, IndexProviderForm, useEditPopupForm, router, and new canCloneDataSource / buildCloneValues utilities; shared form pieces touched." },
+    { "dimension": "file_change_estimate", "reason": "22 files per diffstat (about 7 new test files and 6 new source files), scored by raw count; 1305 insertions mostly tests and clone prefill logic." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

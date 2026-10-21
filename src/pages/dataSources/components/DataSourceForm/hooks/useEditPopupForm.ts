@@ -37,7 +37,7 @@ import { dataSourceStore } from '@/store/dataSources'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { validateCronExpression } from '@/utils/cronValidator'
 import { humanize } from '@/utils/helpers'
-import { getIndexTypeCode, fileSizeValidator, googleDocLinkValidator } from '@/utils/indexing'
+import { fileSizeValidator, googleDocLinkValidator } from '@/utils/indexing'
 import { getBrowserTimezone } from '@/utils/timezone'
 
 import {
@@ -45,6 +45,8 @@ import {
   PROVIDER_STRINGISH_TYPES,
   hasProviderEnumOptions,
 } from '../../../constants'
+import { buildCloneValues } from '../utils/buildCloneValues'
+import { mapDetailsToFormValues } from '../utils/mapDetailsToFormValues'
 
 const DESCRIPTION_REQUIRED_ERR = 'Description is required'
 const CQL_REQUIRED_ERR = 'CQL is required'
@@ -296,8 +298,12 @@ export type FormValues = Yup.InferType<ReturnType<typeof makeBaseValidationSchem
 
 export const useEditPopupForm = (
   defaults: Partial<DataSourceDetailsResponse>,
-  isEditing?: boolean
+  isEditing?: boolean,
+  // Passing a project-visibility check switches the hook to clone mode: the form
+  // stays in create mode and is prefilled from `defaults` via buildCloneValues.
+  isProjectVisible?: (projectName?: string) => boolean
 ) => {
+  const isClone = !!isProjectVisible
   const [searchParams] = useSearchParams()
   const { indexProviderSchemas } = useSnapshot(dataSourceStore) as typeof dataSourceStore
   const { fileDatasourceMaxUploadCount } = useSnapshot(appInfoStore)
@@ -370,7 +376,7 @@ export const useEditPopupForm = (
   } = useForm<FormValues>({
     resolver: yupResolver(validationSchema) as Resolver<FormValues>,
     defaultValues: {
-      projectName: defaults?.project_name ?? '',
+      projectName: isClone ? '' : defaults?.project_name ?? '',
       name: '',
       description: '',
       projectSpaceVisible: true,
@@ -383,7 +389,7 @@ export const useEditPopupForm = (
       filesFilter: '',
       embeddingsModel: '',
       summarizationModel: '',
-      uploadedFiles: defaults?.uploaded_files ?? [],
+      uploadedFiles: isClone ? [] : defaults?.uploaded_files ?? [],
       files: [],
       csvSeparator: CSV_SEPARATORS[0].value,
       csvStartRow: 1,
@@ -417,79 +423,17 @@ export const useEditPopupForm = (
   })
 
   const resetInitFormValues = useCallback(() => {
-    const providerFields = defaults?.provider_fields ?? {}
-    const baseParams = providerFields.base_params ?? {}
-    const createParams = providerFields.create_params ?? {}
-    const providerSchema = providerFields.provider_id
-      ? indexProviderSchemas.find((item) => item.id === providerFields.provider_id)
+    const providerId = defaults?.provider_fields?.provider_id
+    const providerSchema = providerId
+      ? indexProviderSchemas.find((item) => item.id === providerId)
       : undefined
 
-    const mergedValues = {
-      projectName: defaults?.project_name ?? defaultQueryProject ?? '',
-      name: defaults?.repo_name ?? '',
-      description: defaults?.description ?? '',
-      projectSpaceVisible: defaults?.project_space_visible ?? true,
-      indexType: getIndexTypeCode(defaults?.index_type, defaults?.vcs_type) ?? INDEX_TYPES.GIT,
-      reindexOnEdit: '',
-      isEditing: true,
-
-      repoIndexType: INDEX_TYPE_CODE,
-      repoLink: defaults?.link ?? '',
-      branch: defaults?.branch ?? '',
-      filesFilter: defaults?.files_filter ?? '',
-      embeddingsModel: defaults?.embeddings_model ?? '',
-      summarizationModel: defaults?.summarization_model ?? '',
-
-      files: [],
-      uploadedFiles: defaults?.uploaded_files ?? [],
-      csvSeparator: CSV_SEPARATORS[0].value,
-      csvStartRow: 1,
-      csvRowsPerDocument: 1,
-      googleDoc: defaults?.google_doc_link ?? '',
-      cql: defaults?.confluence?.cql ?? '',
-      xwikiSpace: defaults?.xwiki?.space ?? '',
-      xwikiWiki: defaults?.xwiki?.wiki ?? '',
-      jql: defaults?.jira?.jql ?? defaults?.xray?.jql ?? '',
-      jiraCustomFields: defaults?.jira?.custom_fields ?? [],
-      wikiQuery: defaults?.azure_devops_wiki?.wiki_query ?? '',
-      wikiName: defaults?.azure_devops_wiki?.wiki_name ?? '',
-      wiqlQuery: defaults?.azure_devops_work_item?.wiql_query ?? '',
-      siteUrl: defaults?.sharepoint?.site_url ?? '',
-      includePages:
-        defaults?.sharepoint?.include_pages !== undefined
-          ? defaults.sharepoint.include_pages
-          : true,
-      includeDocuments:
-        defaults?.sharepoint?.include_documents !== undefined
-          ? defaults.sharepoint.include_documents
-          : true,
-      includeLists:
-        defaults?.sharepoint?.include_lists !== undefined
-          ? defaults.sharepoint.include_lists
-          : true,
-      sharepointAuthType: defaults?.sharepoint?.auth_type ?? SHAREPOINT_AUTH_TYPES.INTEGRATION,
-      sharepointCustomClientId: defaults?.sharepoint?.oauth_client_id ?? '',
-      sharepointTenantId: defaults?.sharepoint?.oauth_tenant_id ?? '',
-      sharepointAccessToken: '',
-      sharepointFilesFilter: defaults?.sharepoint?.files_filter ?? '',
-      setting_id: defaults?.setting_id ?? '',
-      enableCustomPrompts: !!defaults?.prompt,
-      promptTemplate: defaults?.prompt ?? DEFAULT_DOCUMENTATION_PROMPT,
-      guardrail_assignments: defaults?.guardrail_assignments ?? [],
-      cronExpression: defaults?.cron_expression ?? '',
-      timezone: defaults?.timezone ?? getBrowserTimezone(),
-      // Set the provider schema together with the form values so it is never
-      // clobbered by a later reset(). Keeping it in a separate effect caused the
-      // submit handler to read an undefined indexMetadata when the schemas were
-      // already cached (SPA navigation), silently aborting the save.
-      indexMetadata: providerSchema as any,
-
-      ...baseParams,
-      ...createParams,
-    }
+    const mergedValues = isClone
+      ? buildCloneValues(defaults, { providerSchema, isProjectVisible })
+      : mapDetailsToFormValues(defaults, { isEditing: true, providerSchema, defaultQueryProject })
 
     reset(mergedValues)
-  }, [defaultQueryProject, defaults, indexProviderSchemas, reset])
+  }, [defaultQueryProject, defaults, indexProviderSchemas, reset, isClone, isProjectVisible])
 
   useEffect(() => {
     if (!defaults.id) return

@@ -14,8 +14,10 @@
 //
 
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { userStore } from '@/store'
 import { dataSourceNameId } from '@/utils/ariaIds'
 
 import DataSourceActions from '../DataSourceActions'
@@ -27,7 +29,8 @@ vi.mock('@/assets/icons/info.svg?react', () => ({ default: () => <span /> }))
 vi.mock('@/assets/icons/copy.svg?react', () => ({ default: () => <span /> }))
 vi.mock('@/assets/icons/copy-link.svg?react', () => ({ default: () => <span /> }))
 vi.mock('@/components/ConfirmationModal', () => ({ default: () => null }))
-vi.mock('@/hooks/useVueRouter', () => ({ useVueRouter: () => ({ push: vi.fn() }) }))
+const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }))
+vi.mock('@/hooks/useVueRouter', () => ({ useVueRouter: () => ({ push: pushMock }) }))
 vi.mock('valtio', async (orig) => {
   const actual = await orig<typeof import('valtio')>()
   return {
@@ -62,5 +65,41 @@ describe('DataSourceActions accessibility (contextId pattern)', () => {
     expect(btn).not.toHaveAttribute('aria-label')
     const parts = btn.getAttribute('aria-labelledby')!.split(/\s+/)
     expect(document.getElementById(parts[1])).toHaveTextContent('my-repo')
+  })
+})
+
+describe('DataSourceActions clone menu item', () => {
+  const openMenu = async () => {
+    await userEvent.setup().click(screen.getByRole('button', { name: /More options/ }))
+  }
+
+  beforeEach(() => {
+    pushMock.mockClear()
+    userStore.user = { isAdmin: false, applications: ['proj-a'] }
+  })
+
+  it('shows Clone and navigates to the clone path with the source id', async () => {
+    render(<DataSourceActions item={makeItem() as any} />)
+    await openMenu()
+
+    await userEvent.setup().click(await screen.findByText('Clone'))
+    expect(pushMock).toHaveBeenCalledWith('/data-sources/ds-1/clone')
+  })
+
+  it('hides Clone for Bedrock sources', async () => {
+    render(<DataSourceActions item={makeItem({ index_type: 'bedrock_kb' }) as any} />)
+    await openMenu()
+
+    await screen.findByText('Copy ID')
+    expect(screen.queryByText('Clone')).not.toBeInTheDocument()
+  })
+
+  it('hides Clone when the user has no creatable project', async () => {
+    userStore.user = { isAdmin: false, applications: [] }
+    render(<DataSourceActions item={makeItem() as any} />)
+    await openMenu()
+
+    await screen.findByText('Copy ID')
+    expect(screen.queryByText('Clone')).not.toBeInTheDocument()
   })
 })

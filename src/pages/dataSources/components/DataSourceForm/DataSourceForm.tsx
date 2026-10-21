@@ -53,6 +53,7 @@ import { useActiveHelpSegment } from '@/hooks/useActiveHelpSegment'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import { appInfoStore } from '@/store/appInfo'
 import { dataSourceStore } from '@/store/dataSources'
+import { userStore } from '@/store/user'
 import { userSettingsStore } from '@/store/userSettings'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { GuardrailEntity } from '@/types/entity/guardrail'
@@ -84,6 +85,8 @@ const shouldShowScheduling = (indexType: IndexType, sharepointAuthType: string |
 interface Props {
   onClose: () => void
   index?: DataSourceDetailsResponse | null
+  /** Source to prefill a new data source from. Never edits it: the form stays in create mode. */
+  cloneFrom?: DataSourceDetailsResponse | null
   onSubmittingChange?: (isSubmitting: boolean) => void
   onReadyChange?: (isReady: boolean) => void
   defaultProject?: string
@@ -93,7 +96,7 @@ interface Props {
 }
 
 export interface DataSourceFormRef {
-  submit: () => void
+  submit: () => void | Promise<void>
   submitReindex?: () => void
   attemptFormClose?: (onSuccess: () => void, message?: string) => void
 }
@@ -101,6 +104,7 @@ export interface DataSourceFormRef {
 const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
   const {
     index,
+    cloneFrom,
     onClose,
     onSubmittingChange,
     onReadyChange,
@@ -147,20 +151,39 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
     formState,
     trigger,
   } = useEditPopupForm(
-    index || {
-      project_name: defaultProject,
-    },
-    isEditing
+    index ||
+      cloneFrom || {
+        project_name: defaultProject,
+      },
+    isEditing,
+    cloneFrom ? userStore.isUserVisibleProject : undefined
   )
+  const isCloneMode = !index && !!cloneFrom
 
   const { field: timezoneField } = useController({ name: 'timezone', control })
 
   const formId = FormIDs.DATA_SOURCE_FORM
 
+  const dirtyFieldsRef = useRef<Record<string, unknown>>({})
+  dirtyFieldsRef.current = (formState.dirtyFields ?? {}) as Record<string, unknown>
+
   const comparator = useCallback(
-    (initial: any, current: any) =>
-      compareFormData(initial, current, { skipNameCheck: !nameManuallyEdited.current }),
-    []
+    (initial: any, current: any) => {
+      let normalizedCurrent = current
+      if (isCloneMode && current) {
+        // IndexProviderForm prefills defaults via setValue after the baseline snapshot;
+        // keys that are absent from the baseline and untouched by the user are not changes.
+        normalizedCurrent = Object.fromEntries(
+          Object.entries(current).filter(
+            ([key]) => key in (initial ?? {}) || key in dirtyFieldsRef.current
+          )
+        )
+      }
+      return compareFormData(initial, normalizedCurrent, {
+        skipNameCheck: !nameManuallyEdited.current,
+      })
+    },
+    [isCloneMode]
   )
 
   const { attemptFormClose, unblockTransition, blockTransition } = useUnsavedChanges({
@@ -268,16 +291,17 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
 
   const sharepointAuthType = watch('sharepointAuthType')
 
-  const providerId = index?.provider_fields?.provider_id
+  const providerSource = index || cloneFrom
+  const providerId = providerSource?.provider_fields?.provider_id
 
   const isProviderDeleted = useMemo(
     () =>
       isProviderSchemasLoaded &&
-      !!index &&
+      !!providerSource &&
       indexType === INDEX_TYPES.PROVIDER &&
       !!providerId &&
       !indexProviderSchemas.some((schema) => schema.id === providerId),
-    [isProviderSchemasLoaded, indexType, providerId, indexProviderSchemas]
+    [isProviderSchemasLoaded, providerSource, indexType, providerId, indexProviderSchemas]
   )
 
   useActiveHelpSegment(Object.values(INDEX_TYPES).includes(indexType) ? indexType : 'provider')
@@ -306,7 +330,11 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
       className={cn('flex flex-col gap-4 py-10', isPopup && 'py-2')}
     >
       {isProviderDeleted && (
-        <InfoWarning message="The provider for this data source is no longer available. Editing is disabled." />
+        <InfoWarning
+          message={`The provider for this data source is no longer available. ${
+            cloneFrom ? 'Cloning' : 'Editing'
+          } is disabled.`}
+        />
       )}
       <HealthCheckMessage result={healthCheckResult} />
 
@@ -696,6 +724,8 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
                 <IndexTypeField.Provider
                   {...{
                     index,
+                    isClone: isCloneMode,
+                    getValues: getValues as (name: string) => any,
                     control,
                     projectName,
                     errors,
@@ -736,6 +766,7 @@ const DataSourceForm = forwardRef<DataSourceFormRef, Props>((props, ref) => {
 // Create a memoized version of the component
 const MemoizedDataSourceForm = memo(DataSourceForm, (prevProps, nextProps) => {
   if (prevProps.index?.id !== nextProps.index?.id) return false
+  if (prevProps.cloneFrom?.id !== nextProps.cloneFrom?.id) return false
   if (prevProps.onSubmittingChange !== nextProps.onSubmittingChange) return false
   if (prevProps.onReadyChange !== nextProps.onReadyChange) return false
   if (prevProps.disabled !== nextProps.disabled) return false

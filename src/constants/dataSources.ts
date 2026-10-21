@@ -36,6 +36,9 @@ export const INDEX_TYPES = {
   BEDROCK: 'bedrock',
 } as const
 
+// Prefix of index types owned by the platform itself (not user-created sources).
+export const PLATFORM_INDEX_PREFIX = 'platform_'
+
 export const blockedReindexingIndexTypes = new Set<IndexType>([
   INDEX_TYPES.FILE,
   INDEX_TYPES.PROVIDER,

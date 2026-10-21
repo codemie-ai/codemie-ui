@@ -16,6 +16,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import CopySvg from '@/assets/icons/copy.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
@@ -54,17 +55,19 @@ import {
 } from '@/pages/dataSources/utils/dataSourceUtils'
 import { appInfoStore } from '@/store/appInfo'
 import { dataSourceStore } from '@/store/dataSources'
+import { userStore } from '@/store/user'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { getCronDescription, getNextCronRun } from '@/utils/cronValidator'
 import { canDelete, canEdit } from '@/utils/entity'
 import { formatDateTime, formatScheduleDate, humanize, isNumberValue } from '@/utils/helpers'
-import { getIndexTypeCode } from '@/utils/indexing'
+import { getIndexTypeCode, isBedrockIndex } from '@/utils/indexing'
 import { formatTimezoneLabel } from '@/utils/timezone'
 
 import DataSourceDeleteModal from './DataSourceDeleteModal'
 import DataSourceDetailsProvider from './DataSourceDetails/DetaSourceDetailsProvider'
 import SharePointReindexAuthPopup from './SharePointReindexAuthPopup'
+import { canCloneDataSource, hasCreatableProject } from '../utils/canCloneDataSource'
 
 import type { MenuItem } from 'primereact/menuitem'
 
@@ -183,7 +186,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
 
   const isBedrock = useMemo(() => {
     // Check if index_type contains 'bedrock'
-    return !!dataSource?.index_type?.toLowerCase().includes('bedrock')
+    return !!dataSource?.index_type && isBedrockIndex(dataSource)
   }, [dataSource?.index_type, dataSource?.provider_fields])
   const isSummarizationIndexType = useMemo(
     () =>
@@ -218,7 +221,12 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
   const [spReindexVisible, setSpReindexVisible] = useState(false)
   const [isDeleteVisible, setIsDeleteVisible] = useState(false)
 
+  const { user } = useSnapshot(userStore)
   const showEditButton = useMemo(() => canEdit(dataSource), [dataSource])
+  const showCloneButton = useMemo(
+    () => canCloneDataSource(dataSource, { hasCreatableProject: hasCreatableProject(user) }),
+    [dataSource, user]
+  )
   const showDeleteButton = useMemo(() => canDelete(dataSource), [dataSource])
 
   const showIncrementalReindexButton = useMemo(
@@ -239,6 +247,9 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
 
   const handleEdit = useCallback(() => {
     router.push(`/data-sources/${dataSource.id}/edit`)
+  }, [router, dataSource.id])
+  const handleClone = useCallback(() => {
+    router.push(`/data-sources/${dataSource.id}/clone`)
   }, [router, dataSource.id])
   const processedFilesData = useMemo<DataListItem[]>(
     () =>
@@ -439,6 +450,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
 
         {(showDeleteButton ||
           showEditButton ||
+          showCloneButton ||
           showFullReindexButton ||
           showIncrementalReindexButton) && (
           <div className="flex gap-2 my-3">
@@ -452,6 +464,12 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
               <Button size="small" variant="secondary" onClick={handleEdit}>
                 <EditSvg />
                 Edit
+              </Button>
+            )}
+            {showCloneButton && (
+              <Button size="small" variant="secondary" onClick={handleClone}>
+                <CopySvg />
+                Clone
               </Button>
             )}
             {showIncrementalReindexButton && (

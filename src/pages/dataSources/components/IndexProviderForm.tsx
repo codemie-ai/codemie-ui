@@ -36,6 +36,12 @@ import {
   hasProviderEnumOptions,
 } from '../constants'
 
+const isEmptyFormValue = (value: unknown) =>
+  value === undefined ||
+  value === null ||
+  value === '' ||
+  (Array.isArray(value) && value.length === 0)
+
 interface Props {
   dataProvider: DataProvider
   values: {
@@ -46,6 +52,9 @@ interface Props {
   control: any
   errors: Record<string, any>
   setValue?: (name: string, value: any, options?: any) => void
+  /** Clone mode: do not overwrite values the form already holds with field defaults. */
+  isClone?: boolean
+  getValues?: (name: string) => any
 }
 
 const IndexProviderForm: React.FC<Props> = ({
@@ -55,6 +64,8 @@ const IndexProviderForm: React.FC<Props> = ({
   control,
   errors,
   setValue,
+  isClone,
+  getValues,
 }) => {
   const PROJECT_NAME_KEY = 'project_name'
   const fields = useMemo((): DataProviderField[] => {
@@ -141,12 +152,13 @@ const IndexProviderForm: React.FC<Props> = ({
   useEffect(() => {
     if (hasPrefilled.current || !fields.length || !setValue) return
     fields.forEach((field) => {
+      if (isClone && getValues && !isEmptyFormValue(getValues(field.name))) return
       if (initialValues[field.name] !== undefined) {
         setValue(field.name, initialValues[field.name], { shouldValidate: true })
       }
     })
     hasPrefilled.current = true
-  }, [fields, initialValues, setValue])
+  }, [fields, initialValues, setValue, isClone, getValues])
 
   return (
     <div className="mb-3">
@@ -240,7 +252,7 @@ const IndexProviderForm: React.FC<Props> = ({
                         field.name
                       )}
                       label={field.title ?? humanize(field.name)}
-                      onChange={(e) => setValue?.(field.name, e.value)}
+                      onChange={(e) => setValue?.(field.name, e.value, { shouldDirty: true })}
                       placeholder={field.example ?? humanize(field.name)}
                       error={fieldState.error?.message}
                       scrollHeight="500px"
