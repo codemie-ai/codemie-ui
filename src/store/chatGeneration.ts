@@ -948,11 +948,16 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         context: assistant.context?.map((context) => context.name),
         tools: assistant.tools?.map((tool) => tool.name),
         type: assistant.type,
+        hideToolOutputs: assistant.hide_tool_outputs ?? false,
         fileAttachmentEnabled: assistant.file_attachment_enabled ?? null,
       })
     } else {
       chat.assistantIds = chat.assistantIds.filter((id) => id !== assistant.id)
       chat.assistantIds.unshift(assistant.id)
+      const existing = chat.assistantData.find((data) => data.id === assistant.id)
+      if (existing && assistant.hide_tool_outputs !== undefined) {
+        existing.hideToolOutputs = assistant.hide_tool_outputs
+      }
     }
 
     if (assistant.id && !chat.initial_assistant_id && !chat.initialAssistantId) {

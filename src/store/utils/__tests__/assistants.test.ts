@@ -134,6 +134,23 @@ describe('transformAssistantToCreateDTO', () => {
     })
   })
 
+  describe('hide_tool_outputs', () => {
+    it('forwards the boolean switch', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        hide_tool_outputs: true,
+      } as Assistant)
+
+      expect(dto.hide_tool_outputs).toBe(true)
+    })
+
+    it('defaults to false when the switch is absent', () => {
+      const dto = transformAssistantToCreateDTO(baseAssistant as Assistant)
+
+      expect(dto.hide_tool_outputs).toBe(false)
+    })
+  })
+
   describe('interactive_enabled', () => {
     it('forwards the boolean switch', () => {
       const dto = transformAssistantToCreateDTO({

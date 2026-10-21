@@ -85,6 +85,7 @@ import InteractiveFeaturesAccordion from './components/InteractiveFeaturesAccord
 import RefineWithAIPromptPopup from './components/RefineWithAIPromptPopup'
 import { GitDatasourceHint, isGitDatasourceMissing } from './components/Toolkits/GitDatasourceHint'
 import ToolsConfiguration from './components/Toolkits/ToolsConfiguration'
+import ToolOutputVisibilitySection from './components/ToolOutputVisibilitySection'
 import { TOOL_PERMISSIONS_LABEL } from './constants'
 import { useRefineAIRecommendations } from './hooks/useRefineAIRecommendations'
 
@@ -180,6 +181,7 @@ const formSchema = Yup.object()
       .nullable()
       .default(null),
     interactive_enabled: Yup.boolean().default(false),
+    hide_tool_outputs: Yup.boolean().default(false),
     skill_ids: Yup.array()
       .of(Yup.string())
       .max(MAX_SKILLS_PER_ASSISTANT, `Maximum ${MAX_SKILLS_PER_ASSISTANT} skills allowed`)
@@ -308,6 +310,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           smart_tool_selection_enabled: assistant?.smart_tool_selection_enabled ?? false,
           hedging_config: assistant?.hedging_config ?? null,
           interactive_enabled: assistant?.interactive_enabled ?? false,
+          hide_tool_outputs: assistant?.hide_tool_outputs ?? false,
           guardrail_assignments: assistant?.guardrail_assignments ?? [],
           skill_ids: assistant?.skills?.map((s) => s.id) ?? [],
           enabled_builtin_subagents: assistant?.enabled_builtin_subagents ?? [],
@@ -495,7 +498,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       })
     }
 
-    const renderRequireConfirmation = () => (
+    const renderToolsHeaderExtra = () => (
       // role="none" removes implicit div semantics; onClick/onKeyDown only stop
       // propagation to the parent accordion item, not for user interaction.
       // eslint-disable-next-line jsx-a11y/no-static-element-interactions
@@ -503,33 +506,50 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         role="none"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
-        className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2"
+        className="flex flex-wrap items-center gap-x-8 gap-y-2 mt-2"
       >
+        {isCodemieAssistant && toolPermissionsEnabled && (
+          <>
+            <Controller
+              name="tool_call_policy"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-nowrap items-center gap-2 max-lg:flex-wrap">
+                  <span className="text-sm text-text-tertiary shrink-0">
+                    {TOOL_PERMISSIONS_LABEL}
+                  </span>
+                  <ToolCallPolicyDropdown
+                    value={field.value as ToolCallPolicy}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                </div>
+              )}
+            />
+            <Controller
+              name="allow_override"
+              control={control}
+              render={({ field }) => (
+                <Switch
+                  label="Allow to override"
+                  hint="When enabled, users can change the tool call policy for this assistant in their chat session."
+                  value={!!field.value}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  onBlur={field.onBlur}
+                  labelClassName="text-sm"
+                />
+              )}
+            />
+          </>
+        )}
         <Controller
-          name="tool_call_policy"
+          name="hide_tool_outputs"
           control={control}
           render={({ field }) => (
-            <div className="flex flex-nowrap items-center gap-2 max-lg:flex-wrap">
-              <span className="text-sm text-text-tertiary shrink-0">{TOOL_PERMISSIONS_LABEL}</span>
-              <ToolCallPolicyDropdown
-                value={field.value as ToolCallPolicy}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-              />
-            </div>
-          )}
-        />
-        <Controller
-          name="allow_override"
-          control={control}
-          render={({ field }) => (
-            <Switch
-              label="Allow to override"
-              hint="When enabled, users can change the tool call policy for this assistant in their chat session."
-              value={!!field.value}
-              onChange={(e) => field.onChange(e.target.checked)}
+            <ToolOutputVisibilitySection
+              value={field.value}
+              onChange={field.onChange}
               onBlur={field.onBlur}
-              labelClassName="text-sm"
             />
           )}
         />
@@ -881,9 +901,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             onMcpServersChange={handleMcpServersChange}
             showNewIntegrationPopup={showNewIntegrationPopup}
             isAIGenerated={aiGeneratedFieldMarkers.toolkits}
-            renderTitleExtra={
-              isCodemieAssistant && toolPermissionsEnabled ? renderRequireConfirmation : undefined
-            }
+            renderTitleExtra={renderToolsHeaderExtra}
             renderHint={
               isGitDatasourceMissing(toolkits, watch('context') as AssistantContext[] | undefined)
                 ? GitDatasourceHint

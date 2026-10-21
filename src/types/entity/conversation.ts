@@ -205,6 +205,7 @@ export interface AssistantData {
   context?: string[]
   tools?: string[]
   type?: string
+  hideToolOutputs?: boolean
   /** null/undefined/true = allowed; only explicit false disables */
   fileAttachmentEnabled?: boolean | null
 }
@@ -282,6 +283,7 @@ export interface AssistantDataBackend {
   context?: { name: string }[]
   tools?: { name: string }[]
   assistant_type?: string
+  hide_tool_outputs?: boolean
 }
 
 export interface ThoughtBackend {

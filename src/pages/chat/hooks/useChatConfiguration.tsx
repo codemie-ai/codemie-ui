@@ -21,6 +21,7 @@ import { chatsStore } from '@/store/chats'
 import { userStore } from '@/store/user'
 import { DynamicToolsConfig } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
+import { resolveHideToolOutputs } from '@/utils/chatHelpers'
 import {
   chatSkillsKey,
   chatToolsConfigKey,
@@ -208,6 +209,9 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
     }
   }, [currentChat?.id, currentChat?.isWorkflow, closeConfigForm])
 
+  // The stored client value is ignored while the active assistant hides tool outputs.
+  const effectiveHideToolOutputs = resolveHideToolOutputs(hideToolOutputs, currentChat)
+
   return useMemo(
     () => ({
       selectedAssistant,
@@ -221,7 +225,7 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
       dynamicToolsConfig,
       setDynamicToolsConfig: handleSetDynamicToolsConfig,
       // Hide tool outputs toggle
-      hideToolOutputs,
+      hideToolOutputs: effectiveHideToolOutputs,
       setHideToolOutputs: handleSetHideToolOutputs,
       closeConfig,
       toggleConfigVisibility,
@@ -238,7 +242,7 @@ export const useChatConfiguration = (): UseChatConfigReturn => {
       dynamicToolsConfig,
       handleSetSelectedSkills,
       handleSetDynamicToolsConfig,
-      hideToolOutputs,
+      effectiveHideToolOutputs,
       handleSetHideToolOutputs,
       closeConfig,
       toggleConfigVisibility,

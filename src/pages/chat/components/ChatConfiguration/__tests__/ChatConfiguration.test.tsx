@@ -241,6 +241,54 @@ describe('ChatConfiguration', () => {
     render(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
     expect(screen.getByText('Hide tool outputs')).toBeInTheDocument()
   })
+
+  describe('when an assistant hides tool outputs', () => {
+    const renderWith = (assistantData: unknown[], assistantIds: string[]) => {
+      mockChatContext.isConfigVisible = true
+      mockChatsStore.currentChat = { ...mockChat, assistantData, assistantIds } as Conversation
+      render(<ChatConfiguration showNewIntegrationPopup={mockShowNewIntegrationPopup} />)
+    }
+
+    it('hides the toggle for a flagged active assistant but keeps other General controls', () => {
+      renderWith([{ id: 'a', name: 'A', hideToolOutputs: true }], ['a'])
+      expect(screen.queryByText('Hide tool outputs')).not.toBeInTheDocument()
+      expect(screen.getByText('General')).toBeInTheDocument()
+      expect(screen.getByText('LLM Model')).toBeInTheDocument()
+      expect(screen.getByText('Image generation')).toBeInTheDocument()
+    })
+
+    it('shows the toggle when the active assistant is not flagged', () => {
+      renderWith([{ id: 'a', name: 'A', hideToolOutputs: false }], ['a'])
+      expect(screen.getByText('Hide tool outputs')).toBeInTheDocument()
+    })
+
+    it('shows the toggle when only a non-active assistant is flagged', () => {
+      renderWith(
+        [
+          { id: 'a', name: 'A', hideToolOutputs: false },
+          { id: 'b', name: 'B', hideToolOutputs: true },
+        ],
+        ['a', 'b']
+      )
+      expect(screen.getByText('Hide tool outputs')).toBeInTheDocument()
+    })
+
+    it('hides the toggle when the active assistant is flagged and another is not', () => {
+      renderWith(
+        [
+          { id: 'a', name: 'A', hideToolOutputs: false },
+          { id: 'b', name: 'B', hideToolOutputs: true },
+        ],
+        ['b', 'a']
+      )
+      expect(screen.queryByText('Hide tool outputs')).not.toBeInTheDocument()
+    })
+
+    it('shows the toggle when assistantIds is empty', () => {
+      renderWith([{ id: 'a', name: 'A', hideToolOutputs: true }], [])
+      expect(screen.getByText('Hide tool outputs')).toBeInTheDocument()
+    })
+  })
 })
 
 describe('focus management', () => {

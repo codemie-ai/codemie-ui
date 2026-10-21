@@ -39,6 +39,11 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
   const { currentChat } = useSnapshot(chatsStore)
   const isMobileLayout = useIsMobileLayout()
   const assistantFeatures = useAssistantFeatures(currentChat?.assistantData ?? [])
+  // Only the active assistant (first in assistantIds) decides whether tool outputs are hidden.
+  const activeAssistantId = currentChat?.assistantIds?.[0]
+  const isToolOutputHidden = !!(currentChat?.assistantData ?? []).find(
+    (assistant) => assistant.id === activeAssistantId
+  )?.hideToolOutputs
 
   const sidebarRef = useRef<HTMLElement>(null)
   const prevFocusRef = useRef<HTMLElement | null>(null)
@@ -86,7 +91,7 @@ const ChatConfiguration: FC<ChatConfigurationProps> = ({ showNewIntegrationPopup
                   {assistantFeatures.modelSelector && <ChatConfigLlmSelector />}
                   {assistantFeatures.skills && <ChatConfigSkillsSelector />}
                   {assistantFeatures.modelSelector && <ChatConfigImageGeneration />}
-                  {assistantFeatures.tools && <ChatConfigHideToolOutputs />}
+                  {assistantFeatures.tools && !isToolOutputHidden && <ChatConfigHideToolOutputs />}
                 </>
               )}
               <ChatConfigAssistants />

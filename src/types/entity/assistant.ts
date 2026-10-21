@@ -137,6 +137,8 @@ export interface Assistant {
   interactive_enabled?: boolean
   effective_llm_model?: string | null
   effective_llm_model_source?: 'assistant' | 'project_default' | null
+  /** When true the backend serves only the final response to end users. */
+  hide_tool_outputs?: boolean
   system_prompt_history: {
     date: string
     system_prompt: string
@@ -482,6 +484,8 @@ export interface CreateAssistantDto {
   hedging_config?: HedgingConfig | null
   /** Single switch enabling the A2UI interactive catalog for this assistant. */
   interactive_enabled?: boolean
+  /** When true the backend serves only the final response to end users. */
+  hide_tool_outputs?: boolean
   prompt_variables?: AssistantPromptVariable[]
   guardrail_assignments: EntityGuardrailAssignment[]
   skip_integration_validation?: boolean

@@ -1,0 +1,19 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 resolved: useChatConfiguration now exposes resolveHideToolOutputs(stored, currentChat), so a flagged active assistant always hides tool outputs and the stored value is ignored; ChatAiMessage consumes it via useChatContext, and chatHelpers unit tests cover the flagged/unflagged/no-chat cases. Finding cited ChatConfiguration.tsx:94 but the fix lives in the hook and helper, which is where the substance sits.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "spec", "item": "S8 Chat: stored client hideToolOutputs state ignored for flagged assistants", "status": "partial", "notes": "carried forward from prior verdict; addressed by f79b0535f"},
+    {"kind": "spec", "item": "S9.10 Frontend tests incl. stored client state ignored", "status": "partial", "notes": "carried forward from prior verdict; addressed by f79b0535f"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "carried forward"},
+    {"kind": "code-quality", "status": "na", "notes": "carried forward"},
+    {"kind": "security", "status": "pass", "notes": "carried forward"}
+  ],
+  "findings": [],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "resolveHideToolOutputs in chatHelpers.ts returns flagged-active-assistant || stored; wired in useChatConfiguration.tsx and consumed at ChatAiMessage.tsx:276; tests added in chatHelpers.test.ts."}
+  ]
+}

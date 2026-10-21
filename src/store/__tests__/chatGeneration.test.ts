@@ -961,5 +961,43 @@ describe('chatGenerationStore', () => {
 
       expect(chat.assistantData[0].fileAttachmentEnabled).toBe(false)
     })
+
+    it('copies hide_tool_outputs onto assistantData as hideToolOutputs', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const chat = createChat(createHistoryItem())
+      chat.assistantIds = []
+      chat.assistantData = []
+      chat.history = [[createHistoryItem()]]
+
+      chatGenerationStore.updateCurrentChatAssistants(chat, {
+        id: 'assistant-3',
+        name: 'Hidden',
+        tools: [],
+        hide_tool_outputs: true,
+      } as any)
+
+      expect(chat.assistantData[0].hideToolOutputs).toBe(true)
+    })
+
+    it.each([
+      [false, true],
+      [true, false],
+    ])('refreshes hideToolOutputs on an existing entry (%s -> %s)', async (before, after) => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      const chat = createChat(createHistoryItem())
+      chat.assistantIds = ['assistant-4']
+      chat.assistantData = [{ id: 'assistant-4', name: 'Existing', hideToolOutputs: before }] as any
+      chat.history = [[createHistoryItem(), createHistoryItem()]]
+
+      chatGenerationStore.updateCurrentChatAssistants(chat, {
+        id: 'assistant-4',
+        name: 'Existing',
+        tools: [],
+        hide_tool_outputs: after,
+      } as any)
+
+      expect(chat.assistantData).toHaveLength(1)
+      expect(chat.assistantData[0].hideToolOutputs).toBe(after)
+    })
   })
 })

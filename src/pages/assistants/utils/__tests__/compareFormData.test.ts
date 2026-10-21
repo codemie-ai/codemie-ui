@@ -53,6 +53,20 @@ describe('compareFormData — file_attachment_enabled', () => {
   })
 })
 
+describe('compareFormData — hide_tool_outputs', () => {
+  it('detects toggling hide_tool_outputs', () => {
+    const initial = { ...base, hide_tool_outputs: false }
+    const current = { ...base, hide_tool_outputs: true }
+    expect(compareFormData(initial, current)).toBe(true)
+  })
+
+  it('treats undefined and false as the same', () => {
+    const initial = { ...base }
+    const current = { ...base, hide_tool_outputs: false }
+    expect(compareFormData(initial, current)).toBe(false)
+  })
+})
+
 describe('compareFormData — llm_model_type default', () => {
   afterEach(() => {
     mockAppInfoStore.llmModels = []

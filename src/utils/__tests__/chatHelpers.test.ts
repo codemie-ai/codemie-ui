@@ -22,6 +22,7 @@ import {
   transformChatBEtoFE,
   getChatBEMessageIndex,
   transformChatHistoryFEtoBE,
+  resolveHideToolOutputs,
 } from '@/utils/chatHelpers'
 
 vi.mock('@/constants', () => ({ ROLE_ASSISTANT: 'assistant', ROLE_USER: 'user' }))
@@ -42,6 +43,24 @@ describe('transformChatBEtoFE', () => {
     const result = transformChatBEtoFE(chat)
 
     expect(result.id).toEqual('123')
+  })
+
+  it('maps hide_tool_outputs onto assistantData, defaulting to false', () => {
+    const base = { assistant_name: 'A', assistant_icon: '' }
+    const result = transformChatBEtoFE({
+      id: '1',
+      conversation_name: 'Test',
+      assistant_ids: ['a', 'b'],
+      initial_assistant_id: 'a',
+      assistant_data: [
+        { ...base, assistant_id: 'a', hide_tool_outputs: true },
+        { ...base, assistant_id: 'b' },
+      ],
+      history: [],
+    } as ChatBackend)
+
+    expect(result.assistantData[0].hideToolOutputs).toBe(true)
+    expect(result.assistantData[1].hideToolOutputs).toBe(false)
   })
 
   it('maps thought in_progress:true to aborted:true in history', () => {
@@ -805,5 +824,30 @@ describe('transformChatHistoryFEtoBE', () => {
     expect(userMsg).toBeDefined()
     expect(userMsg).not.toHaveProperty('assistantName')
     expect(userMsg).not.toHaveProperty('assistantId')
+  })
+})
+
+describe('resolveHideToolOutputs', () => {
+  const chat = (assistantIds: string[], flags: Record<string, boolean>) => ({
+    assistantIds,
+    assistantData: Object.entries(flags).map(([id, hideToolOutputs]) => ({ id, hideToolOutputs })),
+  })
+
+  it('returns the stored value when the active assistant is not flagged', () => {
+    expect(resolveHideToolOutputs(false, chat(['a'], { a: false }))).toBe(false)
+    expect(resolveHideToolOutputs(true, chat(['a'], { a: false }))).toBe(true)
+  })
+
+  it('ignores a stored false value when the active assistant is flagged', () => {
+    expect(resolveHideToolOutputs(false, chat(['a'], { a: true }))).toBe(true)
+  })
+
+  it('only considers the active (first) assistant', () => {
+    expect(resolveHideToolOutputs(false, chat(['a', 'b'], { a: false, b: true }))).toBe(false)
+  })
+
+  it('falls back to the stored value without a chat', () => {
+    expect(resolveHideToolOutputs(true, null)).toBe(true)
+    expect(resolveHideToolOutputs(false, undefined)).toBe(false)
   })
 })

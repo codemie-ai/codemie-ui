@@ -97,6 +97,7 @@ export function transformAssistantToCreateDTO(
     hedging_config: assistant.hedging_config ?? null,
     // Plain boolean switch enabling the A2UI catalog for this assistant.
     interactive_enabled: readInteractiveEnabled(assistant),
+    hide_tool_outputs: assistant.hide_tool_outputs ?? false,
     guardrail_assignments: assistant.guardrail_assignments,
     skill_ids: skillIds,
     ...(sourceAssistantId ? { source_assistant_id: sourceAssistantId } : {}),

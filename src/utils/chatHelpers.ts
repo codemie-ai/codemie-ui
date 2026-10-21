@@ -23,6 +23,7 @@ import { WORKFLOW_STATUSES } from '@/constants/workflows'
 import type {
   ChatBackend,
   Conversation,
+  AssistantData,
   AssistantDataBackend,
   HistoryItemBackend,
 } from '@/types/entity/conversation'
@@ -54,6 +55,7 @@ export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
         context: data.context?.map((context) => context.name),
         tools: data.tools?.map((tool) => tool.name),
         type: data.assistant_type,
+        hideToolOutputs: data.hide_tool_outputs ?? false,
       })) ?? [],
     history: [], // We'll populate this shortly
   }
@@ -289,4 +291,22 @@ export const getChatBEMessageIndex = (
     return relativeIndex * 2 + 1
   }
   return relativeIndex * 2
+}
+
+/**
+ * Effective "hide tool outputs" state. A flagged active assistant (first in assistantIds) always
+ * hides them; the stored per-chat client value is ignored in that case and only applies otherwise.
+ */
+export const resolveHideToolOutputs = (
+  storedHideToolOutputs: boolean,
+  chat?: {
+    assistantIds?: readonly string[]
+    assistantData?: readonly Pick<AssistantData, 'id' | 'hideToolOutputs'>[]
+  } | null
+): boolean => {
+  const activeAssistantId = chat?.assistantIds?.[0]
+  const isActiveAssistantFlagged = !!chat?.assistantData?.find(
+    (assistant) => assistant.id === activeAssistantId
+  )?.hideToolOutputs
+  return isActiveAssistantFlagged || storedHideToolOutputs
 }
