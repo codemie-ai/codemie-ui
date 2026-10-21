@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "No spec/story exists for this change, so business acceptance could not be verified and confidence is capped at low. The edge-case lens (the only lens applicable to this compact profile) ran cleanly and all 5 of its candidates were verified against the real source: 2 are deferred as genuinely pre-existing (appInfo.ts's getLLMModels leaves llmRouters stale on a failed refetch; routerToModelOption does not filter a falsy router value) because the same code and the same call pattern already exist in ProjectModelsSection.tsx before this diff; 3 are dismissed as false positives (router availability/premium counting via isModelAvailable matches the documented, already-shared Models tab pattern the task explicitly asked to mirror; getConfigurableModels's value-collision dedup is its documented intended behavior; and the missing-dependency fix suggested for the llmRouters read would not change Valtio's non-reactive read regardless). No standards audit was expected for this profile. Standards rows are na with no coverage gap.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for this review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for this review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for this review profile." }
+  ],
+  "findings": []
+}

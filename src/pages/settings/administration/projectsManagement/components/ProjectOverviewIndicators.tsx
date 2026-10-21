@@ -10,6 +10,7 @@ import { appInfoStore } from '@/store/appInfo'
 import { projectModelSettingsStore } from '@/store/projectModelSettings'
 import { projectSettingsStore } from '@/store/projectSettings'
 import { TabularMetricType, TimePeriod } from '@/types/analytics'
+import { routerToModelOption } from '@/utils/routerToModelOption'
 import { cn } from '@/utils/utils'
 
 import {
@@ -30,7 +31,7 @@ interface ModelAvailabilitySummary {
   available: number
   total: number
   autoRoutingEnabled: boolean
-  hidePremiumModels: boolean
+  hasPremiumModelsEnabled: boolean
 }
 
 interface Props {
@@ -92,7 +93,10 @@ const ProjectOverviewIndicators: FC<Props> = ({
         projectModelSettingsStore.fetchSettings(projectName),
       ])
         .then(([catalog, settings]) => {
-          const configurable = getConfigurableModels(catalog)
+          const configurable = getConfigurableModels([
+            ...catalog,
+            ...appInfoStore.llmRouters.map(routerToModelOption),
+          ])
           const selection = settingsToSelection(settings, configurable)
           return {
             available: configurable.filter((model) =>
@@ -100,7 +104,10 @@ const ProjectOverviewIndicators: FC<Props> = ({
             ).length,
             total: configurable.length,
             autoRoutingEnabled: settings.auto_routing_enabled,
-            hidePremiumModels: settings.hide_premium_models,
+            hasPremiumModelsEnabled: configurable.some(
+              (model) =>
+                model.isPremium && isModelAvailable(model, selection, settings.hide_premium_models)
+            ),
           }
         })
         .catch(() => null)
@@ -175,7 +182,9 @@ const ProjectOverviewIndicators: FC<Props> = ({
                 </div>
                 <div className="flex flex-col gap-1 text-xs text-text-quaternary">
                   <span>Automatic routing: {models.autoRoutingEnabled ? 'On' : 'Off'}</span>
-                  <span>Premium models: {models.hidePremiumModels ? 'Hidden' : 'Visible'}</span>
+                  <span>
+                    Premium models: {models.hasPremiumModelsEnabled ? 'Visible' : 'Not visible'}
+                  </span>
                 </div>
               </>
             )}

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single self-contained UI component (ProjectOverviewIndicators) modified; fix is in its model-availability calculation effect, reusing existing getConfigurableModels/isModelAvailable/settingsToSelection helpers — no new abstractions." },
+    { "dimension": "file_change_estimate", "reason": "Diffstat shows 2 files changed: 1 modified (ProjectOverviewIndicators.tsx) and 1 new test file (ProjectOverviewIndicators.test.tsx), both in the same directory tree — maps to S per the 2-3 files band." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

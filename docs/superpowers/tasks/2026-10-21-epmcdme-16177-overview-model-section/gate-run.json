@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16177_overview-model-section",
+  "head": "a1c3e30a4faebe03091da5281394cf62a45b8ff1",
+  "runner": "npm",
+  "started_at": "2026-10-21T12:06:27Z",
+  "completed_at": "2026-10-21T12:12:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 14141,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 10583,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "build",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17303,
+      "command": "npm run build:prod",
+      "exit_code": 0,
+      "notes": "Build warnings only (chunk size, ineffective dynamic import) — not errors."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 112148,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 720 passed (720); Tests 7323 passed | 1 skipped (7324)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 64596,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 52 passed (52); Tests 572 passed | 1 skipped (573)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "",
+      "exit_code": null,
+      "notes": "Diff touches UI surface (ProjectOverviewIndicators.tsx) but no configured UI test script (no test:ui in package.json); browser verification is a separate caller decision. Component already covered by unit/integration gates above."
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1495,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5436,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: no leaks found. Scans working tree only, not git history."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 211,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2382 files, 0 missing license headers. Part of Husky pre-commit hook; not listed as a standalone gate in quality-gates.md."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 25028,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 but gate did not run. Set SONAR_TOKEN (and a reachable SonarQube host per .sonarlint/connectedMode.json) to run locally. Part of Husky pre-commit hook; CI equivalent not re-verified here."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Requires the app stack up and ~/.codemie/test-harness.json (live environment) — out of scope for this mechanical gate pass per instructions to skip infrastructure-dependent commands. MR compliance gate; owed separately before opening the MR."
+    }
+  ],
+  "failures": {}
+}
