@@ -1,0 +1,27 @@
+{
+  "decision": "approve",
+  "rationale": "Both decision_needed findings from the 2026-10-14 review (CR-001 icon-assignment, CR-002 secret carry-over) are resolved by explicit, dated story.md revisions rather than by a code change: the sixth revision (icon decision reversal) states the carried-forward clone.svg intent from 2026-10-07 is reversed — the shipped copy.svg-on-Clone / clipboard.svg-on-Copy-ID design is final and no clone.svg should be added; the seventh revision (secrets-in-clone-form confirmed as intended parity with Edit) states the clone form's verbatim secret carry-over is deliberate, matching Edit exactly. Verified in source: useMCPServerModal.ts calls the same getFormValuesFromServer() helper for both 'edit' (line 48) and 'clone' (line 51) modes, confirming the parity claim is accurate, not asserted. Edge-case, acceptance (aside from the two decision points) and standards review all passed clean in the prior run; the blind lens's failure to persist output is a tooling gap, not a finding, and is not reason to withhold approval given both open points are now resolved.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "Editable \"Clone MCP Server\" modal exists, styled like Edit MCP Server, with its own header and submit-button text", "status": "pass", "notes": "getHeaderText()/getSubmitButtonText() add clone mode -> header 'Clone MCP Server', CTA 'Clone Server'; covered by MCPServerModal.clone.test.tsx" },
+    { "kind": "story-ac", "item": "Clone form pre-fills every field from the source server except Name", "status": "pass", "notes": "getResetValuesForMode: clone -> {...getFormValuesFromServer(cloneSource), name: ''}; covered by a dedicated test" },
+    { "kind": "story-ac", "item": "Name field opens empty in Clone mode; same required-field rule as Add/Edit applies", "status": "pass", "notes": "name reset to ''; clone test asserts submit blocked with 'Name is required' on empty name" },
+    { "kind": "story-ac", "item": "The GET suggested-clone-name endpoint and all client-side name-suggestion machinery are removed entirely", "status": "pass", "notes": "fetchSuggestedCloneName and related state/refs removed; grep across src/ confirms no references remain" },
+    { "kind": "story-ac", "item": "No network call happens between clicking Clone and the modal appearing", "status": "pass", "notes": "handleCloneMenuClick only sets local state synchronously; test confirms cloneConfigFromForm is not called" },
+    { "kind": "story-ac", "item": "Clone submits via a single body-carrying POST .../clone call (cloneConfigFromForm), not create/update", "status": "pass", "notes": "handleModalSubmit routes clone mode to cloneConfigFromForm; test confirms createConfig/updateConfig are not called" },
+    { "kind": "story-ac", "item": "Duplicate-name validation on clone submit reuses the existing generic onSubmit-rejection toast path", "status": "pass", "notes": "no clone-specific catch; the generic onFormSubmit error handling applies uniformly to add/edit/clone" },
+    { "kind": "story-ac", "item": "Icon-assignment intent: a distinct icon visually distinguishes 'Clone' from 'Copy ID'", "status": "pass", "notes": "story.md sixth revision (2026-10-14) reverses the carried-forward clone.svg intent; shipped design keeps copy.svg on Clone and adds clipboard.svg on Copy ID, which is now the documented, final intent — CR-001 resolved" },
+    { "kind": "story-ac", "item": "Clone form carries source secrets verbatim, with the same exposure as Edit (no masking/stripping)", "status": "pass", "notes": "story.md seventh revision confirms this is intended parity with Edit, not a new leak; both edit and clone modes call the same getFormValuesFromServer() helper (useMCPServerModal.ts:48,51) — CR-002 resolved" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "Both commit subjects in range match EPMCDME-XXXX: Capital sentence, no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md exists in the repo and no ArtifactRef was passed for code_quality" },
+    { "kind": "security", "status": "pass", "notes": "No dangerouslySetInnerHTML, unsafe navigation, postMessage, config/secret additions, or Sonar suppressions in this diff per the guide checklist; the credential-handling point raised separately is resolved via story.md's documented Edit-parity decision, not a guide violation" }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "Not a code fix — story.md's 2026-10-14 sixth revision explicitly reverses the carried-forward clone.svg intent and declares the shipped copy.svg/clipboard.svg split final" },
+    { "id": "CR-002", "status": "resolved", "notes": "Not a code fix — story.md's 2026-10-14 seventh revision confirms verbatim secret carry-over is deliberate parity with Edit; verified in source that both modes share getFormValuesFromServer()" }
+  ]
+}

@@ -14,11 +14,10 @@
 //
 
 import { MultiSelectChangeEvent } from 'primereact/multiselect'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Controller } from 'react-hook-form'
 
 import CopySvg from '@/assets/icons/copy.svg?react'
-import CrossSvg from '@/assets/icons/cross.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import Button from '@/components/Button'
@@ -34,25 +33,14 @@ import { useMCPServerModal } from './useMCPServerModal'
 
 interface MCPServerModalProps {
   visible: boolean
+  mode: 'add' | 'edit' | 'clone'
   server: MCPConfig | null
+  cloneSource?: MCPConfig | null
   onHide: () => void
   onSubmit: (data: Partial<MCPConfigRequest>) => Promise<void>
-  strippedFields?: string[]
 }
 
 const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
-  const [showStrippedFieldsNotice, setShowStrippedFieldsNotice] = useState(true)
-  const hasStrippedFields = Boolean(props.strippedFields && props.strippedFields.length > 0)
-
-  // Reset dismissal whenever the modal opens, or whenever strippedFields itself changes
-  // while the modal stays open (e.g. a repeat clone updates the same modal instance),
-  // so a new clone's notice is visible again and a dismissed one doesn't stay hidden.
-  useEffect(() => {
-    if (props.visible) {
-      setShowStrippedFieldsNotice(true)
-    }
-  }, [props.visible, props.strippedFields])
-
   const {
     form,
     firstInputRef,
@@ -74,7 +62,14 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
   // Custom footer with form actions
   const getSubmitButtonText = () => {
     if (isSubmitting) return 'Saving...'
-    return props.server ? 'Update Server' : 'Create Server Configuration'
+    if (props.mode === 'clone') return 'Clone Server'
+    return props.mode === 'edit' ? 'Update Server' : 'Create Server Configuration'
+  }
+
+  const getHeaderText = () => {
+    if (props.mode === 'edit') return 'Edit MCP Server'
+    if (props.mode === 'clone') return 'Clone MCP Server'
+    return 'Add MCP Server'
   }
 
   const footerContent = (
@@ -103,34 +98,11 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
     <Popup
       visible={props.visible}
       onHide={handleClose}
-      header={props.server ? 'Edit MCP Server' : 'Add MCP Server'}
+      header={getHeaderText()}
       footerContent={footerContent}
       className="w-[800px] max-w-[90vw]"
       bodyClassName="p-6 space-y-6 max-h-[70vh]"
     >
-      {hasStrippedFields && showStrippedFieldsNotice && (
-        <div className="flex items-start justify-between gap-3 rounded-lg bg-surface-elevated border border-border-structural p-3 text-sm text-text-primary">
-          <div>
-            <p className="font-semibold">
-              The following values were not copied and need to be re-entered:
-            </p>
-            <ul className="list-disc pl-5">
-              {props.strippedFields?.map((field) => (
-                <li key={field}>{field}</li>
-              ))}
-            </ul>
-          </div>
-          <button
-            type="button"
-            aria-label="Dismiss"
-            onClick={() => setShowStrippedFieldsNotice(false)}
-            className="shrink-0 p-1 hover:opacity-70"
-          >
-            <CrossSvg className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
       <form onSubmit={onFormSubmit}>
         <div className="space-y-6">
           {/* Basic Information */}

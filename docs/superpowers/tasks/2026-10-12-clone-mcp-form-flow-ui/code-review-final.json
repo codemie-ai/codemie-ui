@@ -1,0 +1,108 @@
+{
+  "decision": "request-changes",
+  "rationale": "Genuine no-spec round (no acceptance ArtifactRef dispatched) caps confidence at low, but the diff itself ships a committed story.md whose live Acceptance Criteria directly contradict the shipped design (CR-001, decision_needed) alongside 6 patchable defects (icon swap, re-entrant clone click, two silent-failure edge cases, a request-staleness race, and an untested authorization gate) and 1 standards-blocking commit-format violation (CR-008). 1 finding deferred as pre-existing shared toast logic; 4 findings dismissed as noise (speculative fire-and-forget concern, an untyped-field nitpick, and two theoretical state-desync scenarios that React 18's state-update batching rules out).",
+  "confidence": "low",
+  "risk_flags": ["security"],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "partial", "notes": "28/29 subjects match EPMCDME-XXXX format; 'mcp-clone-flow-ux: add planning artifacts' has no ticket prefix and starts lowercase" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide present and no code_quality ArtifactRef was passed" },
+    { "kind": "security", "status": "pass", "notes": "no dangerouslySetInnerHTML/innerHTML, unsafe navigation, env reads, or nosonar additions in changed files" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "decision",
+      "severity": "critical",
+      "triage": "decision_needed",
+      "file": "docs/stories/2026-10-06-mcp-clone-flow-ux/story.md",
+      "title": "Implementation contradicts committed clone-flow spec",
+      "problem": "The committed story.md's live Acceptance Criteria mandate a non-editable confirmation popup (no MCPServerModal clone mode, no pre-filled draft, clone.svg icon, no-body clone call) and explicitly list the shipped design -- an editable pre-filled MCPServerModal Clone mode, a new suggested-clone-name GET endpoint, and a body-carrying clone POST -- under 'Superseded Criteria — do not implement.'",
+      "impact": "Either the design doc is stale or the implementation shipped the wrong UX/contract; anyone reviewing against story.md as the spec of record would be approving a change that contradicts its own accompanying documentation, and the actual backend contract (body vs. no-body clone call) is left unverified against any committed source.",
+      "recommendation": "A human must reconcile the two: either update story.md's Acceptance/Superseded Criteria to reflect the MCPServerModal Clone-mode design actually implemented, or rework the implementation to match the committed confirmation-popup design."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/MCPServerActions.tsx",
+      "line": 83,
+      "title": "Clone/Copy ID icons inverted vs. spec",
+      "problem": "The 'Clone' menu entry keeps the old CopySvg (copy.svg) icon while the renamed 'Copy ID' entry gets the new ClipboardSvg (clipboard.svg); no clone.svg asset was added at all.",
+      "impact": "This is the inverse of the documented intent to visually distinguish 'Clone' from 'Copy ID', leaving the two actions' icons confused for users.",
+      "recommendation": "Assign a dedicated/distinct icon to 'Clone' and keep copy.svg/clipboard.svg consistently on 'Copy ID'."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/MCPServerActions.tsx",
+      "line": 85,
+      "title": "Clone menu item stays clickable while its own modal is open",
+      "problem": "`disabled={cloningNameFetchPending}` only covers the name-fetch phase; once the Clone modal is open (or submitting), the menu item is clickable again because fetchingCloneNameId has already been cleared in the `finally` block.",
+      "impact": "A second click on the same row's Clone action re-triggers the name fetch and resets the already-open draft via the mode/cloneSource/suggestedName effect, discarding in-progress edits.",
+      "recommendation": "Disable or hide the Clone menu item while the Clone modal is open for this row, not only during the name-fetch phase."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/MCPServerModal/useMCPServerModal.ts",
+      "line": 76,
+      "title": "Empty suggested name isn't treated as 'no suggestion'",
+      "problem": "`name: suggestedName ?? cloneSource.name` only falls back on null/undefined; an empty-string `suggested_name` from the new backend endpoint passes through unchanged.",
+      "impact": "If the suggested-clone-name endpoint ever returns an empty string, the Name field opens blank instead of pre-filled with the source name, contradicting the 'server-suggested editable name' requirement.",
+      "recommendation": "Use an explicit emptiness check (e.g. `suggestedName || cloneSource.name` guarded for undefined, or a trim check) instead of `??`."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/MCPServerModal/useMCPServerModal.ts",
+      "line": 87,
+      "title": "Save failure can fail completely silently",
+      "problem": "The catch block dropped its former console.error and now only calls `toaster.error(message)`; `toaster.error` no-ops on a falsy/empty string (`if (!text) return` in utils/toaster.ts), and `??` doesn't fall back on an explicit empty-string backend message.",
+      "impact": "A backend error response with an empty-string `message` produces zero toast and zero console diagnostics -- a failed save looks like nothing happened, matching Edit's required error UX in spirit but not in this specific edge case.",
+      "recommendation": "Guard with `||` instead of `??` for the message fallback, and restore a console.error(error) call so a failure is never fully silent."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/hooks/useMCPManagement.ts",
+      "line": 107,
+      "title": "No staleness guard on the suggested-clone-name fetch",
+      "problem": "`handleCloneMenuClick` has no per-request token/abort guard; `handleAddMCPServer`/`handleEditServer` are not blocked while another row's name fetch is in flight.",
+      "impact": "Clicking Clone on a second row before the first row's fetch resolves lets whichever resolves last silently overwrite the shared cloneSource/modalMode state, and opening Add/Edit while a clone fetch is still pending can be overwritten into Clone mode on later resolution, discarding in-progress form input.",
+      "recommendation": "Track the in-flight request per click (a ref/token compared on resolution, or AbortController) and ignore a stale resolution before updating cloneSource/modalMode/showModal."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/MCPManagementPage.tsx",
+      "line": 72,
+      "title": "Clone authorization gate has no real test coverage",
+      "problem": "`canClone = isAdmin || isMaintainer` is computed at MCPManagementPage.tsx:72-74, but every existing test (MCPServerActions.accessibility.test.tsx, MCPServerActions.clone.test.tsx) injects `canClone` as a hardcoded boolean prop directly into MCPServerActions; none renders MCPManagementPage or otherwise exercises the real expression.",
+      "impact": "An inverted or mistyped operator in the authorization gate (e.g. `&&` instead of `||`, or a dropped `?? false`) would silently ship Clone visibility wrong for maintainers or ordinary viewers, and no existing test would catch it.",
+      "recommendation": "Add a test that renders MCPManagementPage (or isolates the canClone expression) against admin/maintainer/neither userStore states."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "unknown",
+      "title": "Commit subject violates enforced ticket-format regex",
+      "problem": "Commit subject 'mcp-clone-flow-ux: add planning artifacts' has no EPMCDME ticket prefix and starts lowercase, violating git-workflow.md's enforced regex.",
+      "impact": "The documented format is enforced by Tekton CI, which blocks on violations.",
+      "recommendation": "Reword the subject to 'EPMCDME-15538: Add planning artifacts' (or squash it into an adjacent EPMCDME-15538 commit) before the branch is merged."
+    }
+  ]
+}

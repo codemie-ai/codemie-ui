@@ -20,6 +20,7 @@ import { useForm } from 'react-hook-form'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import { useFocusOnVisible } from '@/hooks/useFocusOnVisible'
 import { MCPConfig, MCPConfigRequest } from '@/types/entity/mcp'
+import toaster from '@/utils/toaster'
 import { copyToClipboard } from '@/utils/utils'
 
 import { mcpServerSchema, MCPServerFormData } from '../mcpServerValidation'
@@ -31,14 +32,32 @@ import {
 
 interface UseMCPServerModalProps {
   visible: boolean
+  mode: 'add' | 'edit' | 'clone'
   server: MCPConfig | null
+  cloneSource?: MCPConfig | null
   onHide: () => void
   onSubmit: (data: Partial<MCPConfigRequest>) => Promise<void>
 }
 
+const getResetValuesForMode = (
+  mode: 'add' | 'edit' | 'clone',
+  server: MCPConfig | null,
+  cloneSource: MCPConfig | null | undefined
+) => {
+  if (mode === 'edit' && server) {
+    return getFormValuesFromServer(server)
+  }
+  if (mode === 'clone' && cloneSource) {
+    return { ...getFormValuesFromServer(cloneSource), name: '' }
+  }
+  return getDefaultFormValues()
+}
+
 export const useMCPServerModal = ({
   visible,
+  mode,
   server,
+  cloneSource,
   onHide,
   onSubmit,
 }: UseMCPServerModalProps) => {
@@ -63,12 +82,9 @@ export const useMCPServerModal = ({
   useEscapeKey(handleClose, visible)
 
   useEffect(() => {
-    if (visible && server) {
-      reset(getFormValuesFromServer(server))
-    } else if (visible) {
-      reset(getDefaultFormValues())
-    }
-  }, [visible, server, reset])
+    if (!visible) return
+    reset(getResetValuesForMode(mode, server, cloneSource))
+  }, [visible, mode, server, cloneSource, reset])
 
   const onFormSubmit = async (data: MCPServerFormData) => {
     try {
@@ -76,7 +92,14 @@ export const useMCPServerModal = ({
       await onSubmit(submitData)
       handleClose()
     } catch (error) {
-      console.error('Form submission error:', error)
+      console.error('Failed to save MCP server:', error)
+      // api.makeRequest already toasts the backend error for every non-2xx response
+      // (rejected with a Response). A rejection that never reached the API layer's
+      // response handling — a network/CORS/abort failure — gets no toast there, so
+      // show a fallback here.
+      if (!(error instanceof Response)) {
+        toaster.error(error instanceof Error ? error.message : 'Failed to save MCP server')
+      }
     }
   }
 

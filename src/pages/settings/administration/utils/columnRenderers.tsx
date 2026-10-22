@@ -23,18 +23,18 @@ interface ColumnRenderersProps {
   handleEditServer: (server: MCPConfig) => void
   handleDeleteServer: (server: MCPConfig) => void
   handleViewDetails: (server: MCPConfig) => void
-  handleCloneServer: (server: MCPConfig) => void
+  onCloneClick: (server: MCPConfig) => void
   canClone: boolean
-  cloningId: string | null
+  activeCloneId: string | null
 }
 
 export const createColumnRenderers = ({
   handleEditServer,
   handleDeleteServer,
   handleViewDetails,
-  handleCloneServer,
+  onCloneClick,
   canClone,
-  cloningId,
+  activeCloneId,
 }: ColumnRenderersProps) => ({
   name: (item: MCPConfig) => (
     <button
@@ -93,9 +93,9 @@ export const createColumnRenderers = ({
       onEdit={handleEditServer}
       onDelete={handleDeleteServer}
       onViewDetails={handleViewDetails}
-      onClone={handleCloneServer}
+      onCloneClick={onCloneClick}
       canClone={canClone}
-      cloning={cloningId === item.id}
+      cloneDisabled={activeCloneId === item.id}
     />
   ),
 })

@@ -15,10 +15,10 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { useSnapshot } from 'valtio'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { mcpStore } from '@/store/mcp'
-import { MCPConfig, MCPConfigCloneResponse } from '@/types/entity/mcp'
+import { MCPConfig } from '@/types/entity/mcp'
 import toaster from '@/utils/toaster'
 
 import { useMCPManagement } from '../useMCPManagement'
@@ -35,7 +35,7 @@ vi.mock('@/store/mcp', () => ({
   mcpStore: {
     pagination: { page: 0, perPage: 10, totalPages: 0, totalCount: 0 },
     indexConfigs: vi.fn().mockResolvedValue([]),
-    cloneConfig: vi.fn(),
+    cloneConfigFromForm: vi.fn(),
     updateConfig: vi.fn(),
     createConfig: vi.fn(),
   },
@@ -67,90 +67,61 @@ describe('useMCPManagement - clone flow', () => {
     vi.mocked(mcpStore.indexConfigs).mockResolvedValue([])
   })
 
-  it('directly clones a server with no copyable values', async () => {
-    const server: MCPConfig = { ...baseServer, config: {} }
-    vi.mocked(mcpStore.cloneConfig).mockResolvedValue({
-      ...server,
-      stripped_fields: [],
-    } as MCPConfigCloneResponse)
-
-    const { result } = renderHook(() => useMCPManagement())
-
-    await act(async () => {
-      result.current.handleCloneServer(server)
-    })
-
-    expect(mcpStore.cloneConfig).toHaveBeenCalledWith('server-1', undefined)
-    expect(result.current.cloneDialogServer).toBeNull()
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  it('opens the dialog for a server with copyable values and does not clone yet', () => {
-    const server: MCPConfig = {
-      ...baseServer,
-      config: { headers: { Authorization: 'secret' } },
-    }
-
+  it('opens the modal in clone mode immediately, with no record created and no store call', () => {
     const { result } = renderHook(() => useMCPManagement())
 
     act(() => {
-      result.current.handleCloneServer(server)
+      result.current.handleCloneMenuClick(baseServer)
     })
 
-    expect(mcpStore.cloneConfig).not.toHaveBeenCalled()
-    expect(result.current.cloneDialogServer).toEqual(server)
-  })
-
-  it('confirms clone with chosen copy values and updates modal state', async () => {
-    const server: MCPConfig = {
-      ...baseServer,
-      config: { headers: { Authorization: 'secret' } },
-    }
-    const response: MCPConfigCloneResponse = {
-      ...server,
-      id: 'server-2',
-      stripped_fields: ['config.auth_token'],
-    }
-    vi.mocked(mcpStore.cloneConfig).mockResolvedValue(response)
-
-    const { result } = renderHook(() => useMCPManagement())
-
-    act(() => {
-      result.current.handleCloneServer(server)
-    })
-
-    await act(async () => {
-      await result.current.handleConfirmClone(['headers.Authorization'])
-    })
-
-    expect(mcpStore.cloneConfig).toHaveBeenCalledWith('server-1', ['headers.Authorization'])
-    expect(result.current.editingServer).toEqual(response)
+    expect(mcpStore.cloneConfigFromForm).not.toHaveBeenCalled()
     expect(result.current.showModal).toBe(true)
-    expect(result.current.strippedFields).toEqual(['config.auth_token'])
-    expect(result.current.cloneDialogServer).toBeNull()
+    expect(result.current.modalMode).toBe('clone')
+    expect(result.current.cloneSource).toEqual(baseServer)
   })
 
-  it('shows a toaster error and leaves modal state unchanged on failure', async () => {
-    const server: MCPConfig = {
-      ...baseServer,
-      config: { headers: { Authorization: 'secret' } },
-    }
-    vi.mocked(mcpStore.cloneConfig).mockRejectedValue({
-      response: { data: { message: 'boom' } },
+  it('sets activeCloneId to the open row and clears it on close, leaving other rows unaffected', () => {
+    const otherServer: MCPConfig = { ...baseServer, id: 'server-2' }
+    const { result } = renderHook(() => useMCPManagement())
+
+    expect(result.current.activeCloneId).toBeNull()
+
+    act(() => {
+      result.current.handleCloneMenuClick(baseServer)
     })
 
+    expect(result.current.activeCloneId).toBe('server-1')
+    expect(result.current.activeCloneId).not.toBe(otherServer.id)
+
+    act(() => {
+      result.current.handleModalClose()
+    })
+
+    expect(result.current.activeCloneId).toBeNull()
+  })
+
+  it('submits via cloneConfigFromForm exactly once in clone mode, not createConfig/updateConfig', async () => {
+    vi.mocked(mcpStore.cloneConfigFromForm).mockResolvedValue({ ...baseServer, id: 'server-2' })
     const { result } = renderHook(() => useMCPManagement())
 
     act(() => {
-      result.current.handleCloneServer(server)
+      result.current.handleCloneMenuClick(baseServer)
     })
 
     await act(async () => {
-      await result.current.handleConfirmClone(['headers.Authorization'])
+      await result.current.handleModalSubmit({ name: 'My Clone' })
     })
 
-    expect(toaster.error).toHaveBeenCalledWith('boom')
-    expect(result.current.showModal).toBe(false)
-    expect(result.current.editingServer).toBeNull()
+    expect(mcpStore.cloneConfigFromForm).toHaveBeenCalledTimes(1)
+    expect(mcpStore.cloneConfigFromForm).toHaveBeenCalledWith('server-1', {
+      name: 'My Clone',
+    })
+    expect(mcpStore.createConfig).not.toHaveBeenCalled()
+    expect(mcpStore.updateConfig).not.toHaveBeenCalled()
   })
 })
 

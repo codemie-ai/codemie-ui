@@ -61,10 +61,6 @@ export interface MCPConfig {
   warnings?: { code: string; message: string; action?: string }[]
 }
 
-export interface MCPConfigCloneResponse extends MCPConfig {
-  stripped_fields: string[]
-}
-
 export interface MCPConfigRequest {
   name: string
   description?: string

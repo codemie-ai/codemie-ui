@@ -13,21 +13,12 @@
 // limitations under the License.
 //
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
-import { collectCopyValuePaths } from '@/pages/settings/administration/components/MCPCopyValuesDialog/useMCPCopyValuesDialog'
 import { mcpStore } from '@/store/mcp'
 import { MCPConfig, MCPConfigRequest } from '@/types/entity/mcp'
 import toaster from '@/utils/toaster'
-
-/**
- * Returns true when a server's config has any values that could be copied.
- * Delegates to collectCopyValuePaths so this always agrees with what the
- * copy-values dialog would actually offer - a truthy `url` with no query
- * params, or one that fails to parse, must not count as copyable.
- */
-const hasCopyableValues = (server: MCPConfig): boolean => collectCopyValuePaths(server).length > 0
 
 /**
  * Custom hook for MCP Management Page
@@ -36,15 +27,16 @@ const hasCopyableValues = (server: MCPConfig): boolean => collectCopyValuePaths(
 export const useMCPManagement = () => {
   const { pagination } = useSnapshot(mcpStore)
   const [showModal, setShowModal] = useState(false)
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'clone'>('add')
   const [editingServer, setEditingServer] = useState<MCPConfig | null>(null)
+  const [cloneSource, setCloneSource] = useState<MCPConfig | null>(null)
   const [detailsServer, setDetailsServer] = useState<MCPConfig | null>(null)
-  const [cloneDialogServer, setCloneDialogServer] = useState<MCPConfig | null>(null)
-  const [cloningId, setCloningId] = useState<string | null>(null)
-  const [strippedFields, setStrippedFields] = useState<string[]>([])
-  // Synchronous guard against double-dispatch: React state updates from setCloningId
-  // are not visible until the next render, so a rapid double-click/double-select on
-  // Clone before that render can otherwise fire two concurrent clone requests.
-  const cloningRef = useRef<string | null>(null)
+  // The row whose Clone modal is currently open, so its menu item stays disabled for the
+  // whole lifetime of the open draft, preventing a second click from discarding in-progress edits.
+  const activeCloneId = useMemo(
+    () => (showModal && modalMode === 'clone' ? cloneSource?.id ?? null : null),
+    [showModal, modalMode, cloneSource]
+  )
 
   // Load configs on mount
   useEffect(() => {
@@ -64,26 +56,29 @@ export const useMCPManagement = () => {
   // Modal handlers
   const handleAddMCPServer = useCallback(() => {
     setEditingServer(null)
-    setStrippedFields([])
+    setModalMode('add')
     setShowModal(true)
   }, [])
 
   const handleEditServer = useCallback((server: MCPConfig) => {
     setEditingServer(server)
-    setStrippedFields([])
+    setModalMode('edit')
     setShowModal(true)
   }, [])
 
   const handleModalClose = useCallback(() => {
     setShowModal(false)
     setEditingServer(null)
-    setStrippedFields([])
+    setCloneSource(null)
+    setModalMode('add')
   }, [])
 
   const handleModalSubmit = useCallback(
     async (data: Partial<MCPConfigRequest>) => {
       let response: MCPConfig
-      if (editingServer) {
+      if (modalMode === 'clone' && cloneSource) {
+        response = await mcpStore.cloneConfigFromForm(cloneSource.id, data)
+      } else if (editingServer) {
         response = await mcpStore.updateConfig(editingServer.id, data)
       } else {
         // Type assertion: form validation ensures required fields are present for creation
@@ -99,7 +94,7 @@ export const useMCPManagement = () => {
 
       handleModalClose()
     },
-    [editingServer, handleModalClose]
+    [editingServer, modalMode, cloneSource, handleModalClose]
   )
 
   // Delete handlers
@@ -108,59 +103,10 @@ export const useMCPManagement = () => {
   }, [])
 
   // Clone handlers
-  const runClone = useCallback(async (server: MCPConfig, copyValues?: string[]) => {
-    // Guard against double-dispatch: cloningRef is set synchronously, unlike the
-    // cloningId state update that drives the UI's disabled rendering.
-    if (cloningRef.current === server.id) return
-    cloningRef.current = server.id
-    setCloningId(server.id)
-    try {
-      const response = await mcpStore.cloneConfig(server.id, copyValues)
-
-      const placeholderWarning = response.warnings?.find(
-        (warning) => warning.code === 'placeholder_value_present'
-      )
-      if (placeholderWarning) {
-        toaster.info(placeholderWarning.message)
-      }
-
-      setStrippedFields(response.stripped_fields ?? [])
-      setEditingServer(response)
-      setShowModal(true)
-    } catch (error: any) {
-      toaster.error(error?.response?.data?.message ?? error?.message)
-    } finally {
-      setCloningId(null)
-      cloningRef.current = null
-    }
-  }, [])
-
-  const handleCloneServer = useCallback(
-    (server: MCPConfig) => {
-      if (cloningRef.current) return
-      if (!hasCopyableValues(server)) {
-        runClone(server).catch((error) => {
-          console.error('Failed to clone MCP server:', error)
-        })
-        return
-      }
-      setCloneDialogServer(server)
-    },
-    [runClone]
-  )
-
-  const handleConfirmClone = useCallback(
-    async (copyValues: string[]) => {
-      if (!cloneDialogServer || cloningRef.current) return
-      const server = cloneDialogServer
-      await runClone(server, copyValues)
-      setCloneDialogServer(null)
-    },
-    [cloneDialogServer, runClone]
-  )
-
-  const handleCloneDialogClose = useCallback(() => {
-    setCloneDialogServer(null)
+  const handleCloneMenuClick = useCallback((server: MCPConfig) => {
+    setCloneSource(server)
+    setModalMode('clone')
+    setShowModal(true)
   }, [])
 
   // Details sidebar handlers
@@ -191,11 +137,11 @@ export const useMCPManagement = () => {
   return {
     // State
     showModal,
+    modalMode,
     editingServer,
+    cloneSource,
+    activeCloneId,
     detailsServer,
-    cloneDialogServer,
-    cloningId,
-    strippedFields,
     // Modal handlers
     handleAddMCPServer,
     handleEditServer,
@@ -204,9 +150,7 @@ export const useMCPManagement = () => {
     // Delete handlers
     handleDeleteServer,
     // Clone handlers
-    handleCloneServer,
-    handleConfirmClone,
-    handleCloneDialogClose,
+    handleCloneMenuClick,
     // Details handlers
     handleViewDetails,
     handleCloseDetails,

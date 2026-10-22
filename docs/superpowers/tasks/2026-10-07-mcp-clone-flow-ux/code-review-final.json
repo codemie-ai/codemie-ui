@@ -1,0 +1,81 @@
+{
+  "decision": "request-changes",
+  "rationale": "4 real code defects (clone in-flight state shared across rows, Escape bypassing a disabled Cancel button, a blank failure toast on message-less errors, and an unvalidated clone response) plus 1 blocking standards commit-format violation force request-changes; all 7 story acceptance criteria pass and the security/code-quality standards are clean. 3 edge-case candidates were dismissed as noise: a harmless unmount setState (no React 18 warning path), a cosmetic pre-load canClone flicker, and a two-sources-of-truth concern already covered by the shared-ref fix (CR-003).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "Clone opens a confirmation popup naming the source config; Cancel/Clone Server shown; no API call until confirm", "status": "pass", "notes": "ConfirmationModal header/confirmText wired in MCPServerActions; onClone only in confirmClone; test confirms no early call." },
+    { "kind": "story-ac", "item": "Cancel closes the popup with no API call, no record created, no list entry", "status": "pass", "notes": "cancelClone only hides the popup, never calls onClone; test confirms no call fires." },
+    { "kind": "story-ac", "item": "Both Cancel and Clone Server are disabled while the clone request is in flight", "status": "pass", "notes": "confirmDisabled/cancelDisabled={isCloning} wired to ConfirmationModal; test confirms both disabled. See CR-002 for an Escape-key gap in this same path." },
+    { "kind": "story-ac", "item": "On success: popup closes, no edit window opens, list shows backend's verbatim/auto-named clone", "status": "pass", "notes": "handleCloneServer only calls cloneConfig; store unshifts the raw API response; test confirms modal state untouched." },
+    { "kind": "story-ac", "item": "On failure: popup closes, a toast shows the failure message, no entry appears in the list", "status": "pass", "notes": "catch+toaster.error without rethrow; finally always closes popup; store only unshifts on success. See CR-004 for a blank-toast edge case." },
+    { "kind": "story-ac", "item": "A clone's values change only through the existing, unmodified Edit MCP Server flow", "status": "pass", "notes": "Diff never touches MCPServerModal; handleCloneServer never sets editingServer/showModal." },
+    { "kind": "story-ac", "item": "Clone row action uses dedicated clone.svg, distinct from Copy ID's unchanged copy.svg", "status": "pass", "notes": "MCPServerActions imports CloneSvg from clone.svg?react; Copy ID keeps CopySvg unchanged." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "fail", "notes": "Commit 'clone-mcp-config-ui: add planning artifacts' lacks the EPMCDME ticket prefix required by git-workflow.md's regex; the other 14 subjects in range conform." },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality guide exists in the repo and no code_quality ArtifactRef was passed for this round." },
+    { "kind": "security", "status": "pass", "notes": "Checked HTML sinks, cross-window messages, redirects and secret logging across changed files; no new unsafe sink/log introduced; a pre-existing console.log predates this change." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "commit a941a4099",
+      "title": "Commit subject missing ticket prefix",
+      "problem": "Commit \"clone-mcp-config-ui: add planning artifacts\" lacks the required EPMCDME-NNNN ticket prefix mandated by git-workflow.md's commit-format regex.",
+      "impact": "The documented regex is enforced by the CI pipeline, so this subject blocks the commit-format gate for the merged range.",
+      "recommendation": "Reword or squash the commit so its subject follows \"EPMCDME-15538: Capital sentence\", e.g. during an interactive rebase or at squash-merge time."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/ConfirmationModal/ConfirmationModal.tsx",
+      "line": 93,
+      "title": "Escape key bypasses cancelDisabled",
+      "problem": "ConfirmationModal always wires Popup's onHide to the raw onCancel callback regardless of cancelDisabled, and Popup's own Escape handler (Popup.tsx:96-99) calls onHide whenever hideClose/visible/isTopmost hold, with no cancelDisabled check.",
+      "impact": "Pressing Escape while the clone confirmation is in flight closes the popup even though Cancel is explicitly disabled, so the request keeps running invisibly and its eventual success silently adds a row the user believed they cancelled.",
+      "recommendation": "Guard the forwarded onHide so it no-ops when cancelDisabled is true, e.g. onHide={cancelDisabled ? () => {} : onCancel} in ConfirmationModal.tsx."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/hooks/useMCPManagement.ts",
+      "line": 97,
+      "title": "Clone in-flight state shared across rows",
+      "problem": "cloningRef/cloningId are single shared values; handleCloneServer's finally block unconditionally resets both to null regardless of which server's request just settled.",
+      "impact": "When two different rows' clones overlap, the first one to finish clears the still-in-flight second row's loading/disabled UI and re-enables its double-click guard, desyncing the Clone button state for a request that has not completed.",
+      "recommendation": "Key the guard and the finally-block reset on the specific server id (e.g. only clear when cloningRef.current === server.id), or track cloning state per-id in a Set/Record instead of a single ref."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/hooks/useMCPManagement.ts",
+      "line": 106,
+      "title": "Clone failure toast can render blank",
+      "problem": "toaster.error(error?.response?.data?.message ?? error?.message) has no fallback string, so a rejection with neither a response payload nor a message (e.g. a bare network failure) passes undefined to toaster.error.",
+      "impact": "The user sees an empty/blank error toast with no indication the clone failed or why, missing the story's requirement that a toast show the failure message.",
+      "recommendation": "Add a default fallback, e.g. error?.response?.data?.message ?? error?.message ?? 'Failed to clone MCP server'."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/mcp.ts",
+      "line": 248,
+      "title": "Clone response not validated before use",
+      "problem": "cloneConfig parses the clone response and unshifts it straight into configs without checking that result carries an id.",
+      "impact": "An empty or malformed clone response (e.g. a 200 with no body) produces a configless entry in the list, breaking row rendering and the id-based cloningId/cloning matching used across MCPServerActions and the table.",
+      "recommendation": "Validate the response before using it, e.g. if (!result?.id) throw new Error('Clone response missing id'), before unshifting."
+    }
+  ]
+}

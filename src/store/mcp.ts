@@ -22,7 +22,7 @@ import { proxy } from 'valtio'
 
 import { MCP_DEFAULT_PAGE, MCP_DEFAULT_PER_PAGE, MCP_DEFAULT_FILTERS } from '@/constants/mcp'
 import { Pagination } from '@/types/common'
-import { MCPConfig, MCPConfigCloneResponse, MCPConfigRequest, MCPFilters } from '@/types/entity/mcp'
+import { MCPConfig, MCPConfigRequest, MCPFilters } from '@/types/entity/mcp'
 import api from '@/utils/api'
 
 interface MCPStore {
@@ -46,8 +46,8 @@ interface MCPStore {
   clearCache: () => void
   /** Create new MCP configuration */
   createConfig: (data: MCPConfigRequest) => Promise<MCPConfig>
-  /** Clone an existing MCP configuration */
-  cloneConfig: (id: string, copyValues?: string[]) => Promise<MCPConfigCloneResponse>
+  /** Clone an existing MCP configuration from form-submitted data */
+  cloneConfigFromForm: (id: string, data: Partial<MCPConfigRequest>) => Promise<MCPConfig>
   /** Update existing MCP configuration */
   updateConfig: (id: string, data: Partial<MCPConfigRequest>) => Promise<MCPConfig>
   /** Delete MCP configuration */
@@ -225,27 +225,24 @@ export const mcpStore = proxy<MCPStore>({
   },
 
   /**
-   * Clones an existing MCP server configuration
+   * Clones an existing MCP server configuration from modal form data
    *
-   * @param id - The unique identifier of the configuration to clone
-   * @param copyValues - Optional list of field names whose values should be copied over
+   * @param id - The unique identifier of the source configuration to clone
+   * @param data - Form-submitted configuration data for the new (cloned) server
    * @returns Promise resolving to the cloned MCP configuration
-   * @throws Error if configuration not found or API request fails
+   * @throws Error if validation fails or API request fails
    *
    * @example
    * ```typescript
-   * const cloned = await mcpStore.cloneConfig('config-123', ['env'])
+   * const cloned = await mcpStore.cloneConfigFromForm('config-123', data)
    * ```
    */
-  async cloneConfig(id: string, copyValues?: string[]) {
-    // Intentionally does not toggle the shared `loading` flag: that flag drives the
-    // whole-table loading state (see indexConfigs), and clone is scoped to a single
-    // row via the caller's own `cloningId` state. Toggling it here would disable the
-    // entire table for what is meant to be a per-row operation.
+  async cloneConfigFromForm(id: string, data: Partial<MCPConfigRequest>) {
+    this.loading = true
     this.error = null
 
     try {
-      const response = await api.post(`v1/mcp-configs/${id}/clone`, { copy_values: copyValues })
+      const response = await api.post(`v1/mcp-configs/${id}/clone`, data)
       const result = await response.json()
 
       // Add to the beginning of the list
@@ -256,8 +253,10 @@ export const mcpStore = proxy<MCPStore>({
     } catch (error: any) {
       const contextualError = error.response?.data?.message ?? error.message
       this.error = `Failed to clone MCP configuration: ${contextualError}`
-      console.error('MCP Store Error (cloneConfig):', error)
+      console.error('MCP Store Error (cloneConfigFromForm):', error)
       throw error
+    } finally {
+      this.loading = false
     }
   },
 

@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15538-clone-mcp-config-ui",
+  "head": "5ea2f1d816023496e23e6f4c9302396d8848e473",
+  "runner": "npm",
+  "started_at": "2026-10-07T13:36:06Z",
+  "completed_at": "2026-10-07T15:45:33Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 23889,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19238,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1946,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12124,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks reported 'no leaks found' explicitly, not just exit 0."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 313395,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 635 passed (635); Tests 6543 passed | 1 skipped (6544)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 106442,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 48 passed (48); Tests 550 passed | 1 skipped (551)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "",
+      "exit_code": null,
+      "notes": "UI surface changed (MCPManagementPage.tsx, MCPServerActions.tsx, columnRenderers.tsx) but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1196,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2240 files, 0 missing license headers. Chained in .husky/pre-commit after lint-staged; run standalone here since no files were staged."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 5785,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: '[sonar-local] Skipping Sonar scan because https://sonar.core.kuberocketci.io is unreachable.' Exit code 0 but no analysis ran. Would need VPN/network access to the internal SonarQube host (and valid .sonarlint/connectedMode.json credentials) to run locally; this check otherwise also runs server-side in the MR pipeline per the guide."
+    }
+  ],
+  "failures": {}
+}

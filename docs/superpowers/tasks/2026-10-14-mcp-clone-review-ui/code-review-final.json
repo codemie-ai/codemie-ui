@@ -1,0 +1,47 @@
+{
+  "decision": "request-changes",
+  "rationale": "Blind lens failed to persist its output (forces confidence: low); edge-case, acceptance, verification-gap and the standards audit all ran and parsed cleanly with no standards coverage gap. Two decision_needed findings surfaced: the Clone action still ships copy.svg instead of the spec-named clone.svg (CR-001, the one acceptance criterion marked partial), and the clone form now carries source secrets into the UI/network without stripping or disclosure, a change story.md documents as an already-agreed scope removal that still needs explicit MR confirmation (CR-002). Three edge-case candidates (clone-mode/cloneSource desync, stale state across modal-mode switches) were verified unreachable since handleCloneMenuClick/handleEditServer/handleModalClose always set mode, cloneSource and editingServer together, and were dismissed as noise (3 dismissed); one further issue (cloneConfigFromForm's broken error-message fallback for Response rejections) was deferred as a pre-existing pattern already present verbatim in createConfig (1 deferred).",
+  "confidence": "low",
+  "risk_flags": ["security"],
+  "business_review": [
+    { "kind": "story-ac", "item": "Editable \"Clone MCP Server\" modal exists, styled like Edit MCP Server, with its own header and submit-button text", "status": "pass", "notes": "getHeaderText()/getSubmitButtonText() add clone mode -> header 'Clone MCP Server', CTA 'Clone Server'; covered by MCPServerModal.clone.test.tsx" },
+    { "kind": "story-ac", "item": "Clone form pre-fills every field from the source server except Name", "status": "pass", "notes": "getResetValuesForMode: clone -> {...getFormValuesFromServer(cloneSource), name: ''}; covered by a dedicated test" },
+    { "kind": "story-ac", "item": "Name field opens empty in Clone mode; same required-field rule as Add/Edit applies", "status": "pass", "notes": "name reset to ''; clone test asserts submit blocked with 'Name is required' on empty name" },
+    { "kind": "story-ac", "item": "The GET suggested-clone-name endpoint and all client-side name-suggestion machinery are removed entirely", "status": "pass", "notes": "fetchSuggestedCloneName and related state/refs removed; grep across src/ confirms no references remain" },
+    { "kind": "story-ac", "item": "No network call happens between clicking Clone and the modal appearing", "status": "pass", "notes": "handleCloneMenuClick only sets local state synchronously; test confirms cloneConfigFromForm is not called" },
+    { "kind": "story-ac", "item": "Clone submits via a single body-carrying POST .../clone call (cloneConfigFromForm), not create/update", "status": "pass", "notes": "handleModalSubmit routes clone mode to cloneConfigFromForm; test confirms createConfig/updateConfig are not called" },
+    { "kind": "story-ac", "item": "Duplicate-name validation on clone submit reuses the existing generic onSubmit-rejection toast path", "status": "pass", "notes": "no clone-specific catch; the generic onFormSubmit error handling applies uniformly to add/edit/clone" },
+    { "kind": "story-ac", "item": "Icon-assignment intent carried forward: a distinct icon visually distinguishes 'Clone' from 'Copy ID'", "status": "partial", "notes": "Clone still uses copy.svg; new clipboard.svg assigned to Copy ID instead; no clone.svg asset exists in the repo -> CR-001" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "Both commit subjects in range match EPMCDME-XXXX: Capital sentence, no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": "No .ai-run/guides/standards/code-quality.md exists in the repo and no ArtifactRef was passed for code_quality" },
+    { "kind": "security", "status": "pass", "notes": "No dangerouslySetInnerHTML, unsafe navigation, postMessage, config/secret additions, or Sonar suppressions in this diff per the guide checklist" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "decision",
+      "severity": "critical",
+      "triage": "decision_needed",
+      "file": "src/pages/settings/administration/components/MCPServerActions.tsx",
+      "line": 80,
+      "title": "Clone action icon deviates from carried-forward spec",
+      "problem": "Story spec (2026-10-07 revision, explicitly carried forward/not superseded) calls for a new src/assets/icons/clone.svg to be used on the Clone row action to distinguish it from Copy ID's copy.svg. The shipped diff instead leaves Clone on the original CopySvg (copy.svg) and introduces a new ClipboardSvg (clipboard.svg) assigned to Copy ID instead. No clone.svg asset exists anywhere in the repo.",
+      "impact": "Icons are visually distinct by accident (CopySvg vs ClipboardSvg) rather than by the documented design intent; a future reader or agent trusting the story doc will look for a clone.svg asset that was never created, and the spec-vs-shipped-UI mismatch goes unresolved.",
+      "recommendation": "Either add clone.svg and assign it to the Clone action per the carried-forward spec, or get explicit sign-off to amend the story/spec to match the shipped ClipboardSvg-on-Copy-ID design, then update the carried-forward revision note accordingly."
+    },
+    {
+      "id": "CR-002",
+      "kind": "decision",
+      "severity": "critical",
+      "triage": "decision_needed",
+      "file": "src/pages/settings/administration/components/MCPServerModal/modalHelpers.ts",
+      "line": 38,
+      "title": "Clone form carries source secrets without stripping or disclosure",
+      "problem": "getFormValuesFromServer() (reused unchanged from Edit) pre-fills the Clone modal's serverConfig textarea with JSON.stringify(cloneSource.config, ...) verbatim, including any auth_token/header credential/secret env values, then submits that data through cloneConfigFromForm to POST v1/mcp-configs/{id}/clone with no client-side redaction and no user-facing notice, where the previous flow explicitly stripped and flagged these fields.",
+      "impact": "Any secret present on the source MCP server config is silently duplicated into the newly cloned configuration and round-tripped through the UI and network request body, with no disclosure to the admin performing the clone.",
+      "recommendation": "Confirm this matches the current backend contract and is the already-agreed scope decision documented in story.md's Non-Goals (masking/stripping explicitly removed); if so, record that explicitly in the MR description. If the backend still strips secrets, or the verbatim-copy behavior was not meant to ship unflagged, reintroduce redaction/a user notice before submit."
+    }
+  ]
+}

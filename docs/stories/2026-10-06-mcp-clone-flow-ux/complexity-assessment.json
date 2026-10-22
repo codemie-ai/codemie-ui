@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Replace the MCP server clone flow's field-selection dialog with a simple confirmation popup wired to the existing single clone API call, with no editable draft, no new MCPServerModal mode, and no post-clone auto-open editor.",
+  "generated": "2026-10-07T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 12,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches 2-3 components across the component/hook/store/page tiers of a single feature area: a new (or reused-shared) confirmation popup wired into `useMCPManagement.ts`, deletion of `MCPCopyValuesDialog`/`useMCPCopyValuesDialog.ts`, and plumbing removal in `MCPManagementPage.tsx`. The pattern for each piece is already established (shared `ConfirmationModal`, `UnassignFromProjectConfirmationPopup` async-confirm precedent), which keeps this at M rather than L." },
+    { "dimension": "file_change_estimate", "reason": "Modified: `useMCPManagement.ts`, `MCPManagementPage.tsx`, likely `src/store/mcp.ts` (drop now-unused `copy_values` param) plus their test files; deleted: `MCPCopyValuesDialog/index.tsx` and `useMCPCopyValuesDialog.ts`; new: a thin confirmation-popup wrapper and its test, if not inlined directly against the shared `ConfirmationModal`. Spans roughly 2-3 directories, landing at the low end of M." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -28,7 +28,6 @@ import { mcpStore } from '@/store/mcp'
 import { userStore } from '@/store/user'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 
-import MCPCopyValuesDialog from './components/MCPCopyValuesDialog'
 import MCPServerDetails from './components/MCPServerDetails'
 import MCPServerModal from './components/MCPServerModal'
 import { useMCPManagement } from './hooks/useMCPManagement'
@@ -82,19 +81,17 @@ const MCPManagementPage: FC = () => {
 
   const {
     showModal,
+    modalMode,
     editingServer,
+    cloneSource,
+    activeCloneId,
     detailsServer,
-    cloneDialogServer,
-    cloningId,
-    strippedFields,
     handleAddMCPServer,
     handleEditServer,
     handleModalClose,
     handleModalSubmit,
     handleDeleteServer,
-    handleCloneServer,
-    handleConfirmClone,
-    handleCloneDialogClose,
+    handleCloneMenuClick,
     handleViewDetails,
     handleCloseDetails,
     handleEditFromDetails,
@@ -128,17 +125,17 @@ const MCPManagementPage: FC = () => {
         handleEditServer,
         handleDeleteServer: handleDeleteServerWrapper,
         handleViewDetails,
-        handleCloneServer,
+        onCloneClick: handleCloneMenuClick,
         canClone,
-        cloningId,
+        activeCloneId,
       }),
     [
       handleEditServer,
       handleDeleteServerWrapper,
       handleViewDetails,
-      handleCloneServer,
+      handleCloneMenuClick,
       canClone,
-      cloningId,
+      activeCloneId,
     ]
   )
 
@@ -181,18 +178,11 @@ const MCPManagementPage: FC = () => {
         {/* Modal */}
         <MCPServerModal
           visible={showModal}
+          mode={modalMode}
           server={editingServer}
+          cloneSource={cloneSource}
           onHide={handleModalClose}
           onSubmit={handleModalSubmit}
-          strippedFields={strippedFields}
-        />
-
-        {/* Clone copy-values dialog */}
-        <MCPCopyValuesDialog
-          visible={Boolean(cloneDialogServer)}
-          server={cloneDialogServer}
-          onHide={handleCloneDialogClose}
-          onConfirm={handleConfirmClone}
         />
 
         {/* Details Sidebar */}

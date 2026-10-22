@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15538-clone-mcp-config-ui",
+  "head": "485aa2388cb7373c74cfc4e52463c31720a1b5dc",
+  "runner": "npm",
+  "started_at": "2026-10-12T12:54:38Z",
+  "completed_at": "2026-10-12T15:18:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 26386,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19828,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2230,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "No dependency was added/removed/moved in this diff (skip-eligible per guide), but ran anyway for completeness."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 15593,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks reported 'no leaks found'."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 371777,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 682 passed (682); Tests 6932 passed | 1 skipped (6933)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 109421,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 49 passed (49); Tests 556 passed | 1 skipped (557)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "n/a",
+      "notes": "Diff touches ui_globs (multiple .tsx files under src/pages/settings/administration/) but no configured UI test script exists in package.json (no test:ui). Browser verification is a separate caller decision (feature-verification)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 985,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2325 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 361796,
+      "command": "npm run sonar-local",
+      "exit_code": 143,
+      "notes": "SonarQube server was reachable and the scan began generating coverage via 'npm run test:coverage' (istanbul instrumentation). This process is disk-heavy: local disk headroom dropped from 5.4Gi to 2.4Gi available within ~5 minutes, and the sandbox had previously hit ENOSPC on this same step per operator warning. The run was deliberately terminated (SIGTERM) before completion to avoid exhausting disk, and the resulting partial 2.9G 'coverage/' directory (git-ignored) was deleted to reclaim space (back to 5.2Gi available). This gate was NOT verified locally in this run; CI's equivalent compliance-report/sonar check is the only place this is currently settled. To run it locally would require more disk headroom (ideally 10+Gi free) or a lighter coverage pass."
+    },
+    {
+      "id": "ci-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "command": "n/a (GitLab MR pipeline, external template epm-cdme/codemie-gitlab-templates:pre-ci-guard.yml)",
+      "notes": "Required context 'ci-pipeline' is enforced server-side only once an MR targets main; the job definition lives in an external included template, not this repo, and needs a live GitLab MR pipeline to run. Not reproducible locally."
+    },
+    {
+      "id": "compliance-report",
+      "source": "ci",
+      "status": "N/A",
+      "command": "n/a (GitLab MR pipeline, external template epm-cdme/codemie-gitlab-templates:pre-ci-guard.yml)",
+      "notes": "Required context 'compliance-report' (covers gitleaks-scan server-side re-run and other compliance checks) is enforced server-side only once an MR targets main; not reproducible locally. secrets:check was run locally as the guide-defined equivalent."
+    }
+  ],
+  "failures": {}
+}

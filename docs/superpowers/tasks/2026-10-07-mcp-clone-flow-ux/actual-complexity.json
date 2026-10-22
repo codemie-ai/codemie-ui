@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "generated": "2026-10-07T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 19,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 11,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches 4-5 components across two layers for one feature: MCPServerActions (confirmation UI + per-row disabled state), useMCPManagement (cloningIds/cloningRef double-dispatch guard), mcpStore.cloneConfig (new store method mirroring createConfig), columnRenderers wiring, and MCPManagementPage prop threading." },
+    { "dimension": "technical_risk", "reason": "Base pattern (clone mirrors createConfig's POST + unshift-into-list flow) is well-established, but the per-row concurrency guard (cloningRef + cloningIds Set) and the explicit missing-id rejection are new defensive logic not covered by the existing CRUD test template; new MCPServerActions.clone.test.tsx and .accessibility.test.tsx were added specifically to cover these edge/error paths." },
+    { "dimension": "file_change_estimate", "reason": "diffstat reports 11 files changed (600 insertions, 6 deletions) across assets/icons, components, components/__tests__, hooks, hooks/__tests__, utils, store, store/__tests__, and types/entity — mapped per the N=11 -> XL file-count band." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: clone-specific edge/error cases (missing id, double-dispatch) required new test patterns not covered by the existing CRUD test template."
+  ],
+  "split_recommendation": null
+}

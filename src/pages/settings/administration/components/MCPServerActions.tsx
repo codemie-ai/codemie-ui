@@ -15,6 +15,7 @@
 
 import { FC, useState, useCallback } from 'react'
 
+import ClipboardSvg from '@/assets/icons/clipboard.svg?react'
 import CopySvg from '@/assets/icons/copy.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
@@ -31,9 +32,9 @@ interface MCPServerActionsProps {
   onViewDetails: (server: MCPConfig) => void
   onEdit: (server: MCPConfig) => void
   onDelete: (server: MCPConfig) => void
-  onClone: (server: MCPConfig) => void
+  onCloneClick: (server: MCPConfig) => void
   canClone: boolean
-  cloning: boolean
+  cloneDisabled: boolean
 }
 
 const MCPServerActions: FC<MCPServerActionsProps> = ({
@@ -41,9 +42,9 @@ const MCPServerActions: FC<MCPServerActionsProps> = ({
   onViewDetails,
   onEdit,
   onDelete,
-  onClone,
+  onCloneClick,
   canClone,
-  cloning,
+  cloneDisabled,
 }) => {
   const [isDeleteConfirmationVisible, setIsDeleteConfirmationVisible] = useState(false)
 
@@ -55,6 +56,10 @@ const MCPServerActions: FC<MCPServerActionsProps> = ({
     setIsDeleteConfirmationVisible(false)
     onDelete(server)
   }, [server, onDelete])
+
+  const handleCloneClick = useCallback(() => {
+    onCloneClick(server)
+  }, [server, onCloneClick])
 
   const copyServerId = useCallback(() => {
     copyToClipboard(server.id, 'MCP Server ID copied to clipboard')
@@ -74,13 +79,13 @@ const MCPServerActions: FC<MCPServerActionsProps> = ({
     {
       title: 'Clone',
       icon: <CopySvg className="w-[18px] h-3.5" />,
-      onClick: () => onClone(server),
-      disabled: cloning,
+      onClick: handleCloneClick,
+      disabled: cloneDisabled,
       hidden: !canClone,
     },
     {
       title: 'Copy ID',
-      icon: <CopySvg className="w-[18px] h-3.5" />,
+      icon: <ClipboardSvg className="w-[18px] h-3.5" />,
       onClick: copyServerId,
     },
     {
