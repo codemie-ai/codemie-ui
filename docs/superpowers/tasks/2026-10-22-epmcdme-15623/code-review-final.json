@@ -1,0 +1,36 @@
+{
+  "decision": "approve",
+  "rationale": "Approved after the code-review.check round (approve/low). Original round: request-changes with one blocking finding, resolved in fix-up commit 681aab106: CR-001 (renderedBudgets in CostCenterBudgetRollupCard lacked the projectCount > 0 guard that CategoryCard already uses, so stale budget rows with mixed durations were rendered when no projects were linked; it now uses the same guard, with a regression test). No spec/story was supplied, so business acceptance is n/a and confidence remains low. Review covered the codemie-ui repo only (CostCenterBudgetRollupCard). Commit-format and security checks pass; the code-quality standard is absent from the repository. The round-1 verdict is preserved in decisions.jsonl.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "The latest 12 commit subjects on the branch follow the documented EPMCDME-XXXX: Capital sentence format (non-zero ticket id, uppercase first word, no trailing period)."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md exists in the repository; absent standard."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "The latest commit's four changed files introduce no HTML sinks, untrusted navigation, cross-window messages, browser configuration reads, or secrets. The store request continues to encode the cost-center id."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "CostCenterBudgetRollupCard.tsx (confirm full path)",
+      "title": "Rollup renders stale budget rows with no linked projects",
+      "problem": "renderedBudgets does not apply the projectCount > 0 guard that CategoryCard uses, so stale budget rows with mixed durations are still rendered when a category has no linked projects.",
+      "impact": "The card can show a mixed-period header and a reset-period suffix for a cost center whose categories all read 'No projects linked', which misreports the budget period.",
+      "recommendation": "Apply the same projectCount > 0 guard in renderedBudgets as in CategoryCard, and add a regression test with stale mixed-duration rows and zero linked projects."
+    }
+  ]
+}

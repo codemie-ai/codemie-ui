@@ -21,6 +21,7 @@ import ConfirmationModal from '@/components/ConfirmationModal'
 import InfoWarning from '@/components/InfoWarning'
 import Spinner from '@/components/Spinner'
 import { ButtonSize, ButtonType, InfoWarningType } from '@/constants'
+import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import CostCenterFormPopup from '@/pages/settings/administration/components/CostCenterFormPopup'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
@@ -30,6 +31,7 @@ import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
+import CostCenterBudgetRollupCard from './projectsManagement/CostCenterBudgetRollupCard'
 import CostCenterProjectsManager from './projectsManagement/CostCenterProjectsManager'
 
 const CostCenterDetailsPage = () => {
@@ -39,12 +41,15 @@ const CostCenterDetailsPage = () => {
   const [loading, setLoading] = useState(true)
   const [isEditPopupVisible, setIsEditPopupVisible] = useState(false)
   const [isDeletePopupVisible, setIsDeletePopupVisible] = useState(false)
+  const [budgetRefreshKey, setBudgetRefreshKey] = useState(0)
+  const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
 
   const loadCostCenter = useCallback(async () => {
     setLoading(true)
     try {
       const data = await costCentersStore.getCostCenter(costCenterId)
       setCostCenter(data)
+      setBudgetRefreshKey((key) => key + 1)
     } catch (error) {
       console.error('Failed to load cost center:', error)
       setCostCenter(null)
@@ -150,6 +155,17 @@ const CostCenterDetailsPage = () => {
                 </div>
               </div>
             </section>
+
+            {isBudgetManagementEnabled && (
+              <section>
+                <div className="text-sm font-semibold text-text-primary mb-3">Budget rollup</div>
+                <CostCenterBudgetRollupCard
+                  costCenterId={costCenter.id}
+                  projectCount={costCenter.project_count}
+                  refreshKey={budgetRefreshKey}
+                />
+              </section>
+            )}
 
             <section>
               <div className="text-sm font-semibold text-text-primary mb-3">Linked projects</div>

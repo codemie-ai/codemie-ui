@@ -13,7 +13,29 @@
 // limitations under the License.
 //
 
+import { ProjectAssignedBudgetSummary, ProjectSpendingSummaryCompact } from './project'
 import { ProjectListItem } from './projectManagement'
+
+export interface CostCenterAssignedBudgetSummary
+  extends Pick<
+    ProjectAssignedBudgetSummary,
+    | 'budget_category'
+    | 'soft_budget'
+    | 'max_budget'
+    | 'member_count'
+    | 'allocated_member_budget_total'
+  > {
+  budget_duration: string | null
+  current_spending: number
+  /** Rows dropped because their project uses a different reset window than this category's others. */
+  excluded_count: number
+  /** Rows dropped because the provider-side budget sync hasn't completed (or failed) yet. */
+  unsynced_count: number
+}
+
+export interface CostCenterBudgetSummary extends ProjectSpendingSummaryCompact {
+  budgets: CostCenterAssignedBudgetSummary[]
+}
 
 export interface CostCenterListItem {
   id: string

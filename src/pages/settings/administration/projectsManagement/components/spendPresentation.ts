@@ -12,6 +12,12 @@ export const SPENDING_WARNING_THRESHOLD = 50
 export const SPENDING_DANGER_THRESHOLD = 70
 
 /**
+ * `SpendingProgressBar`'s `warningThreshold` wants 50% to read as "warning", not "danger" -
+ * single owner for that adjustment so it isn't re-derived at each call site.
+ */
+export const DETAIL_WARNING_THRESHOLD = SPENDING_WARNING_THRESHOLD - 0.0001
+
+/**
  * Local to these pages. `emptyText` defaults to "—" (Overview, Budgets); pass "-" for a cell
  * whose spec/tests expect the shorter hyphen (the Members budget-allocation cell).
  */
@@ -37,10 +43,16 @@ export const getSpendPercentage = (
 export const getSpendColor = (percentage: number | null | undefined): string | undefined =>
   percentage == null
     ? undefined
-    : getStatusColor(percentage, SPENDING_DANGER_THRESHOLD, SPENDING_WARNING_THRESHOLD - 0.0001)
+    : getStatusColor(percentage, SPENDING_DANGER_THRESHOLD, DETAIL_WARNING_THRESHOLD)
 
 /** Convenience for callers that only have the raw spent/limit pair, not a precomputed percentage. */
 export const getSpendColorFromValues = (
   spent: number | null | undefined,
   limit: number | null | undefined
 ): string | undefined => getSpendColor(getSpendPercentage(spent, limit))
+
+export const formatResetPeriod = (duration: string | null | undefined): string => {
+  if (!duration) return '—'
+  const labels: Record<string, string> = { '1d': 'Daily', '7d': 'Weekly', '30d': 'Monthly' }
+  return `${labels[duration] ?? duration} · ${duration}`
+}

@@ -1,0 +1,32 @@
+{
+  "decision": "approve",
+  "rationale": "The blocking finding from code-review.final is resolved in fix-up commit 681aab106. CR-001: renderedBudgets now uses the same projectCount > 0 guard as CategoryCard, and a new regression test proves stale rows with mixed durations are ignored when no projects are linked. The fix-up diff touches four files and adds no new high-risk surface; the focused CostCenterBudgetRollupCard suite passes (27 tests), and type-check and lint pass. No spec/story was supplied, so acceptance is n/a and confidence remains low.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "The latest 12 commit subjects on the branch follow the documented EPMCDME-XXXX: Capital sentence format (non-zero ticket id, uppercase first word, no trailing period)."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md exists in the repository; absent standard."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "The latest commit's four changed files introduce no HTML sinks, untrusted navigation, cross-window messages, browser configuration reads, or secrets. The store request continues to encode the cost-center id."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "renderedBudgets excludes stale rows when projectCount is 0; the regression test verifies no mixed-period header appears, the reset-period suffix is absent, the percentage remains visible, and all category cards show 'No projects linked'."
+    }
+  ]
+}

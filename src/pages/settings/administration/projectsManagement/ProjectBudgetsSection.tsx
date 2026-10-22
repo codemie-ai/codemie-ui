@@ -26,6 +26,7 @@ import { PROJECTS_MANAGEMENT_MEMBERS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingProgressBar'
 import UnifiedProjectBudgetModal from '@/pages/settings/administration/components/UnifiedProjectBudgetModal'
+import BudgetSpendMetrics from '@/pages/settings/administration/projectsManagement/components/BudgetSpendMetrics'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
 import { ProjectBudget } from '@/types/entity/projectBudget'
@@ -40,11 +41,12 @@ import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 
 import {
+  DETAIL_WARNING_THRESHOLD,
   formatCurrency,
+  formatResetPeriod,
   getSpendColor,
   getSpendPercentage,
   SPENDING_DANGER_THRESHOLD,
-  SPENDING_WARNING_THRESHOLD,
 } from './components/spendPresentation'
 
 const BUDGET_CATEGORIES: BudgetCategory[] = ['platform', 'cli', 'premium_models']
@@ -70,12 +72,6 @@ const zeroLimitWarningMessage = (category: BudgetCategory, count: number): strin
   `${getBudgetCategoryLabel(category)} budget is too small to split across members: ${count} ${
     count === 1 ? 'member has' : 'members have'
   } a $0.00 limit and cannot spend. Increase the budget or turn off Enforce member spend limits.`
-
-const formatResetPeriod = (duration: string | null | undefined): string => {
-  if (!duration) return '—'
-  const labels: Record<string, string> = { '1d': 'Daily', '7d': 'Weekly', '30d': 'Monthly' }
-  return `${labels[duration] ?? duration} · ${duration}`
-}
 
 const MemberAllocationSummary: FC<{ data: BudgetCardData }> = ({ data }) => (
   <span>
@@ -116,8 +112,6 @@ const BudgetDetailCard: FC<{ data: BudgetCardData; projectName: string }> = ({
   data,
   projectName,
 }) => {
-  const spendColor = getSpendColor(data.usagePercentage)
-
   if (data.maxBudget == null) {
     return (
       <div className="flex min-h-[220px] min-w-0 flex-col gap-3 rounded-lg border border-border-structural bg-surface-base-secondary p-4">
@@ -156,35 +150,12 @@ const BudgetDetailCard: FC<{ data: BudgetCardData; projectName: string }> = ({
       <div className="text-sm font-medium text-text-primary">
         {getBudgetCategoryLabel(data.category)}
       </div>
-      <div>
-        <div className="text-xs text-text-quaternary">Spend / hard limit</div>
-        <div className="mt-1 whitespace-nowrap text-base">
-          <span className="font-semibold" style={spendColor ? { color: spendColor } : undefined}>
-            {formatCurrency(data.spent)}
-          </span>
-          <span className="font-normal text-text-primary"> / {formatCurrency(data.maxBudget)}</span>
-        </div>
-        {data.usagePercentage == null ? (
-          <div className="mt-2 text-xs text-text-quaternary">—</div>
-        ) : (
-          <SpendingProgressBar
-            percentage={data.usagePercentage}
-            dangerThreshold={SPENDING_DANGER_THRESHOLD}
-            warningThreshold={SPENDING_WARNING_THRESHOLD - 0.0001}
-            className="mt-2 !gap-1"
-          />
-        )}
-      </div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
-        <div>
-          <div className="text-text-quaternary">Remaining</div>
-          <div className="mt-1 text-sm text-text-primary">{formatCurrency(data.remaining)}</div>
-        </div>
-        <div>
-          <div className="text-text-quaternary">Soft limit</div>
-          <div className="mt-1 text-sm text-text-primary">{formatCurrency(data.softBudget)}</div>
-        </div>
-      </div>
+      <BudgetSpendMetrics
+        spent={data.spent}
+        max={data.maxBudget}
+        soft={data.softBudget}
+        remaining={data.remaining}
+      />
       <div className="mt-auto text-xs text-text-quaternary">
         <MemberAllocationSummary data={data} />
       </div>
@@ -253,7 +224,7 @@ const renderUsageCell = (row: BudgetCardData) =>
     <SpendingProgressBar
       percentage={row.usagePercentage}
       dangerThreshold={SPENDING_DANGER_THRESHOLD}
-      warningThreshold={SPENDING_WARNING_THRESHOLD - 0.0001}
+      warningThreshold={DETAIL_WARNING_THRESHOLD}
       className="!gap-1 [&>span]:text-xs"
     />
   )

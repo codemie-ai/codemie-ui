@@ -15,6 +15,7 @@
 
 import { PaginatedResponse } from '@/types/common'
 import {
+  CostCenterBudgetSummary,
   CostCenterDetail,
   CostCenterListItem,
   CostCenterPayload,
@@ -78,5 +79,14 @@ export const costCentersStore = {
         value: costCenter.id,
       }))
     )
+  },
+
+  getCostCenterBudgetSummary(id: string, signal?: AbortSignal): Promise<CostCenterBudgetSummary> {
+    return api
+      .get(`${COST_CENTERS_BASE_URL}/${encodeURIComponent(id)}/budget-rollup`, {
+        skipErrorHandling: true,
+        signal,
+      })
+      .then((response) => response.json())
   },
 }
