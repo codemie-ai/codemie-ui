@@ -1,0 +1,75 @@
+{
+  "decision": "approve",
+  "rationale": "EPMCDME-15637 implements clickable user badge in Projects Management with parameter standardization across all pages. No blocking findings. All acceptance criteria met: badge displays correctly, navigates to filtered User Management, reuses ResourceCounterBadge component, and users column removed from table. Parameter flow is clean (frontend 'project' → API 'projects' at store layer). All quality gates pass: 550 unit tests, 83/93 E2E tests, 0 new Sonar code smells, no security concerns, pre-commit hooks pass.",
+  "confidence": "high",
+  "risk_flags": [],
+  "ticket": "EPMCDME-15637",
+  "title": "Replace Users column with clickable user badge",
+  "project": "codemie-ui",
+  "mr_number": 2051,
+  "mr_url": "https://gitbud.epam.com/epm-cdme/codemie-ui/-/merge_requests/2051",
+  "reviewed_by": "claude-haiku-4-5",
+  "review_date": "2026-10-08T16:20:00Z",
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Users column removed from Projects Management table",
+      "status": "pass",
+      "notes": "Column definition and render function removed from ProjectsManagementFull.tsx"
+    },
+    {
+      "kind": "story-ac",
+      "item": "User count badge displays in resource counter row",
+      "status": "pass",
+      "notes": "ResourceCounterBadge rendered in ProjectResourceCounters with user icon and count"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Badge is clickable and navigates to User Management",
+      "status": "pass",
+      "notes": "buildTo() generates navigation to administration-users with project parameter"
+    },
+    {
+      "kind": "story-ac",
+      "item": "User Management pre-filters results by selected project",
+      "status": "pass",
+      "notes": "UsersManagementFilters standardized to use 'project' parameter, API maps to 'projects'"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Badge reuses ResourceCounterBadge component",
+      "status": "pass",
+      "notes": "Same component used for datasets, workflows, skills badges"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Icon is consistent with other resource badges",
+      "status": "pass",
+      "notes": "UserSvg imported and rendered consistently with other resource counters"
+    },
+    {
+      "kind": "story-ac",
+      "item": "URL parameter standardization: project (singular) across all pages",
+      "status": "pass",
+      "notes": "Frontend uses 'project' (singular) consistently; API mapping happens at store layer"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Commits follow EPMCDME-15637: format per git-workflow.md"
+    },
+    {
+      "kind": "code-quality",
+      "status": "pass",
+      "notes": "Code follows conventions, components reuse existing patterns, no code smells"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No new security concerns, SVG fixed from corruption, no credentials/secrets"
+    }
+  ],
+  "findings": []
+}

@@ -16,11 +16,13 @@
 import { type FC, type ComponentType, type SVGProps } from 'react'
 import { Link } from 'react-router'
 
+import { cn } from '@/utils/utils'
+
 interface ResourceCounterBadgeProps {
   icon: ComponentType<SVGProps<SVGSVGElement>>
   count: number | undefined
   tooltip: string
-  to: string
+  to?: string
 }
 
 const ResourceCounterBadge: FC<ResourceCounterBadgeProps> = ({
@@ -28,17 +30,41 @@ const ResourceCounterBadge: FC<ResourceCounterBadgeProps> = ({
   count,
   tooltip,
   to,
-}) => (
-  <Link
-    to={to}
-    className="flex items-center border rounded-md px-2 py-1 border-border-structural w-[68px] cursor-pointer hover:opacity-70 transition-opacity"
-    data-tooltip-id="react-tooltip"
-    data-tooltip-content={tooltip}
-    aria-label={tooltip}
-  >
-    <Icon className="w-5 h-5" />
-    <span className="ml-2">{count ?? 0}</span>
-  </Link>
-)
+}) => {
+  const content = (
+    <>
+      <Icon className="w-5 h-5" />
+      <span className="ml-2">{count ?? 0}</span>
+    </>
+  )
+
+  const className =
+    'flex items-center border rounded-md px-2 py-1 border-border-structural w-[68px]'
+
+  if (!to) {
+    return (
+      <div
+        className={className}
+        data-tooltip-id="react-tooltip"
+        data-tooltip-content={tooltip}
+        aria-label={tooltip}
+      >
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      to={to}
+      className={cn(className, 'cursor-pointer hover:opacity-70 transition-opacity')}
+      data-tooltip-id="react-tooltip"
+      data-tooltip-content={tooltip}
+      aria-label={tooltip}
+    >
+      {content}
+    </Link>
+  )
+}
 
 export default ResourceCounterBadge

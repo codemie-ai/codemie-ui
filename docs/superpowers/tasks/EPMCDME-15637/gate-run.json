@@ -1,0 +1,71 @@
+{
+  "ticket": "EPMCDME-15637",
+  "mr": {
+    "number": 2051,
+    "title": "EPMCDME-15637: Replace Users column with clickable user badge",
+    "url": "https://gitbud.epam.com/epm-cdme/codemie-ui/-/merge_requests/2051"
+  },
+  "gates": [
+    {
+      "name": "type-check",
+      "status": "pass",
+      "command": "npm run typecheck",
+      "notes": "All modified files pass type-check with no errors"
+    },
+    {
+      "name": "lint",
+      "status": "pass",
+      "command": "npm run lint:fix",
+      "notes": "ESLint and Prettier formatting applied and passing"
+    },
+    {
+      "name": "unit-tests",
+      "status": "pass",
+      "command": "npm run test",
+      "result": "550 passed, 1 skipped",
+      "notes": "All unit and integration tests passing in codemie-ui"
+    },
+    {
+      "name": "coverage",
+      "status": "pass",
+      "command": "npm run test:coverage",
+      "notes": "Coverage thresholds met"
+    },
+    {
+      "name": "sonar",
+      "status": "pass",
+      "command": "npm run sonar-local",
+      "result": "0 new code smells",
+      "notes": "No new code smells introduced by changes"
+    },
+    {
+      "name": "pre-commit-hooks",
+      "status": "pass",
+      "checks": ["license-headers", "gitleaks-secrets", "prettier-format"],
+      "notes": "All pre-commit hooks passing"
+    },
+    {
+      "name": "test-harness",
+      "status": "pass",
+      "command": "pytest -m smoke",
+      "result": "83 passed, 10 skipped, 0 failed",
+      "duration": "609.27s",
+      "notes": "E2E test harness tests passing. 2 previously failing chat tests fixed."
+    }
+  ],
+  "summary": {
+    "status": "all-pass",
+    "total_gates": 7,
+    "passed": 7,
+    "failed": 0,
+    "notes": "All quality gates passed locally. MR ready for merge."
+  },
+  "code_review": {
+    "status": "approved",
+    "decision": "approve",
+    "confidence": "high",
+    "reviewed_by": "claude-haiku-4-5",
+    "review_date": "2026-10-08T16:15:00Z"
+  },
+  "timestamp": "2026-10-08T16:15:00Z"
+}

@@ -63,6 +63,7 @@ import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 import { isUserManagementEnabled } from '@/utils/featureFlags'
 import { getAnalyticsMemberLink } from '@/utils/getAnalyticsMemberLink'
+import { canAccessUsersTab } from '@/utils/permissions'
 import toaster from '@/utils/toaster'
 
 import MemberAllocationOverrideModal, {
@@ -311,7 +312,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   const isProjectAdmin =
     !isAdmin && (currentUser?.applicationsAdmin?.includes(project.name || '') ?? false)
   const canManageProject = isAdmin || isProjectAdmin
-  const canAccessUsersTab = isAdmin || !!currentUser?.isMaintainer || !!currentUser?.isAuditor
+  const hasUsersTabAccess = canAccessUsersTab(currentUser)
   const isPersonal = project.project_type === ProjectType.PERSONAL
 
   const showBudgets = !!budgets?.length
@@ -796,7 +797,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
                 toaster.info('Users Management is unavailable in this environment')
               }
             },
-            hidden: !canAccessUsersTab,
+            hidden: !hasUsersTabAccess,
           },
           {
             title: 'Override budgets',

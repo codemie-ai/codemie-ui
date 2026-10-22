@@ -22,6 +22,7 @@ import EditSvg from '@/assets/icons/edit.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import SearchIcon from '@/assets/icons/search.svg?react'
 import ShareSvg from '@/assets/icons/share.svg?react'
+import UserSvg from '@/assets/icons/user.svg?react'
 import ViewSvg from '@/assets/icons/view.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
@@ -49,6 +50,7 @@ import { BudgetCategoryFilter, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/bu
 import { Project, ProjectCounters, ProjectType } from '@/types/entity/project'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import { formatCurrency, formatSpend } from '@/utils/currency'
+import { canAccessUsersTab } from '@/utils/permissions'
 import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
@@ -56,6 +58,7 @@ import { displayValue } from '@/utils/utils'
 import { useProjectsFilters } from './hooks/useProjectsFilters'
 import ProjectModal, { ProjectFormData } from './ProjectModal'
 import ProjectResourceCounters from './ProjectResourceCounters'
+import ResourceCounterBadge from './ResourceCounterBadge'
 
 const ERROR_MESSAGES = {
   DELETE_NO_COUNT_DATA: 'Cannot delete project: assignment count data unavailable',
@@ -178,6 +181,24 @@ const ProjectNameCell = ({
 
 const renderProjectNameColumn = (onOpenDetails: (name: string) => void) => (item: Project) =>
   <ProjectNameCell item={item} onOpenDetails={onOpenDetails} />
+
+const UsersCell = ({
+  item,
+  buildUsersLink,
+}: {
+  item: Project
+  buildUsersLink: (project: Project) => string
+}) => (
+  <ResourceCounterBadge
+    icon={UserSvg}
+    count={item.user_count}
+    tooltip="Users"
+    to={buildUsersLink(item)}
+  />
+)
+
+const renderUsersColumn = (buildUsersLink: (project: Project) => string) => (item: Project) =>
+  <UsersCell item={item} buildUsersLink={buildUsersLink} />
 
 const ProjectsManagementFull: FC = () => {
   const router = useVueRouter()
@@ -493,6 +514,21 @@ const ProjectsManagementFull: FC = () => {
     projectsStore.pagination.page = page
   }, [])
 
+  const hasUsersTabAccess = canAccessUsersTab(currentUser)
+
+  const buildUsersLink = useCallback(
+    (project: Project): string => {
+      if (!hasUsersTabAccess) return ''
+
+      const { path, searchParamsString } = router.resolve({
+        name: 'administration-users',
+        query: { projects: [project.name] },
+      })
+      return searchParamsString ? `${path}?${searchParamsString}` : path
+    },
+    [hasUsersTabAccess, router]
+  )
+
   const customRenderColumns = useMemo(
     () => ({
       name: renderProjectNameColumn(handleOpenProjectDetails),
@@ -516,8 +552,8 @@ const ProjectsManagementFull: FC = () => {
           }))}
         />
       ),
-      users: (item: Project) => <span className="text-text-primary">{item.user_count ?? 0}</span>,
       assignments: (item: Project) => <ProjectResourceCounters project={item} />,
+      users: renderUsersColumn(buildUsersLink),
       actions: (item: Project) => {
         const isPersonal = item.project_type === ProjectType.PERSONAL
         const canManage = canManageProject(item)
@@ -587,6 +623,7 @@ const ProjectsManagementFull: FC = () => {
       handleOpenProjectDetails,
       canManageProject,
       isUserManagementEnabled,
+      buildUsersLink,
     ]
   )
 

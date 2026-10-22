@@ -21,7 +21,6 @@ import ResourceCounterBadge from '../ResourceCounterBadge'
 
 import type { SVGProps } from 'react'
 
-
 const TestIcon = (props: SVGProps<SVGSVGElement>) => <svg data-testid="icon" {...props} />
 
 describe('ResourceCounterBadge', () => {
@@ -72,5 +71,25 @@ describe('ResourceCounterBadge', () => {
       </MemoryRouter>
     )
     expect(screen.getByRole('link', { name: 'Workflows' })).toBeInTheDocument()
+  })
+
+  it('renders as a plain counter, not a link, when to is omitted', () => {
+    render(
+      <MemoryRouter>
+        <ResourceCounterBadge icon={TestIcon} count={5} tooltip="Users" />
+      </MemoryRouter>
+    )
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Users')).toBeInTheDocument()
+    expect(screen.getByText('5')).toBeInTheDocument()
+  })
+
+  it('renders as a plain counter when to is an empty string', () => {
+    render(
+      <MemoryRouter>
+        <ResourceCounterBadge icon={TestIcon} count={5} tooltip="Users" to="" />
+      </MemoryRouter>
+    )
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 })
