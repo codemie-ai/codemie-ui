@@ -1,5 +1,195 @@
 [
   {
+    "version": "2.61.0",
+    "date": "2026-10-22",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Project-level model availability",
+            "description": "Configure model availability at the project level, including routing and premium model controls.",
+            "issues": [
+              {
+                "key": "EPMCDME-14349",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14349"
+              }
+            ]
+          },
+          {
+            "title": "Project-level CLI Analytics ingestion",
+            "description": "Control CLI Analytics ingestion per project.",
+            "issues": [
+              {
+                "key": "EPMCDME-16025",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16025"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "Reassign integrations between projects",
+            "description": "Change the project associated with an existing integration.",
+            "issues": [
+              {
+                "key": "EPMCDME-12586",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-12586"
+              }
+            ]
+          },
+          {
+            "title": "Assistant tool-output visibility controls",
+            "description": "Configure whether tool output is visible at the assistant level.",
+            "issues": [
+              {
+                "key": "EPMCDME-15555",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15555"
+              }
+            ]
+          },
+          {
+            "title": "Clone data-source templates",
+            "description": "Create a new data source by cloning an existing data-source template.",
+            "issues": [
+              {
+                "key": "EPMCDME-15790",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15790"
+              }
+            ]
+          },
+          {
+            "title": "MCP workflow chat reliability",
+            "description": "Prevent mapped-but-missing MCP headers from failing bridge calls in workflow chat mode.",
+            "issues": [
+              {
+                "key": "EPMCDME-15800",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15800"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Assistant-card accessibility semantics",
+            "description": "Related assistant cards are semantically grouped as a list for improved accessibility.",
+            "issues": [
+              {
+                "key": "EPMCDME-8478",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-8478"
+              }
+            ]
+          },
+          {
+            "title": "Added-file accessibility announcements",
+            "description": "Newly added files are announced to assistive technologies.",
+            "issues": [
+              {
+                "key": "EPMCDME-8561",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-8561"
+              }
+            ]
+          },
+          {
+            "title": "LiteLLM startup recovery",
+            "description": "Avoid falling back to the default model configuration when LiteLLM is temporarily unavailable during container startup.",
+            "issues": [
+              {
+                "key": "EPMCDME-12423",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-12423"
+              }
+            ]
+          },
+          {
+            "title": "File-analysis configuration retrieval",
+            "description": "Preserve FileAnalysisConfig in tool-configuration API responses.",
+            "issues": [
+              {
+                "key": "EPMCDME-13966",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13966"
+              }
+            ]
+          },
+          {
+            "title": "Repository reindex timestamps",
+            "description": "Update the Last indexed timestamp after a full repository reindex.",
+            "issues": [
+              {
+                "key": "EPMCDME-14857",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14857"
+              }
+            ]
+          },
+          {
+            "title": "Spend-limit accuracy",
+            "description": "Correct personal spend-override display and per-member spend-limit calculations.",
+            "issues": [
+              {
+                "key": "EPMCDME-15598",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15598"
+              },
+              {
+                "key": "EPMCDME-16072",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16072"
+              }
+            ]
+          },
+          {
+            "title": "Scheduler project selection",
+            "description": "Add project search and align the Scheduler selector with the shared project-selector experience.",
+            "issues": [
+              {
+                "key": "EPMCDME-16068",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16068"
+              }
+            ]
+          },
+          {
+            "title": "Provider data-source updates",
+            "description": "Remove parameters that no longer exist in the provider definition during updates.",
+            "issues": [
+              {
+                "key": "EPMCDME-16170",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16170"
+              }
+            ]
+          },
+          {
+            "title": "Security maintenance updates",
+            "description": "Applied routine platform dependency and runtime security maintenance.",
+            "issues": []
+          },
+          {
+            "title": "Internal maintenance updates",
+            "description": "Applied internal reliability and maintenance improvements.",
+            "issues": []
+          }
+        ]
+      }
+    ]
+  },
+  {
   "version": "2.60.0",
   "date": "2026-10-19",
   "sections": [
