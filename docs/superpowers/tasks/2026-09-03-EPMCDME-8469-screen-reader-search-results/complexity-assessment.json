@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "task": "Add aria-live screen reader announcements for search result counts across Marketplace search, Project combobox, Datasource Context combobox, and Sub Assistants combobox using the existing useAnnouncementQueue pattern.",
+  "generated": "2026-09-03T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 16,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Five components touched: Filters.tsx (Marketplace search), AssistantGrid.tsx (result display), MultiSelect.tsx (shared form component used by Project, Datasource Context, and Sub Assistants comboboxes), ContextSelector.tsx, and AssistantSelector.tsx — spanning shared-component and feature-page sub-layers. Initial L (4) bumped to XL (5) by the 'touches core shared utilities' red flag: MultiSelect is a shared form component used project-wide and will require an additive API change (new prop or internal effect)."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Core acceptance criteria are well-defined (4 surfaces, polite live region, existing pattern), but two design decisions are open: (1) where to wire the announcement for MultiSelect — inside the shared component watching option arrays vs. a new resultAnnouncement/announcedText prop surfaced by each caller; (2) whether the announcement fires on every count change including pagination or only when a filter/search term is active."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "The useAnnouncementQueue + Announcement pattern is well-established (ToasterAnnouncer, RecordInput, FilesDropzone) and documented in the accessibility guide. Moderate risk comes from async timing: all four surfaces trigger backend calls before result count is known, so announcements must hook into settled state (totalCount, options.length after API resolves) not the raw input event. Pagination guard and gapMs tuning are additional deliberate decisions but not novel."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): MultiSelect.tsx is a shared form component used across multiple call sites; modifying its API or adding internal announcement logic qualifies as touching a core shared utility."
+  ],
+  "split_recommendation": null
+}

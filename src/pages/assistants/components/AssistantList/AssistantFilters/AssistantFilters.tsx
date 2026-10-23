@@ -14,14 +14,16 @@
 //
 
 import isNil from 'lodash/isNil'
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
+import Announcement from '@/components/Announcement/Announcement'
 import Filters from '@/components/Filters'
 import UserFilter from '@/components/UserFilter'
 import { CATEGORIES, CREATED_BY, NOT_SHARED, SHARED, GLOBAL } from '@/constants'
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { useAllIntegrationTypeOptions } from '@/hooks/useAllIntegrationTypeOptions'
+import { useAnnouncementQueue } from '@/hooks/useAnnouncementQueue'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import { useProjectOptions } from '@/hooks/useProjectOptions'
 import { useResolvedProjectOptions } from '@/hooks/useResolvedProjectOptions'
@@ -30,7 +32,7 @@ import { assistantsStore } from '@/store/assistants'
 import { userStore } from '@/store/user'
 import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/filters'
 import { checkEmptyFilters } from '@/utils/filters'
-import { createdBy } from '@/utils/helpers'
+import { createdBy, pluralize } from '@/utils/helpers'
 
 interface AssistantFiltersProps {
   onFilterChange: (filters: Record<string, unknown>) => void
@@ -58,6 +60,8 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
   const resolvedProjectOptions = useResolvedProjectOptions(projectOptions, filters.project ?? [])
+  const projectFilterTerm = useRef('')
+  const { announce, announcement } = useAnnouncementQueue()
   const [createdByOptions, setCreatedByOptions] = useState<FilterOption[]>([])
   const [categoriesOptions, setCategoriesOptions] = useState<FilterOption[]>([])
   const { assistantCategories } = useSnapshot(assistantsStore)
@@ -91,10 +95,22 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   }, [projectSearchTerm, loadProjectOptions])
 
   const handleProjectFilter = useCallback((value: string) => {
+    projectFilterTerm.current = value
     setIsLoadingProjects(true)
     setProjectSearchTerm(value)
   }, [])
   useDebouncedApply(projectSearchTerm, 1000, applyProjectSearch)
+
+  // CR-003: announce the raw search-result count (projectOptions), not the augmented count
+  // (resolvedProjectOptions) which inflates the number by including pre-selected items.
+  useEffect(() => {
+    if (!projectFilterTerm.current) return
+    announce(
+      projectOptions.length > 0
+        ? `${projectOptions.length} ${pluralize(projectOptions.length, 'result')} found`
+        : 'No results found'
+    )
+  }, [projectOptions])
 
   const loadCreatedByOptions = useCallback(async () => {
     try {
@@ -286,30 +302,33 @@ const AssistantFilters: React.FC<AssistantFiltersProps> = ({
   }, [activeScope, loadProjectOptions, loadCreatedByOptions])
 
   return (
-    <Filters
-      refreshOnValuesUpdate
-      key={activeScope}
-      areFiltersEmpty={areFiltersEmpty}
-      searchKey="search"
-      searchValue={filters?.search || ''}
-      searchPlaceholder="Search"
-      onApply={handleFiltersApply}
-      filterDefinitions={filterDefinitions}
-      renderCustomFilter={(definition, _value, updateValue) => {
-        if (definition.name === 'created_by') {
-          return (
-            <UserFilter
-              setIsChecked={setIsChecked}
-              isChecked={isChecked}
-              definition={definition}
-              value={definition.value as string}
-              onChange={(newValue) => updateValue(newValue)}
-            />
-          )
-        }
-        return null
-      }}
-    />
+    <>
+      <Filters
+        refreshOnValuesUpdate
+        key={activeScope}
+        areFiltersEmpty={areFiltersEmpty}
+        searchKey="search"
+        searchValue={filters?.search || ''}
+        searchPlaceholder="Search"
+        onApply={handleFiltersApply}
+        filterDefinitions={filterDefinitions}
+        renderCustomFilter={(definition, _value, updateValue) => {
+          if (definition.name === 'created_by') {
+            return (
+              <UserFilter
+                setIsChecked={setIsChecked}
+                isChecked={isChecked}
+                definition={definition}
+                value={definition.value as string}
+                onChange={(newValue) => updateValue(newValue)}
+              />
+            )
+          }
+          return null
+        }}
+      />
+      <Announcement announcement={announcement} />
+    </>
   )
 }
 

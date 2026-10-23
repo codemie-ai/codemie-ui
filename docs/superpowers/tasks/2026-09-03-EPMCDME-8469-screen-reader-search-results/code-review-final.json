@@ -1,0 +1,121 @@
+{
+  "decision": "request-changes",
+  "rationale": "CR-001 (AssistantsListPage never passes hasActiveFilter) kills Marketplace announcements entirely, failing AC1, AC2, and the spec derivation requirement. Six further patches are needed: null-totalCount guard (CR-004), stale-count false trigger (CR-006), wrong template zero-results text (CR-007), inflated project count in AssistantFilters (CR-003), spurious datasource popup announcement (CR-002), and the AC8 same-term re-announce gap (CR-005). 1 dismissed as exhaustive-deps lint noise; 0 deferred.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1: Marketplace search announces result count after API response, no announcement before API responds", "status": "fail", "notes": "hasActiveFilter never passed from AssistantsListPage; useEffect guard returns early unconditionally and no announcement ever fires" },
+    { "kind": "story-ac", "item": "AC2: Marketplace zero results announces 'No assistants found'", "status": "fail", "notes": "same root cause as AC1 — hasActiveFilter always undefined so the announce branch never executes" },
+    { "kind": "story-ac", "item": "AC3: Paginating without active search does not trigger announcement", "status": "pass", "notes": "hasActiveFilter=false/undefined guard correctly suppresses announcements on pagination" },
+    { "kind": "story-ac", "item": "AC4: Project combobox filter announces count of matching options after async call resolves", "status": "pending-stage-7", "notes": "wiring correct; runtime verification required" },
+    { "kind": "story-ac", "item": "AC5: Datasource Context combobox filter announces count of matching options", "status": "pending-stage-7", "notes": "wiring correct; runtime verification required" },
+    { "kind": "story-ac", "item": "AC6: Sub-Assistants combobox filter announces count of matching options", "status": "pending-stage-7", "notes": "wiring correct; runtime verification required" },
+    { "kind": "story-ac", "item": "AC7: Any combobox zero results announces 'No results found'", "status": "pending-stage-7", "notes": "all three combobox surfaces emit 'No results found' when options empty and filterTerm set; runtime verification required" },
+    { "kind": "story-ac", "item": "AC8: Searching for the same term twice causes two announcements", "status": "partial", "notes": "combobox surfaces replay correctly via new array references; AssistantGrid primitive deps [totalCount, hasActiveFilter] prevent effect re-fire when same count returned on second search" },
+    { "kind": "story-ac", "item": "AC9: Visual appearance of all four surfaces is unchanged", "status": "pass", "notes": "no CSS class changes; Announcement renders as aria-live region with no visible output; structural changes are fragment wrappers only" },
+    { "kind": "spec", "item": "AssistantList derives hasActiveFilter from store state (search/filter active) and passes it to AssistantGrid", "status": "fail", "notes": "AssistantList adds hasActiveFilter as optional pass-through prop only; AssistantsListPage (lines 205-211) never passes it and no store-state derivation occurs" },
+    { "kind": "spec", "item": "AssistantGrid useEffect watches [totalCount, hasActiveFilter] with early return when hasActiveFilter is false", "status": "pass", "notes": "lines 61-64: guard and dep array implemented correctly" },
+    { "kind": "spec", "item": "AssistantFilters: projectFilterTerm ref + useAnnouncementQueue + useEffect on resolvedProjectOptions", "status": "pass", "notes": "all three elements present and correctly wired" },
+    { "kind": "spec", "item": "ContextSelector: filterTerm ref updated in onFilter + useAnnouncementQueue + useEffect on contextOptions", "status": "pass", "notes": "filterTerm set in paginated branch, effect and Announcement present" },
+    { "kind": "spec", "item": "AssistantSelector: filterTerm ref + handleFilter wrapper + useAnnouncementQueue + useEffect on options", "status": "pass", "notes": "handleFilter wraps loadOptions, ref and effect correctly wired; onFilter replaced" },
+    { "kind": "spec", "item": "No new npm dependencies; uses existing useAnnouncementQueue + Announcement pattern", "status": "pass", "notes": "imports only from existing @/components/Announcement and @/hooks/useAnnouncementQueue; no package.json changes" },
+    { "kind": "spec", "item": "Announcement message format: Marketplace reuses totalCountInfo / 'No assistants found'; comboboxes use 'N results found' / 'No results found'", "status": "pass", "notes": "AssistantGrid uses totalCountInfo and 'No assistants found'; all three combobox surfaces use the specified format" },
+    { "kind": "spec", "item": "All announcements use aria-live='polite' / aria-atomic='true' via Announcement component", "status": "pending-stage-7", "notes": "tests assert getByRole('status'); Announcement component unchanged in diff — runtime render needed to confirm attributes" },
+    { "kind": "spec", "item": "MultiSelect component public API unchanged", "status": "pass", "notes": "no changes to MultiSelect; AssistantSelector replaces onFilter at call-site only" },
+    { "kind": "spec", "item": "Test: AssistantGrid — hasActiveFilter=true count>0, false no-text, true count=0 scenarios", "status": "pass", "notes": "AssistantGrid.test.tsx: all three scenarios present" },
+    { "kind": "spec", "item": "Test: AssistantFilters — project filter term set + options resolve → count; empty → 'No results found'", "status": "pass", "notes": "AssistantFilters.announcement.test.tsx: two scenarios present" },
+    { "kind": "spec", "item": "Test: ContextSelector — simulate onFilter + async resolve → count; zero → 'No results found'", "status": "pass", "notes": "ContextSelector.announcement.test.tsx: two scenarios present" },
+    { "kind": "spec", "item": "Test: AssistantSelector — simulate onFilter + async resolve → count; zero → 'No results found'", "status": "pass", "notes": "AssistantSelector.announcement.test.tsx: two scenarios present" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 4 subjects match the documented EPMCDME-XXXX: Capital sentence pattern: non-zero ticket ID EPMCDME-8469, first word 'Add' satisfies [A-Z][a-z]*, no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality.md found under .ai-run/guides/standards/; only git-workflow.md is present in that directory — absent standard, not a gap" },
+    { "kind": "security", "status": "pass", "notes": "Announcement text composed of literal strings and numeric counts from internal state; no dangerouslySetInnerHTML or innerHTML sink introduced; no new navigation from external input, no cross-window messages, no config or credential handling added." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/assistants/AssistantsListPage.tsx",
+      "line": 205,
+      "title": "hasActiveFilter never passed to AssistantsList",
+      "problem": "AssistantsListPage.tsx (the sole caller of AssistantsList, lines 205–211) does not pass hasActiveFilter. AssistantList.tsx adds it as an optional prop but derives nothing from store state. The prop is always undefined so the useEffect guard in AssistantGrid fires the early return unconditionally — no Marketplace announcement ever fires.",
+      "impact": "AC1 (count announced after search) and AC2 (zero-results 'No assistants found') both fail; the spec requirement that AssistantList derives hasActiveFilter from store state is unmet. The accessibility feature is dead on delivery for the main Marketplace page.",
+      "recommendation": "In AssistantsListPage.tsx, derive hasActiveFilter from the existing filters object (e.g. hasActiveFilter={hasActiveFilters(filters)}) and pass it to AssistantsList, which must then forward it to AssistantGrid."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/ContextSelector.tsx",
+      "line": 180,
+      "title": "Spurious announcement when datasource popup closes",
+      "problem": "handleDatasourcePopupClose (line 180) calls fetchAssistantContextOptions() with no search query, reloading the full unfiltered option list and triggering setContextOptions. filterTerm.current is not cleared before this reload, so the useEffect at line 133 sees a non-empty filterTerm and announces the option count even though no user search occurred.",
+      "impact": "Screen reader users hear an unsolicited 'N results found' announcement when dismissing the datasource editing popup, which is unrelated to any search action they performed.",
+      "recommendation": "Clear filterTerm.current before calling fetchAssistantContextOptions() in handleDatasourcePopupClose, or add a flag parameter to fetchAssistantContextOptions to suppress the announcement path on popup-close reloads."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx",
+      "line": 92,
+      "title": "Announced project count inflated by pre-selected items",
+      "problem": "The useEffect at lines 89–96 announces resolvedProjectOptions.length. resolvedProjectOptions (line 51) is computed by useResolvedProjectOptions(projectOptions, filters.project ?? []) which appends already-selected projects to the raw search results. A user who has pre-selected projects and then types a search term will trigger an announcement that includes both matching results and pre-selected items in the count.",
+      "impact": "Screen reader users hear a count that exceeds the actual number of search matches, providing misleading feedback about how many projects matched their query.",
+      "recommendation": "Announce projectOptions.length (the raw search result count) rather than resolvedProjectOptions.length, or compute and announce a deduplicated count that excludes items already present in filters.project."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantList/AssistantGrid/AssistantGrid.tsx",
+      "line": 61,
+      "title": "Null totalCount produces malformed announcement mid-load",
+      "problem": "The useEffect guard at line 62 checks only !hasActiveFilter; it does not guard against totalCount being null. totalCount is typed number | null and starts null during the initial data fetch. When hasActiveFilter is true (after CR-001 is fixed) and data has not yet arrived, the effect fires and passes null into the announce() call, producing 'null ASSISTANTS' or 'null TEMPLATES' in the live region.",
+      "impact": "Screen reader users receive a semantically broken announcement during the loading phase whenever a filter is active on page entry or when data reloads, which is confusing and erodes trust in the announcements.",
+      "recommendation": "Extend the early-return guard: if (!hasActiveFilter || totalCount === null) return"
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantList/AssistantGrid/AssistantGrid.tsx",
+      "line": 61,
+      "title": "Same-term second Marketplace search does not re-announce",
+      "problem": "AssistantGrid's useEffect dependency array contains only the primitives [totalCount, hasActiveFilter]. When a user searches for the same term twice and the API returns the same count, neither value changes and the effect does not re-fire. The useAnnouncementQueue replay mechanism only activates after the effect fires, so it cannot compensate. This leaves AC8 partial for the Marketplace surface.",
+      "impact": "Screen reader users who repeat a Marketplace search receive no confirmation on the second attempt, violating AC8's requirement that two identical searches produce two announcements.",
+      "recommendation": "Maintain a search-sequence counter in state and add it to the useEffect deps, so the effect re-fires for every new search invocation regardless of whether totalCount changed."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantList/AssistantGrid/AssistantGrid.tsx",
+      "line": 61,
+      "title": "Stale-count announcement fires when filter first activated",
+      "problem": "hasActiveFilter is included in the useEffect dependency array. When it transitions from false to true (user applies their first filter on a page that already has results loaded), the effect fires immediately with the pre-filter totalCount. The correct filtered count arrives later via API response, triggering a second announcement. Users hear two announcements in rapid succession: first the stale count, then the real one.",
+      "impact": "Screen reader users receive two sequential announcements of differing counts when activating a filter for the first time, which is confusing and undermines confidence in the accuracy of the count.",
+      "recommendation": "Track the previous hasActiveFilter with a useRef and suppress the announcement when only the flag changed; fire the announcement only when totalCount itself updates while hasActiveFilter is already true."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantList/AssistantGrid/AssistantGrid.tsx",
+      "line": 63,
+      "title": "Template zero-results announces 'No assistants found'",
+      "problem": "Line 63: announce(totalCount === 0 ? 'No assistants found' : totalCountInfo) has no isTemplate branch. When isTemplate is true and the filtered search returns zero results, the announcement reads 'No assistants found' rather than 'No templates found'.",
+      "impact": "Screen reader users on the Templates view receive a contextually incorrect zero-results announcement, which is inconsistent with the visible UI message 'No templates found.' rendered at line 70.",
+      "recommendation": "Add an isTemplate check: announce(totalCount === 0 ? (isTemplate ? 'No templates found' : 'No assistants found') : totalCountInfo)"
+    }
+  ]
+}

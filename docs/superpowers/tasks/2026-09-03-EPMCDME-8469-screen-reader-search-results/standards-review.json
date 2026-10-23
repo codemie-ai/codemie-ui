@@ -1,0 +1,9 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "All 4 subjects match the documented EPMCDME-XXXX: Capital sentence pattern: non-zero ticket ID EPMCDME-8469, first word 'Add' satisfies [A-Z][a-z]*, no trailing period"},
+    {"kind": "code-quality", "status": "na", "notes": "No code-quality.md found under .ai-run/guides/standards/; only git-workflow.md is present in that directory — absent standard, not a gap"},
+    {"kind": "security", "status": "pass", "notes": "Changed files introduce aria-live announcement support. Announcement text is composed of literal strings and numeric counts from internal state (options.length, totalCount) — no dangerouslySetInnerHTML or innerHTML sink introduced; the Announcement component contains no HTML sink. No new navigation from external input, no cross-window messages, no config access or credential handling added."}
+  ],
+  "blocking_findings": [],
+  "coverage_gap": false
+}

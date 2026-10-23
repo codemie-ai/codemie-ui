@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 import { ASSISTANT_INDEX_SCOPES } from '@/constants/assistants'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
@@ -31,6 +31,10 @@ export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProp
   const router = useVueRouter()
   const route = useVueRoute()
   const { loadAssistants, pagination, assistants, loading } = useAssistants()
+
+  // Increments after every successful load so AssistantGrid can detect same-term
+  // re-searches where totalCount does not change (AC8 / CR-005).
+  const [loadVersion, setLoadVersion] = useState(0)
 
   const { perPage, totalPages } = pagination
 
@@ -108,6 +112,8 @@ export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProp
           minimalResponse: true,
         })
 
+        setLoadVersion((v) => v + 1)
+
         // Skip URL update if the user navigated away during the API call
         if (!isFavoritesScope && getRouter().state.location.pathname === pathAtCallTime) {
           updateURL(pageToLoad, perPageToLoad)
@@ -126,5 +132,6 @@ export const useAssistantsList = ({ scope, filterValues }: UseAssistantsListProp
     totalPages,
     assistants,
     loading,
+    loadVersion,
   }
 }

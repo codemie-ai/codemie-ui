@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "head": "35700d02fa09a9f524aab223f1c3859554d401e6",
+  "tool": "vitest",
+  "tool_resolution": "unconfigured-browser-e2e; project uses Vitest+RTL for all UI verification; dynamic Playwright blocked — app requires Keycloak auth and live backend services not available in this context; existing RTL tests with getByRole('status') are the definitive verification method for ARIA live-region announcements",
+  "features": [
+    {
+      "feature_id": "assistant-grid-announcement",
+      "matched_test": "src/pages/assistants/components/AssistantList/AssistantGrid/__tests__/AssistantGrid.test.tsx",
+      "surface_files": [
+        "src/pages/assistants/components/AssistantList/AssistantGrid/AssistantGrid.tsx"
+      ]
+    },
+    {
+      "feature_id": "assistant-filters-announcement",
+      "matched_test": "src/pages/assistants/components/AssistantList/AssistantFilters/__tests__/AssistantFilters.announcement.test.tsx",
+      "surface_files": [
+        "src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx"
+      ]
+    },
+    {
+      "feature_id": "context-selector-announcement",
+      "matched_test": "src/pages/assistants/components/AssistantForm/components/__tests__/ContextSelector.announcement.test.tsx",
+      "surface_files": [
+        "src/pages/assistants/components/AssistantForm/components/ContextSelector.tsx"
+      ]
+    },
+    {
+      "feature_id": "assistant-selector-announcement",
+      "matched_test": "src/pages/assistants/components/__tests__/AssistantSelector.announcement.test.tsx",
+      "surface_files": [
+        "src/pages/assistants/components/AssistantSelector.tsx"
+      ]
+    }
+  ]
+}

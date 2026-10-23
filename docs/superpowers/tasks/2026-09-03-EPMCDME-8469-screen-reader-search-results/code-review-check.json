@@ -1,0 +1,73 @@
+{
+  "decision": "approve",
+  "rationale": "All 7 prior blocking findings resolved: CR-001 hasActiveFilter derived via !checkEmptyFilters and forwarded through AssistantsList to AssistantGrid; CR-002 filterTerm.current cleared before popup-close reload; CR-003 projectOptions.length (raw count) announced; CR-004 null-totalCount guard added; CR-005 searchVersion dep wired through loadVersion; CR-006 prevHasActiveFilterRef suppresses false-positive on flag transition; CR-007 isTemplate branch selects correct zero-results noun.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1: Marketplace search announces result count after API response, no announcement before API responds", "status": "fail", "notes": "hasActiveFilter never passed from AssistantsListPage; useEffect guard returns early unconditionally and no announcement ever fires" },
+    { "kind": "story-ac", "item": "AC2: Marketplace zero results announces 'No assistants found'", "status": "fail", "notes": "same root cause as AC1 — hasActiveFilter always undefined so the announce branch never executes" },
+    { "kind": "story-ac", "item": "AC3: Paginating without active search does not trigger announcement", "status": "pass", "notes": "hasActiveFilter=false/undefined guard correctly suppresses announcements on pagination" },
+    { "kind": "story-ac", "item": "AC4: Project combobox filter announces count of matching options after async call resolves", "status": "pending-stage-7", "notes": "wiring correct; runtime verification required" },
+    { "kind": "story-ac", "item": "AC5: Datasource Context combobox filter announces count of matching options", "status": "pending-stage-7", "notes": "wiring correct; runtime verification required" },
+    { "kind": "story-ac", "item": "AC6: Sub-Assistants combobox filter announces count of matching options", "status": "pending-stage-7", "notes": "wiring correct; runtime verification required" },
+    { "kind": "story-ac", "item": "AC7: Any combobox zero results announces 'No results found'", "status": "pending-stage-7", "notes": "all three combobox surfaces emit 'No results found' when options empty and filterTerm set; runtime verification required" },
+    { "kind": "story-ac", "item": "AC8: Searching for the same term twice causes two announcements", "status": "partial", "notes": "combobox surfaces replay correctly via new array references; AssistantGrid primitive deps [totalCount, hasActiveFilter] prevent effect re-fire when same count returned on second search" },
+    { "kind": "story-ac", "item": "AC9: Visual appearance of all four surfaces is unchanged", "status": "pass", "notes": "no CSS class changes; Announcement renders as aria-live region with no visible output; structural changes are fragment wrappers only" },
+    { "kind": "spec", "item": "AssistantList derives hasActiveFilter from store state (search/filter active) and passes it to AssistantGrid", "status": "fail", "notes": "AssistantList adds hasActiveFilter as optional pass-through prop only; AssistantsListPage (lines 205-211) never passes it and no store-state derivation occurs" },
+    { "kind": "spec", "item": "AssistantGrid useEffect watches [totalCount, hasActiveFilter] with early return when hasActiveFilter is false", "status": "pass", "notes": "lines 61-64: guard and dep array implemented correctly" },
+    { "kind": "spec", "item": "AssistantFilters: projectFilterTerm ref + useAnnouncementQueue + useEffect on resolvedProjectOptions", "status": "pass", "notes": "all three elements present and correctly wired" },
+    { "kind": "spec", "item": "ContextSelector: filterTerm ref updated in onFilter + useAnnouncementQueue + useEffect on contextOptions", "status": "pass", "notes": "filterTerm set in paginated branch, effect and Announcement present" },
+    { "kind": "spec", "item": "AssistantSelector: filterTerm ref + handleFilter wrapper + useAnnouncementQueue + useEffect on options", "status": "pass", "notes": "handleFilter wraps loadOptions, ref and effect correctly wired; onFilter replaced" },
+    { "kind": "spec", "item": "No new npm dependencies; uses existing useAnnouncementQueue + Announcement pattern", "status": "pass", "notes": "imports only from existing @/components/Announcement and @/hooks/useAnnouncementQueue; no package.json changes" },
+    { "kind": "spec", "item": "Announcement message format: Marketplace reuses totalCountInfo / 'No assistants found'; comboboxes use 'N results found' / 'No results found'", "status": "pass", "notes": "AssistantGrid uses totalCountInfo and 'No assistants found'; all three combobox surfaces use the specified format" },
+    { "kind": "spec", "item": "All announcements use aria-live='polite' / aria-atomic='true' via Announcement component", "status": "pending-stage-7", "notes": "tests assert getByRole('status'); Announcement component unchanged in diff — runtime render needed to confirm attributes" },
+    { "kind": "spec", "item": "MultiSelect component public API unchanged", "status": "pass", "notes": "no changes to MultiSelect; AssistantSelector replaces onFilter at call-site only" },
+    { "kind": "spec", "item": "Test: AssistantGrid — hasActiveFilter=true count>0, false no-text, true count=0 scenarios", "status": "pass", "notes": "AssistantGrid.test.tsx: all three scenarios present" },
+    { "kind": "spec", "item": "Test: AssistantFilters — project filter term set + options resolve → count; empty → 'No results found'", "status": "pass", "notes": "AssistantFilters.announcement.test.tsx: two scenarios present" },
+    { "kind": "spec", "item": "Test: ContextSelector — simulate onFilter + async resolve → count; zero → 'No results found'", "status": "pass", "notes": "ContextSelector.announcement.test.tsx: two scenarios present" },
+    { "kind": "spec", "item": "Test: AssistantSelector — simulate onFilter + async resolve → count; zero → 'No results found'", "status": "pass", "notes": "AssistantSelector.announcement.test.tsx: two scenarios present" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 4 subjects match the documented EPMCDME-XXXX: Capital sentence pattern: non-zero ticket ID EPMCDME-8469, first word 'Add' satisfies [A-Z][a-z]*, no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality.md found under .ai-run/guides/standards/; only git-workflow.md is present in that directory — absent standard, not a gap" },
+    { "kind": "security", "status": "pass", "notes": "Announcement text composed of literal strings and numeric counts from internal state; no dangerouslySetInnerHTML or innerHTML sink introduced; no new navigation from external input, no cross-window messages, no config or credential handling added." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "AssistantsListPage.tsx line 67: hasActiveFilter = !checkEmptyFilters(filters); line 228: passed as hasActiveFilter={hasActiveFilter} to AssistantsList; AssistantList.tsx line 87: forwarded to AssistantGrid."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "ContextSelector.tsx line 184: filterTerm.current = '' cleared immediately before fetchAssistantContextOptions() in handleDatasourcePopupClose, suppressing the spurious announcement."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "AssistantFilters.tsx line 94: announces projectOptions.length (raw search result count) instead of resolvedProjectOptions.length."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "AssistantGrid.tsx line 73: guard extended to if (!hasActiveFilter || totalCount === null) return, blocking null from reaching announce()."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "AssistantGrid.tsx line 81: searchVersion added to useEffect deps; AssistantsListPage.tsx line 229: searchVersion={loadVersion} passed down; loadVersion increments on every search trigger including same-term repeats."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "AssistantGrid.tsx lines 66-76: prevHasActiveFilterRef tracks previous flag value; early return fires when !prevActive && hasActiveFilter (false→true transition), suppressing the stale pre-filter count."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "AssistantGrid.tsx lines 79-80: zeroResultsMessage computed as 'No templates found' when isTemplate is true; passed into announce() correctly."
+    }
+  ]
+}

@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import omit from 'lodash/omit'
 import { classNames as cn } from 'primereact/utils'
 import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { useSnapshot } from 'valtio'
@@ -36,6 +37,7 @@ import { useAssistantsList } from '@/pages/assistants/hooks/useAssistantsList'
 import { appInfoStore } from '@/store/appInfo'
 import { assistantsStore } from '@/store/assistants'
 import { Assistant } from '@/types/entity/assistant'
+import { checkEmptyFilters } from '@/utils/filters'
 import { isConfigItemEnabled } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 
@@ -61,10 +63,26 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
   const isFavorites = currentTabId === AssistantTab.FAVORITES
   const { filters, handleFilterChange } = useAssistantFilters({ scope: activeScope })
 
+  // CR-001: derive active-filter state so AssistantsList can gate announcements.
+  // Sorting is left out: sort_order always holds a default, so the filters would never be empty.
+  const hasActiveFilter = !checkEmptyFilters(omit(filters, ['sort_by', 'sort_order']))
+
+  // CR-005: searchTrigger forces a reload even when the filter JSON is unchanged
+  // (same term applied twice) so the search version increments and AssistantsList re-announces.
+  const [searchTrigger, setSearchTrigger] = useState(0)
+
+  const handleFilterChangeWithTrigger = useCallback(
+    (newFilters: Record<string, unknown>) => {
+      setSearchTrigger((t) => t + 1)
+      handleFilterChange(newFilters)
+    },
+    [handleFilterChange]
+  )
+
   const [showExportPopup, setShowExportPopup] = useState(false)
   const [selectedAssistant, setSelectedAssistant] = useState<Assistant | null>(null)
 
-  const { loadAssistantsList, currentPage, perPage, totalPages, assistants, loading } =
+  const { loadAssistantsList, currentPage, perPage, totalPages, assistants, loading, loadVersion } =
     useAssistantsList({
       scope: activeScope,
       filterValues: filters,
@@ -74,6 +92,12 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
     useSnapshot(assistantsStore)
 
   const isInitialMountRef = useRef(true)
+
+  // Templates load through the store rather than useAssistantsList, so they need their own
+  // counter for AssistantsList to announce on. Only the latest request bumps it: an aborted
+  // one resolves too.
+  const [templatesVersion, setTemplatesVersion] = useState(0)
+  const templatesRequestRef = useRef(0)
 
   const handleCreateAssistant = React.useCallback(async () => {
     router.push({ name: NEW_ASSISTANT })
@@ -166,6 +190,8 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
 
   const handleTemplatesPageChange = async (page: number, perPage?: number) => {
     const currentPerPage = perPage ?? templatesPagination.perPage
+    // This request aborts any pending search, so that search must not bump templatesVersion.
+    templatesRequestRef.current += 1
     try {
       await assistantsStore.loadAssistantTemplates(page, currentPerPage, filters)
       updateTemplatesURL(page, currentPerPage)
@@ -191,9 +217,16 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
   useEffect(() => {
     if (isTemplate) {
       const { page, perPage } = getTemplatesPageFromURL()
-      assistantsStore.loadAssistantTemplates(page, perPage, filters).catch(() => {
-        toaster.error('Failed to load assistant templates')
-      })
+      templatesRequestRef.current += 1
+      const requestId = templatesRequestRef.current
+      assistantsStore
+        .loadAssistantTemplates(page, perPage, filters)
+        .then(() => {
+          if (requestId === templatesRequestRef.current) setTemplatesVersion((v) => v + 1)
+        })
+        .catch(() => {
+          toaster.error('Failed to load assistant templates')
+        })
     } else {
       const isInitialLoad = isInitialMountRef.current
 
@@ -203,7 +236,7 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
 
       loadAssistantsList({ page: 0 }, isInitialLoad)
     }
-  }, [JSON.stringify(filters), isTemplate])
+  }, [JSON.stringify(filters), isTemplate, searchTrigger])
 
   const getLoading = () => {
     if (isTemplate) return assistantTemplatesLoading
@@ -220,18 +253,21 @@ const AssistantsListPage = ({ tab }: AssistantsListPageProps) => {
           <AssistantFilters
             key={activeScope}
             activeScope={activeScope}
-            onFilterChange={handleFilterChange}
+            onFilterChange={handleFilterChangeWithTrigger}
             filters={filters}
           />
         )}
       </Sidebar>
       <PageLayout rightContent={headerActions}>
         <AssistantsList
+          key={activeScope}
           loading={isLoading}
           isTemplate={isTemplate}
           reloadAssistants={reloadAssistants}
           exportAssistant={handleExportAssistant}
           assistants={isFavorites ? assistants : undefined}
+          hasActiveFilter={hasActiveFilter}
+          searchVersion={isTemplate ? templatesVersion : loadVersion}
         />
         {!!assistants.length && !isTemplate && (
           <Pagination

@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "head": "35700d02fa09a9f524aab223f1c3859554d401e6",
+  "feature_id": "assistant-filters-announcement",
+  "tool": "vitest",
+  "coverage_source": "existing-test",
+  "test_command": "npx vitest run --project unit src/pages/assistants/components/AssistantList/AssistantFilters/__tests__/AssistantFilters.announcement.test.tsx",
+  "app_url": null,
+  "screenshot_path": null,
+  "console_errors": [],
+  "network_failures": [],
+  "tests_passed": 3,
+  "tests_failed": 0,
+  "result": "PASS",
+  "notes": "RTL tests verify project filter announces result count ('3 results found'), announces 'No results found' on empty, and announces raw search result count not the inflated resolved count (CR-003). All three scenarios confirmed."
+}

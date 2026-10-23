@@ -54,6 +54,10 @@ describe('AssistantsListPage - Integration', () => {
     ...overrides,
   })
 
+  // The sidebar filters and the list each render their own aria-live region.
+  const liveRegionTexts = () =>
+    Array.from(document.querySelectorAll('output[aria-live]')).map((el) => el.textContent)
+
   const createAssistants = (count: number, namePrefix: string) =>
     Array.from({ length: count }, (_, i) =>
       createAssistantFixture({
@@ -191,6 +195,95 @@ describe('AssistantsListPage - Integration', () => {
       await waitFor(() => {
         expect(screen.getByText('Template Assistant')).toBeInTheDocument()
       })
+    })
+    // Templates load through assistantsStore.loadAssistantTemplates, not useAssistantsList, so
+    // they need their own search version for the count to be announced.
+    it('announces the result count after a search on the templates tab', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(3, 'Template'),
+        pagination: { page: 0, per_page: 12, pages: 1, total: 3 },
+      })
+
+      renderPage('/assistants/templates')
+
+      await waitFor(() => {
+        expect(screen.getByText('Template 1')).toBeInTheDocument()
+      })
+
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture({ id: 'ai-template', name: 'AI Template' })],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+
+      const searchInput = screen.getByPlaceholderText('Search')
+      await user.clear(searchInput)
+      await user.type(searchInput, 'AI')
+
+      await waitFor(() => {
+        expect(screen.getByText('AI Template')).toBeInTheDocument()
+      })
+
+      await waitFor(() => {
+        expect(liveRegionTexts()).toContain('1 template')
+      })
+    })
+
+    it('announces the result count after the search is cleared', async () => {
+      window.history.replaceState({}, '', '/')
+      localStorage.clear()
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(3, 'Assistant'),
+        pagination: { page: 0, per_page: 12, pages: 1, total: 3 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(screen.getByText('Assistant 1')).toBeInTheDocument()
+      })
+
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture({ id: 'ai-assistant', name: 'AI Assistant' })],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      const searchInput = screen.getByPlaceholderText('Search')
+      await user.type(searchInput, 'AI')
+      await waitFor(() => {
+        expect(liveRegionTexts()).toContain('1 assistant')
+      })
+
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(3, 'Assistant'),
+        pagination: { page: 0, per_page: 12, pages: 1, total: 3 },
+      })
+      await user.clear(searchInput)
+      await waitFor(() => {
+        expect(liveRegionTexts()).toContain('3 assistants')
+      })
+    })
+
+    it('does not announce the count when the page opens without a search', async () => {
+      // Filters are saved to the URL and to storage, which earlier tests in this file leave behind.
+      window.history.replaceState({}, '', '/')
+      localStorage.clear()
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: createAssistants(3, 'Template'),
+        pagination: { page: 0, per_page: 12, pages: 1, total: 3 },
+      })
+
+      renderPage('/assistants/templates')
+
+      await waitFor(() => {
+        expect(screen.getByText('Template 1')).toBeInTheDocument()
+      })
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1100)
+      })
+      expect(liveRegionTexts()).not.toContain('3 templates')
     })
   })
 

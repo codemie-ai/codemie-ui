@@ -1,0 +1,44 @@
+[
+  {
+    "location": "src/pages/assistants/AssistantsListPage.tsx:205",
+    "trigger_condition": "AssistantsList rendered without hasActiveFilter prop in the only call site",
+    "guard_snippet": "<AssistantsList ... hasActiveFilter={hasActiveFilters(filters)} />",
+    "potential_consequence": "AssistantGrid announcement never fires; entire feature is dead on main page"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantList/AssistantGrid/AssistantGrid.tsx:61-64",
+    "trigger_condition": "hasActiveFilter is true while totalCount is null (data still loading)",
+    "guard_snippet": "if (!hasActiveFilter || totalCount === null) return",
+    "potential_consequence": "Screen reader announces \"null ASSISTANTS\" or \"null TEMPLATES\" mid-load"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantList/AssistantGrid/AssistantGrid.tsx:63",
+    "trigger_condition": "isTemplate is true and totalCount is 0",
+    "guard_snippet": "announce(totalCount === 0 ? (isTemplate ? 'No templates found' : 'No assistants found') : totalCountInfo)",
+    "potential_consequence": "Template grid announces \"No assistants found\" instead of \"No templates found\""
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantList/AssistantFilters/AssistantFilters.tsx:197-204",
+    "trigger_condition": "User has pre-selected projects; resolvedProjectOptions appends them to search results",
+    "guard_snippet": "announce count from projectOptions.length (raw search result) rather than resolvedProjectOptions.length",
+    "potential_consequence": "Announced count exceeds actual search matches; screen reader misleads users"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantForm/components/ContextSelector.tsx:154-178 (handleDatasourcePopupClose)",
+    "trigger_condition": "Datasource popup closed after a prior paginated filter; filterTerm.current still non-empty",
+    "guard_snippet": "filterTerm.current = '' inside fetchAssistantContextOptions when called with empty searchQuery",
+    "potential_consequence": "Spurious announcement of reloaded option count after popup close, no new search occurred"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantList/AssistantGrid/AssistantGrid.tsx:61-64",
+    "trigger_condition": "hasActiveFilter transitions false→true while totalCount is already loaded",
+    "guard_snippet": "track previous hasActiveFilter with useRef; only announce on totalCount changes, not on flag toggle",
+    "potential_consequence": "Announcement fires unexpectedly on re-render that sets the flag without a new search"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantForm/components/ContextSelector.tsx:133-138",
+    "trigger_condition": "announce omitted from useEffect dependency array; same in AssistantFilters.tsx:197 and AssistantSelector.tsx:553",
+    "guard_snippet": "add announce to deps: }, [contextOptions, announce])",
+    "potential_consequence": "Exhaustive-deps violation; silently stale closure if gapMs or maxQueueSize ever vary"
+  }
+]

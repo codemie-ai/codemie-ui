@@ -26,21 +26,25 @@ import {
 
 import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import PlusSvg from '@/assets/icons/plus.svg?react'
+import Announcement from '@/components/Announcement/Announcement'
 import Button from '@/components/Button'
 import InfoBox from '@/components/form/InfoBox'
 import MultiSelect from '@/components/form/MultiSelect'
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
+import { useAnnouncementQueue } from '@/hooks/useAnnouncementQueue'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import EditIndexPopup from '@/pages/dataSources/components/DataSourceForm/EditIndexPopup'
 import { assistantsStore } from '@/store'
 import { dataSourceStore } from '@/store/dataSources'
-import { humanize } from '@/utils/helpers'
+import { humanize, pluralize } from '@/utils/helpers'
 import { getContextTypeLabel } from '@/utils/indexing'
 import { cn } from '@/utils/utils'
 
 import { AssistantFormContext } from '../AssistantForm'
 import { createContextChipRenderer } from './ContextChip'
+
+const LOCAL_FILTER_ANNOUNCE_DELAY_MS = 500
 
 export type AssistantContextOption = {
   id?: string
@@ -126,6 +130,36 @@ const ContextSelector = forwardRef<
     const [filteredValues, setFilteredValues] = useState<AssistantContextOption[]>(value)
 
     const { project: contextProject } = useContext(AssistantFormContext)
+
+    const filterTerm = useRef('')
+    const localFilterTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+    const { announce, announcement } = useAnnouncementQueue()
+
+    const announceCount = (count: number) => {
+      announce(count > 0 ? `${count} ${pluralize(count, 'result')} found` : 'No results found')
+    }
+
+    useEffect(() => {
+      if (!filterTerm.current) return
+      announceCount(contextOptions.length)
+    }, [contextOptions])
+
+    useEffect(() => () => clearTimeout(localFilterTimeout.current), [])
+
+    // Without `paginated` the MultiSelect filters the loaded options itself and contextOptions
+    // never changes, so the count is worked out here. It matches by label, case-insensitive
+    // "contains", like the MultiSelect does. Debounced so typing announces once, not per key.
+    const announceLocalFilter = (term: string) => {
+      clearTimeout(localFilterTimeout.current)
+      const query = term.trim().toLocaleLowerCase()
+      if (!query) return
+      localFilterTimeout.current = setTimeout(() => {
+        announceCount(
+          contextOptions.filter((option) => option.name.toLocaleLowerCase().includes(query)).length
+        )
+      }, LOCAL_FILTER_ANNOUNCE_DELAY_MS)
+    }
+
     const project = projectProps || contextProject
     const optionKey = withID ? 'id' : 'name'
 
@@ -168,6 +202,9 @@ const ContextSelector = forwardRef<
 
     const handleDatasourcePopupClose = () => {
       setIsEditIndexPopupVisible(false)
+      // CR-002: clear the filter term before reloading so the announcement
+      // useEffect guard returns early and no spurious count fires on popup close.
+      filterTerm.current = ''
       fetchAssistantContextOptions()
     }
 
@@ -278,6 +315,8 @@ const ContextSelector = forwardRef<
           </div>
         )}
 
+        <Announcement announcement={announcement} />
+
         <div className="flex gap-2">
           <MultiSelect
             ref={multiSelectRef}
@@ -287,7 +326,10 @@ const ContextSelector = forwardRef<
             value={selectedValues}
             onFilter={(e) => {
               if (paginated) {
+                filterTerm.current = e
                 fetchAssistantContextOptions(e)
+              } else {
+                announceLocalFilter(e)
               }
             }}
             options={multiselectOptions as unknown as Record<string, string>[]}

@@ -1,0 +1,4 @@
+{"task_id":"task-1","status":"done","commit":"a76784cca","test_command":"npx vitest run --project unit src/pages/assistants/components/AssistantList/AssistantGrid/__tests__/AssistantGrid.test.tsx"}
+{"task_id":"task-2","status":"done","commit":"22de8a10e","test_command":"npx vitest run --project unit src/pages/assistants/components/AssistantList/AssistantFilters/"}
+{"task_id":"task-3","status":"done","commit":"79f34235f","test_command":"npx vitest run --project unit src/pages/assistants/components/AssistantForm/components/__tests__/ContextSelector.announcement.test.tsx"}
+{"task_id":"task-4","status":"done","commit":"b37ea65f4","test_command":"npx vitest run --project unit src/pages/assistants/components/__tests__/AssistantSelector.announcement.test.tsx"}

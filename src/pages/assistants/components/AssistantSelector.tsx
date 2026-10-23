@@ -17,14 +17,17 @@ import { type MultiSelect as TMultiSelect } from 'primereact/multiselect'
 import React, { useState, useEffect, forwardRef, useContext, useRef, useCallback } from 'react'
 import { useSnapshot } from 'valtio'
 
+import Announcement from '@/components/Announcement/Announcement'
 import Avatar from '@/components/Avatar/Avatar'
 import InfoBox from '@/components/form/InfoBox'
 import MultiSelect from '@/components/form/MultiSelect'
 import { ASSISTANT_INDEX_SCOPES, AssistantIndexScope } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
+import { useAnnouncementQueue } from '@/hooks/useAnnouncementQueue'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { usePaginatedOptions, LoadListParams, LoadListResult } from '@/hooks/usePaginatedOptions'
 import { assistantsStore } from '@/store'
+import { pluralize } from '@/utils/helpers'
 import { cn } from '@/utils/utils'
 
 import { AssistantFormContext } from './AssistantForm/AssistantForm'
@@ -218,6 +221,29 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
       loadList,
     })
 
+    // Set when a search starts and cleared once its first page is announced, so the pages
+    // appended by handleScrollBottom stay silent.
+    const isAnnouncePending = useRef(false)
+    const { announce, announcement } = useAnnouncementQueue()
+
+    useEffect(() => {
+      if (!isAnnouncePending.current) return
+      isAnnouncePending.current = false
+      announce(
+        options.length > 0
+          ? `${options.length} ${pluralize(options.length, 'result')} found`
+          : 'No results found'
+      )
+    }, [options])
+
+    const handleFilter = useCallback(
+      (term = '') => {
+        isAnnouncePending.current = !!term
+        loadOptions(term)
+      },
+      [loadOptions]
+    )
+
     const getMultiselectOptions = () => {
       // De-dupe by id while preserving order:
       // extraOptionsTop → loaded options → hidden selected options.
@@ -276,6 +302,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
 
     return (
       <div className={cn('flex flex-col gap-2', className)}>
+        <Announcement announcement={announcement} />
         {!hideHeader && (
           <>
             <div
@@ -304,7 +331,7 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
             inputClassName={selectClassName}
             errorClassName={errorClassName}
             placeholder={placeholder ?? 'Select Sub-Assistants'}
-            onFilter={loadOptions}
+            onFilter={handleFilter}
             onScrollBottom={handleScrollBottom}
             renderOption={Option}
             error={error}

@@ -48,7 +48,7 @@ const Filters: React.FC<FiltersProps> = ({
   const filterValuesFromProps = useMemo(() => {
     const initialFilters: Record<string, unknown> = {}
 
-    if (searchKey && searchValue) {
+    if (searchKey) {
       initialFilters[searchKey] = searchValue
     }
 

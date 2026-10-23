@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "head": "35700d02fa09a9f524aab223f1c3859554d401e6",
+  "feature_id": "assistant-selector-announcement",
+  "tool": "vitest",
+  "coverage_source": "existing-test",
+  "test_command": "npx vitest run --project unit src/pages/assistants/components/__tests__/AssistantSelector.announcement.test.tsx",
+  "app_url": null,
+  "screenshot_path": null,
+  "console_errors": [],
+  "network_failures": [],
+  "tests_passed": 2,
+  "tests_failed": 0,
+  "result": "PASS",
+  "notes": "RTL tests verify AssistantSelector announces search result counts via the aria-live region when the user types a filter term."
+}

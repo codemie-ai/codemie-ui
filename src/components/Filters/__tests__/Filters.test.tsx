@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import '@testing-library/jest-dom'
@@ -85,6 +85,52 @@ describe('Filters', () => {
     expect(screen.getByTestId('validation')).toHaveValue('findme')
     fireEvent.submit(screen.getByTestId('validation').closest('form')!)
     expect(onApply).toHaveBeenCalled()
+  })
+
+  it('does not re-arm a redundant debounced apply after clearing the search box', () => {
+    vi.useFakeTimers()
+    try {
+      const onApply = vi.fn()
+      const { rerender } = render(
+        <Filters
+          onApply={onApply}
+          filterDefinitions={filterDefinitions}
+          searchKey="search"
+          searchValue="findme"
+          areFiltersEmpty={false}
+          refreshOnValuesUpdate
+        />
+      )
+
+      fireEvent.change(screen.getByTestId('validation'), { target: { value: '' } })
+      act(() => {
+        vi.advanceTimersByTime(1000)
+      })
+      expect(onApply).toHaveBeenCalledTimes(1)
+      expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ search: '' }))
+
+      // Parent commits the applied filters and passes the new searchValue back down —
+      // the same round-trip that used to flip filters.search from '' to undefined
+      // (filterValuesFromProps omitted the key for a falsy searchValue) and re-armed
+      // a second debounced apply ~1s later.
+      rerender(
+        <Filters
+          onApply={onApply}
+          filterDefinitions={filterDefinitions}
+          searchKey="search"
+          searchValue=""
+          areFiltersEmpty={false}
+          refreshOnValuesUpdate
+        />
+      )
+
+      act(() => {
+        vi.advanceTimersByTime(2000)
+      })
+      expect(onApply).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('renders all major filter types', () => {
