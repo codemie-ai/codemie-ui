@@ -84,8 +84,6 @@ interface UserStoreType {
       is_auditor?: boolean | null
       is_active?: boolean | null
     }
-    sortBy?: 'name'
-    sortOrder?: 'asc' | 'desc'
   }) => Promise<GetUsersResponse>
   getUserById: (userId: string) => Promise<UserListItem>
   createUser: (payload: UserCreatePayload) => Promise<UserListItem>
@@ -417,7 +415,7 @@ export const userStore = proxy<UserStoreType>({
   },
 
   getUsers(params = {}) {
-    const { page, perPage, filters = {}, sortBy, sortOrder } = params
+    const { page, perPage, filters = {} } = params
 
     const queryParams = new URLSearchParams()
     // Only add page and perPage if explicitly provided
@@ -429,10 +427,6 @@ export const userStore = proxy<UserStoreType>({
     }
     if (filters.search) {
       queryParams.append('search', filters.search)
-    }
-    if (sortBy) {
-      queryParams.append('sort_by', sortBy)
-      if (sortOrder) queryParams.append('sort_order', sortOrder)
     }
 
     const filtersJson: Record<string, unknown> = {}

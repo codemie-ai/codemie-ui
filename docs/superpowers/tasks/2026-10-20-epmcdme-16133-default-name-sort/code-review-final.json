@@ -1,0 +1,47 @@
+{
+  "decision": "request-changes",
+  "rationale": "All four lenses and the standards audit ran (standards covered the backend repo only); every spec and story criterion passes, but the rewritten Members-tab test (codemie-ui) drops the only render-order check, so CR-001 blocks. No findings deferred; 8 lens claims dismissed as intended by the BA-approved spec (btrim removal, new default for all consumers, no indexes, sort_order ignored without sort_by, getUsers sort removal) or as noise. Release-ordering note: deploy the backend before the UI, because the Members tab now depends on the backend default.",
+  "confidence": "high",
+  "risk_flags": ["public-api"],
+  "business_review": [
+    {"kind": "spec", "item": "Name key lower(coalesce(nullif(name,''),username)), no btrim/_NAME_WHITESPACE", "status": "pass", "notes": "_SORT_COLUMN_MAP['name'] rewritten; no btrim left in user_repository.py"},
+    {"kind": "spec", "item": "Default (no sort_by): name key ASC, email ASC, id ASC; sort_order ignored", "status": "pass", "notes": "else branch updated; test_default_order and test_default_order_ignores_sort_order"},
+    {"kind": "spec", "item": "sort_by=name: name key in sort_order direction, then email ASC, id ASC", "status": "pass", "notes": "sort_by branch unchanged; asc/desc tests updated"},
+    {"kind": "spec", "item": "sort_by/sort_order 422 validation and keyword-only call shape unchanged", "status": "pass", "notes": "Literal types unchanged; positional-call test kept"},
+    {"kind": "spec", "item": "Docs/docstrings/Query descriptions say A to Z by name, ties email then id", "status": "pass", "notes": "repo, service and router text updated; no stale newest-first text"},
+    {"kind": "spec", "item": "OpenAPI baseline regenerated, diff limited to descriptions", "status": "pass", "notes": "only two sort_by description strings changed"},
+    {"kind": "spec", "item": "Frontend: ProjectMembersManager.tsx removes MEMBER_SORT and its three spreads", "status": "pass", "notes": "const and all spreads removed"},
+    {"kind": "spec", "item": "Frontend: store/user.ts getUsers drops sortBy/sortOrder; never sends sort params", "status": "pass", "notes": "type, destructure and query append removed"},
+    {"kind": "spec", "item": "Users Management page, budget modal, SDK methods need no code change", "status": "pass", "notes": "none in either diff"},
+    {"kind": "spec", "item": "Non-goal: no trimming or Unicode whitespace normalization", "status": "pass", "notes": "test_name_key_has_no_trim"},
+    {"kind": "spec", "item": "Non-goal: no new sort fields or sort_by/sort_order contract change", "status": "pass", "notes": "Literal types and defaults unchanged"},
+    {"kind": "spec", "item": "Non-goal: no DB indexes, migrations or collation changes", "status": "pass", "notes": "no migration/model files changed"},
+    {"kind": "spec", "item": "Non-goal: no SDK change and no UI sort controls", "status": "pass", "notes": "no SDK files; UI only removes sort params"},
+    {"kind": "spec", "item": "Non-goal: fetch_projects_map and count_users ordering unchanged", "status": "pass", "notes": "only query_users order_by changed"},
+    {"kind": "story-ac", "item": "AC1: default case-insensitive A to Z on name key, username fallback, ties email then id, no trim", "status": "pass", "notes": "default branch and test_default_order"},
+    {"kind": "story-ac", "item": "AC2: explicit sort_by=name asc|desc as before minus trimming; invalid values 422", "status": "pass", "notes": "sort_by branch and Literal validation unchanged"},
+    {"kind": "story-ac", "item": "AC3: Members tab sends no sort params and still lists A to Z", "status": "pass", "notes": "MEMBER_SORT and getUsers sort options removed; order from backend default"},
+    {"kind": "story-ac", "item": "AC4: Users Management, budget autocomplete, SDK list methods inherit A to Z unchanged", "status": "pass", "notes": "not in either diff"},
+    {"kind": "story-ac", "item": "AC5: backend and frontend tests updated per spec", "status": "pass", "notes": "backend sort tests updated; UI test renamed and asserts no sort options; store sort block removed"},
+    {"kind": "story-ac", "item": "AC6: OpenAPI baseline regenerated, diff limited to sort descriptions", "status": "pass", "notes": "only sort_by description strings changed"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "both commit subjects in the range follow git-workflow.md EPMCDME-####: Description format"},
+    {"kind": "code-quality", "status": "pass", "notes": "changes are small edits within each file's core responsibility (user_repository.query_users default order_by, router/service docstrings and Query descriptions, sort test and openapi baseline); no new modules so no license-header concern; touched signatures use typed Literal unions; pre-existing Optional[str] params are untouched context, not introduced by this change"},
+    {"kind": "security", "status": "pass", "notes": "list_users still uses Depends(authenticate); sort_by/sort_order are constrained by Literal and mapped via _SORT_COLUMN_MAP, no user input reaches SQL; no secrets or logging added; no lossy input normalization introduced"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/__tests__/ProjectMembersNoSortParams.test.tsx",
+      "line": 64,
+      "title": "Members test no longer guards render order",
+      "problem": "In codemie-ui, the rewrite of ProjectMembersOrdering.test.tsx into ProjectMembersNoSortParams.test.tsx deletes the only assertion that the Members tab renders users in the order the server returns them (the old non-alphabetical Zed/Alice/bob fixture checked with renderedEmails()). The new test uses a single-user serverPage with user_count 1 and only checks that getUsers receives no sortBy/sortOrder. That cannot detect a reorder, and it never exercises the multi-page path.",
+      "impact": "After this change the Members tab is A to Z only because the backend default is A to Z and ProjectMembersManager does not reorder rows on the client (verified: no .sort/localeCompare/orderBy today). If a later change re-sorts, merges or filters pages on the client (for example on the budget-filter path), the tab silently loses A to Z order and no test fails. The guard the task asks for covers only half the contract.",
+      "recommendation": "Keep the new not.toHaveProperty('sortBy'/'sortOrder') assertions, and also restore a deliberately non-alphabetical multi-user serverPage (e.g. Zed, Alice, bob; set mockProject.user_count to match) with `await waitFor(() => expect(renderedEmails()).toEqual(serverEmailOrder))`, so the test fails if the Members tab ever reorders rows on the client, including on the budget-filter path."
+    }
+  ]
+}

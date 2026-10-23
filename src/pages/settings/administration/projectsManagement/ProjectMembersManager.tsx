@@ -150,9 +150,6 @@ const ROLE_OPTIONS = [
   { label: 'Project Admin', value: ProjectRole.ADMINISTRATOR },
 ]
 
-/** Project members are always listed A to Z by name; the backend owns the ordering. */
-const MEMBER_SORT = { sortBy: 'name', sortOrder: 'asc' } as const
-
 const getUserColumnWidth = (canManage: boolean, showBudgets: boolean): string => {
   if (canManage && showBudgets) return 'w-[34%]'
   if (canManage) return 'w-[56%]'
@@ -371,17 +368,12 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     // Filters are computed once up front so every page request — including the parallel
     // ones below — uses the exact same snapshot, regardless of fetch order or timing.
     const filters = getBaseUserFilters()
-    const firstPage = await userStore.getUsers({
-      page: 0,
-      perPage: pageSize,
-      filters,
-      ...MEMBER_SORT,
-    })
+    const firstPage = await userStore.getUsers({ page: 0, perPage: pageSize, filters })
     const totalPages = Math.ceil(firstPage.pagination.total / pageSize)
 
     const restPages = await Promise.all(
       Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) =>
-        userStore.getUsers({ page: index + 1, perPage: pageSize, filters, ...MEMBER_SORT })
+        userStore.getUsers({ page: index + 1, perPage: pageSize, filters })
       )
     )
 
@@ -395,7 +387,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           page,
           perPage,
           filters: getBaseUserFilters(),
-          ...MEMBER_SORT,
         })
         setUsers(result.data)
         setPagination(result.pagination)
