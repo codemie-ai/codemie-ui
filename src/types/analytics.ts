@@ -23,6 +23,7 @@ export enum AnalyticsDashboard {
   cliInsights = 'cliInsights',
   leaderboard = 'leaderboard',
   cliAnalytics = 'cliAnalytics',
+  usageAttribution = 'usageAttribution',
 }
 
 // ============================================================================

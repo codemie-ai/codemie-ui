@@ -16,6 +16,7 @@
 import { FC, useMemo, useState } from 'react'
 
 import Select from '@/components/form/Select'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { OverviewMetricType, TabularMetricType } from '@/types/analytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
@@ -33,7 +34,12 @@ import TableWidget from './widgets/TableWidget'
 
 interface CLIInsightsTabProps {
   filters: AnalyticsQueryParams
+  /** Opens the Usage Attribution tab; set only for viewers who can open it. */
+  onOpenUsageAttribution?: () => void
 }
+
+const NO_COLUMNS: string[] = []
+const CLASSIFICATION_COLUMN = ['classification']
 
 interface SelectedCliUser {
   name: string
@@ -73,9 +79,25 @@ const renderTopSpenderUserCell =
   (onClick: (item: Record<string, unknown>) => void) => (item: Record<string, unknown>) =>
     <TopSpenderUserButton item={item} onClick={onClick} />
 
-const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
+const UsageAttributionNotice: FC<{ onOpen: () => void }> = ({ onOpen }) => (
+  <div className="mb-4 rounded-lg border border-border-specific-panel-outline bg-surface-base-secondary p-2">
+    <p className="text-h5 text-text-primary">
+      CLI classification is in Usage Attribution, which classifies each repository on evidence.{' '}
+      <button type="button" className="underline hover:no-underline" onClick={onOpen}>
+        Open Usage Attribution
+      </button>
+    </p>
+  </div>
+)
+
+const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters, onOpenUsageAttribution }) => {
   const [selectedUser, setSelectedUser] = useState<SelectedCliUser | null>(null)
   const [isUserEnrichmentEnabled] = useFeatureFlag('features:userEnrichmentEnabled')
+  const [isUsageAttributionOn, isFlagLoaded] = useFeatureFlag(FEATURE_FLAGS.USAGE_ATTRIBUTION)
+  // Where Usage Attribution is on, only it classifies CLI spend. This tab's older heuristic labels most spend as
+  // production and would contradict it. Nothing is shown until the flag is known, so nothing is fetched for nothing.
+  const showClassification = isFlagLoaded && !isUsageAttributionOn
+  const hiddenTableColumns = showClassification ? NO_COLUMNS : CLASSIFICATION_COLUMN
   const [modelsTopN, setModelsTopN] = useState<TopN>(TopNFilter.TEN)
 
   const modelsExtraParams = useMemo(() => ({ per_page: toPerPage(modelsTopN) }), [modelsTopN])
@@ -181,25 +203,34 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
       </section>
 
       <section>
-        <h2 className="mb-4 text-xl font-semibold text-text-primary">Classification</h2>
+        <h2 className="mb-4 text-xl font-semibold text-text-primary">
+          {isUsageAttributionOn ? 'Top Spend' : 'Classification'}
+        </h2>
+        {isUsageAttributionOn && onOpenUsageAttribution && (
+          <UsageAttributionNotice onOpen={onOpenUsageAttribution} />
+        )}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <DonutChartWidget
-            title="User Classification Distribution"
-            description="How CLI users split across deterministic CLI usage categories."
-            metricType={TabularMetricType.CLI_INSIGHTS_USER_CLASSIFICATION}
-            filters={filters}
-            labelField="classification"
-            valueField="user_count"
-          />
-          <BarChartWidget
-            title="Cost by User Classification"
-            description="CLI cost distribution by user classification."
-            metricType={TabularMetricType.CLI_INSIGHTS_USER_CLASSIFICATION}
-            filters={filters}
-            labelField="classification"
-            valueField="total_cost"
-            yAxisLabel="total_cost"
-          />
+          {showClassification && (
+            <>
+              <DonutChartWidget
+                title="User Classification Distribution"
+                description="How CLI users split across deterministic CLI usage categories."
+                metricType={TabularMetricType.CLI_INSIGHTS_USER_CLASSIFICATION}
+                filters={filters}
+                labelField="classification"
+                valueField="user_count"
+              />
+              <BarChartWidget
+                title="Cost by User Classification"
+                description="CLI cost distribution by user classification."
+                metricType={TabularMetricType.CLI_INSIGHTS_USER_CLASSIFICATION}
+                filters={filters}
+                labelField="classification"
+                valueField="total_cost"
+                yAxisLabel="total_cost"
+              />
+            </>
+          )}
           <BarChartWidget
             title="Top Users by Cost"
             description="Highest-cost CLI users in the selected period."
@@ -210,23 +241,27 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
             yAxisLabel="total_cost"
             horizontal
           />
-          <DonutChartWidget
-            title="Project Classification Distribution"
-            description="How CLI projects split across deterministic CLI usage categories."
-            metricType={TabularMetricType.CLI_INSIGHTS_PROJECT_CLASSIFICATION}
-            filters={filters}
-            labelField="classification"
-            valueField="project_count"
-          />
-          <BarChartWidget
-            title="Cost by Project Classification"
-            description="CLI cost distribution by project classification."
-            metricType={TabularMetricType.CLI_INSIGHTS_PROJECT_CLASSIFICATION}
-            filters={filters}
-            labelField="classification"
-            valueField="total_cost"
-            yAxisLabel="total_cost"
-          />
+          {showClassification && (
+            <>
+              <DonutChartWidget
+                title="Project Classification Distribution"
+                description="How CLI projects split across deterministic CLI usage categories."
+                metricType={TabularMetricType.CLI_INSIGHTS_PROJECT_CLASSIFICATION}
+                filters={filters}
+                labelField="classification"
+                valueField="project_count"
+              />
+              <BarChartWidget
+                title="Cost by Project Classification"
+                description="CLI cost distribution by project classification."
+                metricType={TabularMetricType.CLI_INSIGHTS_PROJECT_CLASSIFICATION}
+                filters={filters}
+                labelField="classification"
+                valueField="total_cost"
+                yAxisLabel="total_cost"
+              />
+            </>
+          )}
           <BarChartWidget
             title="Top Projects by Cost"
             description="Highest-cost CLI projects in the selected period."
@@ -249,6 +284,7 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
           description="Users with the highest CLI spending in the selected period."
           filters={filters}
           customRenderColumns={topSpenderRenderColumns}
+          hiddenColumns={hiddenTableColumns}
         />
       </section>
 
@@ -259,6 +295,7 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
           description="All CLI users with activity in the selected period, sorted alphabetically."
           filters={filters}
           customRenderColumns={topSpenderRenderColumns}
+          hiddenColumns={hiddenTableColumns}
         />
       </section>
 
@@ -267,6 +304,7 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters }) => {
         userId={selectedUser?.id ?? null}
         filters={filters}
         onHide={() => setSelectedUser(null)}
+        showClassification={showClassification}
       />
     </div>
   )

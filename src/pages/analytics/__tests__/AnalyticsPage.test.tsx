@@ -24,6 +24,7 @@ import {
   type AnalyticsQueryParams,
   TimePeriod,
 } from '@/types/analytics'
+import type { User } from '@/types/entity/user'
 
 import AnalyticsPage from '../AnalyticsPage'
 
@@ -90,12 +91,19 @@ vi.mock('../hooks/useAnalyticsFilters', async (importOriginal) => {
 vi.mock('@/utils/storage', async (importOriginal) => importOriginal())
 
 vi.mock('../components/AnalyticsDashboard', () => ({
-  default: ({ activeTab, isCliAnalyticsEnabled, isLeaderboardEnabled, filters }) => (
+  default: ({
+    activeTab,
+    isCliAnalyticsEnabled,
+    isLeaderboardEnabled,
+    isUsageAttributionEnabled,
+    filters,
+  }) => (
     <div
       data-testid="analytics-dashboard"
       data-active-tab={activeTab}
       data-cli-analytics-enabled={isCliAnalyticsEnabled}
       data-leaderboard-enabled={isLeaderboardEnabled}
+      data-usage-attribution-enabled={isUsageAttributionEnabled}
       data-filters={JSON.stringify(filters ?? {})}
     />
   ),
@@ -378,6 +386,99 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     await waitFor(() =>
       expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'insights' }, { replace: true })
     )
+  })
+})
+
+describe('AnalyticsPage - Usage Attribution tab gate', () => {
+  const USAGE_ATTRIBUTION = 'features:usageAttribution'
+  const BASE_USER = { userId: 'test-user', email: 'test@test.com', isAuthenticated: true }
+
+  const ROLES: Array<[string, Partial<User>, boolean]> = [
+    ['an admin', { isAdmin: true }, true],
+    ['a maintainer', { isAdmin: false, isMaintainer: true }, true],
+    ['an auditor', { isAdmin: false, isAuditor: true }, true],
+    [
+      'a project admin',
+      {
+        isAdmin: false,
+        projects: [{ name: 'owned-project', is_project_admin: true, is_default: false }],
+      },
+      false,
+    ],
+    [
+      'a plain user',
+      {
+        isAdmin: false,
+        projects: [{ name: 'other-project', is_project_admin: false, is_default: false }],
+      },
+      false,
+    ],
+  ]
+
+  /** Every role with the flag on and off: the tab is there only for admins, maintainers and auditors with the flag. */
+  const MATRIX = ROLES.flatMap(([role, user, allowed]) => [
+    [role, user, 'on', allowed] as const,
+    [role, user, 'off', false] as const,
+  ])
+
+  const mockFlag = (enabled: boolean, loaded = true) => {
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === USAGE_ATTRIBUTION) return [enabled, loaded]
+      return [false, true]
+    })
+  }
+
+  const openTab = (tab: string) =>
+    mockSearchParams.get.mockImplementation((key: string) => (key === 'tab' ? tab : null))
+
+  /** Lets the dashboards load: the page checks the tab of the URL only after that. */
+  const dashboardsLoaded = () => act(async () => {})
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUseAnalyticsFilters.mockReturnValue({ filters: {}, handleFilterChange: vi.fn() })
+  })
+
+  it.each(MATRIX)('%s with the flag %s: tab shown = %s', (_role, user, flag, allowed) => {
+    userStore.user = { ...BASE_USER, isAdmin: false, ...user }
+    mockFlag(flag === 'on')
+    openTab(AnalyticsDashboardType.insights)
+
+    render(<AnalyticsPage />)
+
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-usage-attribution-enabled',
+      String(allowed)
+    )
+  })
+
+  it.each(MATRIX)(
+    '%s with the flag %s opening ?tab=usageAttribution: kept = %s',
+    async (_role, user, flag, allowed) => {
+      userStore.user = { ...BASE_USER, isAdmin: false, ...user }
+      mockFlag(flag === 'on')
+      openTab(AnalyticsDashboardType.usageAttribution)
+
+      render(<AnalyticsPage />)
+      await dashboardsLoaded()
+
+      if (allowed) {
+        expect(mockSetSearchParams).not.toHaveBeenCalled()
+      } else {
+        expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'insights' }, { replace: true })
+      }
+    }
+  )
+
+  it('keeps ?tab=usageAttribution while the flag is still loading', async () => {
+    userStore.user = { ...BASE_USER, isAdmin: true }
+    mockFlag(false, false)
+    openTab(AnalyticsDashboardType.usageAttribution)
+
+    render(<AnalyticsPage />)
+    await dashboardsLoaded()
+
+    expect(mockSetSearchParams).not.toHaveBeenCalled()
   })
 })
 

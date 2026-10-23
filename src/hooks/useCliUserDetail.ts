@@ -48,7 +48,8 @@ const fetchWidget = <T>(endpoint: string, params: UserDetailQueryParams) =>
 export const useCliUserDetail = (
   userName: string | null,
   userId: string | null | undefined,
-  filters: AnalyticsQueryParams
+  filters: AnalyticsQueryParams,
+  includeClassification = true
 ): CliUserDetailState => {
   const [meta, setMeta] = useState<UserDetailMetaResponse | null>(null)
   const [keyMetrics, setKeyMetrics] = useState<SummariesResponse | null>(null)
@@ -75,11 +76,15 @@ export const useCliUserDetail = (
       fetchWidget<TabularResponse>('v1/analytics/cli-insights-user-tools', params),
       fetchWidget<TabularResponse>('v1/analytics/cli-insights-user-models', params),
       fetchWidget<SummariesResponse>('v1/analytics/cli-insights-user-workflow-intent', params),
-      fetchWidget<SummariesResponse>(
-        'v1/analytics/cli-insights-user-classification-detail',
-        params
-      ),
-      fetchWidget<TabularResponse>('v1/analytics/cli-insights-user-category-breakdown', params),
+      includeClassification
+        ? fetchWidget<SummariesResponse>(
+            'v1/analytics/cli-insights-user-classification-detail',
+            params
+          )
+        : Promise.resolve(null),
+      includeClassification
+        ? fetchWidget<TabularResponse>('v1/analytics/cli-insights-user-category-breakdown', params)
+        : Promise.resolve(null),
       fetchWidget<TabularResponse>('v1/analytics/cli-insights-user-repositories', params),
     ])
       .then(
@@ -105,7 +110,7 @@ export const useCliUserDetail = (
       )
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load user details'))
       .finally(() => setLoading(false))
-  }, [filters, userId, userName])
+  }, [filters, userId, userName, includeClassification])
 
   return {
     meta,

@@ -39,6 +39,8 @@ interface TableCardListProps<T> {
   onRowSelect: (item: T) => void
   /** Selects a row by tapping its card, for tables without a selection column (e.g. drill-downs). */
   onCardSelect?: (item: T) => void
+  /** Opens a row by tapping its card, as a click on its table row does (e.g. a details popup). */
+  onCardOpen?: (item: T) => void
   selectionProps?: SelectionProps<T>
   sortProps?: SortProps
   expandedRowIds?: ReadonlyArray<string>
@@ -61,6 +63,7 @@ const TableCardList = <T,>({
   isRowSelected,
   onRowSelect,
   onCardSelect,
+  onCardOpen,
   selectionProps,
   sortProps,
   expandedRowIds,
@@ -69,8 +72,9 @@ const TableCardList = <T,>({
 }: TableCardListProps<T>): React.ReactNode => {
   const titleIdPrefix = useId()
   const selectionColumn = columnDefinitions.find(({ type }) => type === DefinitionTypes.Selection)
-  // With a selection column, its checkbox selects the row.
-  const isCardSelectable = !!onCardSelect && !selectionColumn
+  // With a selection column, its checkbox selects the row; opening a row takes the card tap.
+  const isCardSelectable = !!onCardSelect && !selectionColumn && !onCardOpen
+  const isCardTappable = isCardSelectable || !!onCardOpen
   const actionsColumn = columnDefinitions.find(({ key }) => key === ACTIONS_COLUMN_KEY)
   const [titleColumn, ...detailColumns] = columnDefinitions.filter(
     (column) => column !== selectionColumn && column !== actionsColumn
@@ -160,22 +164,22 @@ const TableCardList = <T,>({
                 { 'bg-surface-specific-input-prefix': isSelected }
               )}
             >
-              {isCardSelectable && (
-                // A real button under the content makes the whole card selectable without nesting
-                // the controls inside the card in it.
+              {isCardTappable && (
+                // A real button under the content makes the whole card selectable (or opens it)
+                // without nesting the controls inside the card in it.
                 <button
                   type="button"
-                  aria-pressed={isSelected}
+                  aria-pressed={isCardSelectable ? isSelected : undefined}
                   aria-labelledby={titleColumn ? titleId : undefined}
                   className="absolute inset-0 rounded-lg"
-                  onClick={() => onCardSelect?.(item)}
+                  onClick={() => (onCardOpen ? onCardOpen(item) : onCardSelect?.(item))}
                 />
               )}
 
               <div
                 className={cn(
                   'relative flex flex-col gap-3 p-4',
-                  isCardSelectable && SELECTABLE_CARD_CONTENT_CLASS_NAME
+                  isCardTappable && SELECTABLE_CARD_CONTENT_CLASS_NAME
                 )}
               >
                 <div className="flex items-start gap-3">

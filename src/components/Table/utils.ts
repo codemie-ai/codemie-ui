@@ -58,6 +58,7 @@ const referenceKeys = [
   'isAllSelected',
   'onToggleExpand',
   'renderExpandedRow',
+  'onRowClick',
   'variant',
 ] as const satisfies ReadonlyArray<keyof TableProps<unknown>>
 

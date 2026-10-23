@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC, useMemo } from 'react'
+import { FC, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router'
 import { useSnapshot } from 'valtio'
 
@@ -27,6 +27,7 @@ import CustomDashboard from './CustomDashboard'
 import InfoNotice from './InfoNotice'
 import InsightsTab from './InsightsTab'
 import LeaderboardTab from './leaderboard/LeaderboardTab'
+import UsageAttributionTab from './usage-attribution/UsageAttributionTab'
 
 interface AnalyticsDashboardProps {
   activeTab: string
@@ -34,6 +35,7 @@ interface AnalyticsDashboardProps {
   isLeaderboardEnabled: boolean
   isCustomizationEnabled: boolean
   isCliAnalyticsEnabled: boolean
+  isUsageAttributionEnabled?: boolean
 }
 
 const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
@@ -42,6 +44,7 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
   isLeaderboardEnabled,
   isCustomizationEnabled,
   isCliAnalyticsEnabled,
+  isUsageAttributionEnabled = false,
 }) => {
   const { dashboards } = useSnapshot(analyticsStore)
 
@@ -54,6 +57,13 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
     })
   }
 
+  const openUsageAttribution = useCallback(() => {
+    setSearchParams((prev) => {
+      prev.set('tab', AnalyticsDashboard.usageAttribution)
+      return prev
+    })
+  }, [setSearchParams])
+
   const tabs: Tab<string>[] = useMemo(() => {
     const tabsList: Tab<string>[] = [
       {
@@ -65,7 +75,12 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
       {
         id: AnalyticsDashboard.cliInsights,
         label: 'CLI Insights',
-        element: <CLIInsightsTab filters={filters} />,
+        element: (
+          <CLIInsightsTab
+            filters={filters}
+            onOpenUsageAttribution={isUsageAttributionEnabled ? openUsageAttribution : undefined}
+          />
+        ),
         className: '[overflow-wrap:normal]',
       },
     ]
@@ -88,6 +103,15 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
       })
     }
 
+    if (isUsageAttributionEnabled) {
+      tabsList.push({
+        id: AnalyticsDashboard.usageAttribution,
+        label: 'Usage Attribution',
+        element: <UsageAttributionTab filters={filters} />,
+        className: '[overflow-wrap:normal]',
+      })
+    }
+
     if (isCustomizationEnabled) {
       dashboards.forEach((dashboard) => {
         tabsList.push({
@@ -99,7 +123,15 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
     }
 
     return tabsList
-  }, [dashboards, filters, isLeaderboardEnabled, isCustomizationEnabled, isCliAnalyticsEnabled])
+  }, [
+    dashboards,
+    filters,
+    isLeaderboardEnabled,
+    isCustomizationEnabled,
+    isCliAnalyticsEnabled,
+    isUsageAttributionEnabled,
+    openUsageAttribution,
+  ])
 
   return (
     <div className="analytics-dashboard flex flex-col min-w-0">

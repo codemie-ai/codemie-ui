@@ -50,6 +50,13 @@ const AnalyticsPage: FC = () => {
   const isLeaderboardEnabled = (isAdmin || isAuditor) && isLeaderboardConfigEnabled
   const [isCliAnalyticsConfigEnabled] = useFeatureFlag(FEATURE_FLAGS.CLI_ANALYTICS)
   const isCliAnalyticsEnabled = (isAdmin || isProjectAdmin) && isCliAnalyticsConfigEnabled
+  const isMaintainer = user?.isMaintainer ?? false
+  const [isUsageAttributionConfigEnabled, isUsageAttributionFlagLoaded] = useFeatureFlag(
+    FEATURE_FLAGS.USAGE_ATTRIBUTION
+  )
+  // Admins, maintainers and auditors only; project admins and other users never see the tab.
+  const isUsageAttributionEnabled =
+    (isAdmin || isMaintainer || isAuditor) && isUsageAttributionConfigEnabled
 
   const [searchParams, setSearchParams] = useSearchParams()
   const { filters, selectedFilters, handleFilterChange } = useAnalyticsFilters()
@@ -68,6 +75,7 @@ const AnalyticsPage: FC = () => {
 
   const isInsightsTab = tab === AnalyticsDashboardType.insights
   const isLeaderboardTab = tab === AnalyticsDashboardType.leaderboard
+  const isUsageAttributionTab = tab === AnalyticsDashboardType.usageAttribution
   const isCustomDashboard =
     dashboardsLoaded &&
     tab &&
@@ -102,9 +110,12 @@ const AnalyticsPage: FC = () => {
   useEffect(() => {
     if (!dashboardsLoaded) return
     const isKnownTab = (Object.values(AnalyticsDashboardType) as string[]).includes(tab)
+    // The flag arrives with the app config: do not leave the tab before it is known.
+    if (tab === AnalyticsDashboardType.usageAttribution && !isUsageAttributionFlagLoaded) return
     const isFlagGatedTabEnabled =
       (tab !== AnalyticsDashboardType.cliAnalytics || isCliAnalyticsEnabled) &&
-      (tab !== AnalyticsDashboardType.leaderboard || isLeaderboardEnabled)
+      (tab !== AnalyticsDashboardType.leaderboard || isLeaderboardEnabled) &&
+      (tab !== AnalyticsDashboardType.usageAttribution || isUsageAttributionEnabled)
     const isValidTab = (isKnownTab && isFlagGatedTabEnabled) || dashboards.some((d) => d.id === tab)
     if (!isValidTab) {
       setSearchParams({ tab: AnalyticsDashboardType.insights }, { replace: true })
@@ -116,6 +127,8 @@ const AnalyticsPage: FC = () => {
     setSearchParams,
     isCliAnalyticsEnabled,
     isLeaderboardEnabled,
+    isUsageAttributionEnabled,
+    isUsageAttributionFlagLoaded,
   ])
 
   const handleFiltersChange = (newFilters: AnalyticsQueryParams, options?: FilterChangeOptions) => {
@@ -160,6 +173,13 @@ const AnalyticsPage: FC = () => {
             filters={selectedFilters}
             onFiltersChange={handleFiltersChange}
             initialUserOptions={seedUserOptions}
+            showProjectFilter={!isUsageAttributionTab}
+            showUserFilter={!isUsageAttributionTab}
+            note={
+              isUsageAttributionTab
+                ? 'No project or user filter on this tab: it attributes all usage across projects and people. Use the search in each table to find a project, repository or person.'
+                : undefined
+            }
           />
         </Sidebar>
       )}
@@ -172,6 +192,7 @@ const AnalyticsPage: FC = () => {
             isLeaderboardEnabled={isLeaderboardEnabled}
             isCustomizationEnabled={isCustomizationEnabled}
             isCliAnalyticsEnabled={isCliAnalyticsEnabled}
+            isUsageAttributionEnabled={isUsageAttributionEnabled}
           />
         </div>
       </PageLayout>

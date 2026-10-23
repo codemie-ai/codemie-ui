@@ -78,6 +78,8 @@ export interface TableProps<T = TableItem> {
   onToggleExpand?: (id: string) => void
   renderExpandedRow?: (item: T) => React.ReactNode
 
+  onRowClick?: (item: T) => void
+
   ariaLabel?: string
 }
 
@@ -108,6 +110,8 @@ const Table = <T,>({
   expandedRowIds,
   onToggleExpand,
   renderExpandedRow,
+
+  onRowClick,
 
   ariaLabel,
 }: TableProps<T>): React.ReactNode => {
@@ -173,9 +177,15 @@ const Table = <T,>({
 
       if (interactiveElement && !isSelectionCheckbox) return
 
+      if (onRowClick && !isSelectionCheckbox) {
+        // Selecting text in the row (to copy a name, say) is not a click on it.
+        if (!window.getSelection()?.toString()) onRowClick(item)
+        return
+      }
+
       handleRowSelect(item)
     },
-    [handleRowSelect]
+    [handleRowSelect, onRowClick]
   )
 
   const isMobileLayout = useIsMobileLayout()
@@ -214,6 +224,7 @@ const Table = <T,>({
             isRowSelected={(item) => !!selected?.find((s) => s[idField] === item[idField])}
             onRowSelect={handleRowSelect}
             onCardSelect={onSelectRow ? handleRowSelect : undefined}
+            onCardOpen={onRowClick}
             selectionProps={selectionProps}
             sortProps={sortProps}
             expandedRowIds={expandedRowIds}
@@ -267,7 +278,7 @@ const Table = <T,>({
                       <tr
                         onClick={(e) => handleRowClick(value, e)}
                         className={cn(
-                          onSelectRow &&
+                          (onSelectRow || onRowClick) &&
                             !isSelected &&
                             '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
                           isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer'

@@ -19,6 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import AnalyticsDashboardComponent from '../AnalyticsDashboard'
 
 const mockSetSearchParams = vi.hoisted(() => vi.fn())
+const cliInsightsProps = vi.hoisted(() => vi.fn())
 
 vi.mock('react-router', async () => {
   const actual = await vi.importActual('react-router')
@@ -73,16 +74,23 @@ vi.mock('@/components/Tabs/Tabs', () => ({
   default: ({ tabs, onChange }: any) => (
     <div>
       {tabs.map((t: any) => (
-        <button key={t.id} onClick={() => onChange(t.id)}>
-          {t.label}
-        </button>
+        <div key={t.id}>
+          <button onClick={() => onChange(t.id)}>{t.label}</button>
+          {t.element}
+        </div>
       ))}
     </div>
   ),
 }))
 
 vi.mock('../InsightsTab', () => ({ default: () => null }))
-vi.mock('../CLIInsightsTab', () => ({ default: () => null }))
+vi.mock('../CLIInsightsTab', () => ({
+  default: (props: unknown) => {
+    cliInsightsProps(props)
+    return null
+  },
+}))
+vi.mock('../usage-attribution/UsageAttributionTab', () => ({ default: () => null }))
 vi.mock('../AIAdoptionTab', () => ({ default: () => null }))
 vi.mock('../leaderboard/LeaderboardTab', () => ({ default: () => null }))
 vi.mock('../CustomDashboard', () => ({ default: () => null }))
@@ -108,6 +116,7 @@ const minimalProps = {
 describe('AnalyticsDashboardComponent', () => {
   beforeEach(() => {
     mockSetSearchParams.mockClear()
+    cliInsightsProps.mockClear()
   })
 
   it('tab change calls setSearchParams with a function updater, not an object', () => {
@@ -123,5 +132,20 @@ describe('AnalyticsDashboardComponent', () => {
     const result = updater(new URLSearchParams('time_period=last_hour&tab=insights'))
     expect(result.get('time_period')).toBe('last_hour')
     expect(result.get('tab')).toBe('cliInsights')
+  })
+
+  it('lets CLI Insights open Usage Attribution for viewers who can see it', () => {
+    render(<AnalyticsDashboardComponent {...minimalProps} isUsageAttributionEnabled />)
+    const { onOpenUsageAttribution } = cliInsightsProps.mock.lastCall![0]
+    onOpenUsageAttribution()
+    const updater = mockSetSearchParams.mock.calls[0][0] as (p: URLSearchParams) => URLSearchParams
+    const result = updater(new URLSearchParams('time_period=last_hour&tab=cliInsights'))
+    expect(result.get('tab')).toBe('usageAttribution')
+    expect(result.get('time_period')).toBe('last_hour')
+  })
+
+  it('gives CLI Insights no link for viewers who cannot see Usage Attribution', () => {
+    render(<AnalyticsDashboardComponent {...minimalProps} />)
+    expect(cliInsightsProps.mock.lastCall![0].onOpenUsageAttribution).toBeUndefined()
   })
 })

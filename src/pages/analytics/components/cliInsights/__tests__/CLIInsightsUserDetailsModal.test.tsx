@@ -263,6 +263,28 @@ describe('CLIInsightsUserDetailsModal', () => {
     expect(onProjectClick).toHaveBeenCalledWith('sap-mobile')
   })
 
+  it('leaves the classification out where Usage Attribution classifies CLI spend', async () => {
+    render(
+      <CLIInsightsUserDetailsModal
+        userName="Roman Pak"
+        userId="user-1"
+        filters={filters}
+        onHide={vi.fn()}
+        showClassification={false}
+      />
+    )
+
+    expect(await screen.findByText('CLI User: Roman Pak')).toBeInTheDocument()
+    expect(mockedApiGet).toHaveBeenCalledTimes(6)
+    const endpoints = mockedApiGet.mock.calls.map(([endpoint]) => endpoint)
+    expect(endpoints).not.toContain('v1/analytics/cli-insights-user-classification-detail')
+    expect(endpoints).not.toContain('v1/analytics/cli-insights-user-category-breakdown')
+    expect(screen.getByText('Workflow Intent')).toBeInTheDocument()
+    expect(screen.queryByText('Classification')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Category Breakdown/)).not.toBeInTheDocument()
+    expect(screen.getByText('Repositories (1):1')).toBeInTheDocument()
+  })
+
   it('shows an error message when the user detail request fails', async () => {
     mockedApiGet.mockRejectedValueOnce(new Error('Request failed'))
 

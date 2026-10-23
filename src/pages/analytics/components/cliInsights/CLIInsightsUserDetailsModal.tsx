@@ -21,6 +21,7 @@ import Tooltip from '@/components/Tooltip/Tooltip'
 import { useCliUserDetail } from '@/hooks/useCliUserDetail'
 import { AnalyticsQueryParams, TabularMetricType } from '@/types/analytics'
 import { getDeterministicChartColor } from '@/utils/chartColors'
+import { cn } from '@/utils/utils'
 
 import AnalyticsWidget from '../AnalyticsWidget'
 import {
@@ -44,6 +45,8 @@ interface Props {
   filters: AnalyticsQueryParams
   onHide: () => void
   onProjectClick?: (projectName: string) => void
+  /** False where Usage Attribution classifies CLI spend: the classification sections are left out. */
+  showClassification?: boolean
 }
 
 const CLIInsightsUserDetailsModal: FC<Props> = ({
@@ -52,6 +55,7 @@ const CLIInsightsUserDetailsModal: FC<Props> = ({
   filters,
   onHide,
   onProjectClick,
+  showClassification = true,
 }) => {
   const {
     meta,
@@ -64,7 +68,7 @@ const CLIInsightsUserDetailsModal: FC<Props> = ({
     repositoriesTable,
     loading,
     error,
-  } = useCliUserDetail(userName, userId, filters)
+  } = useCliUserDetail(userName, userId, filters, showClassification)
 
   if (!userName) return null
 
@@ -117,7 +121,7 @@ const CLIInsightsUserDetailsModal: FC<Props> = ({
             />
           </section>
 
-          <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <section className={cn('grid grid-cols-1 gap-6', showClassification && 'xl:grid-cols-2')}>
             <AnalyticsWidget title="Workflow Intent" expandable={false}>
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -138,37 +142,41 @@ const CLIInsightsUserDetailsModal: FC<Props> = ({
               </div>
             </AnalyticsWidget>
 
-            <AnalyticsWidget title="Classification" expandable={false}>
-              <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-                  {classificationCards.map((card) => (
-                    <MetricCard
-                      key={card.metric.id}
-                      metric={card.metric}
-                      valueOverride={card.valueOverride}
-                      valueClassName={card.valueClassName}
-                    />
-                  ))}
-                </div>
-                {!!meta.data.rule_reasons.length && (
-                  <div className="text-sm text-text-secondary">
-                    {meta.data.rule_reasons.join(' · ')}
+            {showClassification && (
+              <AnalyticsWidget title="Classification" expandable={false}>
+                <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                    {classificationCards.map((card) => (
+                      <MetricCard
+                        key={card.metric.id}
+                        metric={card.metric}
+                        valueOverride={card.valueOverride}
+                        valueClassName={card.valueClassName}
+                      />
+                    ))}
                   </div>
-                )}
-              </div>
-            </AnalyticsWidget>
+                  {!!meta.data.rule_reasons.length && (
+                    <div className="text-sm text-text-secondary">
+                      {meta.data.rule_reasons.join(' · ')}
+                    </div>
+                  )}
+                </div>
+              </AnalyticsWidget>
+            )}
           </section>
 
-          <DistributionBarWidget
-            data={categoryBreakdownChart}
-            title="Category Breakdown"
-            description="Repository distribution across deterministic CLI categories."
-            labelField="category"
-            valueField="percentage"
-            secondaryValueField="cost"
-            colorByLabel={getDeterministicChartColor}
-            emptyStateLabel="No category breakdown available for this entity."
-          />
+          {showClassification && (
+            <DistributionBarWidget
+              data={categoryBreakdownChart}
+              title="Category Breakdown"
+              description="Repository distribution across deterministic CLI categories."
+              labelField="category"
+              valueField="percentage"
+              secondaryValueField="cost"
+              colorByLabel={getDeterministicChartColor}
+              emptyStateLabel="No category breakdown available for this entity."
+            />
+          )}
 
           {!!meta.data.unique_projects.length && (
             <section className="flex flex-col gap-3">
@@ -199,6 +207,7 @@ const CLIInsightsUserDetailsModal: FC<Props> = ({
                 title={`Repositories (${repositoriesTable.data.rows.length})`}
                 initialData={repositoriesTable}
                 hidePagination
+                hiddenColumns={showClassification ? undefined : ['classification']}
                 columnOrder={[
                   'repository',
                   'branch',

@@ -152,6 +152,31 @@ describe('Table on mobile (cards)', () => {
     expect(onSelectRow).toHaveBeenCalledWith([items[1], items[0]])
   })
 
+  it('opens a row from its card when the table opens rows', async () => {
+    const user = userEvent.setup()
+    const onRowClick = vi.fn()
+    render(
+      <Table
+        idPath="id"
+        items={items}
+        columnDefinitions={drillDownColumns}
+        customRenderColumns={customRenderColumns}
+        onRowClick={onRowClick}
+      />
+    )
+
+    const janeCard = screen.getByRole('button', { name: 'Jane' })
+    // Opening is not a toggle.
+    expect(janeCard).not.toHaveAttribute('aria-pressed')
+
+    await user.click(janeCard)
+    expect(onRowClick).toHaveBeenCalledExactlyOnceWith(items[0])
+
+    await user.click(screen.getByRole('button', { name: 'More for John' }))
+    expect(actionSpy).toHaveBeenCalledWith('r-2')
+    expect(onRowClick).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps the controls inside a card separate from selecting it', async () => {
     const user = userEvent.setup()
     const onSelectRow = vi.fn()

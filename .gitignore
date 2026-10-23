@@ -124,3 +124,5 @@ docs/codemie/analytics/
 
 # Default results folder of codemie-test-harness (junit.xml, results.json)
 codemie-test-reports/
+output/playwright
+.playwright-cli

@@ -46,6 +46,7 @@ export const FEATURE_FLAGS = {
   CODE_INDEXING: 'features:codeIndexing',
   AI_CHAMPIONS_LEADERBOARD: 'aiChampionsLeaderboard',
   CLI_ANALYTICS: 'features:cliAnalytics',
+  USAGE_ATTRIBUTION: 'features:usageAttribution',
   PROJECT_MODEL_OVERRIDE: 'features:projectModelOverride',
   WORKSPACE_SCRIPT_BRIDGE: 'features:workspaceScriptBridge',
 } as const

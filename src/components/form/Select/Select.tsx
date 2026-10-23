@@ -55,6 +55,8 @@ interface SelectProps<TValue extends string | number | null = string | number | 
   filter?: boolean
   filterBy?: string
   filterPlaceholder?: string
+  /** The accessible name when there is no visible label. */
+  ariaLabel?: string
 }
 
 interface DefaultOptionTemplateProps {
@@ -124,6 +126,7 @@ const Select = forwardRef(
       filter,
       filterBy,
       filterPlaceholder,
+      ariaLabel,
     }: SelectProps<TValue>,
     ref: Ref<Dropdown>
   ) => {
@@ -175,6 +178,7 @@ const Select = forwardRef(
                 filter={filter}
                 filterBy={filterBy}
                 filterPlaceholder={filterPlaceholder}
+                ariaLabel={ariaLabel}
                 className={cn(
                   'h-8 gap-2 !px-2 text-sm flex text-text-primary justify-between items-center bg-surface-base-content border border-border-primary rounded-lg transition hover:border-border-secondary cursor-pointer',
                   !value && 'text-text-quaternary',

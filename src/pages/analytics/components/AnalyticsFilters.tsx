@@ -40,12 +40,21 @@ interface AnalyticsFiltersProps {
   /** Seed options for the user filter — keeps pre-selected users visible on
    *  initial load even before the async options list is fetched. */
   initialUserOptions?: Array<{ label: string; value: string }>
+  /** Tabs that attribute all usage (Usage Attribution) hide the project and user filters, and keep their values
+   *  for the other tabs. */
+  showProjectFilter?: boolean
+  showUserFilter?: boolean
+  /** A short note under the filters. */
+  note?: string
 }
 
 const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
   filters,
   onFiltersChange,
   initialUserOptions,
+  showProjectFilter = true,
+  showUserFilter = true,
+  note,
 }) => {
   const { user } = useSnapshot(userStore)
   const [isUserManagementEnabled] = useUserManagementEnabled()
@@ -134,8 +143,10 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
   }, [loadUsers])
 
   useEffect(() => {
+    // Without the user filter there is nothing to load.
+    if (!showUserFilter) return
     loadUsers().catch(console.error)
-  }, [loadUsers])
+  }, [loadUsers, showUserFilter])
 
   useEffect(() => {
     userSearchTermRef.current = ''
@@ -199,19 +210,28 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
 
   const handleClearFilters = () => {
     // Clearing is a discrete, deliberate action, so the dashboard refetches at once.
-    setLocalFilters(DEFAULT_FILTERS)
-    onFiltersChangeRef.current(DEFAULT_FILTERS, { immediate: true })
+    // Hidden filters belong to the other tabs: keep them.
+    const cleared: AnalyticsQueryParams = {
+      ...DEFAULT_FILTERS,
+      ...(!showUserFilter && localFilters.users?.length ? { users: localFilters.users } : {}),
+      ...(!showProjectFilter && localFilters.projects?.length
+        ? { projects: localFilters.projects }
+        : {}),
+    }
+    setLocalFilters(cleared)
+    onFiltersChangeRef.current(cleared, { immediate: true })
   }
 
   const hasNonDefaultFilters = useMemo(() => {
     // Check if filters differ from default
     const hasCustomTimePeriod = localFilters.time_period !== DEFAULT_FILTERS.time_period
     const hasDateRange = !!(localFilters.start_date || localFilters.end_date)
-    const hasUsers = !!(localFilters.users && localFilters.users.length > 0)
-    const hasProjects = !!(localFilters.projects && localFilters.projects.length > 0)
+    const hasUsers = showUserFilter && !!(localFilters.users && localFilters.users.length > 0)
+    const hasProjects =
+      showProjectFilter && !!(localFilters.projects && localFilters.projects.length > 0)
 
     return hasCustomTimePeriod || hasDateRange || hasUsers || hasProjects
-  }, [localFilters])
+  }, [localFilters, showUserFilter, showProjectFilter])
 
   return (
     <div className="flex flex-col">
@@ -265,30 +285,39 @@ const AnalyticsFilters: FC<AnalyticsFiltersProps> = ({
           />
         </FilterAccordionItem>
 
-        <FilterAccordionItem label="Project">
-          <ProjectSelector
-            value={localFilters.projects ?? []}
-            onChange={handleProjectsChange}
-            fullWidth
-            label=""
-            multiple
-          />
-        </FilterAccordionItem>
+        {showProjectFilter && (
+          <FilterAccordionItem label="Project">
+            <ProjectSelector
+              value={localFilters.projects ?? []}
+              onChange={handleProjectsChange}
+              fullWidth
+              label=""
+              multiple
+            />
+          </FilterAccordionItem>
+        )}
 
-        <FilterAccordionItem label="Users">
-          <AnalyticsUserFilter
-            value={localFilters.users ?? []}
-            onChange={handleUsersChange}
-            userOptions={userOptions}
-            isLoadingOptions={isLoadingUsers}
-            isAdmin={isAdminPgSearch}
-            showMeCheckbox={showMeCheckbox}
-            onSearchChange={handleSearchChange}
-            optionsSearchTerm={userOptionsSearchTerm}
-            initialStickyOptions={initialUserOptions}
-          />
-        </FilterAccordionItem>
+        {showUserFilter && (
+          <FilterAccordionItem label="Users">
+            <AnalyticsUserFilter
+              value={localFilters.users ?? []}
+              onChange={handleUsersChange}
+              userOptions={userOptions}
+              isLoadingOptions={isLoadingUsers}
+              isAdmin={isAdminPgSearch}
+              showMeCheckbox={showMeCheckbox}
+              onSearchChange={handleSearchChange}
+              optionsSearchTerm={userOptionsSearchTerm}
+              initialStickyOptions={initialUserOptions}
+            />
+          </FilterAccordionItem>
+        )}
       </div>
+      {note && (
+        <p className="mt-4 rounded-lg border border-dashed border-border-structural px-3 py-2.5 text-xs leading-5 text-text-quaternary">
+          {note}
+        </p>
+      )}
     </div>
   )
 }
