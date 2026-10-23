@@ -48,6 +48,8 @@ describe('MCPServerActions accessibility (contextId pattern)', () => {
           onCloneClick={vi.fn()}
           canClone={true}
           cloneDisabled={false}
+          onTest={vi.fn()}
+          isTesting={false}
         />
       </div>
     )
@@ -78,6 +80,8 @@ describe('MCPServerActions — Clone menu item', () => {
           onCloneClick={vi.fn()}
           canClone={overrides.canClone ?? true}
           cloneDisabled={overrides.cloneDisabled ?? false}
+          onTest={vi.fn()}
+          isTesting={false}
         />
       </div>
     )

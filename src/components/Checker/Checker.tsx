@@ -19,6 +19,7 @@ import CheckSvg from '@/assets/icons/check.svg?react'
 import ConnectionSvg from '@/assets/icons/connection.svg?react'
 import CrossSvg from '@/assets/icons/cross.svg?react'
 import RingSvg from '@/assets/icons/ring.svg?react'
+import WarningSvg from '@/assets/icons/status-warning.svg?react'
 import { CHECKER_STATUSES } from '@/constants/common'
 import { cn } from '@/utils/utils'
 
@@ -43,6 +44,7 @@ const Checker: FC<CheckerProps> = ({
   const isInProgress = useMemo(() => status === CHECKER_STATUSES.IN_PROGRESS, [status])
   const isFailed = useMemo(() => status === CHECKER_STATUSES.FAILED, [status])
   const isSuccess = useMemo(() => status === CHECKER_STATUSES.SUCCESS, [status])
+  const isWarning = useMemo(() => status === CHECKER_STATUSES.WARNING, [status])
   const TestIconComponent = ConnectionSvg
   const commonIconClasses = 'w-[18px] h-[18px]'
 
@@ -50,9 +52,19 @@ const Checker: FC<CheckerProps> = ({
     if (isUndefined) return <TestIconComponent className={`${commonIconClasses}`} />
     if (isInProgress) return <RingSvg className={commonIconClasses} />
     if (isSuccess) return <CheckSvg className={commonIconClasses} />
+    if (isWarning) return <WarningSvg className={commonIconClasses} />
     if (isFailed) return <CrossSvg className={commonIconClasses} />
     return null
-  }, [status, isUndefined, isInProgress, isSuccess, isFailed, commonIconClasses, testIcon])
+  }, [
+    status,
+    isUndefined,
+    isInProgress,
+    isSuccess,
+    isWarning,
+    isFailed,
+    commonIconClasses,
+    testIcon,
+  ])
 
   const content = (
     <>

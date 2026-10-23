@@ -32,6 +32,8 @@ interface MCPServerDetailsProps {
   onClose: () => void
   onEdit: (server: MCPConfig) => void
   onDelete: (server: MCPConfig) => void
+  onTest: (server: MCPConfig) => void
+  isTesting?: boolean
 }
 
 interface ServerHeaderProps {
@@ -191,7 +193,14 @@ const ServerMetadataSidebar: FC<ServerMetadataSidebarProps> = ({
   </DetailsSidebar>
 )
 
-const MCPServerDetails: FC<MCPServerDetailsProps> = ({ server, onClose, onEdit, onDelete }) => {
+const MCPServerDetails: FC<MCPServerDetailsProps> = ({
+  server,
+  onClose,
+  onEdit,
+  onDelete,
+  onTest,
+  isTesting = false,
+}) => {
   if (!server) return null
 
   const variablesCount = server.required_env_vars?.length || 0
@@ -214,7 +223,13 @@ const MCPServerDetails: FC<MCPServerDetailsProps> = ({ server, onClose, onEdit, 
           variablesCount={variablesCount}
         />
 
-        <ServerActions server={server} onEdit={onEdit} onDelete={onDelete} />
+        <ServerActions
+          server={server}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onTest={onTest}
+          isTesting={isTesting}
+        />
       </div>
     </div>
   )

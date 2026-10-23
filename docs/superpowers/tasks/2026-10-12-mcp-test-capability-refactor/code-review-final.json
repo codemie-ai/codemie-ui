@@ -1,0 +1,107 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance did not run (no spec/story artifact), so decision_needed is unavailable and confidence is capped low; blind, edge-case and verification-gap lenses all ran with parseable, real findings, and standards (coverage_gap: false) found two commit-format violations now carried as CR-001/CR-002. 7 blocking findings survive triage (5 code, 2 standards). 4 candidates were dismissed after reachability checks: a cosmetic 95%-summing column-width report, a double-invocation concern already guarded by Checker's own disabled state, a catalog-cache merge pattern the test suite confirms is intentional, and the missing x-user-mcp-auth-location login-prompt handling (edge-case + verification-gap duplicate), which the original task explicitly scopes out ('No auth-required handling anywhere, these MCP servers have no user sign-in'). No findings deferred.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "partial",
+      "notes": "20 of 22 commit subjects in range match 'EPMCDME-XXXX: Capital sentence'; two do not (see CR-001, CR-002)."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality.md guide exists in the repo and no code_quality ArtifactRef was passed."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No new dangerouslySetInnerHTML/innerHTML, message listeners, window.location navigation, env reads, or nosonar markers in any changed file; the one open-redirect-relevant URL sink (broker login popup) was removed during consolidation, so no unsafe sink remains."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "(commit message)",
+      "title": "Non-conforming commit subject casing",
+      "problem": "Commit subject 'EPMCDME-15541: implement integrations for admin mcp capability testing' has a lowercase first word after the ticket colon, violating git-workflow.md's 'EPMCDME-XXXX: Capital sentence' format.",
+      "impact": "Tekton CI's commit-message regex blocks the pipeline on this subject.",
+      "recommendation": "Reword to 'EPMCDME-15541: Implement integrations for admin mcp capability testing' (the squash-merge subject must also conform)."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "(commit message)",
+      "title": "Commit subject missing ticket-prefixed format",
+      "problem": "Commit subject 'epmcdme-15541-mcp-test-capability: add planning artifacts' uses a lowercase, hyphenated non-ticket prefix instead of 'EPMCDME-15541:', with a lowercase first word.",
+      "impact": "Tekton CI's commit-message regex blocks the pipeline on this subject.",
+      "recommendation": "Reword to 'EPMCDME-15541: Add planning artifacts'."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/MCPLastTestInfo.tsx",
+      "line": 26,
+      "title": "Unknown last_test_status renders as Not tested",
+      "problem": "In MCPLastTestBadge, `(status && BADGE_CONFIG[status]) || NOT_TESTED` falls back to the 'Not tested' badge whenever the backend returns a last_test_status value outside 'success'|'failure'|'warning', even though the caller has already passed MCPLastTestInfo's `!status` guard and is rendering the test timestamp/message alongside it.",
+      "impact": "An admin sees a contradictory state: a last-tested timestamp and message next to a badge claiming the server was never tested, hiding that a test actually ran and masking any new backend status value.",
+      "recommendation": "Add an explicit fallback for a truthy-but-unrecognized status (e.g. StatusEnum.Warning with the raw status text) instead of silently matching the no-status case."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/MCPLastTestInfo.tsx",
+      "title": "last_test_error_category fetched but never displayed",
+      "problem": "last_test_error_category is added to MCPConfig and LAST_TEST_KEYS (fetched and merged on every test), but MCPLastTestInfo only renders last_test_message — the category is never surfaced.",
+      "impact": "Admins troubleshooting a failed test lose the structured error category the backend returns and must rely on the free-text message only; the added test only asserts the message renders, so this gap would recur unnoticed.",
+      "recommendation": "Render last_test_error_category in MCPLastTestInfo's failure/warning branch, or drop it from LAST_TEST_KEYS if intentionally deferred."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/useMCPServerTest.tsx",
+      "line": 60,
+      "title": "Warning test result shown as success in Checker",
+      "problem": "runTest's modal status mapping is `result.last_test_status === 'failure' ? FAILED : SUCCESS`, so a 'warning' result (handled distinctly by reportResult's toaster.info branch two lines earlier) sets the Checker to SUCCESS.",
+      "impact": "The modal's Checker button shows a green success check for a run the toaster simultaneously reports as a warning, giving the admin two contradictory signals from the same test.",
+      "recommendation": "Map 'warning' to a distinct, non-SUCCESS Checker state mirroring the three-way branch already used in reportResult."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/hooks/useMCPManagement.ts",
+      "line": 33,
+      "title": "Details panel vanishes silently when its config leaves the list",
+      "problem": "detailsServer is derived live via `configs.find(...)`; if the backing config is dropped from configs (pagination change, filter, list refresh) while the details panel is open, detailsServer becomes null with no explicit close or message.",
+      "impact": "The details sidebar disappears without explanation while the admin is viewing it, reading as a UI glitch rather than an intentional close.",
+      "recommendation": "When the live lookup misses, either retain the last-known server snapshot for display or close the panel explicitly with a notice rather than letting it vanish."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/mcp.ts",
+      "line": 296,
+      "title": "mergeLastTest can blank previously-shown last-test fields",
+      "problem": "mergeLastTest unconditionally sets every LAST_TEST_KEYS field to result[key] from the new test response; if a response omits a field the UI currently displays (e.g. last_test_integration_alias on a run without one), that field is overwritten with undefined instead of preserved or explicitly cleared.",
+      "impact": "A previously-shown last-test detail can silently disappear from the UI after a later test run that doesn't return it, with no indication the data was dropped versus genuinely absent.",
+      "recommendation": "Confirm the backend always returns the full LAST_TEST_KEYS set on every test response; if a field can legitimately be omitted, merge with `key in result ? result[key] : merged[key]` instead of unconditional assignment."
+    }
+  ]
+}

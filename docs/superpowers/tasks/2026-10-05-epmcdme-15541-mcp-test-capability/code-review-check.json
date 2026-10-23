@@ -1,0 +1,35 @@
+{
+  "decision": "approve",
+  "rationale": "All five prior blocking findings verified against current source: CR-001/CR-002 (https-only broker URL plus popup tests) in the UI repo, CR-003/CR-004/CR-005 (sanitized persisted failure text, enabled=True, re-fetch with 404) in the backend at 4cf8cb497. CR-003 was resolved in mcp_config_service.py rather than the originally cited mcp_tester.py; the persistence path it described is what changed. Tests were not executed (Stage 7).",
+  "confidence": "high",
+  "risk_flags": ["migration", "public-api", "data-contract", "security"],
+  "business_review": [
+    {"kind": "story-ac", "item": "AC1: POST /v1/mcp-configs/{id}/test admin-only; Test in row dropdown and edit dialog", "status": "pass", "notes": "Router admin_access_only; UI row action and modal section (edit mode only)"},
+    {"kind": "story-ac", "item": "AC2: reachable server with tools gives success with badge and timestamp", "status": "pass", "notes": "run_test SUCCESS with tools_count; badge and timestamp rendered"},
+    {"kind": "story-ac", "item": "AC3: failed test gives failure with message and category in UI", "status": "pass", "notes": "FAILURE with category; message rendered and toasted"},
+    {"kind": "story-ac", "item": "AC4: last_test_* persisted; shown in table, sidebar, dialog panel; on GET and list", "status": "pass", "notes": "Columns, migration, _to_response flattening, three UI surfaces"},
+    {"kind": "story-ac", "item": "AC5: zero tools gives warning distinct from failure", "status": "pass", "notes": "WARNING/no_tools; warning badge and info toast"},
+    {"kind": "story-ac", "item": "Never-tested is all-null and renders as Not tested", "status": "pass", "notes": "Falls back to NOT_TESTED badge"},
+    {"kind": "story-ac", "item": "Auth exceptions propagate, persist nothing, prompt sign-in and re-test", "status": "pass", "notes": "Re-raised before write; auth prompt and auto retry"},
+    {"kind": "story-ac", "item": "Dialog Test disabled while dirty and hidden when creating", "status": "pass", "notes": "isDirty gate and server.id gate"},
+    {"kind": "story-ac", "item": "Busy state and duplicate-run block in UI", "status": "pass", "notes": "testingConfigIds and inflight dedupe"},
+    {"kind": "story-ac", "item": "POST /assistants/mcp/test behavior unchanged", "status": "pass", "notes": "test() wraps run_test with same semantics"},
+    {"kind": "story-ac", "item": "Backend tests exist and pass; migration applies and reverts cleanly", "status": "pending-stage-7", "notes": "Present; execution evidence owned by Stage 7"},
+    {"kind": "spec", "item": "API contract, response fields, model columns, migration, tester, service, router", "status": "pass", "notes": "All spec items matched in backend diff"},
+    {"kind": "spec", "item": "UI types/store, row action, dialog, table column, sidebar, toasts, auth, errors", "status": "pass", "notes": "All spec items matched in UI diff"},
+    {"kind": "spec", "item": "Non-goals respected (no history, no unrelated files)", "status": "pass", "notes": "Confirmed in diffs"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "UI: 5 subjects and backend: 4 subjects all match EPMCDME-XXXX: Capital sentence, non-zero ID, no trailing period"},
+    {"kind": "code-quality", "status": "na", "notes": "UI repo has no code-quality guide (absent, not a gap); backend code-quality.md checked: no documented violation found"},
+    {"kind": "security", "status": "partial", "notes": "Backend endpoint uses authenticate + admin_access_only. UI: useMCPConfigTest.tsx:133 opens x-user-mcp-auth-location header value with no scheme or origin validation"}
+  ],
+  "findings": [],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "MCPServerActions.test.tsx now drives a 401 Response with x-user-mcp-auth-location through the hook and asserts the Login to MCP Server button and no error toast."},
+    {"id": "CR-002", "status": "resolved", "notes": "toSafeHttpUrl (useMCPConfigTest.tsx:52) accepts only http/https and feeds setBrokerLoginUrl at line 77; window.open uses only that value. Non-http(s) case is tested."},
+    {"id": "CR-003", "status": "resolved", "notes": "Failure text persisted as category-only message; full text only on the admin response (service lines 396-408). Fixed in mcp_config_service.py, not the originally cited mcp_tester.py."},
+    {"id": "CR-004", "status": "resolved", "notes": "MCPServerDetails now built with enabled=True (service line 380); test asserts it for an inactive config."},
+    {"id": "CR-005", "status": "resolved", "notes": "Config re-fetched after run_test (line 385) with 404 when deleted; the update targets the fresh object. Both cases tested."}
+  ]
+}

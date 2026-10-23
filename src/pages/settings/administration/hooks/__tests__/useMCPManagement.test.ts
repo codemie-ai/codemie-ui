@@ -23,6 +23,9 @@ import toaster from '@/utils/toaster'
 
 import { useMCPManagement } from '../useMCPManagement'
 
+const serverA = { id: 'a', name: 'Server A' } as MCPConfig
+const serverB = { id: 'b', name: 'Server B' } as MCPConfig
+
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal<typeof import('valtio')>()
   return {
@@ -170,5 +173,62 @@ describe('useMCPManagement - submit warnings', () => {
     })
 
     expect(toaster.info).not.toHaveBeenCalled()
+  })
+})
+
+// Unit tests mock valtio's useSnapshot to a pass-through (see src/setupTests.unit.ts), so a raw
+// mcpStore mutation does not itself trigger a re-render; rerender() forces the hook to re-read
+// the store, which is enough to prove the derivation logic below.
+describe('useMCPManagement details panel', () => {
+  beforeEach(() => {
+    vi.spyOn(mcpStore, 'indexConfigs').mockResolvedValue([])
+    mcpStore.configs = [serverA, serverB]
+  })
+
+  it('retains the last-known server snapshot when its config leaves the list while the panel is open', () => {
+    const { result, rerender } = renderHook(() => useMCPManagement())
+
+    act(() => {
+      result.current.handleViewDetails(serverA)
+    })
+    expect(result.current.detailsServer?.id).toBe('a')
+
+    act(() => {
+      mcpStore.configs = [serverB]
+    })
+    rerender()
+
+    expect(result.current.detailsServer?.id).toBe('a')
+  })
+
+  it('clears the retained snapshot once the panel is explicitly closed', () => {
+    const { result, rerender } = renderHook(() => useMCPManagement())
+
+    act(() => {
+      result.current.handleViewDetails(serverA)
+    })
+    act(() => {
+      mcpStore.configs = [serverB]
+    })
+    rerender()
+    act(() => {
+      result.current.handleCloseDetails()
+    })
+
+    expect(result.current.detailsServer).toBeNull()
+  })
+
+  it('still reflects live updates (e.g. a renamed config) while the config stays in the list', () => {
+    const { result, rerender } = renderHook(() => useMCPManagement())
+
+    act(() => {
+      result.current.handleViewDetails(serverA)
+    })
+    act(() => {
+      mcpStore.configs = [{ ...serverA, name: 'Renamed' } as MCPConfig, serverB]
+    })
+    rerender()
+
+    expect(result.current.detailsServer?.name).toBe('Renamed')
   })
 })

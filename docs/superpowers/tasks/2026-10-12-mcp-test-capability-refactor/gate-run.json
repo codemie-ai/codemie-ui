@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15541-mcp-management-test-capability",
+  "head": "340cc37f7e275db028be3bc97ecf0c9abcef061c",
+  "runner": "npm",
+  "started_at": "2026-10-12T16:18:33Z",
+  "completed_at": "2026-10-12T16:26:17Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16213,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 11881,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1636,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12718,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: 'no leaks found' over ~35.65 MB scanned"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 198780,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 690 passed (690); Tests 6947 passed | 1 skipped (6948)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 68300,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 50 passed (50); Tests 560 passed | 1 skipped (561)"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Not run: no files currently staged in the working tree, so lint-staged has nothing to act on. Not a substitute for the full `lint` gate above, which did run over all files."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 272,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2338 files, 0 missing license headers"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 157,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN locally to run this gate for real; otherwise it is still owed to CI (the pipeline's compliance-report / sonar check)."
+    }
+  ],
+  "failures": {}
+}

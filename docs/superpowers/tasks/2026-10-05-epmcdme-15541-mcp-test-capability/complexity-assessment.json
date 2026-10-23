@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Add an MCP configuration Test action (dropdown menu and edit dialog button) to codemie-ui that calls POST /v1/mcp-configs/{id}/test and displays the persisted last-test result.",
+  "generated": "2026-10-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 15,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [],
+  "red_flags_applied": [
+    "Scope note: technical-analysis.md describes the backend repo; this assessment scores only the codemie-ui slice (MCP Management page row dropdown, edit-config dialog, API/store call, response types and result display). Backend work (endpoint, migration, MCPConfigService) is out of scope for this repo run.",
+    "Borderline 14 to 15: Technical Risk is M and the dropdown-action and API-call patterns are established, but UI result rendering for success/failure/warning, admin-only gating and auth-required responses are undecided, so the score stays at 15 (M)."
+  ],
+  "split_recommendation": null
+}

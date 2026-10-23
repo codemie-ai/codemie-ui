@@ -24,11 +24,13 @@ import SettingsForm, { SettingsFormRef } from '../SettingsForm/SettingsForm'
 interface NewIntegrationPopupProps {
   visible: boolean
   onHide: () => void
-  onSuccess: () => void | Promise<void>
+  onSuccess: (createdId?: string) => void | Promise<void>
   project?: string
   credentialType?: string
   /** Hides the provider OAuth 2.0 sign-in toggle for callers that cannot use OAuth integrations. */
   hideOAuthToggle?: boolean
+  /** Pre-fills the form's credential fields, e.g. with the keys a caller already knows it needs. */
+  credentialValues?: Record<string, unknown>
 }
 
 const NewIntegrationPopup: React.FC<NewIntegrationPopupProps> = ({
@@ -38,6 +40,7 @@ const NewIntegrationPopup: React.FC<NewIntegrationPopupProps> = ({
   project,
   credentialType,
   hideOAuthToggle = false,
+  credentialValues,
 }) => {
   const formRef = useRef<SettingsFormRef>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -45,9 +48,9 @@ const NewIntegrationPopup: React.FC<NewIntegrationPopupProps> = ({
   const createUserSetting = async (values: Record<string, unknown>) => {
     setIsSubmitting(true)
     try {
-      await userSettingsStore.createUserSetting(values)
+      const created = await userSettingsStore.createUserSetting(values)
       toaster.info('Integration created successfully')
-      await onSuccess()
+      await onSuccess(created?.id)
       onHide()
     } catch (error) {
       toaster.error('Failed to create integration')
@@ -78,6 +81,7 @@ const NewIntegrationPopup: React.FC<NewIntegrationPopupProps> = ({
           ref={formRef}
           onSubmit={createUserSetting}
           credentialType={credentialType}
+          credentialValues={credentialValues}
           projectName={project}
           disableProject={true}
           disableType={true}

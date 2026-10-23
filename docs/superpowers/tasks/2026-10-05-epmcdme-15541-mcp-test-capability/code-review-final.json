@@ -1,0 +1,89 @@
+{
+  "decision": "request-changes",
+  "rationale": "Five blocking findings: an inactive config is tested as enabled=False and persists a misleading 'no tools' warning, the persisted test does a stale full-row update, raw error text is persisted and exposed via non-admin GETs, the broker login URL reaches window.open unvalidated, and the broker-auth path is untested. No lens failed or truncated; standards coverage complete; reachability of CR-003 and CR-005 was not fully confirmed. 0 deferred, about 30 dismissed as noise or handled (incl. unconstrained last_test_status column and mixed error_category casing, both known and code-constrained); migration not run against a DB (Stage 7).",
+  "confidence": "medium",
+  "risk_flags": ["migration", "public-api", "data-contract", "security"],
+  "business_review": [
+    {"kind": "story-ac", "item": "AC1: POST /v1/mcp-configs/{id}/test admin-only; Test in row dropdown and edit dialog", "status": "pass", "notes": "Router admin_access_only; UI row action and modal section (edit mode only)"},
+    {"kind": "story-ac", "item": "AC2: reachable server with tools gives success with badge and timestamp", "status": "pass", "notes": "run_test SUCCESS with tools_count; badge and timestamp rendered"},
+    {"kind": "story-ac", "item": "AC3: failed test gives failure with message and category in UI", "status": "pass", "notes": "FAILURE with category; message rendered and toasted"},
+    {"kind": "story-ac", "item": "AC4: last_test_* persisted; shown in table, sidebar, dialog panel; on GET and list", "status": "pass", "notes": "Columns, migration, _to_response flattening, three UI surfaces"},
+    {"kind": "story-ac", "item": "AC5: zero tools gives warning distinct from failure", "status": "pass", "notes": "WARNING/no_tools; warning badge and info toast"},
+    {"kind": "story-ac", "item": "Never-tested is all-null and renders as Not tested", "status": "pass", "notes": "Falls back to NOT_TESTED badge"},
+    {"kind": "story-ac", "item": "Auth exceptions propagate, persist nothing, prompt sign-in and re-test", "status": "pass", "notes": "Re-raised before write; auth prompt and auto retry"},
+    {"kind": "story-ac", "item": "Dialog Test disabled while dirty and hidden when creating", "status": "pass", "notes": "isDirty gate and server.id gate"},
+    {"kind": "story-ac", "item": "Busy state and duplicate-run block in UI", "status": "pass", "notes": "testingConfigIds and inflight dedupe"},
+    {"kind": "story-ac", "item": "POST /assistants/mcp/test behavior unchanged", "status": "pass", "notes": "test() wraps run_test with same semantics"},
+    {"kind": "story-ac", "item": "Backend tests exist and pass; migration applies and reverts cleanly", "status": "pending-stage-7", "notes": "Present; execution evidence owned by Stage 7"},
+    {"kind": "spec", "item": "API contract, response fields, model columns, migration, tester, service, router", "status": "pass", "notes": "All spec items matched in backend diff"},
+    {"kind": "spec", "item": "UI types/store, row action, dialog, table column, sidebar, toasts, auth, errors", "status": "pass", "notes": "All spec items matched in UI diff"},
+    {"kind": "spec", "item": "Non-goals respected (no history, no unrelated files)", "status": "pass", "notes": "Confirmed in diffs"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "UI: 5 subjects and backend: 4 subjects all match EPMCDME-XXXX: Capital sentence, non-zero ID, no trailing period"},
+    {"kind": "code-quality", "status": "na", "notes": "UI repo has no code-quality guide (absent, not a gap); backend code-quality.md checked: no documented violation found"},
+    {"kind": "security", "status": "partial", "notes": "Backend endpoint uses authenticate + admin_access_only. UI: useMCPConfigTest.tsx:133 opens x-user-mcp-auth-location header value with no scheme or origin validation"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie-ui/src/pages/settings/administration/components/useMCPConfigTest.tsx",
+      "line": 60,
+      "title": "Broker-login popup path has no test",
+      "problem": "No test drives run() with a Response carrying the x-user-mcp-auth-location header through the hook; the setBrokerLoginUrl branch and 'Login to MCP Server' popup are unverified. The modal test mocks the hook entirely and the store test only checks the rethrow.",
+      "impact": "If the branch is removed or inverted, admins testing broker-auth MCP servers get a generic error toast or an unhandled rejection and every current test still passes.",
+      "recommendation": "In MCPServerActions.test.tsx or a hook test, mock testConfig to reject with new Response(null,{status:401,headers:{'x-user-mcp-auth-location':'https://login'}}) with handleAuthRequiredError resolving false; click Test Connection; assert the 'Login to MCP Server' button shows and toaster.error was not called."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie-ui/src/pages/settings/administration/components/useMCPConfigTest.tsx",
+      "line": 133,
+      "title": "Unvalidated response header URL reaches window.open",
+      "problem": "The x-user-mcp-auth-location header value is stored via setBrokerLoginUrl (line 69) and passed to window.open at line 133 with no scheme or origin check. The project security-patterns guide forbids passing an API-response string to location/window.open untreated. noopener,noreferrer is set but does not restrict scheme.",
+      "impact": "A non-http(s) or unexpected-host URL in the header would be opened from the admin's session. The header comes from the platform's own backend, so practical exploitability is low, but it violates a documented blocking standard.",
+      "recommendation": "Parse with new URL(), require http: or https: (and the expected auth origin if applicable) before calling setBrokerLoginUrl; otherwise ignore the header and fall through to the error toast."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie/src/codemie/service/mcp/mcp_tester.py",
+      "line": 129,
+      "title": "Raw exception text persisted and exposed to non-admins",
+      "problem": "run_test builds the failure message from f\"{e}\" plus a category hint and MCPConfigService.test persists it in last_test_detail; _to_response exposes it as last_test_message. GET /mcp-configs/{id} and the list endpoint are not admin-only (only POST/PUT/DELETE/test carry admin_access_only). Whether messages contain hosts, commands or secrets depends on the underlying error and was not confirmed.",
+      "impact": "Internal hosts, commands or credentials embedded in connect errors could be readable by any authenticated user who can read the catalog, where previously the text only went back to the admin running the test.",
+      "recommendation": "Persist a sanitized or truncated message (category-based text) in last_test_detail, or omit last_test_message from non-admin GET/list responses; keep the full text only in the test response for the admin."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie/src/codemie/service/mcp_config_service.py",
+      "line": 377,
+      "title": "Inactive config tested as disabled gives false warning",
+      "problem": "MCPConfigService.test passes enabled=mcp_config.is_active to MCPServerDetails. MCPToolkitService skips any server with enabled=False (toolkit_service.py 'Skipping disabled MCP server'), so get_mcp_server_tools returns no tools and run_test returns the WARNING 'Connected ... but no tools were retrieved' without connecting.",
+      "impact": "An inactive catalog config is reported and persisted as 'connected but no tools', a false statement shown in the table, sidebar and dialog, and a misleading result for the admin.",
+      "recommendation": "Pass enabled=True for the test (the test is an explicit admin action), or reject the test for inactive configs with a clear 400 and do not persist."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "codemie/src/codemie/service/mcp_config_service.py",
+      "line": 386,
+      "title": "Stale whole-row update after long test",
+      "problem": "test() loads the config, runs a potentially slow network/subprocess MCP connect, then saves the same stale object with update(touch_timestamp=False). An edit made during the test is overwritten by the pre-test values, and a config deleted meanwhile makes the save fail with a 500. Behavior of update() on a stale object was not read in full.",
+      "impact": "Concurrent admin edits can be silently lost, or the request errors after the test completes.",
+      "recommendation": "After run_test, re-fetch the config (handle not-found with 404) or issue an UPDATE limited to last_test_at, last_test_status and last_test_detail."
+    }
+  ]
+}

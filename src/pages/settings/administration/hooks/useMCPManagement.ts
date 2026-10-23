@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import { mcpStore } from '@/store/mcp'
@@ -25,18 +25,35 @@ import toaster from '@/utils/toaster'
  * Manages state and handlers for MCP server configuration management
  */
 export const useMCPManagement = () => {
-  const { pagination } = useSnapshot(mcpStore)
+  const { pagination, configs } = useSnapshot(mcpStore)
   const [showModal, setShowModal] = useState(false)
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'clone'>('add')
   const [editingServer, setEditingServer] = useState<MCPConfig | null>(null)
   const [cloneSource, setCloneSource] = useState<MCPConfig | null>(null)
-  const [detailsServer, setDetailsServer] = useState<MCPConfig | null>(null)
   // The row whose Clone modal is currently open, so its menu item stays disabled for the
   // whole lifetime of the open draft, preventing a second click from discarding in-progress edits.
   const activeCloneId = useMemo(
     () => (showModal && modalMode === 'clone' ? cloneSource?.id ?? null : null),
     [showModal, modalMode, cloneSource]
   )
+  // Synchronous guard against double-dispatch: React state updates from setCloningId
+  // are not visible until the next render, so a rapid double-click/double-select on
+  // Clone before that render can otherwise fire two concurrent clone requests.
+  const [detailsServerId, setDetailsServerId] = useState<string | null>(null)
+  // Last-known snapshot of the server shown in the details panel. Falls back to this when
+  // the live lookup below misses (pagination/filter/list refresh dropped the config), so the
+  // panel keeps showing the server instead of silently vanishing.
+  const lastKnownDetailsServerRef = useRef<MCPConfig | null>(null)
+  // Derived live from the configs snapshot so list refreshes/updates show up here.
+  const liveDetailsServer = detailsServerId
+    ? configs.find((config) => config.id === detailsServerId) ?? null
+    : null
+  if (liveDetailsServer) {
+    lastKnownDetailsServerRef.current = liveDetailsServer
+  }
+  const detailsServer = detailsServerId
+    ? liveDetailsServer ?? lastKnownDetailsServerRef.current
+    : null
 
   // Load configs on mount
   useEffect(() => {
@@ -111,16 +128,19 @@ export const useMCPManagement = () => {
 
   // Details sidebar handlers
   const handleViewDetails = useCallback((server: MCPConfig) => {
-    setDetailsServer(server)
+    lastKnownDetailsServerRef.current = server
+    setDetailsServerId(server.id)
   }, [])
 
   const handleCloseDetails = useCallback(() => {
-    setDetailsServer(null)
+    setDetailsServerId(null)
+    lastKnownDetailsServerRef.current = null
   }, [])
 
   const handleEditFromDetails = useCallback(
     (server: MCPConfig) => {
-      setDetailsServer(null)
+      setDetailsServerId(null)
+      lastKnownDetailsServerRef.current = null
       handleEditServer(server)
     },
     [handleEditServer]
@@ -128,7 +148,8 @@ export const useMCPManagement = () => {
 
   const handleDeleteFromDetails = useCallback(
     async (server: MCPConfig) => {
-      setDetailsServer(null)
+      setDetailsServerId(null)
+      lastKnownDetailsServerRef.current = null
       await handleDeleteServer(server)
     },
     [handleDeleteServer]

@@ -24,6 +24,7 @@ const { mockUserStore, mockMcpStore } = vi.hoisted(() => ({
     configs: [{ id: 'mcp-1', name: 'My MCP Server', categories: [] }] as unknown[],
     pagination: { page: 0, perPage: 10, totalPages: 1 },
     loading: false,
+    testingConfigIds: [] as string[],
     indexConfigs: vi.fn().mockResolvedValue([]),
   },
 }))

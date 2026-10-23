@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "generated": "2026-10-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 5, "label": "XL" }
+  },
+  "total": 24,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 23,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Multi-repo changes with distinct content across 2 repos - scope scored additively. UI: MCP management page, server actions/details/modal, last-test info, useMCPConfigTest hook, column renderers, store and entity types. Backend: model, tester, service, router. New API contract shared between repos." },
+    { "dimension": "technical_risk", "reason": "Backend executes connection tests against user-supplied MCP server configs (external calls, security-sensitive) and adds an Alembic migration; moderate rollback complexity." },
+    { "dimension": "file_change_estimate", "reason": "15 UI files (967+/5-) plus 8+ backend files (~520+ lines) = ~23 files, 16+ threshold." },
+    { "dimension": "affected_layers", "reason": "UI, API, Service, DB-Persistence (migration) and External (MCP server connection) all touched." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped: requires DB schema change (Alembic migration) and external server connection execution",
+    "Component Scope bumped: cross-repo shared API contract"
+  ],
+  "split_recommendation": null
+}

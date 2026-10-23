@@ -22,7 +22,7 @@ import { proxy } from 'valtio'
 
 import { MCP_DEFAULT_PAGE, MCP_DEFAULT_PER_PAGE, MCP_DEFAULT_FILTERS } from '@/constants/mcp'
 import { Pagination } from '@/types/common'
-import { MCPConfig, MCPConfigRequest, MCPFilters } from '@/types/entity/mcp'
+import { MCPConfig, MCPConfigRequest, MCPFilters, MCPTestResult } from '@/types/entity/mcp'
 import api from '@/utils/api'
 
 interface MCPStore {
@@ -50,6 +50,10 @@ interface MCPStore {
   cloneConfigFromForm: (id: string, data: Partial<MCPConfigRequest>) => Promise<MCPConfig>
   /** Update existing MCP configuration */
   updateConfig: (id: string, data: Partial<MCPConfigRequest>) => Promise<MCPConfig>
+  /** IDs of configs with a test request currently in flight */
+  testingConfigIds: string[]
+  /** Run connectivity test for a saved MCP configuration (admin only) */
+  testConfig: (id: string, settingsId?: string) => Promise<MCPTestResult>
   /** Delete MCP configuration */
   deleteConfig: (id: string) => Promise<void>
   /** Update current filters */
@@ -58,8 +62,9 @@ interface MCPStore {
   resetFilters: () => void
 }
 
-const inflightRequests = new Map<string, Promise<MCPConfig>>()
+const inflightRequests = new Map<string, Promise<MCPTestResult>>()
 const catalogCache = new Map<string, MCPConfig>()
+const inflightTests = new Map<string, Promise<MCPTestResult>>()
 
 export const mcpStore = proxy<MCPStore>({
   configs: [],
@@ -72,6 +77,7 @@ export const mcpStore = proxy<MCPStore>({
   loading: false,
   error: null,
   filters: MCP_DEFAULT_FILTERS,
+  testingConfigIds: [],
 
   /**
    * Fetches MCP server configurations with optional filtering and pagination
@@ -301,6 +307,38 @@ export const mcpStore = proxy<MCPStore>({
     } finally {
       this.loading = false
     }
+  },
+
+  /**
+   * Runs the connectivity test for a saved MCP configuration and returns the
+   * transient result (not persisted, no list/cache updates).
+   * A second call for an id already in flight returns the same promise.
+   * Errors (including auth-required Response objects) are rethrown untouched.
+   */
+  testConfig(id: string, settingsId?: string) {
+    const existing = inflightTests.get(id)
+    if (existing) return existing
+
+    this.testingConfigIds = [...this.testingConfigIds, id]
+
+    const request = (async () => {
+      try {
+        const response = await api.post(
+          `v1/mcp-configs/${id}/test`,
+          settingsId ? { settings_id: settingsId } : undefined,
+          { skipErrorHandling: true }
+        )
+        const result: MCPTestResult = await response.json()
+
+        return result
+      } finally {
+        inflightTests.delete(id)
+        this.testingConfigIds = this.testingConfigIds.filter((item) => item !== id)
+      }
+    })()
+
+    inflightTests.set(id, request)
+    return request
   },
 
   /**

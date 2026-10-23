@@ -37,6 +37,7 @@ export const CHECKER_STATUSES = {
   IN_PROGRESS: 'in-progress',
   FAILED: 'failed',
   SUCCESS: 'success',
+  WARNING: 'warning',
 } as const
 
 export const CONFIG_FEEDBACK_ASST_KEY = 'feedbackAssistant'

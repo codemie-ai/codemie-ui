@@ -30,6 +30,7 @@ import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 
 import MCPServerDetails from './components/MCPServerDetails'
 import MCPServerModal from './components/MCPServerModal'
+import { useMCPServerTest } from './components/useMCPServerTest'
 import { useMCPManagement } from './hooks/useMCPManagement'
 import { createColumnRenderers } from './utils/columnRenderers'
 
@@ -65,9 +66,11 @@ const columnDefinitions: ColumnDefinition[] = [
 
 const MCPManagementPage: FC = () => {
   const navigate = useNavigate()
-  const { configs, pagination, loading } = useSnapshot(mcpStore) as typeof mcpStore
+  const { configs, pagination, loading, testingConfigIds } = useSnapshot(mcpStore)
   const { user: currentUser } = useSnapshot(userStore)
   const [isMcpFeatureEnabled, isConfigLoaded] = useMcpEnabled()
+  const { start: startTest, modal: testModal } = useMCPServerTest()
+  const isTesting = useCallback((id: string) => testingConfigIds.includes(id), [testingConfigIds])
 
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
@@ -128,6 +131,8 @@ const MCPManagementPage: FC = () => {
         onCloneClick: handleCloneMenuClick,
         canClone,
         activeCloneId,
+        onTest: startTest,
+        isTesting,
       }),
     [
       handleEditServer,
@@ -136,6 +141,8 @@ const MCPManagementPage: FC = () => {
       handleCloneMenuClick,
       canClone,
       activeCloneId,
+      startTest,
+      isTesting
     ]
   )
 
@@ -192,8 +199,12 @@ const MCPManagementPage: FC = () => {
             onClose={handleCloseDetails}
             onEdit={handleEditFromDetails}
             onDelete={handleDeleteFromDetails}
+            onTest={startTest}
+            isTesting={isTesting(detailsServer.id)}
           />
         )}
+
+        {testModal}
       </div>
     )
   }

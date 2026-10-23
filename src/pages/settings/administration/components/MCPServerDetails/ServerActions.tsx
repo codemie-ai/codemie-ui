@@ -15,6 +15,7 @@
 
 import { FC } from 'react'
 
+import ConnectionSvg from '@/assets/icons/connection.svg?react'
 import DeleteDangerSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import Button from '@/components/Button'
@@ -25,10 +26,21 @@ interface ServerActionsProps {
   server: MCPConfig
   onEdit: (server: MCPConfig) => void
   onDelete: (server: MCPConfig) => void
+  onTest: (server: MCPConfig) => void
+  isTesting?: boolean
 }
 
-const ServerActions: FC<ServerActionsProps> = ({ server, onEdit, onDelete }) => (
+const ServerActions: FC<ServerActionsProps> = ({ server, onEdit, onDelete, onTest, isTesting }) => (
   <div className="flex flex-col gap-2 sticky bottom-0 bg-surface-base-secondary border-t border-border-structural p-4">
+    <Button
+      variant={ButtonType.SECONDARY}
+      onClick={() => onTest(server)}
+      disabled={isTesting}
+      className="w-full"
+    >
+      <ConnectionSvg className="w-4 h-4" />
+      {isTesting ? 'Testing...' : 'Test Integration'}
+    </Button>
     <Button variant={ButtonType.PRIMARY} onClick={() => onEdit(server)} className="w-full">
       <EditSvg className="w-4 h-4" />
       Edit Server

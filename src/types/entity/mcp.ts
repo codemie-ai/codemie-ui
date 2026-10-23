@@ -61,6 +61,13 @@ export interface MCPConfig {
   warnings?: { code: string; message: string; action?: string }[]
 }
 
+export interface MCPTestResult {
+  status: 'success' | 'failure' | 'warning'
+  message: string
+  error_category?: string | null
+  tools_count?: number | null
+}
+
 export interface MCPConfigRequest {
   name: string
   description?: string

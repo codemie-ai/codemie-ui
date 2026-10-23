@@ -16,6 +16,7 @@
 import { FC, useState, useCallback } from 'react'
 
 import ClipboardSvg from '@/assets/icons/clipboard.svg?react'
+import ConnectionSvg from '@/assets/icons/connection.svg?react'
 import CopySvg from '@/assets/icons/copy.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
@@ -35,6 +36,8 @@ interface MCPServerActionsProps {
   onCloneClick: (server: MCPConfig) => void
   canClone: boolean
   cloneDisabled: boolean
+  onTest: (server: MCPConfig) => void
+  isTesting: boolean
 }
 
 const MCPServerActions: FC<MCPServerActionsProps> = ({
@@ -45,6 +48,8 @@ const MCPServerActions: FC<MCPServerActionsProps> = ({
   onCloneClick,
   canClone,
   cloneDisabled,
+  onTest,
+  isTesting,
 }) => {
   const [isDeleteConfirmationVisible, setIsDeleteConfirmationVisible] = useState(false)
 
@@ -70,6 +75,12 @@ const MCPServerActions: FC<MCPServerActionsProps> = ({
       title: 'View Details',
       icon: <InfoSvg />,
       onClick: () => onViewDetails(server),
+    },
+    {
+      title: 'Test Integration',
+      icon: <ConnectionSvg className="w-[18px] h-[18px]" />,
+      onClick: () => onTest(server),
+      disabled: isTesting,
     },
     {
       title: 'Edit',

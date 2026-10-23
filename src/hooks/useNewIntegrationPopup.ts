@@ -21,39 +21,58 @@ interface UseNewIntegrationPopupReturn {
   showNewIntegration: boolean
   selectedCredentialType: string
   selectedProject: string
-  showNewIntegrationPopup: (project: string, credentialType: string) => void
+  selectedCredentialValues?: Record<string, unknown>
+  showNewIntegrationPopup: (
+    project: string,
+    credentialType: string,
+    credentialValues?: Record<string, unknown>
+  ) => void
   hideNewIntegrationPopup: () => void
-  onIntegrationSuccess: () => void
+  onIntegrationSuccess: (createdId?: string) => void
 }
 
-export const useNewIntegrationPopup = (onSuccess?: () => void): UseNewIntegrationPopupReturn => {
+export const useNewIntegrationPopup = (
+  onSuccess?: (createdId?: string) => void
+): UseNewIntegrationPopupReturn => {
   const [showNewIntegration, setShowNewIntegration] = useState(false)
   const [selectedCredentialType, setSelectedCredentialType] = useState('')
   const [selectedProject, setSelectedProject] = useState('')
+  const [selectedCredentialValues, setSelectedCredentialValues] = useState<
+    Record<string, unknown> | undefined
+  >(undefined)
 
-  const showNewIntegrationPopup = useCallback((project: string, credentialType: string) => {
-    setSelectedProject(project)
-    setSelectedCredentialType(credentialType)
-    setShowNewIntegration(true)
-  }, [])
+  const showNewIntegrationPopup = useCallback(
+    (project: string, credentialType: string, credentialValues?: Record<string, unknown>) => {
+      setSelectedProject(project)
+      setSelectedCredentialType(credentialType)
+      setSelectedCredentialValues(credentialValues)
+      setShowNewIntegration(true)
+    },
+    []
+  )
 
   const hideNewIntegrationPopup = useCallback(() => {
     setShowNewIntegration(false)
     setSelectedProject('')
     setSelectedCredentialType('')
+    setSelectedCredentialValues(undefined)
   }, [])
 
-  const onIntegrationSuccess = useCallback(() => {
-    hideNewIntegrationPopup()
-    settingsStore.indexSettings()
+  const onIntegrationSuccess = useCallback(
+    (createdId?: string) => {
+      hideNewIntegrationPopup()
+      settingsStore.indexSettings()
 
-    onSuccess?.()
-  }, [hideNewIntegrationPopup, onSuccess])
+      onSuccess?.(createdId)
+    },
+    [hideNewIntegrationPopup, onSuccess]
+  )
 
   return {
     showNewIntegration,
     selectedCredentialType,
     selectedProject,
+    selectedCredentialValues,
     showNewIntegrationPopup,
     hideNewIntegrationPopup,
     onIntegrationSuccess,

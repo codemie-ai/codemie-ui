@@ -26,6 +26,8 @@ interface ColumnRenderersProps {
   onCloneClick: (server: MCPConfig) => void
   canClone: boolean
   activeCloneId: string | null
+  onTest: (server: MCPConfig) => void
+  isTesting: (id: string) => boolean
 }
 
 export const createColumnRenderers = ({
@@ -35,6 +37,8 @@ export const createColumnRenderers = ({
   onCloneClick,
   canClone,
   activeCloneId,
+  onTest,
+  isTesting,
 }: ColumnRenderersProps) => ({
   name: (item: MCPConfig) => (
     <button
@@ -96,6 +100,8 @@ export const createColumnRenderers = ({
       onCloneClick={onCloneClick}
       canClone={canClone}
       cloneDisabled={activeCloneId === item.id}
+      onTest={onTest}
+      isTesting={isTesting(item.id)}
     />
   ),
 })

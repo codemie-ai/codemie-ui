@@ -67,6 +67,8 @@ const renderActions = (onCloneClick: (server: any) => void, cloneDisabled = fals
         onCloneClick={onCloneClick}
         canClone
         cloneDisabled={cloneDisabled}
+        onTest={vi.fn()}
+        isTesting={false}
       />
     </div>
   )

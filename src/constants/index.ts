@@ -131,6 +131,7 @@ export const CHECKER_STATUSES = {
   IN_PROGRESS: 'in-progress',
   FAILED: 'failed',
   SUCCESS: 'success',
+  WARNING: 'warning',
 } as const
 
 export type CheckerStatus = (typeof CHECKER_STATUSES)[keyof typeof CHECKER_STATUSES]
