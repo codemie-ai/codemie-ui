@@ -140,8 +140,9 @@ const formSchema = Yup.object()
     nestedAssistants: Yup.array().of(
       Yup.object().shape({ id: Yup.string().required(), name: Yup.string().required() })
     ),
-    temperature: buildTemperatureRule(),
+    temperature: buildTemperatureRule().nullable(),
     top_p: Yup.number()
+      .nullable()
       .min(0, 'Top P must be at least 0')
       .max(1, 'Top P must be at most 1')
       .transform((value, originalValue) => (originalValue === '' ? undefined : value))
@@ -341,13 +342,13 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       preparedValues.is_react = !!assistant?.is_react
       preparedValues.slug ??= getSlugFromName(preparedValues.name)
 
-      if (preparedValues.temperature == null || (preparedValues.temperature as unknown) === '')
-        delete preparedValues.temperature
-      else preparedValues.temperature = Number(preparedValues.temperature)
-
-      if (preparedValues.top_p == null || (preparedValues.top_p as unknown) === '')
-        delete preparedValues.top_p
-      else preparedValues.top_p = Number(preparedValues.top_p)
+      // On edit, a cleared optional numeric param must be sent as explicit null: omitting the
+      // key makes the backend keep the previously stored value. On create there is no stored
+      // value to clear, so an untouched field stays omitted and the backend/model default applies.
+      const toNumberOrNull = (value: unknown): number | null | undefined => {
+        if (value != null && value !== '') return Number(value)
+        return isEditing ? null : undefined
+      }
 
       if (
         preparedValues.tools_tokens_size_limit == null ||
@@ -358,6 +359,8 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
 
       return {
         ...preparedValues,
+        temperature: toNumberOrNull(values.temperature),
+        top_p: toNumberOrNull(values.top_p),
         tool_permissions:
           isCodemieAssistant && toolPermissionsEnabled
             ? {

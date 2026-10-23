@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-07T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 7,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 7 files, which maps to L. Two are planning docs (plan.md, technical-analysis.md) and two are test files, so only three are production source: the AssistantForm component, the assistants store transform util, and the Assistant entity type." },
+    { "dimension": "component_scope", "reason": "Three components across the form UI, the store transform (transformAssistantToCreateDTO) and the entity types. The temperature and top_p fields already exist in the DTO and the Assistant type, so the change widens existing handling and adds no new abstraction." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

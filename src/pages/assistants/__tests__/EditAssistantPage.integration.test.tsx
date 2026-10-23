@@ -14,6 +14,7 @@
 //
 
 import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
@@ -118,6 +119,50 @@ describe('EditAssistantPage - Integration', () => {
         within(skillsSection).getByText(/codemie-speech-presentation-content/)
       ).toBeInTheDocument()
       expect(within(skillsSection).queryByText(/^null$/)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Optional numeric model params', () => {
+    const putBodyOf = () => {
+      const call = (global.fetch as any).mock.calls.find(
+        ([url, init]) => String(url).includes('v1/assistants/asst-123') && init?.method === 'PUT'
+      )
+      return call ? JSON.parse(call[1].body) : undefined
+    }
+
+    const openEditForm = async (overrides) => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture(overrides))
+      mockAPI('GET', 'v1/llm/models', [])
+      mockAPI('PUT', 'v1/assistants/asst-123', { id: 'asst-123', assistantId: 'asst-123' })
+      renderPage('/assistants/asst-123/edit')
+      return screen.findByTestId('assistant-temperature-input')
+    }
+
+    it('sends temperature: null and top_p: null in the PUT body when both are cleared', async () => {
+      const user = userEvent.setup()
+      const temperatureInput = await openEditForm({ temperature: 0.5, top_p: 0.9 })
+      expect(temperatureInput).toHaveValue('0.5')
+
+      await user.clear(temperatureInput)
+      await user.clear(screen.getByPlaceholderText('0-1'))
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => expect(putBodyOf()).toBeDefined())
+      expect(putBodyOf()).toHaveProperty('temperature', null)
+      expect(putBodyOf()).toHaveProperty('top_p', null)
+    })
+
+    it('sends the updated temperature when a value is changed', async () => {
+      const user = userEvent.setup()
+      const temperatureInput = await openEditForm({ temperature: 0.5 })
+
+      await user.clear(temperatureInput)
+      await user.type(temperatureInput, '0.3')
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => expect(putBodyOf()).toBeDefined())
+      expect(putBodyOf().temperature).toBe(0.3)
     })
   })
 })

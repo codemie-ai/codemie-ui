@@ -1238,6 +1238,44 @@ describe('NewAssistantPage - Integration', () => {
       })
     })
 
+    it('omits temperature and top_p from POST body when left empty on create', async () => {
+      mockAPI('GET', 'v1/user', userWithProject)
+      mockAPI('POST', 'v1/assistants', { id: 'new-id', assistantId: 'new-id' })
+
+      renderPage('/assistants/new')
+
+      await waitFor(() => {
+        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+      })
+      await waitFor(() => {
+        expect(screen.getByText('test-project')).toBeInTheDocument()
+      })
+
+      await user.type(screen.getByPlaceholderText('Name*'), 'My Assistant')
+      await user.type(screen.getByPlaceholderText(/description/i), 'A useful assistant')
+      await user.type(screen.getByPlaceholderText(/system instructions/i), 'You are helpful')
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      // On create there is no stored value to clear, so empty fields must be omitted
+      // (not sent as null) and the backend/model default applies.
+      await waitFor(() => {
+        const postCall = vi
+          .mocked(global.fetch)
+          .mock.calls.find(
+            ([url, init]) =>
+              typeof url === 'string' &&
+              url.includes('v1/assistants') &&
+              (init as RequestInit)?.method === 'POST'
+          )
+        expect(postCall).toBeDefined()
+
+        const body = JSON.parse((postCall![1] as RequestInit).body as string)
+        expect(body).not.toHaveProperty('temperature')
+        expect(body).not.toHaveProperty('top_p')
+      })
+    })
+
     it('shows validation errors for temperature out of range', async () => {
       // Pin the llm_models response so the expected message ("between 0 and 2") is
       // independent of test ordering. Without a stub, appInfoStore.llmModels can

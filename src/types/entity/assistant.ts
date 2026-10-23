@@ -100,7 +100,7 @@ export interface Assistant {
   tools?: any[]
   system_prompt: string
   model?: string
-  temperature?: number
+  temperature?: number | null
   max_tokens?: number
   top_p?: number | null
   tools_tokens_size_limit?: number
@@ -472,8 +472,8 @@ export interface CreateAssistantDto {
   agent_mode?: AgentMode
   plan_prompt?: string
   slug?: string
-  temperature?: number
-  top_p?: number
+  temperature?: number | null
+  top_p?: number | null
   tools_tokens_size_limit?: number
   mcp_servers?: MCPServerDetails[]
   assistant_ids?: string[]

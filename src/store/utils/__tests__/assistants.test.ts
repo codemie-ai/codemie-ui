@@ -35,6 +35,38 @@ const baseAssistant: Partial<Assistant> = {
 }
 
 describe('transformAssistantToCreateDTO', () => {
+  describe('optional numeric model params', () => {
+    it('keeps temperature and top_p when set, including top_p of 0', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        temperature: 0.7,
+        top_p: 0,
+      } as Assistant)
+
+      expect(dto.temperature).toBe(0.7)
+      expect(dto.top_p).toBe(0)
+    })
+
+    it('forwards explicit null so the backend clears the stored value', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        temperature: null,
+        top_p: null,
+      } as unknown as Assistant)
+
+      expect(dto.temperature).toBeNull()
+      expect(dto.top_p).toBeNull()
+      expect(JSON.parse(JSON.stringify(dto))).toMatchObject({ temperature: null, top_p: null })
+    })
+
+    it('omits temperature and top_p when they are undefined', () => {
+      const dto = transformAssistantToCreateDTO(baseAssistant as Assistant)
+
+      expect(JSON.parse(JSON.stringify(dto))).not.toHaveProperty('temperature')
+      expect(JSON.parse(JSON.stringify(dto))).not.toHaveProperty('top_p')
+    })
+  })
+
   describe('hedging_config', () => {
     it('includes hedging_config when provided', () => {
       const hedgingConfig: HedgingConfig = {

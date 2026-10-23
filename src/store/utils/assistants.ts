@@ -84,7 +84,7 @@ export function transformAssistantToCreateDTO(
     // plan_prompt: assistant.plan_prompt,
     slug: assistant.slug,
     temperature: assistant.temperature,
-    top_p: assistant.top_p || undefined,
+    top_p: assistant.top_p,
     tools_tokens_size_limit: assistant.tools_tokens_size_limit,
     // Handle MCP servers if MCP toolkit exists
     mcp_servers: assistant.mcp_servers,
