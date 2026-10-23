@@ -102,4 +102,34 @@ describe('UsersManagementPage — default project marker (EPMCDME-15112)', () =>
     expect(screen.queryByText('gamma (user)')).toBeNull()
     expect(screen.getByText('+1')).toBeInTheDocument()
   })
+
+  it('wraps the project badge value at word boundaries instead of breaking every character', async () => {
+    renderPage('/settings/administration/users')
+
+    await screen.findByText('project-b (user)')
+
+    const badge = screen.getByText('project-b (user)').closest('a')
+
+    // overflow-wrap: anywhere (unlike break-word/break-words) counts towards the table
+    // column's intrinsic width, so one unbreakable token can't force the whole column wide.
+    expect(badge?.className).toContain('[overflow-wrap:anywhere]')
+    expect(badge?.className).not.toMatch(/break-all/)
+    expect(badge?.className).not.toMatch(/break-words/)
+  })
+
+  it('caps every project badge at a fixed max width instead of letting a long value fill the row', async () => {
+    renderPage('/settings/administration/users')
+
+    await screen.findByText('project-a (user)')
+
+    const defaultBadge = screen.getByText('project-a (user)')?.closest('a')
+    const siblingBadge = screen.getByText('project-b (user)').closest('a')
+
+    // A bounded max-width (not max-w-full) keeps a long, wrapping value visually
+    // comparable to its shorter siblings instead of stretching to the whole column.
+    expect(defaultBadge?.className).not.toMatch(/max-w-full/)
+    expect(siblingBadge?.className).not.toMatch(/max-w-full/)
+    expect(defaultBadge?.className).toMatch(/max-w-36/)
+    expect(siblingBadge?.className).toMatch(/max-w-36/)
+  })
 })

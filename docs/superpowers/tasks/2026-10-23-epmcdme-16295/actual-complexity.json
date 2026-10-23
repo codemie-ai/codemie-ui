@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-23T12:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 11,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "4 files changed per diffstat (2 modified: DetailsBadge.tsx, UsersManagementPage.tsx; 2 new test files), spanning 2 directories (components/details, pages/settings/administration/usersManagement) — maps to M." },
+    { "dimension": "component_scope", "reason": "Touches the shared DetailsBadge component (icon/label line isolated onto its own non-wrapping row, min-w-0 added for the value line) plus its single consumer in UsersManagementPage (badge className tuned to overflow-wrap:anywhere and a fixed max-w-36), all within the UI layer — a self-contained layout fix across one shared component and one caller, not a multi-layer change." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

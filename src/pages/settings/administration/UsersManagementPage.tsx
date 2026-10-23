@@ -318,7 +318,7 @@ const UsersManagementPage: FC = () => {
             emptyMessage={'-'}
             maxDisplayed={MAX_DISPLAYED_PROJECTS}
             className="min-w-0 max-w-full"
-            badgeClassName="min-w-0 max-w-full whitespace-normal break-all text-[10px] leading-tight px-1.5 py-1"
+            badgeClassName="min-w-0 max-w-36 whitespace-normal [overflow-wrap:anywhere] text-[10px] leading-tight px-1.5 py-1"
           />
         )
       },

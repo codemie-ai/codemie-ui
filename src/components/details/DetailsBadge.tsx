@@ -34,9 +34,10 @@ const DetailsBadge = ({ value, icon, filled = false, className, href }: DetailsB
   )
 
   const content = (
-    <>
-      {icon} {String(value)}
-    </>
+    <div className="flex flex-col gap-0.5 min-w-0">
+      {icon && <div className="whitespace-nowrap break-normal">{icon}</div>}
+      {String(value)}
+    </div>
   )
 
   if (href) {

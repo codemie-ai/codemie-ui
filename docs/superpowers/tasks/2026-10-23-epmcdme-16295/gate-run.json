@@ -1,0 +1,120 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16295_fix-member-chip-layout",
+  "head": "5bc4054b3b21c6edce31b11f2f058708b218103b",
+  "runner": "npm",
+  "started_at": "2026-10-23T12:00:30Z",
+  "completed_at": "2026-10-23T12:10:33Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 45047,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 24396,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 4238,
+      "command": "npm run license-check",
+      "exit_code": 1
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 10745,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Also enforced by the pre-commit hook and the server-side gitleaks-scan CI task; same command, not duplicated as a separate hook/CI entry."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 333318,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 739 passed (739); Tests 7446 passed | 1 skipped (7447)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 169180,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 52 passed (52); Tests 578 passed | 1 skipped (579)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "",
+      "exit_code": null,
+      "notes": "UI surface changed (src/components/details/DetailsBadge.tsx) but no configured UI test script exists in this repo; browser verification is a separate caller decision."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Requires the local stack up and ~/.codemie/test-harness.json; neither is available in this environment (config missing, no local host reachable). Still owed before MR; only runnable with the stack running."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2135,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: output was \"No staged files found.\" Nothing is currently staged in the working tree; stage the changed files before committing to exercise this gate for real."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1647,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2405 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1150,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: output was \"Skipping Sonar scan because SONAR_TOKEN is not set.\" Set SONAR_TOKEN in the environment to run the real local Sonar scan."
+    },
+    {
+      "id": "ci-wait-contexts",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "",
+      "exit_code": null,
+      "notes": "gitlab-ci.yml's wait-ci-init job only waits on external MR pipeline statuses (ci-pipeline, compliance-report) run server-side; it defines no locally-runnable command and requires a live GitLab MR pipeline. Only CI can settle this."
+    }
+  ],
+  "failures": {
+    "license-check": "> ai-assistant@0.0.0 license-check\n> npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;Python-2.0;CC-BY-4.0;Apache*;(MIT OR CC0-1.0);MulanPSL-2.0;MPL-2.0;LGPL-3.0-only;UNLICENSED'\n\nPackage \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted by the --onlyAllow flag. Exiting."
+  }
+}
