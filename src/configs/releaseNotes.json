@@ -1,5 +1,201 @@
 [
   {
+    "version": "2.62.0",
+    "date": "2026-10-26",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Cost Center Rollup Card",
+            "description": "Added a cost-center rollup card with totals and distribution insights.",
+            "issues": [
+              {
+                "key": "EPMCDME-15623",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15623"
+              }
+            ]
+          },
+          {
+            "title": "CodeMie A2A protocol upgrade",
+            "description": "Upgraded CodeMie support for the A2A protocol.",
+            "issues": [
+              {
+                "key": "EPMCDME-15327",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15327"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "MCP management testing and cloning",
+            "description": "Added capabilities to test and clone MCP configurations.",
+            "issues": [
+              {
+                "key": "EPMCDME-15541",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15541"
+              },
+              {
+                "key": "EPMCDME-15538",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15538"
+              }
+            ]
+          },
+          {
+            "title": "Datasource indexing reliability",
+            "description": "Improved datasource indexing traceability and handling of Azure request timeouts.",
+            "issues": [
+              {
+                "key": "EPMCDME-16237",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16237"
+              }
+            ]
+          },
+          {
+            "title": "Project user navigation",
+            "description": "Added a project-users badge with filtered navigation.",
+            "issues": [
+              {
+                "key": "EPMCDME-15637",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15637"
+              }
+            ]
+          },
+          {
+            "title": "Admin user-list sorting",
+            "description": "Made alphabetical ordering the default for the admin users list and simplified its sort key.",
+            "issues": [
+              {
+                "key": "EPMCDME-16133",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16133"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "MCP authentication URL generation",
+            "description": "Corrected the CIMD client ID URL to include the API root path.",
+            "issues": [
+              {
+                "key": "EPMCDME-16319",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16319"
+              }
+            ]
+          },
+          {
+            "title": "EPAM Query MCP authentication",
+            "description": "Resolved a server error during OAuth authentication for EPAM Query TA MCP.",
+            "issues": [
+              {
+                "key": "EPMCDME-16298",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16298"
+              }
+            ]
+          },
+          {
+            "title": "Users-management project labels",
+            "description": "Fixed broken wrapping of the Default project label in the Projects cell.",
+            "issues": [
+              {
+                "key": "EPMCDME-16295",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16295"
+              }
+            ]
+          },
+          {
+            "title": "Git datasource indexing",
+            "description": "Fixed indexing failures caused by tiktoken end-of-text special tokens.",
+            "issues": [
+              {
+                "key": "EPMCDME-16146",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16146"
+              }
+            ]
+          },
+          {
+            "title": "Code-executor XML support",
+            "description": "Restored XML parser APIs needed for FontTools and Matplotlib PDF imports.",
+            "issues": [
+              {
+                "key": "EPMCDME-16087",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16087"
+              }
+            ]
+          },
+          {
+            "title": "Image-generation spend tracking",
+            "description": "Fixed personal-spend accounting for selected Gemini image models.",
+            "issues": [
+              {
+                "key": "EPMCDME-15772",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15772"
+              }
+            ]
+          },
+          {
+            "title": "Marketplace model runs",
+            "description": "Fixed cleared temperature values blocking Claude Sonnet 5 agent runs.",
+            "issues": [
+              {
+                "key": "EPMCDME-15208",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15208"
+              }
+            ]
+          },
+          {
+            "title": "Project-profile requests",
+            "description": "Fixed oversized user data causing BadRequest errors in codemie-codex.",
+            "issues": [
+              {
+                "key": "EPMCDME-13723",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13723"
+              }
+            ]
+          },
+          {
+            "title": "Search-result accessibility",
+            "description": "Improved screen-reader announcements for the number of search results.",
+            "issues": [
+              {
+                "key": "EPMCDME-8469",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-8469"
+              }
+            ]
+          },
+          {
+            "title": "Security maintenance",
+            "description": "Applied security remediation updates across platform services.",
+            "issues": []
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.61.0",
     "date": "2026-10-22",
     "sections": [
