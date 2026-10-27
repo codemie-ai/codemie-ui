@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15676-Fix-missing-routers-from-chat-config",
+  "head": "18ecf4bee78e8dc2d24f26354eb864e4dfb27a89",
+  "runner": "npm",
+  "started_at": "2026-10-22T08:14:00Z",
+  "completed_at": "2026-10-22T08:58:00Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25991,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 24074,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1931,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Guide's Skip-if condition (no dependency added/removed/moved) was met for this diff; run anyway for completeness and exited clean with an allowed-license summary."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13050,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks output: 'no leaks found'. This gate also covers the identical pre-commit hook step (same script)."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 201436,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 719 passed (719); Tests 7320 passed | 1 skipped (7321)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 130166,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 52 passed (52); Tests 577 passed | 1 skipped (578)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "npm run test:ui",
+      "notes": "Diff touches a UI surface (ChatConfigLlmSelector.tsx matches ui_globs) but no 'test:ui' (or equivalent) script exists in package.json; browser verification is a separate caller decision (feature-verification / local-verification.md)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 1012575,
+      "command": "npm run test-harness",
+      "exit_code": 1,
+      "notes": "sanity-ui suite against live local stack (http://localhost:8080): 5 failed, 86 passed, 90 errors, 34 rerun in 1006.66s. The bulk of the errors are 'ValueError: GITHUB_PROJECT '' is not a recognized...' collection errors across unrelated suites (assistant/MCP/VCS/workflow/e2e), pointing at a missing/empty GITHUB_PROJECT env value in this local harness config rather than this change. The 5 genuine failures (marketplace clone badge, edit-assistant tools interactions, 2x datasource creation, zip datasource extracted-files) are also outside the changed area (chat config LLM/router selector). Per the guide this is never skipped and a FAIL blocks the run regardless of relatedness; reproduce on main with the same config before calling it unrelated."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1545,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2381 files, 0 missing license headers. Part of the Husky pre-commit chain; not covered by any guide gate."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 905846,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "SonarQube connected-mode scan against sonar.core.kuberocketci.io for branch EPMCDME-15676-Fix-missing-routers-from-chat-config: QUALITY GATE STATUS: PASSED. Part of the Husky pre-commit chain; not covered by any guide gate."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "notes": "Husky pre-commit step runs eslint/prettier on staged files only; subsumed by the broader guide 'lint' gate (npm run lint), which covers the full tree including every file lint-staged would touch. Not run separately to avoid a duplicate/narrower result."
+    },
+    {
+      "id": "ci-pre-ci-guard",
+      "source": "ci",
+      "status": "N/A",
+      "notes": "gitlab-ci.yml only defines a wait-ci-init job that polls for externally-triggered GitLab CI contexts (ci-pipeline, compliance-report) on MRs targeting main; it requires a live GitLab CI/MR environment and cannot be executed from a local checkout."
+    }
+  ],
+  "failures": {
+    "test-harness": "ERROR tests/assistant/tools/mcp/test_mcp_servers.py - ValueError: GITHUB_PROJ...\nERROR tests/assistant/tools/vcs/test_assistant_with_vcs_tools.py - ValueError...\nERROR tests/assistant/tools/vcs/test_assistant_with_vcs_tools.py - ValueError...\nERROR tests/ui/assistants/test_assistant_mcp_servers.py - ValueError: GITHUB_...\nERROR tests/ui/assistants/test_assistant_mcp_servers.py - ValueError: GITHUB_...\nERROR tests/e2e/test_e2e.py - ValueError: GITHUB_PROJECT '' is not a recogniz...\nERROR tests/ui/assistants/test_assistant_mcp_servers.py - ValueError: GITHUB_...\nERROR tests/e2e/test_e2e.py - ValueError: GITHUB_PROJECT '' is not a recogniz...\nERROR tests/integrations/test_integration_update.py - ValueError: GITHUB_PROJ...\nERROR tests/ui/assistants/test_assistant_mcp_servers.py - ValueError: GITHUB_...\nERROR tests/integrations/test_integration_update.py - ValueError: GITHUB_PROJ...\nERROR tests/ui/assistants/test_assistant_mcp_servers.py - ValueError: GITHUB_...\nERROR tests/ui/assistants/test_assistant_mcp_servers.py - ValueError: GITHUB_...\nERROR tests/ui/assistants/test_assistant_mcp_servers.py - ValueError: GITHUB_...\nERROR tests/ui/assistants/test_assistant_mcp_servers.py - ValueError: GITHUB_...\nERROR tests/workflow/assistant_tools/mcp/test_workflow_with_assistant_with_mcp_server.py\nERROR tests/workflow/assistant_tools/mcp/test_workflow_with_assistant_with_mcp_server.py\nERROR tests/workflow/assistant_tools/mcp/test_workflow_with_assistant_with_mcp_server.py\nERROR tests/workflow/assistant_tools/mcp/test_workflow_with_assistant_with_mcp_server.py\nERROR tests/workflow/assistant_tools/mcp/test_workflow_with_assistant_with_mcp_server.py\nERROR tests/workflow/virtual_assistant_tools/mcp/test_workflow_with_mcp_server.py\nERROR tests/workflow/assistant_tools/mcp/test_workflow_with_assistant_with_mcp_server.py\nERROR tests/workflow/virtual_assistant_tools/mcp/test_workflow_with_mcp_server.py\nERROR tests/workflow/virtual_assistant_tools/vcs/test_workflow_with_vcs_tools.py\nERROR tests/workflow/virtual_assistant_tools/vcs/test_workflow_with_vcs_tools.py\nERROR tests/workspace_scripts/test_workflow_assistant_step_excluded_tools.py\nERROR tests/workspace_scripts/test_workflow_assistant_step_excluded_tools.py\nERROR tests/workflow/virtual_assistant_tools/mcp/test_workflow_with_mcp_server.py\nERROR tests/workflow/virtual_assistant_tools/mcp/test_workflow_with_mcp_server.py\nERROR tests/workflow/virtual_assistant_tools/vcs/test_workflow_with_vcs_tools.py\nERROR tests/workflow/virtual_assistant_tools/vcs/test_workflow_with_vcs_tools.py\nERROR tests/workspace_scripts/test_workflow_assistant_step_excluded_tools.py\nERROR tests/workspace_scripts/test_workflow_assistant_step_excluded_tools.py\nERROR tests/workflow/virtual_assistant_tools/mcp/test_workflow_with_mcp_server.py\nERROR tests/workflow/assistant_tools/mcp/test_workflow_with_assistant_with_mcp_server.py\nERROR tests/workflow/assistant_tools/mcp/test_workflow_with_assistant_with_mcp_server.py\nERROR tests/workflow/virtual_assistant_tools/vcs/test_workflow_with_vcs_tools.py\nERROR tests/workflow/virtual_assistant_tools/mcp/test_workflow_with_mcp_server.py\nERROR tests/workspace_scripts/test_workflow_assistant_step_excluded_tools.py\nERROR tests/workflow/virtual_assistant_tools/vcs/test_workflow_with_vcs_tools.py\nERROR tests/workspace_scripts/test_workflow_assistant_step_excluded_tools.py\nERROR tests/workflow/virtual_assistant_tools/mcp/test_workflow_with_mcp_server.py\nERROR tests/workflow/virtual_assistant_tools/mcp/test_workflow_with_mcp_server.py\nERROR tests/workflow/virtual_assistant_tools/vcs/test_workflow_with_vcs_tools.py\nERROR tests/workflow/virtual_assistant_tools/vcs/test_workflow_with_vcs_tools.py\nERROR tests/workspace_scripts/test_workflow_assistant_step_excluded_tools.py\nERROR tests/workspace_scripts/test_workflow_assistant_step_excluded_tools.py\nERROR tests/ui/datasource/test_datasource_page.py::test_datasource_page_elements_visibility[chromium]\nERROR tests/ui/integrations/test_webhook_resource_isolation.py::test_resource_dropdown_shows_only_project_scoped_resources[chromium]\n======== 5 failed, 86 passed, 90 errors, 34 rerun in 1006.66s (0:16:46) ========\nFAILED tests/ui/assistants/test_assistant_marketplace_clone.py::test_clone_count_badge_visible_on_marketplace_card[chromium]\nFAILED tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_tools_interactions[chromium]\nFAILED tests/ui/datasource/test_create_datasource.py::test_open_create_datasource_page_and_elements[chromium]\nFAILED tests/ui/datasource/test_create_datasource.py::test_create_file_datasource[chromium]\nFAILED tests/ui/datasource/test_zip_file_datasource.py::test_zip_file_datasource_shows_extracted_files_after_creation[chromium]"
+  }
+}

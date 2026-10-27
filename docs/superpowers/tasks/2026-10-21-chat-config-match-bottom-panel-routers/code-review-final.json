@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "No story/spec present (genuine no-spec round; compact profile skips blind/verification-gap). 1 patch finding: this branch's own commit (80e4a4f6d) overwrote the shared tracked .codemie/codemie-cli.config.json with a personal manual-auth entry and deleted all 4 codemieAssistants registrations, unrelated to the router-selector task. 1 edge-case candidate dismissed as cosmetic dead-code noise (ChatConfigLlmSelector mirrors ChatPromptLlmSelector's existing, already-redundant gate verbatim, no functional impact). No deferrals.",
+  "confidence": "low",
+  "risk_flags": ["breaking-change"],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "standards_expected=false for compact profile; no standards audit dispatched this round." },
+    { "kind": "code-quality", "status": "na", "notes": "standards_expected=false for compact profile; no standards audit dispatched this round." },
+    { "kind": "security", "status": "na", "notes": "standards_expected=false for compact profile; no standards audit dispatched this round." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": ".codemie/codemie-cli.config.json",
+      "line": 4,
+      "title": "Shared CLI config overwritten with personal auth, assistants deleted",
+      "problem": "The shared, tracked epm-cdme profile (provider ai-run-sso, shared apiKey, codeMieUrl/baseUrl, model aliases) was replaced with a personal manual-auth entry (provider anthropic-subscription, apiKey empty, model/sonnetModel renamed) and the project swapped to a personal workspace name. The entire codemieAssistants array (AI/Run FAQ, SonarQube MCP Analyzer, TAF Regression Advisor, CodeMie JIRA Assistant) was deleted wholesale, with no replacement or documented reason.",
+      "impact": "Teammates or CI pulling this branch lose SSO auth and get an empty apiKey for the epm-cdme profile, and any workflow reading this file for assistant registration loses all four entries with no replacement. File is intentionally tracked (not gitignored) and was committed within this branch's own history, confirming it is live, team-shared config, not a personal scratch file.",
+      "recommendation": "Revert the epm-cdme profile's provider/apiKey/codeMieUrl/baseUrl/model fields to the shared values and restore the codemieAssistants array; keep any personal override (e.g. workspace.codeMieProject) in an untracked local file instead."
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15676-Fix-missing-routers-from-chat-config",
+  "head": "2d8d48f6cd4faff4b73b1aa6002fa66140737cb3",
+  "runner": "npm",
+  "started_at": "2026-10-15T10:39:32Z",
+  "completed_at": "2026-10-15T11:00:53Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 24485,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19588,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1968,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12995,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: \"no leaks found\" on the working tree (history not scanned, per guide)."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 371541,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 693 passed (693); Tests 7009 passed | 1 skipped (7010)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 154859,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 49 passed (49); Tests 558 passed | 1 skipped (559)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 957,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2343 files, 0 missing license headers. Part of the Husky pre-commit chain; covered here because it is not already represented by a guide gate."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 751684,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "QUALITY GATE STATUS: PASSED (sonar.core.kuberocketci.io, branch EPMCDME-15676-Fix-missing-routers-from-chat-config). Part of the Husky pre-commit chain; covered here because it is not already represented by a guide gate."
+    }
+  ],
+  "failures": {}
+}

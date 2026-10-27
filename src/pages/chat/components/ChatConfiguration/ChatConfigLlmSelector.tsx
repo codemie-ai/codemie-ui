@@ -18,9 +18,11 @@ import { useSnapshot } from 'valtio'
 
 import LLMSelector from '@/pages/assistants/components/AssistantForm/components/LLMSelector'
 import { chatsStore } from '@/store/chats'
+import { routerToModelOption } from '@/utils/routerToModelOption'
 
 const ChatConfigLlmSelector: FC = () => {
-  const { currentChat, filteredModels } = useSnapshot(chatsStore)
+  const { currentChat, filteredModels, filteredRouters, filteredModelsProjectId } =
+    useSnapshot(chatsStore)
 
   const onLlmModelChange = (llmModel: string | null) => {
     chatsStore.updateChat(currentChat!.id, { llmModel })
@@ -34,6 +36,31 @@ const ChatConfigLlmSelector: FC = () => {
     return currentChat?.projectId
   }, [currentChat?.projectId])
 
+  // Mirrors ChatPromptLlmSelector's gate: while filteredModelsProjectId still names the
+  // previous project, its filteredModels/filteredRouters are stale and must not leak in.
+  const hasCurrentProjectModels =
+    !currentChat?.projectId || filteredModelsProjectId === currentChat.projectId
+
+  // Mirrors ChatPromptLlmSelector's modelsToDisplay/routersToDisplay exactly: a project chat
+  // has ONE data source, the Set-filter pipeline below, for its whole lifecycle. undefined is
+  // reserved for "no project at all" (LLMSelector then uses its own unscoped/global list, same
+  // as the no-project case everywhere else). While there IS a project but the gate is stale —
+  // mid-switch, or the fetch hasn't resolved yet — this returns [], never undefined, so
+  // LLMSelector's filteredModels contract treats it as an authoritative "nothing yet" instead
+  // of falling back to its own independent useProjectLLMModels fetch.
+  // A failed getModelsForCurrentChat leaves the gate stale too, so the list stays [] (the
+  // store toasts the error) until the chat or project changes — the same as
+  // ChatPromptLlmSelector. There is no retry by design; recovery belongs in chatsStore.
+  const mergedFilteredModels = useMemo(() => {
+    let result
+    if (currentChat?.projectId) {
+      result = hasCurrentProjectModels
+        ? [...filteredModels, ...filteredRouters.map(routerToModelOption)]
+        : []
+    }
+    return result
+  }, [currentChat?.projectId, hasCurrentProjectModels, filteredModels, filteredRouters])
+
   return (
     currentChat && (
       <LLMSelector
@@ -44,9 +71,7 @@ const ChatConfigLlmSelector: FC = () => {
         value={llmModelValue ?? undefined}
         allowEmpty
         projectId={projectId}
-        filteredModels={
-          currentChat.projectId && filteredModels.length > 0 ? filteredModels : undefined
-        }
+        filteredModels={mergedFilteredModels}
         hint="Selecting LLM model in this field will force each assistant to use it while answering in this chat. 'Default' means using the model defined in the configuration of each assistant."
         onChange={onLlmModelChange}
       />

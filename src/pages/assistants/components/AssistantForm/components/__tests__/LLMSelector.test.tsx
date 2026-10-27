@@ -152,6 +152,56 @@ describe('LLMSelector — routers', () => {
   })
 })
 
+// filteredModels has exactly one caller in the codebase (ChatConfigLlmSelector) and its
+// contract is: undefined means "no override, use your own project/global list"; an explicit
+// array — including an empty one — is an authoritative answer the caller already resolved
+// and must be shown as-is, never silently replaced by useProjectLLMModels' own fetch.
+describe('LLMSelector — filteredModels override contract', () => {
+  beforeEach(() => {
+    mockAppInfoStore.llmModels = [
+      { label: 'GPT-4o', value: 'gpt-4o', isDefault: true },
+      { label: 'Claude Opus 4.1', value: 'claude-opus-4-1', isDefault: false },
+    ]
+    mockAppInfoStore.llmRouters = []
+  })
+
+  afterEach(() => {
+    mockAppInfoStore.llmRouters = []
+  })
+
+  it('falls back to the project/global list when filteredModels is undefined', () => {
+    const { container } = render(<LLMSelector value={undefined} onChange={vi.fn()} allowEmpty />)
+    fireEvent.click(container.querySelector('.p-multiselect')!)
+
+    expect(screen.getByText('GPT-4o')).toBeInTheDocument()
+  })
+
+  it('shows no model options when filteredModels is explicitly empty, without falling back', () => {
+    const { container } = render(
+      <LLMSelector value={undefined} onChange={vi.fn()} allowEmpty filteredModels={[]} />
+    )
+    fireEvent.click(container.querySelector('.p-multiselect')!)
+
+    expect(screen.queryByText('GPT-4o')).not.toBeInTheDocument()
+    expect(screen.queryByText('Claude Opus 4.1')).not.toBeInTheDocument()
+  })
+
+  it('shows the explicit list, not the global list, when filteredModels has entries', () => {
+    const { container } = render(
+      <LLMSelector
+        value={undefined}
+        onChange={vi.fn()}
+        allowEmpty
+        filteredModels={[{ label: 'Scoped Model', value: 'scoped-model', isDefault: false }]}
+      />
+    )
+    fireEvent.click(container.querySelector('.p-multiselect')!)
+
+    expect(screen.getByText('Scoped Model')).toBeInTheDocument()
+    expect(screen.queryByText('GPT-4o')).not.toBeInTheDocument()
+  })
+})
+
 describe('LLMSelector workflow model selection', () => {
   const projectModels: ModelOption[] = [
     {

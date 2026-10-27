@@ -155,9 +155,12 @@ const LLMSelector = forwardRef<
       }))
     }, [modelType, imageGenerationModels, llmModels])
 
-    // Explicit filteredModels (e.g. passed down from chat) win over the project-scoped list.
-    // Checked by length because an empty array is truthy but should fall back while loading.
-    const hasFilteredModels = filteredModels && filteredModels.length > 0
+    // Explicit filteredModels (passed down from ChatConfigLlmSelector, its one caller) wins
+    // over the project-scoped list whenever the caller gives an opinion at all. undefined means
+    // "no override, use your own project/global list"; an empty array is the caller's own
+    // authoritative "nothing available right now" and must not be replaced by a second,
+    // independent fetch — see docs/superpowers/plans/2026-10-22-epmcdme-15676-single-model-pipeline.md.
+    const hasFilteredModels = filteredModels !== undefined
     const models = hasFilteredModels ? (filteredModels as SelectableModel[]) : globalModels
 
     useImperativeHandle(

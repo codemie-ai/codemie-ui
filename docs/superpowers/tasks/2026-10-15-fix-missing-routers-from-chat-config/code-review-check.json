@@ -1,0 +1,21 @@
+{
+  "decision": "approve",
+  "confidence": "high",
+  "rationale": "CR-001 and CR-002 were raised against the CR-001 fix-up commit (381af2809, 'Surface project model fetch failures instead of swallowing them'), which was reverted in 2d8d48f6c after it introduced a real regression (CR-002 in ProjectModelsSection.tsx and a reborn CR-001 in useProjectLLMModels.ts). Diffed useProjectLLMModels.ts and ProjectModelsSection.tsx against the merge-base (720240439): both are now empty diffs, so neither finding's code exists in the branch anymore. The branch content matches the originally-approved 2-task baseline (968eecc02) exactly. Fetch-failure error surfacing for getProjectLLMModels is documented as deliberately out of scope for this ticket in code-review-deferred.md (ACs concern router visibility/selectability only).",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "moot",
+      "notes": "Introduced and reverted on this branch (381af2809 -> 2d8d48f6c). useProjectLLMModels.ts has zero diff against merge-base 720240439 — the finding's code is not present in the branch."
+    },
+    {
+      "id": "CR-002",
+      "status": "moot",
+      "notes": "Regression from the same reverted commit. ProjectModelsSection.tsx has zero diff against merge-base 720240439 — the finding's code is not present in the branch."
+    }
+  ]
+}

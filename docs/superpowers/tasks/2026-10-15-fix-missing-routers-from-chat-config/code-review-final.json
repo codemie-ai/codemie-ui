@@ -1,0 +1,38 @@
+{
+  "decision": "request-changes",
+  "rationale": "Edge-case lens ran clean (compact profile); acceptance was n/a (no spec) and blind/verification-gap are out of compact scope, so confidence is capped at medium for lack of a spec/story. The CR-001 fix correctly fixes chatsStore's single-toast error path, but it has two unaddressed side effects on other getProjectLLMModels callers: CR-001 (useProjectLLMModels now silently swallows the fetch failure with no error UI, removing even the prior generic toast for the assistant-form LLM selector) and CR-002 (ProjectModelsSection's Promise.all now rejects on any project-model failure, blocking the whole admin settings form instead of degrading gracefully). Dismissed as noise/out-of-scope: a hypothetical future unguarded caller of the shared in-flight promise (speculative, no current caller lacks a catch), and two unrelated local .codemie/codemie-cli.config.json edits (uncommitted CLI tooling config, unrelated to this code change).",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "standards_expected=false for this profile; no audit dispatched." },
+    { "kind": "code-quality", "status": "na", "notes": "standards_expected=false for this profile; no audit dispatched." },
+    { "kind": "security", "status": "na", "notes": "standards_expected=false for this profile; no audit dispatched." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/hooks/useProjectLLMModels.ts",
+      "line": 47,
+      "title": "Project model fetch failures fully silent in assistant form",
+      "problem": "getProjectLLMModels now rejects on fetch failure (skipErrorHandling:true + rethrow in src/store/appInfo.ts), but useProjectLLMModels swallows the rejection via `.catch(() => undefined)` with no error state, and LLMSelector (src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx:141) renders the resulting empty model list with no error indicator.",
+      "impact": "Before this change the same failure still triggered api.ts's generic global toast (skipErrorHandling was not set previously); that toast is now suppressed and nothing replaces it, so a project model fetch failure degrades to a silently empty model dropdown in the assistant form with zero user-visible indication.",
+      "recommendation": "Surface the failure from useProjectLLMModels (e.g. an error flag/last-error field consumed by LLMSelector) instead of swallowing it unconditionally, or restore a toast specific to this path."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectModelsSection.tsx",
+      "line": 84,
+      "title": "Project model fetch failure now blocks whole admin settings form",
+      "problem": "getProjectLLMModels is awaited inside `Promise.all([getLLMModels(), fetchSettings(), getProjectLLMModels()])`; since it now rejects instead of resolving to [], any project-model fetch failure rejects the whole Promise.all.",
+      "impact": "The .catch sets loadError(true), which replaces the whole section with 'Unable to load project model settings.' even though the platform catalog and project settings already loaded successfully — an admin can no longer view or edit any model settings for the project on a transient project-model fetch failure, where previously the form still rendered with the rest of the data intact.",
+      "recommendation": "Catch the getProjectLLMModels() call independently (e.g. `.catch(() => [])` with a partial-data warning) instead of bundling it in the same Promise.all as the settings/catalog fetches that must not be discarded together."
+    }
+  ]
+}
