@@ -39,6 +39,28 @@ function durationMs(duration: string): number | null {
   return Number(amount) * DURATION_UNIT_MS[unit]
 }
 
+const CALENDAR_MONTH_DURATION = '30d'
+
+/**
+ * Subtracts one calendar month in UTC. The day is clamped to the last day of
+ * the previous month (Mar 31 -> Feb 28/29) so Date.UTC does not overflow.
+ */
+function subtractOneMonthUtc(ms: number): number {
+  const date = new Date(ms)
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth()
+  const lastDayOfPreviousMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  return Date.UTC(
+    year,
+    month - 1,
+    Math.min(date.getUTCDate(), lastDayOfPreviousMonth),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds(),
+    date.getUTCMilliseconds()
+  )
+}
+
 /**
  * Returns the {start, end} ms bounds of a budget's currently active period.
  *
@@ -59,7 +81,13 @@ function currentPeriodBoundsMs(
   if (budget.budget_reset_at) {
     const resetMs = new Date(budget.budget_reset_at).getTime()
     if (!Number.isNaN(resetMs)) {
-      return { start: resetMs - durMs, end: resetMs }
+      // The backend aligns "30d" budgets to calendar months (reset on the 1st),
+      // so the period starts one calendar month before the reset, not 30 days.
+      const start =
+        budget.budget_duration === CALENDAR_MONTH_DURATION
+          ? subtractOneMonthUtc(resetMs)
+          : resetMs - durMs
+      return { start, end: resetMs }
     }
   }
 

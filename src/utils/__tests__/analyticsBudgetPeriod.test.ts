@@ -88,45 +88,43 @@ describe('computeAnalyticsBudgetPeriod', () => {
     }
   })
 
-  it('computes start_date for a monthly (30d) budget (reset_at minus 30 days)', () => {
+  it('computes start_date for a monthly (30d) budget as the first day of the reset month', () => {
+    // The backend resets on the 1st; March has 31 days, so the period is Mar 1 - Apr 1
     const budget = baseBudget({
       budget_duration: '30d',
-      budget_reset_at: '2026-03-31T00:00:00.000Z',
+      budget_reset_at: '2026-04-01T00:00:00.000Z',
     })
-    const result = computeAnalyticsBudgetPeriod([budget])
-    expect('start_date' in result).toBe(true)
-    if ('start_date' in result) {
-      const start = new Date(result.start_date)
-      const reset = new Date('2026-03-31T00:00:00.000Z')
-      const diffMs = reset.getTime() - start.getTime()
-      expect(diffMs).toBe(30 * 86_400_000) // exactly 30 days, not a calendar month
-      expect(result.end_date).toBe('2026-03-31T00:00:00.000Z')
-    }
+    const result = computeAnalyticsBudgetPeriod([budget], new Date('2026-03-15T12:00:00.000Z'))
+    expect(result).toEqual({
+      start_date: '2026-03-01T00:00:00.000Z',
+      end_date: '2026-03-15T12:00:00.000Z', // clamped to now
+    })
   })
 
   it('selects the earliest start (longest period) when multiple budgets exist', () => {
     const weekly = baseBudget({
       budget_id: 'b-weekly',
       budget_duration: '7d',
-      budget_reset_at: '2026-06-15T00:00:00.000Z',
+      budget_reset_at: '2026-08-01T00:00:00.000Z',
     })
     const monthly = baseBudget({
       budget_id: 'b-monthly',
       budget_duration: '30d',
-      budget_reset_at: '2026-06-15T00:00:00.000Z',
+      budget_reset_at: '2026-08-01T00:00:00.000Z',
     })
     const daily = baseBudget({
       budget_id: 'b-daily',
       budget_duration: '1d',
-      budget_reset_at: '2026-06-15T00:00:00.000Z',
+      budget_reset_at: '2026-08-01T00:00:00.000Z',
     })
-    const result = computeAnalyticsBudgetPeriod([weekly, monthly, daily])
+    const now = new Date('2026-07-15T00:00:00.000Z')
+    const result = computeAnalyticsBudgetPeriod([weekly, monthly, daily], now)
     expect('start_date' in result).toBe(true)
     if ('start_date' in result) {
-      // Monthly (30d) has the earliest start (May 16) — largest window
+      // Monthly (30d) has the earliest start (Jul 1) — largest window
       const start = new Date(result.start_date)
-      expect(start.getUTCMonth()).toBe(4) // May
-      expect(start.getUTCDate()).toBe(16)
+      expect(start.getUTCMonth()).toBe(6) // July
+      expect(start.getUTCDate()).toBe(1)
     }
   })
 
@@ -248,6 +246,152 @@ describe('computeAnalyticsBudgetPeriod', () => {
       if ('start_date' in result) {
         expect(result.end_date).toBe('2026-09-10T00:00:00.000Z')
       }
+    })
+  })
+
+  describe('calendar-month alignment of 30d budgets (EPMCDME-15737)', () => {
+    it('starts on Oct 1 when the backend resets on Nov 1 (reported case)', () => {
+      const budget = baseBudget({
+        budget_duration: '30d',
+        budget_reset_at: '2026-11-01T00:00:00Z',
+        created_at: '2026-10-07T11:58:18Z',
+      })
+      const now = new Date('2026-10-08T08:00:00.000Z')
+      const result = computeAnalyticsBudgetPeriod([budget], now)
+      expect(result).toEqual({
+        start_date: '2026-10-01T00:00:00.000Z',
+        end_date: '2026-10-08T08:00:00.000Z',
+      })
+    })
+
+    it.each([
+      ['28-day month (Feb 2027)', '2027-03-01T00:00:00.000Z', '2027-02-01T00:00:00.000Z'],
+      [
+        '29-day month (Feb 2028, leap year)',
+        '2028-03-01T00:00:00.000Z',
+        '2028-02-01T00:00:00.000Z',
+      ],
+      ['30-day month (Apr 2026)', '2026-05-01T00:00:00.000Z', '2026-04-01T00:00:00.000Z'],
+      ['31-day month (May 2026)', '2026-06-01T00:00:00.000Z', '2026-05-01T00:00:00.000Z'],
+      ['year change (Dec 2026)', '2027-01-01T00:00:00.000Z', '2026-12-01T00:00:00.000Z'],
+    ])('starts on the 1st of the previous month for a %s', (_label, resetAt, expectedStart) => {
+      const budget = baseBudget({ budget_duration: '30d', budget_reset_at: resetAt })
+      // now is 10 days into the period, so end_date is clamped to now
+      const now = new Date(Date.parse(expectedStart) + 10 * 86_400_000)
+      const result = computeAnalyticsBudgetPeriod([budget], now)
+      expect(result).toEqual({ start_date: expectedStart, end_date: now.toISOString() })
+    })
+
+    it.each([
+      [
+        'non-leap year',
+        '2026-03-31T00:00:00Z',
+        '2026-03-10T00:00:00.000Z',
+        '2026-02-28T00:00:00.000Z',
+      ],
+      ['leap year', '2024-03-31T00:00:00Z', '2024-03-10T00:00:00.000Z', '2024-02-29T00:00:00.000Z'],
+    ])(
+      'clamps the day to the end of a shorter previous month (%s)',
+      (_label, resetAt, nowIso, expectedStart) => {
+        const budget = baseBudget({ budget_duration: '30d', budget_reset_at: resetAt })
+        const result = computeAnalyticsBudgetPeriod([budget], new Date(nowIso))
+        expect(result).toEqual({ start_date: expectedStart, end_date: nowIso })
+      }
+    )
+
+    it('treats a reset_at with an explicit offset as the same instant as its UTC form', () => {
+      // 2026-11-01T03:00:00+03:00 is 2026-11-01T00:00:00Z
+      const budget = baseBudget({
+        budget_duration: '30d',
+        budget_reset_at: '2026-11-01T03:00:00+03:00',
+      })
+      const result = computeAnalyticsBudgetPeriod([budget], new Date('2026-10-20T00:00:00.000Z'))
+      expect(result).toEqual({
+        start_date: '2026-10-01T00:00:00.000Z',
+        end_date: '2026-10-20T00:00:00.000Z',
+      })
+    })
+
+    it('picks the earliest start among several 30d budgets with different reset months', () => {
+      const november = baseBudget({
+        budget_id: 'b-nov',
+        budget_duration: '30d',
+        budget_reset_at: '2026-11-01T00:00:00.000Z',
+      })
+      const december = baseBudget({
+        budget_id: 'b-dec',
+        budget_duration: '30d',
+        budget_reset_at: '2026-12-01T00:00:00.000Z',
+      })
+      const result = computeAnalyticsBudgetPeriod(
+        [december, november],
+        new Date('2026-10-20T00:00:00.000Z')
+      )
+      expect(result).toEqual({
+        start_date: '2026-10-01T00:00:00.000Z',
+        end_date: '2026-10-20T00:00:00.000Z',
+      })
+    })
+
+    it('keeps exact-day subtraction for 7d budgets', () => {
+      const budget = baseBudget({
+        budget_duration: '7d',
+        budget_reset_at: '2026-11-01T00:00:00.000Z',
+      })
+      const result = computeAnalyticsBudgetPeriod([budget], new Date('2026-10-30T09:15:00.000Z'))
+      expect(result).toEqual({
+        start_date: '2026-10-25T00:00:00.000Z',
+        end_date: '2026-10-30T09:00:00.000Z',
+      })
+    })
+
+    it('keeps exact-day subtraction for 1d budgets', () => {
+      const budget = baseBudget({
+        budget_duration: '1d',
+        budget_reset_at: '2026-11-01T00:00:00.000Z',
+      })
+      const result = computeAnalyticsBudgetPeriod([budget], new Date('2026-10-31T12:00:00.000Z'))
+      expect(result).toEqual({
+        start_date: '2026-10-31T00:00:00.000Z',
+        end_date: '2026-10-31T12:00:00.000Z',
+      })
+    })
+
+    it('returns an empty range when now is exactly at the period start', () => {
+      const budget = baseBudget({
+        budget_duration: '30d',
+        budget_reset_at: '2026-11-01T00:00:00.000Z',
+      })
+      const result = computeAnalyticsBudgetPeriod([budget], new Date('2026-10-01T00:00:00.000Z'))
+      expect(result).toEqual({
+        start_date: '2026-10-01T00:00:00.000Z',
+        end_date: '2026-10-01T00:00:00.000Z',
+      })
+    })
+
+    it('floors end_date to the stepper one second before the period end', () => {
+      const budget = baseBudget({
+        budget_duration: '30d',
+        budget_reset_at: '2026-11-01T00:00:00.000Z',
+      })
+      const result = computeAnalyticsBudgetPeriod([budget], new Date('2026-10-31T23:59:59.000Z'))
+      expect(result).toEqual({
+        start_date: '2026-10-01T00:00:00.000Z',
+        end_date: '2026-10-31T23:30:00.000Z',
+      })
+    })
+
+    it('characterization: a budget_reset_at in the past is not advanced to the current period', () => {
+      // 7d is used on purpose so the expectation is unaffected by calendar alignment
+      const budget = baseBudget({
+        budget_duration: '7d',
+        budget_reset_at: '2026-09-01T00:00:00.000Z',
+      })
+      const result = computeAnalyticsBudgetPeriod([budget], new Date('2026-10-12T00:00:00.000Z'))
+      expect(result).toEqual({
+        start_date: '2026-08-25T00:00:00.000Z',
+        end_date: '2026-09-01T00:00:00.000Z',
+      })
     })
   })
 })
