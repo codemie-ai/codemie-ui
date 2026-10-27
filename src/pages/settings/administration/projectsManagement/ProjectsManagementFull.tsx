@@ -48,6 +48,7 @@ import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { BudgetCategoryFilter, BUDGET_CATEGORY_OPTIONS } from '@/types/entity/budget'
 import { Project, ProjectCounters, ProjectType } from '@/types/entity/project'
+import { ProjectDetail } from '@/types/entity/projectManagement'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import { formatCurrency, formatSpend } from '@/utils/currency'
 import { canAccessUsersTab } from '@/utils/permissions'
@@ -215,7 +216,7 @@ const ProjectsManagementFull: FC = () => {
     setSort,
   } = useProjectsFilters()
   const [showModal, setShowModal] = useState(false)
-  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [editingProject, setEditingProject] = useState<Project | ProjectDetail | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
   const [transferringProject, setTransferringProject] = useState<Project | null>(null)
   const skipPaginationReloadRef = useRef(false)
@@ -407,8 +408,16 @@ const ProjectsManagementFull: FC = () => {
     setShowModal(true)
   }, [])
 
-  const handleEditProject = useCallback((project: Project) => {
-    setEditingProject(project)
+  const handleEditProject = useCallback(async (project: Project) => {
+    try {
+      // The list row omits fields the detail endpoint carries (e.g. enforce_member_spend_limits),
+      // so reload the project before showing the popup to avoid displaying a stale toggle state.
+      const fullProject = await projectsStore.getProject(project.name)
+      setEditingProject(fullProject)
+    } catch (error) {
+      console.error('Failed to load project details for edit:', error)
+      setEditingProject(project)
+    }
     setShowModal(true)
   }, [])
 
@@ -466,9 +475,9 @@ const ProjectsManagementFull: FC = () => {
 
       try {
         if (isEdit) {
-          const updatedProject = await projectsStore.updateProject(editingProject.id, data)
+          const updatedProject = await projectsStore.updateProject(editingProject.name, data)
           toaster.info(`Project ${updatedProject.name} updated successfully`)
-          projectDisplayNamesStore.invalidate(editingProject.id)
+          projectDisplayNamesStore.invalidate(editingProject.name)
           await userStore.getCurrentUser()
         } else {
           await projectsStore.createProject(data)
