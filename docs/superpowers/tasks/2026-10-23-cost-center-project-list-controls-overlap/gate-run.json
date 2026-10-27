@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16326-fix-cost-center-project-list-controls",
+  "head": "ee4ec12105b4310792cc2d127128a6a1a4085f51",
+  "runner": "npm",
+  "started_at": "2026-10-23T14:00:00Z",
+  "completed_at": "2026-10-23T14:30:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 67675,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 55057,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5510,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 42515,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: no leaks found"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 686231,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "738 files, 7443 passed"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 448603,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "52 files, 578 passed"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 488,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Needs SonarQube infrastructure/credentials; not run. Owed to CI/pre-commit."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs stack up and ~/.codemie/test-harness.json; unverified."
+    }
+  ],
+  "failures": {}
+}

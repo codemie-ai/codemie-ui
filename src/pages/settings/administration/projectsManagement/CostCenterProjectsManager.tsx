@@ -270,7 +270,7 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
             setPage={handlePaginationChange}
             perPage={perPage}
             perPageOptions={DECIMAL_PAGINATION_OPTIONS}
-            className="w-full !bg-transparent !border-t-0 !p-0 !mb-4 !bg-none"
+            className="w-full mt-4 !bg-transparent !border-t-0 !p-0 !mb-4 !bg-none"
           />
         )}
       </section>
