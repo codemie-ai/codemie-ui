@@ -32,6 +32,7 @@ import Avatar from '@/components/Avatar/Avatar'
 import Button from '@/components/Button'
 import Markdown from '@/components/markdown/Markdown'
 import Thought from '@/components/Thought/Thought'
+import TruncationBadge from '@/components/TruncationBadge'
 import { ButtonSize, ButtonType } from '@/constants'
 import { AvatarType } from '@/constants/avatar'
 import { WORKFLOW_PROGRESS_RESTORE_FAILED_MESSAGE } from '@/constants/chats'
@@ -273,7 +274,12 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
         <div className="flex flex-col gap-2 mt-2">
           {message?.thoughts?.map((thought) => (
             <Fragment key={thought.id}>
-              {(!hideToolOutputs || thought.interrupted) && <Thought thought={thought} />}
+              {(!hideToolOutputs || thought.interrupted) && (
+                <Thought
+                  thought={thought}
+                  headerBadge={<TruncationBadge truncated={thought.truncated} />}
+                />
+              )}
               {thought.interrupted && !currentChat?.isWorkflow && !isSharedPage && (
                 <div className="flex justify-end gap-2">
                   <Button

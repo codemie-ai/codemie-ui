@@ -164,3 +164,60 @@ describe('CodeBlock Download tooltip placement', () => {
     expect(downloadBtn).toHaveAttribute('data-tooltip-place', 'bottom')
   })
 })
+
+describe('CodeBlock headerBadge prop', () => {
+  afterEach(cleanup)
+
+  it('does not render header badge by default', () => {
+    const { container } = render(<CodeBlock text="const x = 1;" language="js" />)
+    const headerDiv = container.querySelector('.code-block-header')
+    // Header has 2 children: title wrapper and action buttons wrapper
+    expect(headerDiv?.children.length).toBe(2)
+  })
+
+  it('renders header badge when provided', () => {
+    const badgeElement = <span data-testid="test-badge">Badge</span>
+    const { getByTestId } = render(
+      <CodeBlock text="const x = 1;" language="js" headerBadge={badgeElement} />
+    )
+    expect(getByTestId('test-badge')).toBeInTheDocument()
+  })
+
+  it('renders header badge next to the title', () => {
+    const badgeElement = <span data-testid="test-badge">⚠️</span>
+    const { container, getByTestId } = render(
+      <CodeBlock text="const x = 1;" language="js" title="Code" headerBadge={badgeElement} />
+    )
+
+    const titleDiv = container.querySelector('.code-block-header > div:first-child')
+    expect(titleDiv?.textContent).toContain('Code')
+    expect(getByTestId('test-badge')).toBeInTheDocument()
+  })
+
+  it('renders header badge with icon', () => {
+    const badgeElement = (
+      <svg data-testid="warning-icon" className="w-4 h-4">
+        <circle r="2" />
+      </svg>
+    )
+    const { getByTestId } = render(
+      <CodeBlock text="const x = 1;" language="js" headerBadge={badgeElement} />
+    )
+    expect(getByTestId('warning-icon')).toBeInTheDocument()
+  })
+
+  it('renders header badge with custom styling', () => {
+    const badgeElement = (
+      <div data-testid="styled-badge" className="bg-red-500 px-2 py-1 rounded">
+        Error
+      </div>
+    )
+    const { getByTestId } = render(
+      <CodeBlock text="const x = 1;" language="js" headerBadge={badgeElement} />
+    )
+    const badge = getByTestId('styled-badge')
+    expect(badge).toHaveClass('bg-red-500')
+    expect(badge).toHaveClass('px-2')
+    expect(badge).toHaveClass('py-1')
+  })
+})

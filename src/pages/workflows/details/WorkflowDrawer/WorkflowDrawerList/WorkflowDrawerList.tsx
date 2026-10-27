@@ -90,6 +90,7 @@ const WorkflowDrawerList = ({
               stateId={stateId}
               onClick={onSelectedStateIdChange}
               items={state.items}
+              truncated={state.truncated}
             />
           )
         })

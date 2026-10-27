@@ -1,0 +1,94 @@
+{
+  "decision": "request-changes",
+  "rationale": "Four major patch findings: (1) the truncation indicator in WorkflowStateOutput renders as a no-op <Button> with no onClick, violating WCAG 4.1.2 — keyboard users can focus and activate it but nothing happens; (2) ChatAiMessage.tsx useEffect has no cancelled-flag cleanup, allowing stale .then() callbacks on unmount or rapid re-trigger; (3) WorkflowStateOutput.tsx useEffect likewise has no cancelled flag and no error handling on the inner async function, causing unhandled promise rejections on API error and a stale-state race on every poll; (4) the ContinueWithInputPopup test mock returns a plain string rather than the new { output, truncated, finish_reason } object, so result.output is undefined in tests and the updated caller is silently untested. All six acceptance criteria pass; no security, breaking-change, or public-API issues identified.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Drawer shows indicator when truncated: true; unchanged when false or absent.",
+      "status": "PASS",
+      "notes": "WorkflowStateOutput.tsx renders the warning Button only when truncated is truthy, renders null otherwise."
+    },
+    {
+      "criterion": "Chat view shows indicator when truncated: true; unchanged when false or absent.",
+      "status": "PASS",
+      "notes": "ChatAiMessage.tsx renders the warning div only when outputTruncated is truthy, renders null otherwise."
+    },
+    {
+      "criterion": "Indicator tooltip exposes raw finish_reason value on both surfaces.",
+      "status": "PASS",
+      "notes": "Both surfaces build the tooltip as `${TRUNCATION_TOOLTIP_PREFIX} (finish_reason: ${value})` when present, falling back to the bare prefix when absent."
+    },
+    {
+      "criterion": "WorkflowExecutionState type includes finish_reason and truncated.",
+      "status": "PASS",
+      "notes": "types/entity/workflow.ts adds finish_reason?: string | null and truncated?: boolean to WorkflowExecutionState."
+    },
+    {
+      "criterion": "getWorkflowExecutionStateOutput no longer discards finish_reason or truncated.",
+      "status": "PASS",
+      "notes": "Store method now returns the full WorkflowExecutionStateOutput object instead of only data.output."
+    },
+    {
+      "criterion": "All existing callers of getWorkflowExecutionStateOutput remain type-correct after the return type change.",
+      "status": "PASS",
+      "notes": "All three callers updated: WorkflowStateOutput uses result.output ?? '', WorkflowExecutionEditOutputForm returns result.output, ContinueWithInputPopup uses result.output."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Pre-commit hook enforces EPMCDME-XXXX: Capital sentence pattern; hooks ran on all task commits without --no-verify."
+    },
+    {
+      "standard": "branch-naming",
+      "status": "partial",
+      "notes": "Branch is EPMCDME-14145-workflow-truncation-indicator; convention requires underscore separator (EPMCDME-14145_workflow-truncation-indicator). Branch pre-dates this task and was not created by this diff — not blocking this review, but should be corrected before merge."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "pass",
+      "notes": "No dangerouslySetInnerHTML. Tooltip content rendered as text nodes (react-tooltip without html:true) — finish_reason value is safe even with angle brackets. No secrets, no open redirects, no new deps."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "Valtio store pattern, optional-field typing, and useSnapshot usage follow existing codebase conventions."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "WorkflowStateOutput.tsx renders the truncation indicator as a <Button> component with no onClick handler. The <button> element is focusable and activatable by keyboard, but activating it does nothing — violating WCAG 2.1 SC 4.1.2 (Name, Role, Value).",
+      "impact": "Keyboard and assistive-technology users encounter a focusable button that silently no-ops on activation. Screen readers announce it as an interactive button, misleading users who expect an action.",
+      "recommendation": "Replace the Button wrapper with a non-interactive tooltip anchor (a plain <span> or <div> styled to match the secondary button appearance) so the element is not in the tab order and not announced as interactive. Alternatively, add role=\"status\" and aria-label describing the truncated state, removing the interactive semantics."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "ChatAiMessage.tsx useEffect (lines 224–242) launches an async store call with no cleanup function. If the component unmounts or a dependency (stateId, executionId, workflow_id, isTerminalExecution) changes before the fetch resolves, the .then() callback still fires and calls setOutputTruncated / setOutputFinishReason on the detached or stale instance.",
+      "impact": "In a busy chat view where execution status flips or the user navigates away mid-fetch, stale callbacks overwrite correct state with out-of-order data. ContinueWithInputPopup already demonstrates the correct cancelled-flag pattern for this same store method.",
+      "recommendation": "Add a cancelled flag and cleanup: let cancelled = false; ...store.getWorkflowExecutionStateOutput(...).then((result) => { if (!cancelled) { setOutputTruncated(...); setOutputFinishReason(...) } }).catch(...); return () => { cancelled = true }."
+    },
+    {
+      "id": "CR-003",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "WorkflowStateOutput.tsx getStateOutput async function (lines 53–67) has no cancelled flag and no try/catch. Concurrent fetches triggered by stateUpdatedDate, stateCompletedDate, or refreshKey changes race — the slower (older) fetch resolves last and resets output, truncated, and finishReason to stale values. Additionally, any API error (4xx/5xx from skipErrorHandling: true path) produces an unhandled promise rejection.",
+      "impact": "Under normal polling cadence, two in-flight requests can exist simultaneously; the one that launched first frequently resolves last (cold cache) and overwrites the most recent data. API errors on re-fetch produce unhandled rejections in production error monitoring.",
+      "recommendation": "Mirror the ContinueWithInputPopup pattern: add let cancelled = false, wrap the await in try/catch, gate all setState calls on !cancelled, and return () => { cancelled = true } from the effect."
+    },
+    {
+      "id": "CR-004",
+      "triage": "patch",
+      "severity": "major",
+      "problem": "The test mock in src/pages/workflows/details/states/__tests__/ContinueWithInputPopup.test.tsx (line 23) returns a plain string via .mockResolvedValue('Step output text'). After the return-type change, production code calls result.output on this value, yielding undefined. No test assertion checks for the text in the DOM, so the suite passes while silently testing broken behaviour.",
+      "impact": "The updated caller (result.output) is entirely untested. A regression that re-breaks result.output in ContinueWithInputPopup would go undetected.",
+      "recommendation": "Update the mock to return the correct object shape: vi.fn().mockResolvedValue({ output: 'Step output text', truncated: false, finish_reason: null }). Add at least one test that asserts the output text renders in the popup body after the effect resolves."
+    }
+  ]
+}

@@ -17,6 +17,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { TRUNCATION_TOOLTIP_PREFIX } from '@/constants/workflows'
+
 import { ExecutionContext } from '../../../hooks/useExecutionsContext'
 import WorkflowStateOutput from '../WorkflowStateOutput'
 
@@ -38,16 +40,19 @@ vi.mock('@/components/CodeBlock', () => ({
     text,
     downloadFilename,
     headerActionsTemplate,
+    headerBadge,
   }: {
     title?: string
     text: string
     downloadFilename?: string
     headerActionsTemplate?: React.ReactNode
+    headerBadge?: React.ReactNode
   }) => (
     <div data-testid="code-block">
       {title && <div data-testid="code-block-title">{title}</div>}
       <pre data-testid="code-block-text">{text}</pre>
       <div data-testid="code-block-filename">{downloadFilename}</div>
+      {headerBadge}
       {headerActionsTemplate}
     </div>
   ),
@@ -101,6 +106,10 @@ vi.mock('@/assets/icons/expand.svg?react', () => ({
   default: () => <svg data-testid="expand-icon" />,
 }))
 
+vi.mock('@/assets/icons/status-warning.svg?react', () => ({
+  default: () => <svg data-testid="warning-icon" />,
+}))
+
 describe('WorkflowStateOutput', () => {
   let user: UserEvent
 
@@ -132,11 +141,16 @@ describe('WorkflowStateOutput', () => {
   beforeEach(() => {
     user = userEvent.setup()
     vi.clearAllMocks()
-    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue('Sample output')
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: 'Sample output',
+    })
   })
 
   it('fetches and displays state output', async () => {
-    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue('Test output')
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: 'Test output',
+      truncated: false,
+    })
 
     renderWithContext(<WorkflowStateOutput {...defaultProps} />)
 
@@ -154,7 +168,10 @@ describe('WorkflowStateOutput', () => {
   })
 
   it('displays empty string when output is null', async () => {
-    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue(null)
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: null,
+      truncated: false,
+    })
 
     renderWithContext(<WorkflowStateOutput {...defaultProps} />)
 
@@ -297,7 +314,10 @@ describe('WorkflowStateOutput', () => {
   })
 
   it('displays output in text block within Raw tab', async () => {
-    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue('Raw text output')
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: 'Raw text output',
+      truncated: false,
+    })
 
     renderWithContext(<WorkflowStateOutput {...defaultProps} />)
 
@@ -314,9 +334,10 @@ describe('WorkflowStateOutput', () => {
   })
 
   it('displays output in markdown within Markdown tab', async () => {
-    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue(
-      '# Markdown output'
-    )
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: '# Markdown output',
+      truncated: false,
+    })
 
     renderWithContext(<WorkflowStateOutput {...defaultProps} />)
 
@@ -330,5 +351,106 @@ describe('WorkflowStateOutput', () => {
     await waitFor(() => {
       expect(screen.getByTestId('markdown-content')).toHaveTextContent('# Markdown output')
     })
+  })
+
+  it('shows truncation warning when truncated is true', async () => {
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: 'Partial answer',
+      truncated: true,
+    })
+
+    renderWithContext(<WorkflowStateOutput {...defaultProps} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('warning-icon')).toBeInTheDocument()
+    })
+  })
+
+  it('shows the generic truncation tooltip when truncated is true', async () => {
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: 'Partial answer',
+      truncated: true,
+    })
+
+    renderWithContext(<WorkflowStateOutput {...defaultProps} />)
+
+    await waitFor(() => {
+      const warningButton = screen.getByTestId('warning-icon').closest('[data-tooltip-content]')
+      expect(warningButton).toHaveAttribute('data-tooltip-content', TRUNCATION_TOOLTIP_PREFIX)
+    })
+  })
+
+  it('does not show truncation warning when truncated is false', async () => {
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: 'Complete answer',
+      truncated: false,
+    })
+
+    renderWithContext(<WorkflowStateOutput {...defaultProps} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('expand-icon')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument()
+  })
+
+  it('does not show truncation warning when truncated is absent (old backend)', async () => {
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: 'Old state output',
+    })
+
+    renderWithContext(<WorkflowStateOutput {...defaultProps} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('expand-icon')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument()
+  })
+
+  it('renders warning badge with proper styling and tooltip', async () => {
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValue({
+      output: 'Truncated output',
+      truncated: true,
+    })
+
+    renderWithContext(<WorkflowStateOutput {...defaultProps} />)
+
+    await waitFor(() => {
+      const warningIcon = screen.getByTestId('warning-icon')
+      expect(warningIcon).toBeInTheDocument()
+    })
+
+    const warningButton = screen.getByTestId('warning-icon').closest('[data-tooltip-id]')
+    expect(warningButton).toHaveAttribute('data-tooltip-id', 'react-tooltip')
+  })
+
+  it('clears the truncation warning when a refetch returns truncated: false', async () => {
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValueOnce({
+      output: 'Partial output',
+      truncated: true,
+    })
+    mockWorkflowExecutionsStore.getWorkflowExecutionStateOutput.mockResolvedValueOnce({
+      output: 'Edited output',
+      truncated: false,
+    })
+
+    const { rerender } = renderWithContext(<WorkflowStateOutput {...defaultProps} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('warning-icon')).toBeInTheDocument()
+    })
+
+    rerender(
+      <ExecutionContext.Provider value={mockContextValue}>
+        <WorkflowStateOutput {...defaultProps} refreshKey={1} />
+      </ExecutionContext.Provider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('code-block-text')).toHaveTextContent('Edited output')
+    })
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument()
   })
 })

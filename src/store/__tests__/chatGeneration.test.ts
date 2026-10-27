@@ -652,6 +652,125 @@ describe('chatGenerationStore', () => {
     ])
   })
 
+  it('merges truncated from a later thought update for the same thought id', async () => {
+    const historyItem = createHistoryItem({
+      thoughts: [
+        {
+          id: 'thought-1',
+          author_name: 'Subagent',
+          author_type: ThoughtAuthorType.Tool,
+          message: 'partial',
+          in_progress: true,
+        },
+      ],
+    })
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+    chatGenerationStore._handleThought(historyItem, {
+      id: 'thought-1',
+      message: ' answer',
+      in_progress: false,
+      truncated: true,
+    })
+
+    expect(historyItem.thoughts).toEqual([
+      expect.objectContaining({
+        id: 'thought-1',
+        message: 'partial answer',
+        truncated: true,
+      }),
+    ])
+  })
+
+  it('keeps the existing truncated when a later update omits it', async () => {
+    const historyItem = createHistoryItem({
+      thoughts: [
+        {
+          id: 'thought-1',
+          author_name: 'Subagent',
+          author_type: ThoughtAuthorType.Tool,
+          message: 'partial',
+          in_progress: true,
+          truncated: true,
+        },
+      ],
+    })
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+    chatGenerationStore._handleThought(historyItem, {
+      id: 'thought-1',
+      message: ' more',
+      in_progress: false,
+    })
+
+    expect(historyItem.thoughts).toEqual([
+      expect.objectContaining({
+        id: 'thought-1',
+        truncated: true,
+      }),
+    ])
+  })
+
+  describe('updateWorkflowChatOutput', () => {
+    const setupInterruptedWorkflowChat = async () => {
+      const historyItem = createHistoryItem({
+        assistantId: 'wf-1',
+        executionId: 'exec-1',
+        thoughts: [
+          {
+            id: 't-interrupted',
+            message: 'cut',
+            in_progress: false,
+            interrupted: true,
+            truncated: true,
+          },
+          { id: 't-done', message: 'done', in_progress: false, truncated: true },
+        ],
+      })
+      const chat = createChat(historyItem)
+      chat.isWorkflow = true
+      mockChatsStore.currentChat = chat
+
+      const { workflowExecutionsStore } = await import('@/store/workflowExecutions')
+      vi.mocked(workflowExecutionsStore.getExecutionStates).mockResolvedValue([
+        { id: 'state-1', status: 'Interrupted' },
+      ] as any)
+
+      return { historyItem, workflowExecutionsStore }
+    }
+
+    it('clears truncated on interrupted thoughts after the edit is saved', async () => {
+      const { historyItem, workflowExecutionsStore } = await setupInterruptedWorkflowChat()
+      vi.mocked(workflowExecutionsStore.updateWorkflowExecutionStateOutput).mockResolvedValue({
+        success: true,
+      } as any)
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      await chatGenerationStore.updateWorkflowChatOutput('chat-1', 'edited')
+
+      expect(historyItem.response).toBe('edited')
+      expect(historyItem.thoughts?.find((t) => t.id === 't-interrupted')?.truncated).toBe(false)
+      expect(historyItem.thoughts?.find((t) => t.id === 't-done')?.truncated).toBe(true)
+    })
+
+    it('keeps truncated when saving the edit fails', async () => {
+      const { historyItem, workflowExecutionsStore } = await setupInterruptedWorkflowChat()
+      vi.mocked(workflowExecutionsStore.updateWorkflowExecutionStateOutput).mockRejectedValue(
+        new Error('save failed')
+      )
+      vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+      await expect(
+        chatGenerationStore.updateWorkflowChatOutput('chat-1', 'edited')
+      ).rejects.toThrow('save failed')
+
+      expect(historyItem.thoughts?.find((t) => t.id === 't-interrupted')?.truncated).toBe(true)
+    })
+  })
+
   describe('stopChatGeneration', () => {
     it('calls abort() and shows error toast when a controller is registered for the chat', async () => {
       const { chatGenerationStore } = await import('@/store/chatGeneration')

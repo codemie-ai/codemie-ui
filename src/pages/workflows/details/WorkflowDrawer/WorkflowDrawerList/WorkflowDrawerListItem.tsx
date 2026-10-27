@@ -17,6 +17,7 @@ import { useState } from 'react'
 
 import ChevronRightSvg from '@/assets/icons/chevron-right.svg?react'
 import StatusIndicator from '@/components/StatusIndicator'
+import TruncationBadge from '@/components/TruncationBadge'
 import { WORKFLOW_STATUS_BADGE_MAPPING } from '@/pages/workflows/constants'
 import { computeTimeDifference } from '@/pages/workflows/utils/computeTimeDifference'
 import { ExtendedWorkflowExecutionState, WorkflowExecutionStatus } from '@/types/entity'
@@ -36,6 +37,7 @@ interface WorkflowDrawerListItemProps {
   stateId: string | null
   onClick: (stateId: string) => void
   nested?: boolean
+  truncated?: boolean
 }
 
 const WorkflowDrawerListItem = ({
@@ -49,6 +51,7 @@ const WorkflowDrawerListItem = ({
   stateId,
   nested,
   onClick,
+  truncated,
 }: WorkflowDrawerListItemProps) => {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -100,6 +103,7 @@ const WorkflowDrawerListItem = ({
               completedAt &&
               computeTimeDifference(startedAt, completedAt)}
           </div>
+          <TruncationBadge truncated={truncated} className="size-4" />
           {status && !isNotStarted && (
             <StatusIndicator
               naked
@@ -112,6 +116,7 @@ const WorkflowDrawerListItem = ({
 
       {isOpen &&
         items &&
+        items.length > 0 &&
         items
           .sort((a, b) => (a.iteration_number ?? 0) - (b.iteration_number ?? 0))
           .map((state) => (
@@ -126,6 +131,7 @@ const WorkflowDrawerListItem = ({
               stateId={stateId}
               onClick={onClick}
               nested
+              truncated={state.truncated}
             />
           ))}
     </div>

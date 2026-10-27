@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { FC } from 'react'
+import { FC, ReactNode } from 'react'
 
 import AssistantSvg from '@/assets/icons/assistant-alt.svg?react'
 import ChevronRightSvg from '@/assets/icons/chevron-right.svg?react'
@@ -61,6 +61,7 @@ interface ThoughtHeaderProps {
   isEmbedded?: boolean
   setIsExpanded: (isExpanded: boolean) => void
   thought: Thought
+  headerBadge?: ReactNode
 }
 
 const ThoughtHeader: FC<ThoughtHeaderProps> = ({
@@ -69,6 +70,7 @@ const ThoughtHeader: FC<ThoughtHeaderProps> = ({
   isInProgress,
   isEmbedded,
   setIsExpanded,
+  headerBadge,
 }) => {
   const AuthorIcon = thought.author_type === ThoughtAuthorType.Assistant ? AssistantSvg : ToolSvg
   const toolName = thought.author_name?.trim() ?? thought.tool_name?.trim() ?? 'Tool'
@@ -121,6 +123,7 @@ const ThoughtHeader: FC<ThoughtHeaderProps> = ({
         </div>
       )}
 
+      {headerBadge}
       <ThoughtStatus thought={thought} isInProgress={isInProgress} isEmbedded={isEmbedded} />
     </button>
   )

@@ -106,3 +106,5 @@ states:
 `
 
 export const WORKFLOW_STATE_EVENT_INTERRUPTED = 'state_interrupted'
+
+export const TRUNCATION_TOOLTIP_PREFIX = 'Output may be incomplete — truncated by token limit'

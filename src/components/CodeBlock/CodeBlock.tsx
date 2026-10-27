@@ -47,6 +47,7 @@ interface CodeBlockProps {
   expandable?: boolean
   expandTitle?: string
   isInExpandPopup?: boolean
+  headerBadge?: ReactNode
 }
 
 const CodeBlock: FC<CodeBlockProps> = ({
@@ -64,6 +65,7 @@ const CodeBlock: FC<CodeBlockProps> = ({
   expandable,
   expandTitle,
   isInExpandPopup,
+  headerBadge,
 }) => {
   const [isHtmlPopupVisible, setIsHtmlPopupVisible] = useState(false)
   const [isExpandPopupVisible, setIsExpandPopupVisible] = useState(false)
@@ -118,7 +120,10 @@ const CodeBlock: FC<CodeBlockProps> = ({
             headerClassName
           )}
         >
-          <p className="text-sm">{title ?? language.toLowerCase()}</p>
+          <div className="flex flex-wrap gap-2">
+            <p className="text-sm">{title ?? language.toLowerCase()}</p>
+            {headerBadge}
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {expandable && (

@@ -13,14 +13,17 @@
 // limitations under the License.
 //
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import ContinueWithInputPopup from '../ContinueWithInputPopup'
 
 vi.mock('@/store/workflowExecutions', () => ({
   workflowExecutionsStore: {
-    getWorkflowExecutionStateOutput: vi.fn().mockResolvedValue('Step output text'),
+    getWorkflowExecutionStateOutput: vi.fn().mockResolvedValue({
+      output: 'Step output text',
+      truncated: false,
+    }),
   },
 }))
 
@@ -125,5 +128,13 @@ describe('ContinueWithInputPopup', () => {
   it('disables Continue button when isSubmitting', () => {
     render(<ContinueWithInputPopup {...defaultProps} isSubmitting />)
     expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled()
+  })
+
+  it('renders the fetched state output once it resolves', async () => {
+    render(<ContinueWithInputPopup {...defaultProps} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Step output text')).toBeInTheDocument()
+    })
   })
 })

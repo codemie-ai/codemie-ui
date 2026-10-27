@@ -102,6 +102,11 @@ export interface ExtendedWorkflowExecution extends WorkflowExecution {
   index: number
 }
 
+export interface WorkflowExecutionStateOutput {
+  output: string | null
+  truncated?: boolean
+}
+
 export interface WorkflowExecutionState {
   id: string
   date: string | null
@@ -118,6 +123,7 @@ export interface WorkflowExecutionState {
   preceding_state_ids: string[] | null
   state_id: string | null
   iteration_number?: number | null
+  truncated?: boolean
 }
 
 export interface ExtendedWorkflowExecutionState extends WorkflowExecutionState {

@@ -1,0 +1,115 @@
+{
+  "task": "Surface a truncated/finish_reason indicator on chat thoughts and workflow-drawer states via a new shared TruncationBadge component, driven by backend Thought/state fields.",
+  "generated": "2026-09-17T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 6,
+      "label": "XXL",
+      "affected": "TruncationBadge (new shared component), Thought/ThoughtHeader (extracted), CodeBlock (headerBadge prop), ChatAiMessage, WorkflowDrawerList/WorkflowDrawerListItem, WorkflowStateOutput, ContinueWithInputPopup, WorkflowExecutionEditOutputForm, chatGeneration store, workflowExecutions store, conversation/workflow type definitions, chatHelpers utils, workflows constants",
+      "layers": "Shared UI component library, Chat page layer, Workflow drawer/states layer, Valtio store (service) layer, Type definitions, Utils"
+    },
+    "requirements_clarity": {
+      "score": 3,
+      "label": "M",
+      "status": "Partially Clear",
+      "gaps": "Design iterated during implementation per commit history: headerBadge added to CodeBlock/Thought first, then extracted into a shared TruncationBadge component, then wired to drive off Thought fields, with a final commit syncing spec/plan docs to the shipped drawer/chat design after the fact — indicates the final shape was not fully settled up front."
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Extends the existing streaming thought-merge logic (_handleThought in chatGeneration.ts) with two new optional fields (finish_reason, truncated); modifies shared components (CodeBlock, Thought) reused across both chat and workflow-drawer surfaces",
+      "mitigation": "New fields follow the exact existing field-merge pattern used for interrupted/aborted/routing; TruncationBadge renders null when not truncated, so the change is additive and backward compatible; no security or performance-critical path involved"
+    },
+    "file_change_estimate": {
+      "score": 6,
+      "label": "XXL",
+      "modified_files": 22,
+      "modified_file_list": [
+        "src/components/CodeBlock/CodeBlock.tsx",
+        "src/components/CodeBlock/__tests__/CodeBlock.integration.test.tsx",
+        "src/components/Thought/Thought.tsx",
+        "src/components/Thought/__tests__/Thought.test.tsx",
+        "src/constants/workflows.ts",
+        "src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx",
+        "src/pages/chat/components/ChatHistory/ChatAiMessage/__tests__/ChatAiMessage.test.tsx",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerList/WorkflowDrawerList.tsx",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerList/WorkflowDrawerListItem.tsx",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerList/__tests__/WorkflowDrawerListItem.test.tsx",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerState/WorkflowStateOutput.tsx",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerState/__tests__/WorkflowStateOutput.test.tsx",
+        "src/pages/workflows/details/states/ContinueWithInputPopup.tsx",
+        "src/pages/workflows/details/states/WorkflowExecutionEditOutputForm.tsx",
+        "src/pages/workflows/details/states/__tests__/ContinueWithInputPopup.test.tsx",
+        "src/store/__tests__/chatGeneration.test.ts",
+        "src/store/chatGeneration.ts",
+        "src/store/workflowExecutions.ts",
+        "src/types/entity/conversation.ts",
+        "src/types/entity/workflow.ts",
+        "src/utils/__tests__/chatHelpers.test.ts",
+        "src/utils/chatHelpers.ts"
+      ],
+      "new_files": 13,
+      "new_file_list": [
+        "docs/superpowers/tasks/2026-09-11-epmcdme-14145-workflow-truncation-indicator/code-review-final.json",
+        "docs/superpowers/tasks/2026-09-11-epmcdme-14145-workflow-truncation-indicator/complexity-assessment.json",
+        "docs/superpowers/tasks/2026-09-11-epmcdme-14145-workflow-truncation-indicator/decisions.jsonl",
+        "docs/superpowers/tasks/2026-09-11-epmcdme-14145-workflow-truncation-indicator/events.jsonl",
+        "docs/superpowers/tasks/2026-09-11-epmcdme-14145-workflow-truncation-indicator/plan.md",
+        "docs/superpowers/tasks/2026-09-11-epmcdme-14145-workflow-truncation-indicator/spec.md",
+        "docs/superpowers/tasks/2026-09-11-epmcdme-14145-workflow-truncation-indicator/technical-analysis.md",
+        "src/components/Thought/ThoughtHeader.tsx",
+        "src/components/Thought/__tests__/ThoughtHeader.test.tsx",
+        "src/components/TruncationBadge/TruncationBadge.tsx",
+        "src/components/TruncationBadge/__tests__/TruncationBadge.test.tsx",
+        "src/components/TruncationBadge/index.ts",
+        "src/store/__tests__/workflowExecutions.getStateOutput.test.ts"
+      ],
+      "affected_dirs": [
+        "docs/superpowers/tasks/2026-09-11-epmcdme-14145-workflow-truncation-indicator",
+        "src/components/CodeBlock",
+        "src/components/Thought",
+        "src/components/TruncationBadge",
+        "src/constants",
+        "src/pages/chat/components/ChatHistory/ChatAiMessage",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerList",
+        "src/pages/workflows/details/WorkflowDrawer/WorkflowDrawerState",
+        "src/pages/workflows/details/states",
+        "src/store",
+        "src/types/entity",
+        "src/utils"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 3,
+      "label": "M",
+      "layers_changed": ["UI", "Store/Service", "Types/Data Model", "Utils"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 21,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 35,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches core shared UI components (new TruncationBadge abstraction, Thought/ThoughtHeader split, CodeBlock headerBadge prop) that are reused across both the chat and workflow-drawer subsystems, plus the store/service layer (chatGeneration, workflowExecutions) and shared type definitions — a red flag for touching core shared utilities bumped this from XL to XXL (capped)."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "35 files changed per diffstat (22 modified, 13 new), which crosses the 16+ threshold for XXL — though a meaningful share of that count is test files and run-tracking docs following an established plumbing pattern rather than novel logic."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XL (5) to XXL (6, capped): change touches core shared UI components (TruncationBadge, Thought/ThoughtHeader, CodeBlock) reused across the chat and workflow-drawer subsystems"
+  ],
+  "split_recommendation": null
+}

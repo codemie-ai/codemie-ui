@@ -1,0 +1,83 @@
+{
+  "decision": "approve",
+  "rationale": "Re-checked the four blocking findings from code-review-final.json against the fix-up diff (commits 23b6d8383..HEAD): CR-001 resolved (headerActions no longer wraps the warning icon in a <Button>; TruncationBadge renders a plain, non-interactive <span> via CodeBlock's new headerBadge slot); CR-003 resolved (WorkflowStateOutput's getStateOutput now uses a cancelled flag, try/catch, and a cleanup function matching the recommended pattern); CR-002 superseded (the ChatAiMessage useEffect that raced an async store fetch was deleted outright — truncation now derives synchronously from thought.truncated/finish_reason carried on the streamed Thought object, so there is no longer an async fetch to leak or race). CR-004 was initially only partially fixed (mock reshaped to { output, truncated, finish_reason } but no assertion verified the output rendered); a regression test ('renders the fetched state output once it resolves') was added to ContinueWithInputPopup.test.tsx during this check round and verified passing (7/7 tests), closing the remaining coverage gap — now resolved. The fix-up diff also includes substantial additional work beyond the four findings (CodeBlock headerBadge prop, a new shared TruncationBadge component, and driving the chat indicator from per-Thought fields instead of a per-execution API fetch) which was reviewed directly in full; it introduces no new security, public-API, data-loss, or build/runtime issue, so no new finding was raised and no confirmation-lens dispatch was needed. All four original blocking findings are now resolved or superseded.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Drawer shows indicator when truncated: true; unchanged when false or absent.",
+      "status": "PASS",
+      "notes": "WorkflowStateOutput.tsx renders the warning Button only when truncated is truthy, renders null otherwise."
+    },
+    {
+      "criterion": "Chat view shows indicator when truncated: true; unchanged when false or absent.",
+      "status": "PASS",
+      "notes": "ChatAiMessage.tsx renders the warning div only when outputTruncated is truthy, renders null otherwise."
+    },
+    {
+      "criterion": "Indicator tooltip exposes raw finish_reason value on both surfaces.",
+      "status": "PASS",
+      "notes": "Both surfaces build the tooltip as `${TRUNCATION_TOOLTIP_PREFIX} (finish_reason: ${value})` when present, falling back to the bare prefix when absent."
+    },
+    {
+      "criterion": "WorkflowExecutionState type includes finish_reason and truncated.",
+      "status": "PASS",
+      "notes": "types/entity/workflow.ts adds finish_reason?: string | null and truncated?: boolean to WorkflowExecutionState."
+    },
+    {
+      "criterion": "getWorkflowExecutionStateOutput no longer discards finish_reason or truncated.",
+      "status": "PASS",
+      "notes": "Store method now returns the full WorkflowExecutionStateOutput object instead of only data.output."
+    },
+    {
+      "criterion": "All existing callers of getWorkflowExecutionStateOutput remain type-correct after the return type change.",
+      "status": "PASS",
+      "notes": "All three callers updated: WorkflowStateOutput uses result.output ?? '', WorkflowExecutionEditOutputForm returns result.output, ContinueWithInputPopup uses result.output."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "commit-format",
+      "status": "pass",
+      "notes": "Pre-commit hook enforces EPMCDME-XXXX: Capital sentence pattern; hooks ran on all task commits without --no-verify."
+    },
+    {
+      "standard": "branch-naming",
+      "status": "partial",
+      "notes": "Branch is EPMCDME-14145-workflow-truncation-indicator; convention requires underscore separator (EPMCDME-14145_workflow-truncation-indicator). Branch pre-dates this task and was not created by this diff — not blocking this review, but should be corrected before merge."
+    },
+    {
+      "standard": "security-patterns",
+      "status": "pass",
+      "notes": "No dangerouslySetInnerHTML. Tooltip content rendered as text nodes (react-tooltip without html:true) — finish_reason value is safe even with angle brackets. No secrets, no open redirects, no new deps."
+    },
+    {
+      "standard": "code-quality",
+      "status": "pass",
+      "notes": "Valtio store pattern, optional-field typing, and useSnapshot usage follow existing codebase conventions."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "WorkflowStateOutput.tsx no longer wraps the warning icon in a <Button>. headerActions was split into a plain expandButton (Expand only) and a new headerBadge slot on CodeBlock that renders <TruncationBadge>, which is a non-interactive <span data-tooltip-id/data-tooltip-content> — not in the tab order, not announced as a button. Verified CodeBlock.tsx renders headerBadge inside a plain <div> beside the title, not inside any Button/interactive wrapper."
+    },
+    {
+      "id": "CR-002",
+      "status": "superseded",
+      "notes": "The ChatAiMessage.tsx useEffect that fetched truncation state via workflowExecutionsStore.getWorkflowExecutionStateOutput (the code this finding targeted) was deleted entirely. Truncation is now read synchronously from thought.truncated / thought.finish_reason, which chatGeneration.ts's _handleThought and chatHelpers.ts's transformHistoryGroup already populate from the streamed/persisted Thought data. There is no longer an async effect in this component for this concern, so the race/cleanup concern no longer applies to any code path."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "WorkflowStateOutput.tsx's effect now declares `let cancelled = false`, wraps the fetch in try/catch, gates every setState call on `!cancelled`, and returns `() => { cancelled = true }` from the effect — matching the recommended ContinueWithInputPopup pattern exactly."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "ContinueWithInputPopup.test.tsx's mock now returns { output: 'Step output text', truncated: false, finish_reason: null } instead of a bare string, fixing the type-shape defect. During this check round a regression test was added — 'renders the fetched state output once it resolves', asserting screen.getByText('Step output text') via waitFor — closing the coverage gap the finding flagged. Ran `npx vitest run src/pages/workflows/details/states/__tests__/ContinueWithInputPopup.test.tsx --project unit`: 7/7 tests passed."
+    }
+  ]
+}

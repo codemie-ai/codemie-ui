@@ -16,7 +16,6 @@
 import { FloatingPortal } from '@floating-ui/react'
 import { CSSProperties, FC } from 'react'
 
-
 import Avatar from '@/components/Avatar/Avatar'
 import { AvatarType } from '@/constants/avatar'
 import { type ResolvedChatAvatar } from '@/pages/chat/hooks/useChatItemAvatar'

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useState, useImperativeHandle, forwardRef } from 'react'
+import { ReactNode, useState, useImperativeHandle, forwardRef } from 'react'
 
 import TextBlock from '@/components/markdown/TextBlock'
 import { Thought as ThoughtType } from '@/types/entity/conversation'
@@ -26,6 +26,7 @@ interface ThoughtProps {
   thought: ThoughtType
   isEmbedded?: boolean
   defaultExpanded?: boolean
+  headerBadge?: ReactNode
 }
 
 export interface ThoughtRef {
@@ -34,7 +35,7 @@ export interface ThoughtRef {
 }
 
 const Thought = forwardRef<ThoughtRef, ThoughtProps>(
-  ({ thought, isEmbedded, defaultExpanded = false }, ref) => {
+  ({ thought, isEmbedded, defaultExpanded = false, headerBadge }, ref) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded)
 
     useImperativeHandle(ref, () => ({
@@ -52,6 +53,7 @@ const Thought = forwardRef<ThoughtRef, ThoughtProps>(
           isEmbedded={isEmbedded}
           isInProgress={isInProgress}
           setIsExpanded={setIsExpanded}
+          headerBadge={headerBadge}
         />
 
         {(isExpanded || isInProgress) && (

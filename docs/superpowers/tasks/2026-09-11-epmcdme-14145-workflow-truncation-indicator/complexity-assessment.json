@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "task": "Surface truncated/finish_reason fields from workflow execution state API responses on two UI surfaces (execution-detail drawer and chat/thread view), updating TypeScript types, store/API layer, and conditional rendering",
+  "generated": "2026-09-11T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 18,
+  "size": "M",
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four to six distinct components across two independent subsystems: WorkflowExecutionState type definition, workflowExecutions store (getWorkflowExecutionStateOutput), WorkflowStateOutput (drawer surface), ChatAiMessage (chat surface), and — on the chat data path — conversation.ts type and chats.ts transform; cascading compatibility impact on WorkflowExecutionEditOutputForm and ContinueWithInputPopup callers"
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Approximately eight files modified across four directories: src/types/entity/ (workflow.ts, conversation.ts), src/store/ (workflowExecutions.ts, chats.ts), src/pages/workflows/ (WorkflowStateOutput.tsx, plus up to two callers), src/pages/chat/ (ChatAiMessage.tsx); plus potentially one new indicator sub-component if extracted"
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Acceptance criteria are fully specified for both surfaces, but the chat surface has one unresolved integration question before implementation can start: whether v1/conversations/{id} already exposes truncated on each HistoryItemBackend record; Option A (extend type + transform) and Option B (secondary fetch from ChatAiMessage) diverge meaningfully in file count and architectural novelty"
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Drawer surface follows exact existing patterns (headerActionsTemplate injection, TooltipButton, StatusBadge); Option B for the chat surface would introduce a novel secondary-fetch pattern inside a rendering component, which has no precedent today; getWorkflowExecutionStateOutput has no store-level unit tests, so the response-mapping fix ships without a regression safety net"
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -14,8 +14,10 @@
 //
 
 import { render, screen } from '@testing-library/react'
+import { ReactNode } from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
+import { TRUNCATION_TOOLTIP_PREFIX } from '@/constants/workflows'
 import { ChatMessage, Thought as ThoughtType, ThoughtAuthorType } from '@/types/entity/conversation'
 
 import ChatAiMessage from '../ChatAiMessage'
@@ -56,6 +58,10 @@ vi.mock('@/store/chats', () => ({
   chatsStore: mockChatsStore,
 }))
 
+vi.mock('@/assets/icons/status-warning.svg?react', () => ({
+  default: () => <svg data-testid="truncation-warning-icon" />,
+}))
+
 vi.mock('@/store/appInfo', () => ({ appInfoStore: { configs: [] } }))
 
 vi.mock('@/hooks/useVueRouter', () => ({
@@ -77,8 +83,11 @@ vi.mock('@/components/markdown/Markdown', () => ({
 }))
 
 vi.mock('@/components/Thought/Thought', () => ({
-  default: ({ thought }: { thought: ThoughtType }) => (
-    <div data-testid="thought">{thought.author_name}</div>
+  default: ({ thought, headerBadge }: { thought: ThoughtType; headerBadge?: ReactNode }) => (
+    <div data-testid="thought">
+      {thought.author_name}
+      {headerBadge}
+    </div>
   ),
 }))
 
@@ -486,5 +495,103 @@ describe('ChatAiMessage — workflow restore-failed copy', () => {
     expect(screen.getByTestId('markdown')).not.toHaveTextContent(
       'Workflow progress could not be restored.'
     )
+  })
+})
+
+describe('ChatAiMessage — thought truncation indicator', () => {
+  // EPMCDME-14145: `truncated` arrives directly on each Thought, so the badge is driven
+  // straight from that field instead of a separate per-execution-state fetch.
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatContext.hideToolOutputs = false
+  })
+
+  it('shows a truncation warning when the thought is truncated', () => {
+    const message = createMockMessage({
+      thoughts: [{ ...createMockThought('t1'), truncated: true }],
+    })
+
+    render(
+      <ChatAiMessage
+        indexes={defaultIndexes}
+        message={message}
+        totalMessages={1}
+        onChangeMessageIndex={vi.fn()}
+      />
+    )
+
+    expect(screen.getByTestId('truncation-warning-icon')).toBeInTheDocument()
+  })
+
+  it('does not show a truncation warning when the thought is not truncated', () => {
+    const message = createMockMessage({
+      thoughts: [{ ...createMockThought('t1'), truncated: false }],
+    })
+
+    render(
+      <ChatAiMessage
+        indexes={defaultIndexes}
+        message={message}
+        totalMessages={1}
+        onChangeMessageIndex={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByTestId('truncation-warning-icon')).not.toBeInTheDocument()
+  })
+
+  it('does not show a truncation warning when truncated is undefined (old backend)', () => {
+    const message = createMockMessage({ thoughts: [createMockThought('t1')] })
+
+    render(
+      <ChatAiMessage
+        indexes={defaultIndexes}
+        message={message}
+        totalMessages={1}
+        onChangeMessageIndex={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByTestId('truncation-warning-icon')).not.toBeInTheDocument()
+  })
+
+  it('shows the generic truncation tooltip without a finish_reason suffix', () => {
+    const message = createMockMessage({
+      thoughts: [{ ...createMockThought('t1'), truncated: true }],
+    })
+
+    render(
+      <ChatAiMessage
+        indexes={defaultIndexes}
+        message={message}
+        totalMessages={1}
+        onChangeMessageIndex={vi.fn()}
+      />
+    )
+
+    const indicator = screen
+      .getByTestId('truncation-warning-icon')
+      .closest('[data-tooltip-content]')
+    expect(indicator).toHaveAttribute('data-tooltip-content', TRUNCATION_TOOLTIP_PREFIX)
+  })
+
+  it('shows one badge per truncated thought when a turn has several', () => {
+    const message = createMockMessage({
+      thoughts: [
+        { ...createMockThought('t1'), truncated: true },
+        { ...createMockThought('t2'), truncated: false },
+      ],
+    })
+
+    render(
+      <ChatAiMessage
+        indexes={defaultIndexes}
+        message={message}
+        totalMessages={1}
+        onChangeMessageIndex={vi.fn()}
+      />
+    )
+
+    expect(screen.getAllByTestId('truncation-warning-icon')).toHaveLength(1)
   })
 })

@@ -17,6 +17,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { TRUNCATION_TOOLTIP_PREFIX } from '@/constants/workflows'
 import { NodeTypes } from '@/types/workflowEditor'
 
 import WorkflowDrawerListItem from '../WorkflowDrawerListItem'
@@ -24,6 +25,12 @@ import WorkflowDrawerListItem from '../WorkflowDrawerListItem'
 vi.mock('@/assets/icons/chevron-right.svg?react', () => ({
   default: ({ className }: { className?: string }) => (
     <svg data-testid="chevron-icon" className={className} />
+  ),
+}))
+
+vi.mock('@/assets/icons/status-warning.svg?react', () => ({
+  default: ({ className }: { className?: string }) => (
+    <svg data-testid="warning-icon" className={className} />
   ),
 }))
 
@@ -232,5 +239,49 @@ describe('WorkflowDrawerListItem', () => {
     await user.click(screen.getByText('Test State'))
 
     expect(chevron).toHaveClass('rotate-90')
+  })
+
+  it('displays truncation warning when truncated is true', () => {
+    render(<WorkflowDrawerListItem {...defaultProps} truncated={true} />)
+
+    expect(screen.getByTestId('warning-icon')).toBeInTheDocument()
+  })
+
+  it('does not display truncation warning when truncated is false', () => {
+    render(<WorkflowDrawerListItem {...defaultProps} truncated={false} />)
+
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument()
+  })
+
+  it('does not display truncation warning when truncated is undefined', () => {
+    render(<WorkflowDrawerListItem {...defaultProps} />)
+
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument()
+  })
+
+  it('renders the generic truncation tooltip', () => {
+    render(<WorkflowDrawerListItem {...defaultProps} truncated={true} />)
+
+    const warningContainer = screen.getByTestId('warning-icon').parentElement
+    expect(warningContainer).toHaveAttribute('data-tooltip-id', 'react-tooltip')
+    expect(warningContainer).toHaveAttribute('data-tooltip-content', TRUNCATION_TOOLTIP_PREFIX)
+  })
+
+  it('passes truncation state to nested items', async () => {
+    const items = [
+      {
+        id: 'sub-1',
+        name: 'Sub State',
+        type: NodeTypes.TOOL,
+        truncated: true,
+      },
+    ]
+
+    render(<WorkflowDrawerListItem {...defaultProps} items={items as any} />)
+
+    await user.click(screen.getByText('Test State'))
+
+    // The warning icon should appear in the nested item
+    expect(screen.getByTestId('warning-icon')).toBeInTheDocument()
   })
 })

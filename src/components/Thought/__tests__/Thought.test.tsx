@@ -248,4 +248,21 @@ describe('Thought', () => {
     expect(screen.getByText('Message 1')).toBeInTheDocument()
     expect(screen.getByText('Message 2')).toBeInTheDocument()
   })
+
+  it('renders headerBadge when provided', () => {
+    render(
+      <Thought
+        thought={createMockThought()}
+        headerBadge={<span data-testid="custom-badge">Badge</span>}
+      />
+    )
+
+    expect(screen.getByTestId('custom-badge')).toBeInTheDocument()
+  })
+
+  it('does not render a badge when headerBadge is not provided', () => {
+    render(<Thought thought={createMockThought()} />)
+
+    expect(screen.queryByTestId('custom-badge')).not.toBeInTheDocument()
+  })
 })

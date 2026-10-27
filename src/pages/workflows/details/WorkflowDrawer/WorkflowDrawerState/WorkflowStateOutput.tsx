@@ -23,6 +23,7 @@ import TextBlock from '@/components/markdown/TextBlock'
 import Popup from '@/components/Popup'
 import Tabs from '@/components/Tabs'
 import { Tab } from '@/components/Tabs/Tabs'
+import TruncationBadge from '@/components/TruncationBadge'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
 
 import useExecutionsContext from '../../hooks/useExecutionsContext'
@@ -44,25 +45,43 @@ const WorkflowStateOutput = ({
 }: WorkflowStateOutputProps) => {
   const { workflowId, executionId } = useExecutionsContext()
   const [output, setOutput] = useState<string>('')
+  const [truncated, setTruncated] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     const getStateOutput = async () => {
       if (!workflowId || !executionId) return
-      const result = await workflowExecutionsStore.getWorkflowExecutionStateOutput(
-        workflowId,
-        executionId,
-        stateId
-      )
-      setOutput(result ?? '')
+      setOutput('')
+      setTruncated(false)
+      try {
+        const result = await workflowExecutionsStore.getWorkflowExecutionStateOutput(
+          workflowId,
+          executionId,
+          stateId
+        )
+        if (!cancelled) {
+          setOutput(result.output ?? '')
+          setTruncated(!!result.truncated)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Error fetching workflow execution state output:', error)
+        }
+      }
     }
 
     getStateOutput()
+    return () => {
+      cancelled = true
+    }
   }, [stateId, workflowId, executionId, stateUpdatedDate, stateCompletedDate, refreshKey])
 
   const handleExpand = () => {
     setIsExpanded(!isExpanded)
   }
+
+  const warningBadge = <TruncationBadge truncated={truncated} className="size-4" />
 
   const expandButton = (
     <Button
@@ -112,6 +131,7 @@ const WorkflowStateOutput = ({
         downloadFilename="output"
         text={output}
         headerActionsTemplate={expandButton}
+        headerBadge={warningBadge}
       />
 
       <Popup

@@ -67,8 +67,8 @@ const ContinueWithInputPopup: FC<ContinueWithInputPopupProps> = ({
       setFiles([])
       workflowExecutionsStore
         .getWorkflowExecutionStateOutput(workflowId, executionId, stateId)
-        .then((output) => {
-          if (!cancelled) setStateOutput(output)
+        .then((result) => {
+          if (!cancelled) setStateOutput(result.output)
         })
         .catch(() => {
           if (!cancelled) setStateOutput(null)

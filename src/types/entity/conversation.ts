@@ -127,6 +127,7 @@ export interface Thought {
   parent_id?: string
   content?: string
   routing?: RoutingInfo | null
+  truncated?: boolean
 }
 
 export interface UserMark {
@@ -300,6 +301,7 @@ export interface ThoughtBackend {
   interrupted?: boolean
   aborted?: boolean
   routing?: RoutingInfo | null
+  truncated?: boolean
 }
 
 export interface HistoryItemBackend {

@@ -490,6 +490,93 @@ describe('transformChatBEtoFE', () => {
     )
   })
 
+  it('preserves truncated for backend thoughts', () => {
+    const chat = {
+      id: '123',
+      conversation_name: 'Test Chat',
+      assistant_ids: ['assistant-1'],
+      initial_assistant_id: 'assistant-1',
+      assistant_data: [],
+      history: [
+        {
+          historyIndex: 0,
+          message: 'User prompt',
+          messageRaw: 'User prompt',
+          date: '2026-05-12T10:00:00.000Z',
+          fileNames: [],
+        },
+        {
+          historyIndex: 0,
+          message: 'Assistant response',
+          date: '2026-05-12T10:00:01.000Z',
+          assistantId: 'assistant-1',
+          thoughts: [
+            {
+              id: 'thought-1',
+              author_name: 'Research Subagent',
+              author_type: 'Tool',
+              message: 'Partial answer',
+              truncated: true,
+            },
+          ],
+          executionId: null,
+        },
+      ],
+    }
+
+    const result = transformChatBEtoFE(chat as any)
+
+    expect(result.history[0]?.[0]?.thoughts?.[0]).toEqual(
+      expect.objectContaining({
+        id: 'thought-1',
+        truncated: true,
+      })
+    )
+  })
+
+  it('defaults truncated to false when the backend omits it', () => {
+    const chat = {
+      id: '123',
+      conversation_name: 'Test Chat',
+      assistant_ids: ['assistant-1'],
+      initial_assistant_id: 'assistant-1',
+      assistant_data: [],
+      history: [
+        {
+          historyIndex: 0,
+          message: 'User prompt',
+          messageRaw: 'User prompt',
+          date: '2026-05-12T10:00:00.000Z',
+          fileNames: [],
+        },
+        {
+          historyIndex: 0,
+          message: 'Assistant response',
+          date: '2026-05-12T10:00:01.000Z',
+          assistantId: 'assistant-1',
+          thoughts: [
+            {
+              id: 'thought-1',
+              author_name: 'Research Subagent',
+              author_type: 'Tool',
+              message: 'Complete answer',
+            },
+          ],
+          executionId: null,
+        },
+      ],
+    }
+
+    const result = transformChatBEtoFE(chat as any)
+
+    expect(result.history[0]?.[0]?.thoughts?.[0]).toEqual(
+      expect.objectContaining({
+        id: 'thought-1',
+        truncated: false,
+      })
+    )
+  })
+
   it('preserves inProgress:true and omits processingTime when assistant message is in_progress:true in history even if responseTime is present', () => {
     const chat: ChatBackend = {
       id: '1-time-test',

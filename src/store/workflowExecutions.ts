@@ -22,6 +22,7 @@ import {
   Workflow,
   WorkflowExecution,
   WorkflowExecutionState,
+  WorkflowExecutionStateOutput,
   CreateWorkflowExecutionRequest,
   UpdateWorkflowExecutionOutputRequest,
   RequestWorkflowExecutionOutputChangeRequest,
@@ -102,7 +103,7 @@ interface WorkflowExecutionsStoreType {
     workflowId: string,
     executionId: string,
     stateId: string
-  ) => Promise<string | null>
+  ) => Promise<WorkflowExecutionStateOutput>
 
   getExecutionTransitions: (
     workflowId: string,
@@ -593,9 +594,9 @@ export const workflowExecutionsStore = proxy<WorkflowExecutionsStoreType>({
       const url = `v1/workflows/${workflowId}/executions/${executionId}/states/${stateId}/output`
 
       const response = await api.get(url, { skipErrorHandling: true })
-      const data: { output: string | null } = await response.json()
+      const data: WorkflowExecutionStateOutput = await response.json()
 
-      return data.output
+      return data
     } catch (error) {
       console.error('Error getting workflow execution state output:', error)
       throw error

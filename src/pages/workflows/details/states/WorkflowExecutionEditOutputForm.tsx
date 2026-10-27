@@ -34,7 +34,12 @@ const WorkflowExecutionEditOutputForm: FC<WorkflowExecutionEditOutputFormProps> 
   onUpdate,
 }) => {
   const fetchOutput = useCallback(async () => {
-    return workflowExecutionsStore.getWorkflowExecutionStateOutput(workflowId, executionId, stateId)
+    const result = await workflowExecutionsStore.getWorkflowExecutionStateOutput(
+      workflowId,
+      executionId,
+      stateId
+    )
+    return result.output
   }, [workflowId, executionId, stateId])
 
   const updateOutput = useCallback(

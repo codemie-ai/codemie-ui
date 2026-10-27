@@ -1268,6 +1268,10 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       )
 
       lastMessage.response = output
+      // The backend clears `truncated` on edit; a thought already streamed keeps its stale flag
+      lastMessage.thoughts?.forEach((thought) => {
+        if (thought.interrupted) thought.truncated = false
+      })
 
       return result
     } catch (error) {
@@ -1809,6 +1813,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       existingThought.interrupted = thought.interrupted ?? existingThought.interrupted
       existingThought.aborted = thought.aborted ?? existingThought.aborted
       existingThought.routing = thought.routing ?? existingThought.routing
+      existingThought.truncated = thought.truncated ?? existingThought.truncated
     } else {
       let existingParentThought = historyItem.thoughts.find((item) => {
         return item.id === thought.parent_id

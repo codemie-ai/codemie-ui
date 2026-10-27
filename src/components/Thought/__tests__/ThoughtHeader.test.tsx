@@ -322,4 +322,20 @@ describe('ThoughtHeader', () => {
     render(<ThoughtHeader thought={thought} setIsExpanded={mockSetIsExpanded} />)
     expect(screen.getByText('— claude-sonnet-4-6')).toBeInTheDocument()
   })
+
+  it('renders headerBadge when provided', () => {
+    render(
+      <ThoughtHeader
+        thought={createMockThought()}
+        setIsExpanded={mockSetIsExpanded}
+        headerBadge={<span data-testid="custom-badge">Badge</span>}
+      />
+    )
+    expect(screen.getByTestId('custom-badge')).toBeInTheDocument()
+  })
+
+  it('does not render a badge when headerBadge is not provided', () => {
+    render(<ThoughtHeader thought={createMockThought()} setIsExpanded={mockSetIsExpanded} />)
+    expect(screen.queryByTestId('custom-badge')).not.toBeInTheDocument()
+  })
 })
