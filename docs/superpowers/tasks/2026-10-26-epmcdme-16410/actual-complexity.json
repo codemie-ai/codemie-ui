@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-26T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Shared Pagination component plus one consumer (ProjectMembersManager); small opt-in prop wiring." },
+    { "dimension": "technical_risk", "reason": "Shared component touched, but change is opt-in and defaults preserve existing behavior; trivial rollback." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

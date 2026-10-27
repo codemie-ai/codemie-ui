@@ -33,6 +33,7 @@ export interface PaginationProps {
   perPage?: number
   perPageOptions?: Array<{ value: string; label: string }>
   responsive?: boolean
+  alwaysShowPerPage?: boolean
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -43,6 +44,7 @@ const Pagination: React.FC<PaginationProps> = ({
   perPage,
   perPageOptions,
   responsive = false,
+  alwaysShowPerPage = false,
 }) => {
   const { isDark, appearance } = useTheme()
   const isMobileLayout = useIsMobileLayout()
@@ -100,7 +102,7 @@ const Pagination: React.FC<PaginationProps> = ({
     []
   )
 
-  if (totalPages <= 1) {
+  if (totalPages <= 1 && !(alwaysShowPerPage && perPage)) {
     return null
   }
 

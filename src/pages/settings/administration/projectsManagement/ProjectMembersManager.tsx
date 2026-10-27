@@ -964,6 +964,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             setPage={handlePageChange}
             perPage={pagination.per_page}
             perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+            alwaysShowPerPage
             className="w-full shrink-0 !bg-transparent !border-t-0 !p-0 !mb-4 !bg-none"
           />
         )}
