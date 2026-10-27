@@ -138,7 +138,7 @@ export const schedulerRunsStore = proxy<SchedulerRunsStoreType>({
       if (query.dateFrom) params.dateFrom = query.dateFrom
       if (query.dateTo) params.dateTo = query.dateTo
 
-      const response = await api.get('/v1/scheduler-runs', { params })
+      const response = await api.get('v1/scheduler-runs', { params })
       const data = (await response.json()) as SchedulerRunsResponse
 
       schedulerRunsStore.runs = data.items
@@ -173,7 +173,7 @@ export const schedulerRunsStore = proxy<SchedulerRunsStoreType>({
       if (query.dateFrom) params.dateFrom = query.dateFrom
       if (query.dateTo) params.dateTo = query.dateTo
 
-      const response = await api.get('/v1/scheduler-runs/stats', { params })
+      const response = await api.get('v1/scheduler-runs/stats', { params })
       schedulerRunsStore.stats = (await response.json()) as SchedulerRunStats
     } catch {
       toaster.error(DEFAULT_ERROR_MESSAGE)

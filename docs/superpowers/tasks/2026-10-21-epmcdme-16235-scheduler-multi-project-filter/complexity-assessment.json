@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "task": "Make the Scheduler page project and resource filters true multi-select by preserving full arrays through SchedulerFilters, SchedulersQuery store params and URL sync, against the already-shipped backend that accepts repeated query params.",
+  "generated": "2026-10-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Three components across two layers in one product area: SchedulerFilters (handleApply, areFiltersEmpty, definitions), SchedulersPage (URL read/write), schedulersStore (SchedulersQuery, fetchSchedulers params). api.ts, ProjectSelector and Filters already handle arrays and are untouched." },
+    { "dimension": "technical_risk", "reason": "Base risk S: closest pattern is getFiltersFromUrl in src/utils/filters.ts (getAll) plus api.ts default 'separate' array serialization, and the backend contract is backward compatible. Bumped to M because the AC enumerate variant cases (uncheck one of several, clear all -> unfiltered, resource filter parity) and no existing test covers multi-select, empty-array semantics, store param serialization or page URL round-trip; the refreshOnValuesUpdate loop means every hop must preserve arrays." },
+    { "dimension": "file_change_estimate", "reason": "About 3 source files plus 2-3 test files (rewrite scalar assertions in SchedulerFilters.test.tsx, add store params and/or page URL-sync coverage), 0-1 new, across src/pages/schedulers and src/store. Calibration: bundled S example (epmcdme-10102, total 11) is a comparable narrow two-layer change; this sits slightly higher due to test surface, consistent with S." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

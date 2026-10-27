@@ -96,8 +96,8 @@ const SchedulersPage = () => {
       search: searchParams.get('search') || undefined,
       resourceType:
         (searchParams.get('resourceType') as SchedulerFilterValues['resourceType']) || undefined,
-      projectId: searchParams.get('projectId') || undefined,
-      resourceId: searchParams.get('resourceId') || undefined,
+      projectId: searchParams.getAll('projectId').filter(Boolean),
+      resourceId: searchParams.getAll('resourceId').filter(Boolean),
       status: (searchParams.get('status') as SchedulerFilterValues['status']) || undefined,
       lastRunStatus:
         (searchParams.get('lastRunStatus') as SchedulerFilterValues['lastRunStatus']) || undefined,
@@ -134,8 +134,8 @@ const SchedulersPage = () => {
       const next = new URLSearchParams()
       if (values.search) next.set('search', values.search)
       if (values.resourceType) next.set('resourceType', values.resourceType)
-      if (values.projectId) next.set('projectId', values.projectId)
-      if (values.resourceId) next.set('resourceId', values.resourceId)
+      values.projectId?.forEach((v) => next.append('projectId', v))
+      values.resourceId?.forEach((v) => next.append('resourceId', v))
       if (values.status) next.set('status', values.status)
       if (values.lastRunStatus) next.set('lastRunStatus', values.lastRunStatus)
       setSearchParams(next)

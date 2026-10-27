@@ -14,7 +14,7 @@
 //
 
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IntegrationOption } from '@/constants/integration'
 import { schedulersStore } from '@/store/schedulers'
@@ -94,6 +94,35 @@ describe('SchedulersPage', () => {
     mockAPI('GET', 'v1/schedulers', mockSchedulersResponse)
     await schedulersStore.fetchSchedulers({ ownerType: IntegrationOption.USER })
     expect(schedulersStore.schedulers).toBeDefined()
+  })
+
+  describe('multi-value URL filters', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+      window.history.replaceState({}, '', '/')
+    })
+
+    it('restores multi-value projectId/resourceId from the URL', async () => {
+      const url = '/schedulers?projectId=A&projectId=B&resourceId=r1'
+      window.history.replaceState({}, '', url)
+      const spy = vi.spyOn(schedulersStore, 'fetchSchedulers')
+      renderPage(url)
+      await waitFor(() => {
+        expect(spy).toHaveBeenCalledWith(
+          expect.objectContaining({ projectId: ['A', 'B'], resourceId: ['r1'] })
+        )
+      })
+    })
+
+    it('treats a blank projectId param as no selection', async () => {
+      const url = '/schedulers?projectId='
+      window.history.replaceState({}, '', url)
+      const spy = vi.spyOn(schedulersStore, 'fetchSchedulers')
+      renderPage(url)
+      await waitFor(() => {
+        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ projectId: [] }))
+      })
+    })
   })
 
   describe('Scheduler Type switch', () => {

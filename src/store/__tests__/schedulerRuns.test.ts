@@ -78,7 +78,7 @@ describe('schedulerRunsStore.fetchRuns', () => {
 
     await schedulerRunsStore.fetchRuns({ schedulerId: 'sched-1', page: 0, pageSize: 10 })
 
-    expect(api.get).toHaveBeenCalledWith('/v1/scheduler-runs', {
+    expect(api.get).toHaveBeenCalledWith('v1/scheduler-runs', {
       params: expect.objectContaining({ schedulerId: 'sched-1', page: 0, pageSize: 10 }),
     })
     expect(schedulerRunsStore.runs).toHaveLength(1)
@@ -93,7 +93,7 @@ describe('schedulerRunsStore.fetchRuns', () => {
 
     await schedulerRunsStore.fetchRuns({ schedulerId: 'sched-1', status: 'failed' })
 
-    expect(api.get).toHaveBeenCalledWith('/v1/scheduler-runs', {
+    expect(api.get).toHaveBeenCalledWith('v1/scheduler-runs', {
       params: expect.objectContaining({ schedulerId: 'sched-1', status: 'failed' }),
     })
   })
@@ -112,7 +112,7 @@ describe('schedulerRunsStore.fetchStats', () => {
 
     await schedulerRunsStore.fetchStats({ schedulerId: 'sched-1' })
 
-    expect(api.get).toHaveBeenCalledWith('/v1/scheduler-runs/stats', {
+    expect(api.get).toHaveBeenCalledWith('v1/scheduler-runs/stats', {
       params: expect.objectContaining({ schedulerId: 'sched-1' }),
     })
     expect(schedulerRunsStore.stats?.total).toBe(200)

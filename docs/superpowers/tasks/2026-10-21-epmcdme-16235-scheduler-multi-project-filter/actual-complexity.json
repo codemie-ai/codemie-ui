@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "generated": "2026-10-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 9,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 9 files changed (7-10 maps to L), but 5 of them are tests; only 4 source files changed (SchedulerFilters, SchedulersPage, schedulers store, schedulerRuns store), with 180 insertions and 41 deletions." },
+    { "dimension": "component_scope", "reason": "Three or four components across the UI and store layers: the filter panel now renders a multi-select ProjectSelector through a custom filter and a Multiselect for resources, the page keeps array values in the URL with getAll/append, the schedulers store sends projectId/resourceId arrays, and the scheduler stores drop the leading slash from list/stats paths." },
+    { "dimension": "technical_risk", "reason": "Reuses existing house components (ProjectSelector multiple, Filters Custom/Multiselect) and the existing api.get params path. The change is easy to revert, with no security or performance surface. The main residual risk is that the backend contract must accept repeated array query params." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

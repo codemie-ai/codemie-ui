@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16235_scheduler-multi-project-filter",
+  "head": "9c3192bef687ca19ec1277e4d37b1ac8fe2a60f8",
+  "runner": "npm",
+  "started_at": "2026-10-21T16:21:58Z",
+  "completed_at": "2026-10-21T16:33:57Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 64497, "command": "npm run lint", "exit_code": 0, "notes": "npm ci run before gates per AGENTS.md (exit 0)."},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 54285, "command": "npm run typecheck", "exit_code": 0},
+    {"id": "license-check", "source": "guide", "status": "SKIPPED", "command": "npm run license-check", "notes": "Guide Skip if: no dependency added/removed/moved; package.json and package-lock.json not in diff vs main."},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 12736, "command": "npm run secrets:check", "exit_code": 0, "notes": "Output contains 'no leaks found'."},
+    {"id": "unit", "source": "guide", "status": "PASS", "duration_ms": 395349, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "Test Files  721 passed (721); Tests 7328 passed | 1 skipped (7329)"},
+    {"id": "integration", "source": "guide", "status": "PASS", "duration_ms": 174439, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "Test Files  52 passed (52); Tests 574 passed | 1 skipped (575)"},
+    {"id": "test-harness", "source": "guide", "status": "N/A", "command": "npm run test-harness", "notes": "Out of scope: user asked to skip test-harness for this run. Still required by MR compliance bot (## Test harness section); prior run at 8281beea failed on harness env config (GITHUB_PROJECT, GOOGLE_DOC_URL unset)."},
+    {"id": "lint-staged", "source": "hook", "status": "N/A", "command": "npx lint-staged", "notes": "Operates on staged files only; nothing staged. Its steps (prettier, eslint --fix, tsc --noEmit) are covered by lint and typecheck gates."},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 377, "command": "npm run license-headers:check", "exit_code": 0, "notes": "Checked 2383 files, 0 missing license headers"},
+    {"id": "sonar-local", "source": "hook", "status": "SKIPPED", "duration_ms": 177, "command": "npm run sonar-local", "exit_code": 0, "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' (.env.local has no SONAR_TOKEN). Set SONAR_TOKEN to run locally; still owed to CI."},
+    {"id": "ci-pre-ci-guard", "source": "ci", "status": "N/A", "command": ".gitlab-ci.yml include epm-cdme/codemie-gitlab-templates pre-ci-guard.yml", "notes": "CI only waits on remote contexts ci-pipeline and compliance-report; no locally runnable command. Owed to CI."}
+  ],
+  "failures": {}
+}

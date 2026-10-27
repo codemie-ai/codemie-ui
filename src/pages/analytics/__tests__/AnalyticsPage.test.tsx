@@ -337,6 +337,7 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
         if (flag === 'feature:dashboardCustomization') return [true, true]
         if (flag === 'aiChampionsLeaderboard') return [true, true]
         if (flag === 'features:cliAnalytics') return [true, true]
+        if (flag === 'features:usageAttribution') return [true, true]
         return [false, true]
       })
       mockSearchParams.get.mockImplementation((key: string) => {
@@ -350,6 +351,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
           builtInTab
         )
       )
+      // Let loadDashboards resolve so the redirect effect has run before asserting.
+      await act(async () => {})
       expect(mockSetSearchParams).not.toHaveBeenCalled()
     }
   )

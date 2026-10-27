@@ -57,7 +57,7 @@ describe('schedulersStore.fetchFilterOptions', () => {
 
     await schedulersStore.fetchFilterOptions()
 
-    expect(api.get).toHaveBeenCalledWith('/v1/schedulers/filter-options')
+    expect(api.get).toHaveBeenCalledWith('v1/schedulers/filter-options')
     expect(schedulersStore.filterOptions.resources).toEqual(mockFilterOptionsResponse.resources)
   })
 

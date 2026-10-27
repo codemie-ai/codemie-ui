@@ -41,6 +41,15 @@ const openMultiselect = (container: HTMLElement, index = 0) => {
   fireEvent.click(triggers[index])
 }
 
+const findPanelItem = (label: string) =>
+  waitFor(() => {
+    const item = Array.from(document.querySelectorAll('.p-multiselect-item')).find((el) =>
+      el.textContent?.includes(label)
+    )
+    expect(item).toBeDefined()
+    return item as HTMLElement
+  })
+
 describe('SchedulerFilters', () => {
   beforeEach(() => {
     vi.spyOn(userStore, 'getProjects').mockResolvedValue([
@@ -78,15 +87,18 @@ describe('SchedulerFilters', () => {
     expect(document.querySelector(PROJECT_SEARCH_INPUT)).toBeInTheDocument()
   })
 
-  it('applies the selected project as projectId', async () => {
+  it('applies every selected project as projectId', async () => {
     const onApply = vi.fn()
     const { container } = render(
       <SchedulerFilters filterOptions={filterOptions} values={{}} onApply={onApply} />
     )
     openMultiselect(container, 0)
     fireEvent.click(await screen.findByText('Platform Team'))
+    fireEvent.click(await screen.findByText('Growth Squad'))
     await waitFor(() => {
-      expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ projectId: 'Platform Team' }))
+      expect(onApply).toHaveBeenLastCalledWith(
+        expect.objectContaining({ projectId: ['Platform Team', 'Growth Squad'] })
+      )
     })
   })
 
@@ -95,23 +107,64 @@ describe('SchedulerFilters', () => {
     const { container } = render(
       <SchedulerFilters
         filterOptions={filterOptions}
-        values={{ projectId: 'Platform Team' }}
+        values={{ projectId: ['Platform Team'] }}
         onApply={onApply}
       />
     )
     openMultiselect(container, 0)
-    const panel = await waitFor(() => {
-      const el = document.querySelector('.p-multiselect-panel') as HTMLElement
-      expect(el).toBeInTheDocument()
-      expect(el.textContent).toContain('Platform Team')
-      return el
-    })
-    const item = Array.from(panel.querySelectorAll('.p-multiselect-item')).find((el) =>
-      el.textContent?.includes('Platform Team')
-    ) as HTMLElement
-    fireEvent.click(item)
+    fireEvent.click(await findPanelItem('Platform Team'))
     await waitFor(() => {
-      expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ projectId: undefined }))
+      expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ projectId: [] }))
+    })
+  })
+
+  it('keeps the other projects when one of several is unchecked', async () => {
+    const onApply = vi.fn()
+    const { container } = render(
+      <SchedulerFilters
+        filterOptions={filterOptions}
+        values={{ projectId: ['Platform Team', 'Growth Squad'] }}
+        onApply={onApply}
+      />
+    )
+    openMultiselect(container, 0)
+    fireEvent.click(await findPanelItem('Growth Squad'))
+    await waitFor(() => {
+      expect(onApply).toHaveBeenCalledWith(
+        expect.objectContaining({ projectId: ['Platform Team'] })
+      )
+    })
+    expect(await findPanelItem('Platform Team')).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('applies every selected resource as resourceId', async () => {
+    const onApply = vi.fn()
+    const { container } = render(
+      <SchedulerFilters filterOptions={filterOptions} values={{}} onApply={onApply} />
+    )
+    openMultiselect(container, 1)
+    fireEvent.click(await findPanelItem('Daily Jira Reporter'))
+    fireEvent.click(await findPanelItem('Sales Pipeline Sync'))
+    await waitFor(() => {
+      expect(onApply).toHaveBeenLastCalledWith(
+        expect.objectContaining({ resourceId: ['r1', 'r2'] })
+      )
+    })
+  })
+
+  it('keeps the other resources when one of several is unchecked', async () => {
+    const onApply = vi.fn()
+    const { container } = render(
+      <SchedulerFilters
+        filterOptions={filterOptions}
+        values={{ resourceId: ['r1', 'r2'] }}
+        onApply={onApply}
+      />
+    )
+    openMultiselect(container, 1)
+    fireEvent.click(await findPanelItem('Sales Pipeline Sync'))
+    await waitFor(() => {
+      expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ resourceId: ['r1'] }))
     })
   })
 

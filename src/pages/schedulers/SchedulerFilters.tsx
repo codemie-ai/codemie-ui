@@ -28,8 +28,8 @@ import { FilterDefinition, FilterDefinitionType, FilterOption } from '@/types/fi
 export interface SchedulerFilterValues {
   search?: string
   resourceType?: SchedulerResourceType | ''
-  projectId?: string
-  resourceId?: string
+  projectId?: string[]
+  resourceId?: string[]
   status?: SchedulerStatus | ''
   lastRunStatus?: SchedulerLastRunStatus | ''
 }
@@ -83,14 +83,14 @@ const SchedulerFilters: React.FC<Props> = ({ filterOptions, values, onApply }) =
         label: 'Project',
         type: FilterDefinitionType.Custom,
         options: [],
-        value: values.projectId ? [values.projectId] : [],
+        value: values.projectId ?? [],
       },
       {
         name: 'resourceId',
         label: 'Resource',
         type: FilterDefinitionType.Multiselect,
         options: resourceOptions,
-        value: values.resourceId ? [values.resourceId] : [],
+        value: values.resourceId ?? [],
       },
       {
         name: 'status',
@@ -114,8 +114,8 @@ const SchedulerFilters: React.FC<Props> = ({ filterOptions, values, onApply }) =
     () =>
       !values.search &&
       !values.resourceType &&
-      !values.projectId &&
-      !values.resourceId &&
+      !values.projectId?.length &&
+      !values.resourceId?.length &&
       !values.status &&
       !values.lastRunStatus,
     [values]
@@ -123,13 +123,11 @@ const SchedulerFilters: React.FC<Props> = ({ filterOptions, values, onApply }) =
 
   const handleApply = useCallback(
     (raw: Record<string, unknown>) => {
-      const projectIdArr = raw.projectId as string[] | undefined
-      const resourceIdArr = raw.resourceId as string[] | undefined
       onApply({
         search: (raw.search as string) || undefined,
         resourceType: (raw.resourceType as SchedulerResourceType) || undefined,
-        projectId: projectIdArr?.[0] || undefined,
-        resourceId: resourceIdArr?.[0] || undefined,
+        projectId: raw.projectId as string[] | undefined,
+        resourceId: raw.resourceId as string[] | undefined,
         status: (raw.status as SchedulerStatus) || undefined,
         lastRunStatus: (raw.lastRunStatus as SchedulerLastRunStatus) || undefined,
       })

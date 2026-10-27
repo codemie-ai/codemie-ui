@@ -63,8 +63,8 @@ export interface SchedulersQuery {
   pageSize?: number
   search?: string
   resourceType?: SchedulerResourceType
-  projectId?: string
-  resourceId?: string
+  projectId?: string[]
+  resourceId?: string[]
   status?: SchedulerStatus
   lastRunStatus?: SchedulerLastRunStatus
   ownerType?: IntegrationOption
@@ -115,19 +115,19 @@ export const schedulersStore = proxy<SchedulersStoreType>({
   async fetchSchedulers(query: SchedulersQuery = {}) {
     schedulersStore.loading = true
     try {
-      const params: Record<string, string | number> = {
+      const params: Record<string, string | number | string[]> = {
         page: query.page ?? 0,
         pageSize: query.pageSize ?? DEFAULT_PAGE_SIZE,
       }
       if (query.search) params.search = query.search
       if (query.resourceType) params.resourceType = query.resourceType
-      if (query.projectId) params.projectId = query.projectId
-      if (query.resourceId) params.resourceId = query.resourceId
+      if (query.projectId?.length) params.projectId = query.projectId
+      if (query.resourceId?.length) params.resourceId = query.resourceId
       if (query.status) params.status = query.status
       if (query.lastRunStatus) params.lastRunStatus = query.lastRunStatus
       if (query.ownerType) params.ownerType = query.ownerType
 
-      const response = await api.get('/v1/schedulers', { params })
+      const response = await api.get('v1/schedulers', { params })
       const data = (await response.json()) as SchedulersResponse
 
       schedulersStore.schedulers = data.items
@@ -146,7 +146,7 @@ export const schedulersStore = proxy<SchedulersStoreType>({
 
   async fetchFilterOptions() {
     try {
-      const response = await api.get('/v1/schedulers/filter-options')
+      const response = await api.get('v1/schedulers/filter-options')
       const data = (await response.json()) as SchedulerFilterOptionsResponse
       schedulersStore.filterOptions = {
         resources: data.resources ?? [],
