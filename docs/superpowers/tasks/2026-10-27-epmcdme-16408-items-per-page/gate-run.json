@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16408_items-per-page",
+  "head": "756acdfc0a8c5f5c8a0be9724411aed1bcbf7ce5",
+  "runner": "npm",
+  "started_at": "2026-10-27T11:46:36.747Z",
+  "completed_at": "2026-10-27T11:46:36.747Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 38586,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 20069,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2562,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "run directly in bash; npm run quoting fails on Windows"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 20271,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "no leaks found"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 309094,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 754 passed (754); Tests 7714 passed | 1 skipped"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 250051,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 54 passed (54); Tests 609 passed | 1 skipped"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs stack up and ~/.codemie/test-harness.json; not run, unverified."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1838,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 988,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set. Set SONAR_TOKEN to run locally."
+    }
+  ],
+  "failures": {}
+}

@@ -1,0 +1,2 @@
+{"ts":"2026-10-27T10:49:22Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved plan after T2 case 4 (unassign reload at chosen page size) was added","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-27T11:07:07Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"Approved; 0 blocking, 1 pre-existing deferred","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

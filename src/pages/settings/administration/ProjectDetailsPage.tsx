@@ -146,6 +146,8 @@ const ProjectDetailsPage = () => {
 
   useEffect(() => {
     const guard = { cancelled: false }
+    // Route changed to another project: drop stale data so the initial-load spinner shows.
+    setProject(null)
     loadProject(guard)
     return () => {
       guard.cancelled = true
@@ -221,7 +223,8 @@ const ProjectDetailsPage = () => {
     }
   }
 
-  if (loading) {
+  // Spinner only on initial load; background refreshes keep sections (and their state) mounted.
+  if (loading && !project) {
     return (
       <SettingsLayout
         contentTitle="Project details"

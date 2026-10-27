@@ -14,7 +14,7 @@
 //
 
 import { act, render, screen, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import ProjectDetailsPage from '@/pages/settings/administration/ProjectDetailsPage'
@@ -176,6 +176,97 @@ describe('ProjectDetailsPage', () => {
     expect(projectsStore.getProject).toHaveBeenCalledTimes(2)
     expect(projectsStore.getProject).toHaveBeenNthCalledWith(2, 'Test Project', true)
     routeState.name = 'projects-management-detail'
+  })
+
+  describe('background refresh keeps the section mounted (EPMCDME-16408)', () => {
+    const deferred = () => {
+      let resolve!: (value: ProjectDetail) => void
+      const promise = new Promise<ProjectDetail>((res) => {
+        resolve = res
+      })
+      return { promise, resolve }
+    }
+
+    afterEach(() => {
+      routeState.name = 'projects-management-detail'
+    })
+
+    it('does not replace Members with the spinner while onMembersChanged refreshes', async () => {
+      routeState.name = 'projects-management-members'
+      render(<ProjectDetailsPage />)
+
+      const manager = await screen.findByTestId('project-members-manager')
+      const { onMembersChanged } = projectMembersManagerMock.mock.calls[0][0]
+
+      const pending = deferred()
+      projectsStore.getProject = vi.fn().mockReturnValue(pending.promise)
+
+      let refresh: Promise<void> | undefined
+      act(() => {
+        refresh = onMembersChanged()
+      })
+
+      expect(screen.getByTestId('project-members-manager')).toBe(manager)
+      expect(screen.queryByTestId('spinner')).not.toBeInTheDocument()
+
+      await act(async () => {
+        pending.resolve(mockProject)
+        await refresh
+      })
+
+      expect(screen.getByTestId('project-members-manager')).toBe(manager)
+      expect(screen.queryByTestId('spinner')).not.toBeInTheDocument()
+    })
+
+    it('still shows the spinner until the initial load resolves', async () => {
+      routeState.name = 'projects-management-members'
+      const pending = deferred()
+      projectsStore.getProject = vi.fn().mockReturnValue(pending.promise)
+
+      render(<ProjectDetailsPage />)
+
+      expect(screen.getByTestId('spinner')).toBeInTheDocument()
+      expect(screen.queryByTestId('project-members-manager')).not.toBeInTheDocument()
+
+      await act(async () => {
+        pending.resolve(mockProject)
+      })
+
+      expect(await screen.findByTestId('project-members-manager')).toBeInTheDocument()
+      expect(screen.queryByTestId('spinner')).not.toBeInTheDocument()
+    })
+
+    it('does not show the spinner when the budgets section refreshes the project', async () => {
+      routeState.name = 'projects-management-budgets'
+      mockUserStore.user = {
+        isAdmin: false,
+        isMaintainer: true,
+        isAuditor: false,
+        applicationsAdmin: [],
+      }
+      budgetManagementFlag.mockReturnValue([true, true])
+      render(<ProjectDetailsPage />)
+
+      const section = await screen.findByTestId('project-budgets-section')
+      const { onProjectChanged } = projectBudgetsSectionMock.mock.calls[0][0]
+
+      const pending = deferred()
+      projectsStore.getProject = vi.fn().mockReturnValue(pending.promise)
+
+      let refresh: Promise<void> | undefined
+      act(() => {
+        refresh = onProjectChanged()
+      })
+
+      expect(screen.getByTestId('project-budgets-section')).toBe(section)
+      expect(screen.queryByTestId('spinner')).not.toBeInTheDocument()
+
+      await act(async () => {
+        pending.resolve(mockProject)
+        await refresh
+      })
+      budgetManagementFlag.mockReturnValue([false, true])
+    })
   })
 
   it('keeps the tab navigation mounted when switching into and out of Members', async () => {
