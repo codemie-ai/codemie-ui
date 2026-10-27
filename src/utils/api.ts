@@ -108,7 +108,7 @@ export function formatErrorMessage(body: ErrorBody, includeHelp = true): string 
     const { message, details, help } = body.error
     let strDetails: string
 
-    if (typeof details === 'object') {
+    if (details !== null && typeof details === 'object') {
       strDetails = JSON.stringify(details)
     } else {
       strDetails = details ?? ''

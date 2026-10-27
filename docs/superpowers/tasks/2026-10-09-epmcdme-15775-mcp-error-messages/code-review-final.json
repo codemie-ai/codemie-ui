@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case lens ran; the null guard at api.ts:111 is correct, null/undefined details and null help render nothing, and the new test exercises the bug. 1 deferred (pre-existing: numeric/boolean details make replaceAll throw and fall back to the default message, api.ts:111-115; see code-review-deferred.md), 0 dismissed. Not covered: no grep tool was available, so other UI code that renders details/help from parsedError was not swept, and no snapshot/test dependence on the old 'null' output was checked.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of the compact profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of the compact profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of the compact profile." }
+  ],
+  "findings": []
+}

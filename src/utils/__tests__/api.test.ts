@@ -80,6 +80,17 @@ describe('formatErrorMessage', () => {
     expect(result).toBe('Validation error<br> {"field":"name","issue":"required"}')
   })
 
+  it('shows no "null" when the backend sends details: null', () => {
+    const result = formatErrorMessage({
+      error: {
+        message: 'Not allowed',
+        details: null as unknown as undefined,
+        help: null as unknown as undefined,
+      },
+    })
+    expect(result).toBe('Not allowed')
+  })
+
   it('strips existing <br> tags from details', () => {
     const result = formatErrorMessage({
       error: { message: 'Error', details: 'line one<br>line two' },
