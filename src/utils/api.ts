@@ -307,6 +307,14 @@ class API {
     }
   }
 
+  private joinUrl(url: string): string {
+    const baseSlash = this.BASE_URL.endsWith('/')
+    const urlSlash = url.startsWith('/')
+    if (baseSlash && urlSlash) return this.BASE_URL + url.slice(1)
+    if (!baseSlash && !urlSlash) return `${this.BASE_URL}/${url}`
+    return this.BASE_URL + url
+  }
+
   makeRequest(
     url: string,
     method: string,
@@ -316,7 +324,7 @@ class API {
     const { skipErrorHandling, params, queryParamArrayHandling = 'separate' } = options
 
     // Build URL with query parameters if provided
-    let fullUrl = `${this.BASE_URL}/${url}`
+    let fullUrl = this.joinUrl(url)
     if (params) {
       const searchParams = new URLSearchParams()
       Object.entries(params).forEach(([key, value]) => {

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "Slash guard in the makeRequest URL join in src/utils/api.ts, the single HTTP layer used by every call; small change, covered by added parameterized-style URL join tests, easily reversible." },
+    { "dimension": "file_change_estimate", "reason": "2 files changed (api.ts and its test file), 62 insertions and 2 deletions, one utility area." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

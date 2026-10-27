@@ -14,7 +14,7 @@
 //
 
 import * as fileSaver from 'file-saver'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest'
 
 import api, {
   parseContentDispositionFilename,
@@ -286,5 +286,57 @@ describe('downloadFileStream', () => {
     await api.downloadFileStream('v1/files/123', undefined, 'file.pdf')
 
     expect(appendChildSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('makeRequest URL building', () => {
+  // The unit setup replaces api.get/post with mocks, so load the real class instance.
+  let realApi: typeof api
+  let originalBase: string
+  const originalFetch = global.fetch
+
+  beforeAll(async () => {
+    const actual = await vi.importActual<typeof import('@/utils/api')>('@/utils/api')
+    realApi = actual.default
+    originalBase = realApi.BASE_URL
+  })
+
+  beforeEach(() => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => ({}),
+    })
+  })
+
+  afterEach(() => {
+    realApi.BASE_URL = originalBase
+    global.fetch = originalFetch
+  })
+
+  const fetchedUrl = () => (global.fetch as any).mock.calls[0][0]
+
+  it.each([
+    ['/api', 'v1/x'],
+    ['/api', '/v1/x'],
+    ['/api/', 'v1/x'],
+    ['/api/', '/v1/x'],
+  ])('joins base %s and url %s without duplicated slash', async (base, url) => {
+    realApi.BASE_URL = base
+    await realApi.get(url)
+    expect(fetchedUrl()).toBe('/api/v1/x')
+  })
+
+  it.each(['v1/x', '/v1/x'])('appends query params after joined url %s', async (url) => {
+    realApi.BASE_URL = '/api'
+    await realApi.get(url, { params: { a: 1, b: ['x', 'y'] } })
+    expect(fetchedUrl()).toBe('/api/v1/x?a=1&b=x&b=y')
+  })
+
+  it('shares the join across verbs (post)', async () => {
+    realApi.BASE_URL = '/api/'
+    await realApi.post('/v1/x', { k: 1 })
+    expect(fetchedUrl()).toBe('/api/v1/x')
   })
 })

@@ -1,0 +1,12 @@
+{"schema":1,"branch":"EPMCDME-16242_api-url-fix","head":"c2caa9d5bc956e4f3afe72fcfcdfb96685822b8b","runner":"npm","started_at":"2026-10-21T16:30:00Z","completed_at":"2026-10-21T16:55:00Z","status":"PASSED","drift_detected":false,
+"gates":[
+{"id":"lint","source":"guide","status":"PASS","duration_ms":38888,"command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":19928,"command":"npm run typecheck","exit_code":0},
+{"id":"license-check","source":"guide","status":"N/A","command":"npm run license-check","notes":"No dependency changes in diff (Skip if)."},
+{"id":"secrets","source":"guide","status":"PASS","duration_ms":14508,"command":"npm run secrets:check","exit_code":0,"notes":"no leaks found"},
+{"id":"unit","source":"guide","status":"PASS","duration_ms":264726,"command":"npm run test:unit:slnt","exit_code":0,"notes":"Test Files 719 passed (719); Tests 7327 passed | 1 skipped"},
+{"id":"integration","source":"guide","status":"PASS","duration_ms":133482,"command":"npm run test:integration:slnt","exit_code":0,"notes":"Test Files 52 passed (52); Tests 572 passed | 1 skipped"},
+{"id":"test-harness","source":"guide","status":"SKIPPED","command":"npm run test-harness","notes":"Needs stack up and ~/.codemie/test-harness.json; not run locally, owed before MR."},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":1283,"command":"npm run license-headers:check","exit_code":0,"notes":"0 missing of 2381"},
+{"id":"sonar-local","source":"hook","status":"SKIPPED","duration_ms":667650,"command":"npm run sonar-local","exit_code":1,"notes":"Quality gate FAILED on repo-wide baseline (code_smells 856 vs threshold 444; yaml NewLinesCheck, etc.); user-approved skip. No new findings attributable to the diff verified beyond pre-existing api.ts lines 49/59/370."}
+],"failures":{}}
