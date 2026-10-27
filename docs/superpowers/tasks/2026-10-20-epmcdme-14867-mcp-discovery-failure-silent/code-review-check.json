@@ -1,0 +1,54 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted re-check of the prior blocking findings: all are resolved. The sign-in flow is reverted to mcp_config_id matching (spec non-goal restored), commit subjects conform to EPMCDME-XXXX: Capital sentence, inflightRequests is back to Promise<MCPConfig>, React keys fall back to syntheticKey, discovery_failed is terminal for the auto-refetch while the unavailable server stays visible, and the discovery fallback copy uses AND. Business and standards rows are carried forward from the final round. Typecheck and 56 unit tests pass.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "All-discovery 401 renders 'MCP server unavailable' heading, amber badge, discovery subtitle", "status": "pass", "notes": "getPromptHeading/getPromptSubtitle branch on all-discovery" },
+    { "kind": "spec", "item": "Inline configs survive normalization with synthetic keys", "status": "pass", "notes": "normalizeMCPAuthGateServer admits id-less discovery rows; syntheticKey assigned and used as React key" },
+    { "kind": "spec", "item": "Unnamed names show fallback instead of 'undefined: undefined'", "status": "pass", "notes": "isUnnamedMCPServer (AND) -> DISCOVERY_FAILED_FALLBACK_MESSAGE" },
+    { "kind": "spec", "item": "Mixed payload renders both row types with correct heading", "status": "pass", "notes": "heading computed over non-authenticated rows" },
+    { "kind": "spec", "item": "Auth-only payload renders identically (no regression)", "status": "pass", "notes": "auth heading/subtitle logic unchanged" },
+    { "kind": "spec", "item": "Discovery failures in warnings render beside sign-in rows", "status": "pass", "notes": "parse reads value.warnings filtered to discovery_failed" },
+    { "kind": "spec", "item": "No chat error message contains 'undefined'", "status": "pass", "notes": "_handleGenerationStreamError joins only existing fields" },
+    { "kind": "spec", "item": "Regression tests cover figma scenario end to end", "status": "pass", "notes": "parser, store, prompt, row tests" },
+    { "kind": "spec", "item": "Non-goal: no backend toolkit_service or 401 payload shape changes", "status": "pass", "notes": "frontend-only diff" },
+    { "kind": "spec", "item": "Non-goal: no MCPAuthGateServer field-shape changes", "status": "pass", "notes": "only optional syntheticKey? and warnings? added" },
+    { "kind": "spec", "item": "Non-goal: no changes to the sign-in flow", "status": "pass", "notes": "sign-in methods match by mcp_config_id again" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "authored commit subjects match EPMCDME-XXXX: Capital sentence; one git-generated merge subject squashed away on merge" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide present at .ai-run/guides/standards/code-quality.md" },
+    { "kind": "security", "status": "pass", "notes": "no HTML sink, open redirect, or credential-in-log violation; auth_url protocol-validated; initiate_url leading-slash stripped" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/AssistantAuthGate/AssistantAuthGateRow.tsx",
+      "line": 72,
+      "title": "Discovery fallback hid specific error for known configs",
+      "problem": "OR short-circuit treated a known config as unnamed and replaced error_context with the fallback.",
+      "impact": "Lost actionable diagnostic detail.",
+      "recommendation": "Use AND so fallback only applies when both names are unnamed."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMcpAuthPrompt.tsx",
+      "line": 52,
+      "title": "Mixed authenticated+discovery payload showed 'Authentication required'",
+      "problem": "Heading/subtitle only special-cased all-discovery and session_expired shapes.",
+      "impact": "Misleading instruction with no actionable rows after sign-in.",
+      "recommendation": "Compute heading/subtitle over non-authenticated rows."
+    }
+  ],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "getInfoWarningProps now uses AND; a known config keeps its error_context" },
+    { "id": "CR-002", "status": "resolved", "notes": "getPromptHeading/getPromptSubtitle filter out authenticated rows before branching" }
+  ]
+}

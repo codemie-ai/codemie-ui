@@ -62,7 +62,7 @@ interface MCPStore {
   resetFilters: () => void
 }
 
-const inflightRequests = new Map<string, Promise<MCPTestResult>>()
+const inflightRequests = new Map<string, Promise<MCPConfig>>()
 const catalogCache = new Map<string, MCPConfig>()
 const inflightTests = new Map<string, Promise<MCPTestResult>>()
 

@@ -46,6 +46,7 @@ export interface MCPAuthGateServer {
   recoverable_status?: MCPAuthRecoverableStatus | null
   pending_initiate?: MCPAuthPendingInitiate | null
   sign_in_window_closed?: boolean
+  syntheticKey?: string
 }
 
 export interface MCPAuthStatusResponse extends MCPAuthGateServer {
@@ -60,6 +61,8 @@ export interface MCPAuthStatusResponse extends MCPAuthGateServer {
 export interface MCPAuthRequiredErrorResponse {
   error: 'authentication_required'
   servers: MCPAuthGateServer[]
+  // Discovery failures sent alongside sign-in failures; rows here have status 'discovery_failed'.
+  warnings?: MCPAuthGateServer[]
 }
 
 export interface MCPAuthInitiateResponse {

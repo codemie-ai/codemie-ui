@@ -129,6 +129,36 @@ describe('AssistantAuthGateRow', () => {
     expect(screen.queryByText(/^Redirect URI:/)).not.toBeInTheDocument()
   })
 
+  it('renders a discovery_failed row with the "Server unavailable" badge and no sign-in action', () => {
+    render(
+      <AssistantAuthGateRow
+        row={createRow({
+          mcp_config_id: '',
+          syntheticKey: 'inline-0',
+          mcp_config_name: 'figma',
+          mcp_server_name: 'figma',
+          auth_config_id: null,
+          auth_type: null,
+          as_hostname: null,
+          status: 'discovery_failed',
+          error_context: 'Discovery failed: no_trusted_authorization_server.',
+          initiate_url: null,
+          recoverable_status: null,
+        })}
+        onAuthenticate={vi.fn()}
+        onContinue={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('status', { name: 'Server unavailable' })).toBeInTheDocument()
+    expect(screen.getByText('figma')).toBeInTheDocument()
+    expect(
+      screen.getByText('Discovery failed: no_trusted_authorization_server.')
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
   describe.each([
     { status: 'authentication_required', defaultLabel: 'Authenticate' },
     { status: 'session_expired', defaultLabel: 'Re-authenticate' },

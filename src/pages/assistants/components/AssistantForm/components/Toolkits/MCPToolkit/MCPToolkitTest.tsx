@@ -123,7 +123,7 @@ const MCPToolkitTestProvider = ({ mcpServer, children }: MCPToolkitTestProviderP
           </p>
           {rows.map((row) => (
             <AssistantAuthGateRow
-              key={`${row.mcp_config_id}-${row.status}`}
+              key={`${row.mcp_config_id || row.syntheticKey}-${row.status}`}
               row={row}
               onAuthenticate={initiate}
               onContinue={continueAuth}

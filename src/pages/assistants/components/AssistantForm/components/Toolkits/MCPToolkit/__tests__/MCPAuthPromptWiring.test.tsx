@@ -24,15 +24,23 @@ import MCPToolkitTest, { MCPToolkitTestProvider, MCPToolkitTestTrigger } from '.
 
 import type { MouseEvent, ReactNode } from 'react'
 
-const { mockInitiate, mockContinue, mockCancel, mockClearRows, mockGetMcpTools, mockTestMCP } =
-  vi.hoisted(() => ({
-    mockInitiate: vi.fn(),
-    mockContinue: vi.fn(),
-    mockCancel: vi.fn(),
-    mockClearRows: vi.fn(),
-    mockGetMcpTools: vi.fn(),
-    mockTestMCP: vi.fn(),
-  }))
+const {
+  mockInitiate,
+  mockContinue,
+  mockCancel,
+  mockClearRows,
+  mockGetMcpTools,
+  mockTestMCP,
+  mockHandleAuthRequired,
+} = vi.hoisted(() => ({
+  mockHandleAuthRequired: vi.fn(),
+  mockInitiate: vi.fn(),
+  mockContinue: vi.fn(),
+  mockCancel: vi.fn(),
+  mockClearRows: vi.fn(),
+  mockGetMcpTools: vi.fn(),
+  mockTestMCP: vi.fn(),
+}))
 
 const pendingRow: MCPAuthGateServer = {
   mcp_config_id: 'mcp-1',
@@ -65,10 +73,12 @@ vi.mock('@/store', () => ({
   },
 }))
 
+let mockRows: MCPAuthGateServer[] = [pendingRow]
+
 vi.mock('@/hooks/useMCPAuthPrompt', () => ({
   useMCPAuthPrompt: () => ({
-    rows: [pendingRow],
-    handleAuthRequiredError: vi.fn(),
+    rows: mockRows,
+    handleAuthRequiredError: (...args: unknown[]) => mockHandleAuthRequired(...args),
     initiate: (...args: unknown[]) => mockInitiate(...args),
     continue: (...args: unknown[]) => mockContinue(...args),
     cancel: (...args: unknown[]) => mockCancel(...args),
@@ -117,6 +127,7 @@ const mcpServer = {
 describe('MCP auth prompt wiring', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRows = [pendingRow]
     mockGetMcpTools.mockResolvedValue([{ tools: [] }])
     mockTestMCP.mockResolvedValue({ success: true })
     vi.spyOn(window, 'open').mockImplementation(() => null)
@@ -145,6 +156,59 @@ describe('MCP auth prompt wiring', () => {
     expect(window.open).not.toHaveBeenCalled()
   })
 
+  it('keeps tool controls and a Retry that clears the rows when every server is unavailable', async () => {
+    const user = userEvent.setup()
+    mockRows = [
+      {
+        ...pendingRow,
+        mcp_config_id: '',
+        syntheticKey: 'inline-0',
+        status: 'discovery_failed',
+        recoverable_status: null,
+      },
+    ]
+    mockGetMcpTools.mockRejectedValueOnce(new Error('discovery failed'))
+    mockHandleAuthRequired.mockResolvedValueOnce(true)
+
+    render(
+      <MCPToolsSelectionStep
+        isEditing={false}
+        mcpServer={mcpServer}
+        selectedTools={[]}
+        onToolsChange={vi.fn()}
+        onBack={vi.fn()}
+        onCancel={vi.fn()}
+        onSave={vi.fn()}
+      />
+    )
+
+    const retry = await screen.findByRole('button', { name: /retry/i })
+    mockGetMcpTools.mockClear()
+    await user.click(retry)
+
+    expect(mockClearRows).toHaveBeenCalledTimes(1)
+    expect(mockGetMcpTools).toHaveBeenCalledTimes(1)
+    expect(mockClearRows.mock.invocationCallOrder[0]).toBeLessThan(
+      mockGetMcpTools.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('does not clear the rows on Retry while a server still needs sign-in', async () => {
+    render(
+      <MCPToolsSelectionStep
+        isEditing={false}
+        mcpServer={mcpServer}
+        selectedTools={[]}
+        onToolsChange={vi.fn()}
+        onBack={vi.fn()}
+        onCancel={vi.fn()}
+        onSave={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: /retry/i })).toBeNull()
+    expect(mockClearRows).not.toHaveBeenCalled()
+  })
   it('passes hook-owned pending Continue and Cancel behavior through MCPToolkitTest popup rows', async () => {
     const user = userEvent.setup()
 

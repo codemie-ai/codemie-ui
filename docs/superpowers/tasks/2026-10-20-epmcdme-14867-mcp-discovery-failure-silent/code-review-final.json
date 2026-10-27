@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "All blocking findings from the prior rounds are resolved. The sign-in flow is reverted to mcp_config_id matching (spec non-goal restored), commit subjects conform to EPMCDME-XXXX: Capital sentence, the inflightRequests type is restored to Promise<MCPConfig>, React keys fall back to syntheticKey, discovery_failed rows are treated as a terminal state in the auto-refetch check while remaining visible in the prompt, and the discovery fallback copy uses AND so a known server keeps its specific error_context. Typecheck passes and 56 unit tests pass.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "All-discovery 401 renders 'MCP server unavailable' heading, amber 'Server unavailable' badge, discovery subtitle", "status": "pass", "notes": "getPromptHeading/getPromptSubtitle branch on all-discovery; STATUS_BADGES.discovery_failed = Warning 'Server unavailable'" },
+    { "kind": "spec", "item": "Inline configs (null mcp_config_id, discovery_failed) survive normalization with synthetic keys", "status": "pass", "notes": "normalizeMCPAuthGateServer admits id-less discovery rows; parse assigns inline-N syntheticKey; keys use syntheticKey" },
+    { "kind": "spec", "item": "Unnamed/'undefined' names show fallback instead of 'undefined: undefined'", "status": "pass", "notes": "isUnnamedMCPServer (AND) -> DISCOVERY_FAILED_FALLBACK_MESSAGE" },
+    { "kind": "spec", "item": "Mixed payload renders both row types with auth-entitled heading", "status": "pass", "notes": "heading computed over non-authenticated rows; session_expired -> Re-authentication required, else Authentication required" },
+    { "kind": "spec", "item": "Auth-only payload renders identically (no regression)", "status": "pass", "notes": "non-discovery heading/subtitle logic unchanged for auth rows" },
+    { "kind": "spec", "item": "Discovery failures in warnings render beside sign-in rows", "status": "pass", "notes": "parse reads value.warnings filtered to discovery_failed, appended after servers" },
+    { "kind": "spec", "item": "No chat error message contains 'undefined'", "status": "pass", "notes": "_handleGenerationStreamError joins only existing fields via toErrorText" },
+    { "kind": "spec", "item": "Regression tests cover figma scenario end to end", "status": "pass", "notes": "mcpAuth.test.ts, chatGeneration.test.ts, ChatAiMcpAuthPrompt.test.tsx, AssistantAuthGateRow.test.tsx" },
+    { "kind": "spec", "item": "Non-goal: no backend toolkit_service or 401 payload shape changes", "status": "pass", "notes": "frontend-only diff" },
+    { "kind": "spec", "item": "Non-goal: no MCPAuthGateServer field-shape changes (syntheticKey optional)", "status": "pass", "notes": "only optional syntheticKey? and warnings? added" },
+    { "kind": "spec", "item": "Non-goal: no changes to the sign-in flow", "status": "pass", "notes": "initiatePromptAuth/continuePromptAuth/cancelPromptAuth match by mcp_config_id again" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All authored commit subjects in the range match EPMCDME-XXXX: Capital sentence; the single 'Merge branch ...' subject is a git-generated sync merge squashed away on merge" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality guide present at .ai-run/guides/standards/code-quality.md" },
+    { "kind": "security", "status": "pass", "notes": "No HTML sink, open redirect, or credential-in-log violation; backend strings rendered as text; auth_url protocol-validated to http(s); initiate_url leading-slash stripped" }
+  ],
+  "findings": []
+}

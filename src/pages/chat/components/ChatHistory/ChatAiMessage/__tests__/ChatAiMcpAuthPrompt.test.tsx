@@ -127,6 +127,45 @@ describe('ChatAiMcpAuthPrompt', () => {
     expect(mockInitiatePromptAuth).toHaveBeenNthCalledWith(2, 'chat-1', 3, 1, 'mcp-expired')
   })
 
+  it('renders the inline figma discovery failure as an unavailable server (EPMCDME-14867)', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const createInlineRow = (name: string, syntheticKey: string) =>
+      createPromptRow({
+        mcp_config_id: '',
+        syntheticKey,
+        mcp_config_name: name,
+        mcp_server_name: name,
+        auth_config_id: null,
+        auth_type: null,
+        as_hostname: null,
+        status: 'discovery_failed',
+        error_context: 'Discovery failed: no_trusted_authorization_server.',
+        initiate_url: null,
+        recoverable_status: null,
+      })
+
+    render(
+      <ChatAiMcpAuthPrompt
+        chatId="chat-1"
+        historyIndex={0}
+        messageIndex={0}
+        rows={[createInlineRow('figma', 'inline-0'), createInlineRow('miro', 'inline-1')]}
+      />
+    )
+
+    expect(screen.getByText('MCP server unavailable')).toBeInTheDocument()
+    expect(screen.getAllByRole('status', { name: 'Server unavailable' })).toHaveLength(2)
+    expect(screen.getByText('figma')).toBeInTheDocument()
+    expect(screen.getByText('miro')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    const loggedDuplicateKey = consoleError.mock.calls.some((args) =>
+      args.some((arg) => typeof arg === 'string' && arg.includes('same key'))
+    )
+    expect(loggedDuplicateKey).toBe(false)
+
+    consoleError.mockRestore()
+  })
+
   it('renders a compact success state once every prompt row is authenticated', () => {
     render(
       <ChatAiMcpAuthPrompt
@@ -147,6 +186,43 @@ describe('ChatAiMcpAuthPrompt', () => {
       )
     ).toBeInTheDocument()
     expect(screen.queryByTestId('chat-ai-auth-prompt')).not.toBeInTheDocument()
+  })
+
+  it('keeps an unavailable server visible once every sign-in-able row is authenticated', () => {
+    render(
+      <ChatAiMcpAuthPrompt
+        chatId="chat-1"
+        historyIndex={0}
+        messageIndex={0}
+        rows={[
+          createPromptRow({ mcp_config_id: 'mcp-1', status: 'authenticated' }),
+          createPromptRow({
+            mcp_config_id: '',
+            syntheticKey: 'inline-0',
+            mcp_config_name: 'figma',
+            mcp_server_name: 'figma',
+            auth_config_id: null,
+            auth_type: null,
+            as_hostname: null,
+            status: 'discovery_failed',
+            error_context: 'Discovery failed: no_trusted_authorization_server.',
+            initiate_url: null,
+            recoverable_status: null,
+          }),
+        ]}
+      />
+    )
+
+    expect(screen.queryByTestId('chat-ai-auth-prompt-success')).not.toBeInTheDocument()
+    expect(screen.getByText('MCP server unavailable')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Authentication discovery failed for one or more MCP servers. See the details below.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('status', { name: 'Server unavailable' })).toHaveLength(1)
+    expect(screen.getByText('figma')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('wires OAuth2 pending Continue and Cancel actions through the chat generation store', async () => {

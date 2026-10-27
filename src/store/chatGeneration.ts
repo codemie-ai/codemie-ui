@@ -74,6 +74,17 @@ import { userStore } from './user'
 import { workflowExecutionsStore } from './workflowExecutions'
 import { workflowsStore } from './workflows'
 
+const isPlainObject = (value: unknown): value is Record<string, any> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+// Returns printable text for one error field, or null when the field carries nothing to show.
+const toErrorText = (value: unknown): string | null => {
+  if (typeof value === 'string') return value.trim() || null
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (isPlainObject(value) || Array.isArray(value)) return JSON.stringify(value)
+  return null
+}
+
 const STREAMING_NOTIFICATION = 'Still waiting for response, agent is thinking'
 const STREAMING_NOTIFICATION_INTERVAL = 5_000 // 5 seconds
 const ASSISTANT_NOT_FOUND =
@@ -2253,12 +2264,18 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   _handleGenerationStreamError(errorObj: any): string {
     if (errorObj?.name === ABORT_ERROR) return EMPTY_MESSAGE
 
-    try {
-      const { message, details, help } = errorObj.error ?? errorObj
-      return `${DEFAULT_ERROR_MESSAGE} \n ${message}: ${details} \n ${help}`
-    } catch (e: any) {
-      return `${DEFAULT_ERROR_MESSAGE}: ${e.message}`
-    }
+    // Error payloads arrive in several shapes: { error: { message, details, help } }, a flat
+    // { message, details, help }, an Error, or { error: '<code>' } with no text fields. Join only
+    // the parts that exist so a missing field never renders as "undefined".
+    const source = isPlainObject(errorObj?.error) ? errorObj.error : errorObj
+    // A bare error code ({ error: 'some_code' }) is the only text such a payload has.
+    const errorCode = typeof errorObj?.error === 'string' ? toErrorText(errorObj.error) : null
+    const message = toErrorText(source?.message) ?? errorCode
+    const details = toErrorText(source?.details)
+    const help = toErrorText(source?.help)
+    const summary = [message, details].filter(Boolean).join(': ')
+
+    return [DEFAULT_ERROR_MESSAGE, summary, help].filter(Boolean).join(' \n ')
   },
 
   _finishThoughts(historyItem: ChatMessage): void {

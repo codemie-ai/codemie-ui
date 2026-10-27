@@ -65,6 +65,9 @@ const getNonEmptyString = (value: unknown): string | null =>
 const getConfigDisplayName = (value: Record<string, unknown>): string | null =>
   getNonEmptyString(value.mcp_config_name) ?? getNonEmptyString(value.mcp_server_name)
 
+export const getMCPAuthGateServerKey = (row: MCPAuthGateServer): string =>
+  row.mcp_config_id || row.syntheticKey || ''
+
 const getRecoverableStatus = (
   status: MCPAuthGateStatus,
   value: Record<string, unknown>
@@ -80,18 +83,32 @@ const getRecoverableStatus = (
   return null
 }
 
+export const UNNAMED_MCP_SERVER = 'MCP server'
+
+export const DISCOVERY_FAILED_FALLBACK_MESSAGE =
+  'Authentication discovery failed for this MCP server.'
+
+export const isUnnamedMCPServer = (name?: string | null): boolean => {
+  const trimmed = name?.trim()
+  return !trimmed || trimmed === 'undefined' || trimmed === UNNAMED_MCP_SERVER
+}
+
 export const normalizeMCPAuthGateServer = (value: unknown): MCPAuthGateServer | null => {
   if (!isObject(value) || !isMCPAuthGateStatus(value.status)) return null
 
   const mcpConfigId = getNonEmptyString(value.mcp_config_id)
   const configName = getConfigDisplayName(value)
 
-  if (!mcpConfigId || !configName) return null
+  // Only an unavailable server may arrive without an id or a name (inline configs). Any row the
+  // user can act on - sign in, re-authenticate - needs a real id, so it is still rejected.
+  if (value.status !== 'discovery_failed' && (!mcpConfigId || !configName)) return null
+
+  const fallbackName = configName ?? UNNAMED_MCP_SERVER
 
   return {
-    mcp_config_id: mcpConfigId,
-    mcp_config_name: configName,
-    mcp_server_name: getNonEmptyString(value.mcp_server_name) ?? configName,
+    mcp_config_id: mcpConfigId ?? '',
+    mcp_config_name: fallbackName,
+    mcp_server_name: getNonEmptyString(value.mcp_server_name) ?? fallbackName,
     auth_config_id: getNonEmptyString(value.auth_config_id),
     auth_type: isMCPAuthType(value.auth_type) ? value.auth_type : null,
     as_hostname: getNonEmptyString(value.as_hostname),
@@ -111,8 +128,21 @@ export const parseMCPAuthRequiredErrorPayload = (value: unknown): MCPAuthGateSer
     return null
   }
 
-  const rows = value.servers
-    .map((server) => normalizeMCPAuthGateServer(server))
+  // When a payload mixes sign-in failures with discovery failures, the backend keeps the sign-in
+  // rows in `servers` and moves the discovery rows to `warnings`. Read both so an unreachable
+  // server is never dropped silently; only discovery rows are taken from `warnings`.
+  const warnings = Array.isArray(value.warnings)
+    ? value.warnings.filter((warning) => isObject(warning) && warning.status === 'discovery_failed')
+    : []
+
+  const rows = [...value.servers, ...warnings]
+    .map((server, index) => {
+      const row = normalizeMCPAuthGateServer(server)
+      if (row && !row.mcp_config_id) {
+        row.syntheticKey = `inline-${index}`
+      }
+      return row
+    })
     .filter(Boolean) as MCPAuthGateServer[]
 
   return rows.length ? rows : null

@@ -1,0 +1,13 @@
+{
+  "score": 17,
+  "breakdown": {
+    "component_scope": 4,
+    "requirements_clarity": 3,
+    "technical_risk": 3,
+    "file_change_estimate": 4,
+    "dependencies": 1,
+    "affected_layers": 2
+  },
+  "routing": "brainstorming",
+  "rationale": "The defect is frontend-only (codemie-ui); the backend toolkit_service payload and the 401 handler are already correct. The fix spans the mcpAuth normalizer/parser, the MCPAuthGateServer type, the chatGeneration store error routing and _handleGenerationStreamError formatter, ChatAiMcpAuthPrompt (key and heading) and possibly AssistantAuthGateRow badge copy. Base M, bumped to L because the parser/predicate is a shared utility consumed by api.stream, api.makeRequest and useMCPAuthPrompt. About 5-6 source files plus 3-4 existing test files (mcpAuth.test, chatGeneration.promptAuth.test, ChatAiMcpAuthPrompt/AssistantAuthGateRow tests) across utils, store, types and pages directories, so roughly 9-10 modified across 3+ directories. Optional backend regression test only. The closest pattern is the existing normalize*/parse* null-filtering guards, and the discovery_failed rendering in AssistantAuthGateRow already exists, so the base is S. Bumped to M because the shared isMCPAuthRequiredErrorPayload predicate decides gate vs session-expired redirect in api.makeRequest (auth flow), and the UI identifies rows by mcp_config_id (React keys, row updaters, initiate), which needs a null-safe fallback identity. The ACs are enumerated, but a few points are open: badge copy 'Unavailable' vs AC4 'Server unavailable', the heading text for discovery-only prompts, whether the mixed-case `warnings` field is in scope for 'never fails silently', and the identity fallback for multiple inline servers. Overall: single-repo change in codemie-ui (frontend), not the current codemie checkout. 17 sits in band M, so no split is warranted (G1). This is consistent with the M calibration example epmcdme-10203 (15)"
+}

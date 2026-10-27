@@ -21,6 +21,7 @@ import Spinner from '@/components/Spinner'
 import StatusBadge, { StatusEnum, StatusType } from '@/components/StatusBadge'
 import { ButtonSize, ButtonType, InfoWarningType } from '@/constants'
 import { MCPAuthGateServer, MCPAuthGateStatus } from '@/types/entity/mcpAuth'
+import { DISCOVERY_FAILED_FALLBACK_MESSAGE, isUnnamedMCPServer } from '@/utils/mcpAuth'
 import { cn } from '@/utils/utils'
 
 interface AssistantAuthGateRowProps {
@@ -45,7 +46,7 @@ const STATUS_BADGES: Record<MCPAuthGateStatus, { status: StatusType; text: strin
   authenticating: { status: StatusEnum.InProgress, text: 'Authenticating' },
   session_expired: { status: StatusEnum.Warning, text: 'Session expired' },
   config_error: { status: StatusEnum.Error, text: 'Config error' },
-  discovery_failed: { status: StatusEnum.Warning, text: 'Unavailable' },
+  discovery_failed: { status: StatusEnum.Warning, text: 'Server unavailable' },
 }
 
 const OPEN_SIGN_IN_IN_NEW_TAB_LABEL = 'Open sign-in in a new tab'
@@ -67,7 +68,10 @@ const getInfoWarningProps = (
     case 'discovery_failed':
       return {
         header: 'Server unavailable',
-        message: row.error_context ?? 'Authentication discovery is unavailable right now.',
+        message:
+          isUnnamedMCPServer(row.mcp_config_name) && isUnnamedMCPServer(row.mcp_server_name)
+            ? DISCOVERY_FAILED_FALLBACK_MESSAGE
+            : row.error_context || 'Authentication discovery is unavailable right now.',
         type: InfoWarningType.WARNING,
       }
     default:

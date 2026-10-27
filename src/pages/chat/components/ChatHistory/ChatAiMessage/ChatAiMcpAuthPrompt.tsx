@@ -27,10 +27,22 @@ interface ChatAiMcpAuthPromptProps {
   rows: MCPAuthGateServer[]
 }
 
-const getPromptHeading = (rows: MCPAuthGateServer[]): string =>
-  rows.some((row) => row.status === 'session_expired')
+const getPromptHeading = (rows: MCPAuthGateServer[]): string => {
+  const pending = rows.filter((row) => row.status !== 'authenticated')
+  if (pending.every((row) => row.status === 'discovery_failed')) {
+    return 'MCP server unavailable'
+  }
+  return pending.some((row) => row.status === 'session_expired')
     ? 'Re-authentication required'
     : 'Authentication required'
+}
+
+const getPromptSubtitle = (rows: MCPAuthGateServer[]): string => {
+  const pending = rows.filter((row) => row.status !== 'authenticated')
+  return pending.every((row) => row.status === 'discovery_failed')
+    ? 'Authentication discovery failed for one or more MCP servers. See the details below.'
+    : 'Complete sign-in for the affected MCP server, then resend the failed turn.'
+}
 
 const ChatAiMcpAuthPrompt: FC<ChatAiMcpAuthPromptProps> = ({
   chatId,
@@ -60,14 +72,12 @@ const ChatAiMcpAuthPrompt: FC<ChatAiMcpAuthPromptProps> = ({
     <div className="mt-4 flex flex-col gap-3" data-testid="chat-ai-auth-prompt">
       <div className="flex flex-col gap-1">
         <div className="text-sm font-semibold text-text-primary">{getPromptHeading(rows)}</div>
-        <div className="text-xs text-text-secondary">
-          Complete sign-in for the affected MCP server, then resend the failed turn.
-        </div>
+        <div className="text-xs text-text-secondary">{getPromptSubtitle(rows)}</div>
       </div>
 
       {rows.map((row) => (
         <AssistantAuthGateRow
-          key={`${row.mcp_config_id}-${row.status}`}
+          key={row.syntheticKey ?? `${row.mcp_config_id}-${row.status}`}
           row={row}
           onAuthenticate={(mcpConfigId) =>
             chatGenerationStore.initiatePromptAuth(chatId, historyIndex, messageIndex, mcpConfigId)

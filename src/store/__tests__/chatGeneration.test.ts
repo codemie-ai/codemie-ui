@@ -219,6 +219,40 @@ describe('chatGenerationStore', () => {
     expect(chat.history[0][0].request).toBe('Hello')
   })
 
+  it('turns the inline figma discovery failure into a visible prompt row (EPMCDME-14867)', async () => {
+    const historyItem = createHistoryItem()
+    const chat = createChat(historyItem)
+    mockChatsStore.currentChat = chat
+
+    mockStream.mockRejectedValueOnce({
+      error: 'authentication_required',
+      servers: [
+        {
+          status: 'discovery_failed',
+          mcp_config_id: null,
+          mcp_config_name: 'figma',
+          mcp_server_name: 'figma',
+          error_context:
+            'Discovery failed: no_trusted_authorization_server. Add the AS domain to the trust allowlist or configure auth_config manually for this server.',
+        },
+      ],
+    })
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    await chatGenerationStore._sendRequest(chat, 0, 0, createRequest())
+
+    expect(historyItem.response).toBeUndefined()
+    expect(historyItem.inProgress).toBe(false)
+    expect(historyItem.mcpAuthPromptRows).toEqual([
+      expect.objectContaining({
+        status: 'discovery_failed',
+        mcp_config_id: '',
+        mcp_config_name: 'figma',
+        syntheticKey: 'inline-0',
+      }),
+    ])
+  })
+
   it('converts a provider connect-required failure into the matching auth prompt', async () => {
     const historyItem = createHistoryItem()
     const chat = createChat(historyItem)
@@ -284,6 +318,46 @@ describe('chatGenerationStore', () => {
     expect(historyItem.loginUrl).toBe('/login')
     expect(historyItem.mcpAuthPromptRows).toBeNull()
     expect(historyItem.inProgress).toBe(false)
+  })
+
+  describe('_handleGenerationStreamError', () => {
+    it('formats a nested { message, details, help } error', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+      expect(
+        chatGenerationStore._handleGenerationStreamError({
+          error: {
+            message: 'Generation failed',
+            details: 'Tool call crashed',
+            help: 'Retry later',
+          },
+        })
+      ).toBe('Oops! Something went wrong \n Generation failed: Tool call crashed \n Retry later')
+    })
+
+    it.each([
+      ['a bare error code', { error: 'authentication_required' }, 'authentication_required'],
+      ['a message without details or help', { message: 'Boom' }, 'Boom'],
+      ['an Error instance', new Error('Network error'), 'Network error'],
+    ])('never renders "undefined" for %s', async (_label, error, expectedText) => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+      const text = chatGenerationStore._handleGenerationStreamError(error)
+
+      expect(text).not.toContain('undefined')
+      expect(text).toBe(`Oops! Something went wrong \n ${expectedText}`)
+    })
+
+    it('falls back to the default message when the payload has no text at all', async () => {
+      const { chatGenerationStore } = await import('@/store/chatGeneration')
+
+      expect(chatGenerationStore._handleGenerationStreamError({})).toBe(
+        'Oops! Something went wrong'
+      )
+      expect(chatGenerationStore._handleGenerationStreamError(undefined)).toBe(
+        'Oops! Something went wrong'
+      )
+    })
   })
 
   it('returns only authenticating conversation prompt auth_config_ids for the current chat', async () => {

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Surface MCP auth discovery_failed 401 payloads (including inline configs with mcp_config_id=null) in the codemie-ui streaming chat flow instead of dropping them and rendering 'undefined: undefined'.",
+  "generated": "2026-10-20T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 17,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "The defect is frontend-only (codemie-ui); the backend toolkit_service payload and the 401 handler are already correct. The fix spans the mcpAuth normalizer/parser, the MCPAuthGateServer type, the chatGeneration store error routing and _handleGenerationStreamError formatter, ChatAiMcpAuthPrompt (key and heading) and possibly AssistantAuthGateRow badge copy. Base M, bumped to L because the parser/predicate is a shared utility consumed by api.stream, api.makeRequest and useMCPAuthPrompt." },
+    { "dimension": "file_change_estimate", "reason": "About 5-6 source files plus 3-4 existing test files (mcpAuth.test, chatGeneration.promptAuth.test, ChatAiMcpAuthPrompt/AssistantAuthGateRow tests) across utils, store, types and pages directories, so roughly 9-10 modified across 3+ directories. Optional backend regression test only." },
+    { "dimension": "technical_risk", "reason": "The closest pattern is the existing normalize*/parse* null-filtering guards, and the discovery_failed rendering in AssistantAuthGateRow already exists, so the base is S. Bumped to M because the shared isMCPAuthRequiredErrorPayload predicate decides gate vs session-expired redirect in api.makeRequest (auth flow), and the UI identifies rows by mcp_config_id (React keys, row updaters, initiate), which needs a null-safe fallback identity." },
+    { "dimension": "requirements_clarity", "reason": "The ACs are enumerated, but a few points are open: badge copy 'Unavailable' vs AC4 'Server unavailable', the heading text for discovery-only prompts, whether the mixed-case `warnings` field is in scope for 'never fails silently', and the identity fallback for multiple inline servers. Overall: single-repo change in codemie-ui (frontend), not the current codemie checkout. 17 sits in band M, so no split is warranted (G1). This is consistent with the M calibration example epmcdme-10203 (15)." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: touches core shared utilities (mcpAuth parser/predicate shared by api.stream, api.makeRequest, useMCPAuthPrompt)",
+    "Technical Risk bumped from S to M: affects authentication/authorization (shared predicate governs the local-auth 401 gate vs session-expired redirect)"
+  ],
+  "split_recommendation": null
+}

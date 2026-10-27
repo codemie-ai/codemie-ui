@@ -133,7 +133,9 @@ export const useMCPAuthPrompt = ({
           error_context: null,
         }))
 
-        if (next.every((row) => row.status === 'authenticated')) {
+        if (
+          next.every((row) => row.status === 'authenticated' || row.status === 'discovery_failed')
+        ) {
           queueMicrotask(() => {
             onAllAuthenticatedRef.current()
             setRows([])

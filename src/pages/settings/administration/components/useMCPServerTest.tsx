@@ -193,7 +193,7 @@ export const useMCPServerTest = (): UseMCPServerTestResult => {
           </p>
           {rows.map((row) => (
             <AssistantAuthGateRow
-              key={`${row.mcp_config_id}-${row.status}`}
+              key={row.syntheticKey ?? `${row.mcp_config_id}-${row.status}`}
               row={row}
               onAuthenticate={initiate}
               onContinue={continueAuth}

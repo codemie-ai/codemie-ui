@@ -155,6 +155,7 @@ const MCPToolsSelectionStep = ({
     initiate,
     continue: continueAuth,
     cancel: cancelAuth,
+    clearRows: clearAuthRows,
   } = useMCPAuthPrompt({
     onAllAuthenticated: () => {
       if (isRetryingRef.current) return
@@ -166,6 +167,22 @@ const MCPToolsSelectionStep = ({
   })
 
   handleAuthRequiredErrorRef.current = handleAuthRequiredError
+
+  // An unavailable server never signs in, so the automatic re-fetch never runs. Treat it like a
+  // fetch error: keep the tool controls and Retry reachable so the user can still add the server.
+  const isServerUnavailable =
+    toolsStatus === MCP_TOOLS_STATUS.PENDING &&
+    authRows.length > 0 &&
+    authRows.some((row) => row.status === 'discovery_failed')
+  const showToolControls =
+    toolsStatus === MCP_TOOLS_STATUS.LOADED ||
+    toolsStatus === MCP_TOOLS_STATUS.ERROR ||
+    isServerUnavailable
+
+  const handleRetry = () => {
+    if (authRows.every((row) => row.status === 'discovery_failed')) clearAuthRows()
+    fetchTools()
+  }
 
   useEffect(() => {
     if (mcpServer) {
@@ -204,7 +221,7 @@ const MCPToolsSelectionStep = ({
           </div>
         )}
 
-        {(toolsStatus === MCP_TOOLS_STATUS.LOADED || toolsStatus === MCP_TOOLS_STATUS.ERROR) && (
+        {showToolControls && (
           <div className="flex flex-col gap-4">
             <p className="text-sm text-text-secondary">{getStatusText()}</p>
 
@@ -262,9 +279,9 @@ const MCPToolsSelectionStep = ({
             ))}
 
             <div className="flex justify-center gap-4 px-6">
-              <Button type={ButtonType.SECONDARY} onClick={fetchTools}>
+              <Button type={ButtonType.SECONDARY} onClick={handleRetry}>
                 <RefreshIcon className="w-3.5 h-3.5" />
-                {toolsStatus === MCP_TOOLS_STATUS.ERROR ? 'Retry' : 'Reload'}
+                {toolsStatus === MCP_TOOLS_STATUS.ERROR || isServerUnavailable ? 'Retry' : 'Reload'}
               </Button>
             </div>
           </div>
@@ -274,7 +291,7 @@ const MCPToolsSelectionStep = ({
           <div className="flex flex-col gap-3">
             {authRows.map((row) => (
               <AssistantAuthGateRow
-                key={`${row.mcp_config_id}-${row.status}`}
+                key={`${row.mcp_config_id || row.syntheticKey}-${row.status}`}
                 row={row}
                 onAuthenticate={initiate}
                 onContinue={continueAuth}
