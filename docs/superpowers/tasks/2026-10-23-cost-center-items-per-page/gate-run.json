@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16325-fix-cost-center-items-per-page",
+  "head": "54ae229ba3c5d7a8816ad94ecc1451a915c22e9b",
+  "runner": "npm",
+  "started_at": "2026-10-23",
+  "completed_at": "2026-10-23",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "N/A",
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency added/removed/moved."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output: no leaks found"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "First run: 1 failed|7447 passed (test not identified, output overwritten). Rerun: 739 files, 7448 passed, 1 skipped, exit 0; changed test dir also passes. Likely flaky."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "578 passed, 1 skipped"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs stack up and ~/.codemie/test-harness.json; not run locally. MR compliance gate still owed."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "0 missing"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Needs local SonarQube infra; not run. Only CI/commit hook settles it."
+    }
+  ],
+  "failures": {}
+}

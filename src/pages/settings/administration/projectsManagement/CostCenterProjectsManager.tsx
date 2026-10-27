@@ -105,6 +105,7 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
   const router = useVueRouter()
   const { user } = useSnapshot(userStore)
   const [search, setSearch] = useState('')
+  const [perPage, setPerPage] = useState(PAGE_SIZE)
   const [page, setPage] = useState(0)
   const [projectToUnassign, setProjectToUnassign] = useState<ProjectListItem | null>(null)
   const [isAssignPopupOpen, setIsAssignPopupOpen] = useState(false)
@@ -129,12 +130,12 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
     })
   }, [projects, search])
 
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / perPage))
 
   const pagedProjects = useMemo(() => {
-    const start = page * PAGE_SIZE
-    return filteredProjects.slice(start, start + PAGE_SIZE)
-  }, [filteredProjects, page])
+    const start = page * perPage
+    return filteredProjects.slice(start, start + perPage)
+  }, [filteredProjects, page, perPage])
 
   const tableSelection = useTableSelection<ProjectListItem>({
     totalCount: filteredProjects.length,
@@ -160,8 +161,11 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
     await onProjectsChanged?.()
   }, [onProjectsChanged])
 
-  const handlePaginationChange = useCallback((nextPage: number) => {
+  const handlePaginationChange = useCallback((nextPage: number, nextPerPage?: number) => {
     setPage(nextPage)
+    if (nextPerPage) {
+      setPerPage(nextPerPage)
+    }
   }, [])
 
   const handleUnassignProject = useCallback(async () => {
@@ -259,12 +263,12 @@ const CostCenterProjectsManager: FC<CostCenterProjectsManagerProps> = ({
           className="!mb-0 !mt-0"
         />
 
-        {filteredProjects.length > PAGE_SIZE && (
+        {filteredProjects.length > perPage && (
           <Pagination
             currentPage={page}
             totalPages={totalPages}
             setPage={handlePaginationChange}
-            perPage={PAGE_SIZE}
+            perPage={perPage}
             perPageOptions={DECIMAL_PAGINATION_OPTIONS}
             className="w-full !bg-transparent !border-t-0 !p-0 !mb-4 !bg-none"
           />

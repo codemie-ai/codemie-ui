@@ -1,0 +1,2 @@
+{"ts":"2026-10-23T11:18:16Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved; CR-001 behavior matches other pages","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-23T12:11:16Z","gate_id":"feature.verification","mode":"hitl","verdict":{"decision":"approve","rationale":"Inconclusive browser run accepted by user; persistence-while-paging covered by unit tests only","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

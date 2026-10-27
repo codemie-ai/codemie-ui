@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Fix the cost center projects list's hardcoded page size so the Items per page selector actually changes how many rows are shown.",
+  "generated": "2026-10-23T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Entirely self-contained in one component, CostCenterProjectsManager.tsx — add page-size state, widen handlePaginationChange to the two-argument form, slice with that state instead of the PAGE_SIZE constant. No other component or layer is touched." },
+    { "dimension": "file_change_estimate", "reason": "One file modified plus one new test file, both in the same directory (projectsManagement/ and its __tests__/ subfolder) — no other files implicated." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
