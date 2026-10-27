@@ -148,6 +148,7 @@ const formSchema = Yup.object()
       .transform((value, originalValue) => (originalValue === '' ? undefined : value))
       .typeError('Top P must be a number'),
     tools_tokens_size_limit: Yup.number()
+      .nullable()
       .integer('Limit Tool Output Tokens must be an integer')
       .positive('Limit Tool Output Tokens must be a positive number')
       .transform((value, originalValue) => (originalValue === '' ? undefined : value))
@@ -350,17 +351,11 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         return isEditing ? null : undefined
       }
 
-      if (
-        preparedValues.tools_tokens_size_limit == null ||
-        (preparedValues.tools_tokens_size_limit as unknown) === ''
-      )
-        delete preparedValues.tools_tokens_size_limit
-      else preparedValues.tools_tokens_size_limit = Number(preparedValues.tools_tokens_size_limit)
-
       return {
         ...preparedValues,
         temperature: toNumberOrNull(values.temperature),
         top_p: toNumberOrNull(values.top_p),
+        tools_tokens_size_limit: toNumberOrNull(values.tools_tokens_size_limit),
         tool_permissions:
           isCodemieAssistant && toolPermissionsEnabled
             ? {

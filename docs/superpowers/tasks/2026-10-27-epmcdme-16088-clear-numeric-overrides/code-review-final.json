@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Compact profile: the edge-case lens ran and returned no findings, so there were no candidates to verify (0 deferred, 0 dismissed). Acceptance was skipped (no spec artifact), so ticket ACs 1-8 were not audited by a lens and confidence is low; the standards audit was intentionally omitted by the compact profile (rows na, no coverage gap).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of compact profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of compact profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of compact profile." }
+  ],
+  "findings": []
+}

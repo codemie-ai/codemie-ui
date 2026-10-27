@@ -23,7 +23,7 @@ const buildAssistant = (overrides: Partial<Assistant> = {}): Assistant =>
     name: 'Test Assistant',
     conversation_starters: [],
     ...overrides,
-  }) as Assistant
+  } as Assistant)
 
 describe('transformAssistantToCreateDTO — tools_tokens_size_limit', () => {
   it('passes a set value through to the DTO', () => {
@@ -34,5 +34,11 @@ describe('transformAssistantToCreateDTO — tools_tokens_size_limit', () => {
   it('leaves the field undefined when not set', () => {
     const dto = transformAssistantToCreateDTO(buildAssistant())
     expect(dto.tools_tokens_size_limit).toBeUndefined()
+  })
+
+  it('forwards explicit null', () => {
+    const dto = transformAssistantToCreateDTO(buildAssistant({ tools_tokens_size_limit: null }))
+    expect(dto.tools_tokens_size_limit).toBeNull()
+    expect(JSON.parse(JSON.stringify(dto))).toHaveProperty('tools_tokens_size_limit', null)
   })
 })

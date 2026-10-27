@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16088_clear-numeric-overrides",
+  "head": "1f03a4d233326cd2cfe5240287b64df85f78b992",
+  "runner": "npm",
+  "started_at": "2026-10-27T08:47:38Z",
+  "completed_at": "2026-10-27T09:00:57Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 55401,
+      "command": "npm run lint"
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 25167,
+      "command": "npm run typecheck"
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide Skip-if met: diff vs merge base adds/removes/moves no dependency (package.json and package-lock.json unchanged)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 13121,
+      "command": "npm run secrets:check",
+      "notes": "Output confirms \"no leaks found\" via podman gitleaks v8.30.1; scans working tree only, not git history. Also covers hook secrets:check and CI gitleaks-scan."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 357058,
+      "command": "npm run test:unit:slnt",
+      "notes": "752 files, 7650 passed, 1 skipped."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 200138,
+      "command": "npm run test:integration:slnt",
+      "notes": "53 files, 597 passed, 1 skipped."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "FAIL",
+      "exit_code": 3,
+      "duration_ms": 75331,
+      "command": "npm run test-harness",
+      "notes": "Exit 3: pytest INTERNALERROR after \"Authentication failed: local-auth feature is not enabled on the backend (got 404 from /v1/local-auth/login)\" against http://localhost:8080; ~/.codemie/test-harness.json is absent. Environmental, not caused by the diff, but the guide says never skip and an unrun harness is unverified. This is also the only UI-level gate (sanity-ui) and the diff touches AssistantForm.tsx."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 7420,
+      "command": "npx prettier --check src/pages/assistants/__tests__/EditAssistantPage.integration.test.tsx src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx src/pages/assistants/components/AssistantForm/AssistantForm.tsx src/pages/assistants/utils/__tests__/compareFormData.test.ts src/store/__tests__/utils/assistants.test.ts src/types/entity/assistant.ts && npx eslint src/pages/assistants/__tests__/EditAssistantPage.integration.test.tsx src/pages/assistants/__tests__/NewAssistantPage.integration.test.tsx src/pages/assistants/components/AssistantForm/AssistantForm.tsx src/pages/assistants/utils/__tests__/compareFormData.test.ts src/store/__tests__/utils/assistants.test.ts src/types/entity/assistant.ts",
+      "notes": "Hook runs \"npx lint-staged\" (prettier --write, eslint --fix, tsc --noEmit, license-header --fix); no files are staged, so it would self-skip and it rewrites files. Ran the non-writing equivalent over the 6 changed files; tsc covered by typecheck gate. Guide labels hook gates \"do not invoke manually\"; the hook enforces them, so they were run."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "exit_code": 0,
+      "duration_ms": 1962,
+      "command": "npm run license-headers:check",
+      "notes": "Checked 2451 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "exit_code": 0,
+      "duration_ms": 1376,
+      "command": "npm run sonar-local",
+      "notes": "Self-skip despite exit 0: \"[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.\" Enable by setting SONAR_TOKEN (e.g. in .env.local, which the hook sources) for https://sonar.core.kuberocketci.io; until then only CI settles Sonar."
+    },
+    {
+      "id": "ci-external-contexts",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": ".gitlab-ci.yml wait-ci-init (EXPECTED_CONTEXTS: ci-pipeline, compliance-report)",
+      "exit_code": null,
+      "notes": ".gitlab-ci.yml only includes pre-ci-guard and waits on external ci-pipeline and compliance-report contexts defined outside this repo; not runnable locally. compliance-report checks the MR \"## Test harness\" section."
+    }
+  ],
+  "failures": {
+    "test-harness": "\nINTERNALERROR> Traceback (most recent call last):\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\_pytest\\main.py\", line 289, in wrap_session\nINTERNALERROR>     session.exitstatus = doit(config, session) or 0\nINTERNALERROR>                          ^^^^^^^^^^^^^^^^^^^^^\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\_pytest\\main.py\", line 343, in _main\nINTERNALERROR>     config.hook.pytest_runtestloop(session=session)\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_caller.py\", line 197, in __call__\nINTERNALERROR>     return self._hookexec(\nINTERNALERROR>            ^^^^^^^^^^^^^^^\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_manager.py\", line 183, in _hookexec\nINTERNALERROR>     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)\nINTERNALERROR>            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_execution.py\", line 195, in _multicall\nINTERNALERROR>     raise exception\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_execution.py\", line 167, in _multicall\nINTERNALERROR>     teardown.throw(exception)\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\_pytest\\logging.py\", line 801, in pytest_runtestloop\nINTERNALERROR>     return (yield)  # Run all the tests.\nINTERNALERROR>             ^^^^^\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_execution.py\", line 167, in _multicall\nINTERNALERROR>     teardown.throw(exception)\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\_pytest\\terminal.py\", line 688, in pytest_runtestloop\nINTERNALERROR>     result = yield\nINTERNALERROR>              ^^^^^\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_execution.py\", line 167, in _multicall\nINTERNALERROR>     teardown.throw(exception)\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_execution.py\", line 64, in run_old_style_hookwrapper\nINTERNALERROR>     return result.get_result()\nINTERNALERROR>            ^^^^^^^^^^^^^^^^^^^\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_result.py\", line 103, in get_result\nINTERNALERROR>     raise exc.with_traceback(tb)\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_execution.py\", line 49, in run_old_style_hookwrapper\nINTERNALERROR>     res = yield\nINTERNALERROR>           ^^^^^\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\pluggy\\_execution.py\", line 147, in _multicall\nINTERNALERROR>     res = hook_impl.function(*args)\nINTERNALERROR>           ^^^^^^^^^^^^^^^^^^^^^^^^^\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\xdist\\dsession.py\", line 138, in pytest_runtestloop\nINTERNALERROR>     self.loop_once()\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\xdist\\dsession.py\", line 163, in loop_once\nINTERNALERROR>     call(**kwargs)\nINTERNALERROR>   File \"C:\\Users\\KostiantynPshenychny\\AppData\\Local\\uv\\cache\\archive-v0\\CukYP-XPNqEjPI9W\\Lib\\site-packages\\xdist\\dsession.py\", line 217, in worker_workerfinished\nINTERNALERROR>     assert not crashitem, (crashitem, node)\nINTERNALERROR> AssertionError: ('tests/ui/assistants/test_assistant_lifecycle.py::test_delete_assistant_with_confirmation[chromium]', <WorkerController gw0>)\nINTERNALERROR> assert not 'tests/ui/assistants/test_assistant_lifecycle.py::test_delete_assistant_with_confirmation[chromium]'\n\n--------------------------- live log sessionfinish ----------------------------\n2026-10-27 11:00:41 - codemie_test_harness.tests.conftest - INFO - Starting session cleanup...\nExit: Authentication failed: local-auth feature is not enabled on the backend (got 404 from /v1/local-auth/login). Check your configuration � the backend may not support local authentication.\n"
+  }
+}

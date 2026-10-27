@@ -67,6 +67,13 @@ describe('compareFormData — hide_tool_outputs', () => {
   })
 })
 
+describe('compareFormData — numeric overrides', () => {
+  it('treats null numeric overrides as unchanged', () => {
+    const values = { project: 'p', temperature: null, top_p: null, tools_tokens_size_limit: null }
+    expect(compareFormData(values, { ...values })).toBe(false)
+  })
+})
+
 describe('compareFormData — llm_model_type default', () => {
   afterEach(() => {
     mockAppInfoStore.llmModels = []

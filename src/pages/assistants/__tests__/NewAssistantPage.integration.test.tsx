@@ -1238,7 +1238,7 @@ describe('NewAssistantPage - Integration', () => {
       })
     })
 
-    it('omits temperature and top_p from POST body when left empty on create', async () => {
+    it('omits temperature, top_p and tools_tokens_size_limit from POST body when left empty on create', async () => {
       mockAPI('GET', 'v1/user', userWithProject)
       mockAPI('POST', 'v1/assistants', { id: 'new-id', assistantId: 'new-id' })
 
@@ -1273,6 +1273,7 @@ describe('NewAssistantPage - Integration', () => {
         const body = JSON.parse((postCall![1] as RequestInit).body as string)
         expect(body).not.toHaveProperty('temperature')
         expect(body).not.toHaveProperty('top_p')
+        expect(body).not.toHaveProperty('tools_tokens_size_limit')
       })
     })
 

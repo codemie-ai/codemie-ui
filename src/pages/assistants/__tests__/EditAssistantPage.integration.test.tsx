@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { screen, waitFor, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
@@ -130,6 +130,13 @@ describe('EditAssistantPage - Integration', () => {
       return call ? JSON.parse(call[1].body) : undefined
     }
 
+    const putBodies = () =>
+      (global.fetch as any).mock.calls
+        .filter(
+          ([url, init]) => String(url).includes('v1/assistants/asst-123') && init?.method === 'PUT'
+        )
+        .map(([, init]) => JSON.parse(init.body))
+
     const openEditForm = async (overrides) => {
       mockAPI('GET', 'v1/config', [])
       mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture(overrides))
@@ -138,6 +145,12 @@ describe('EditAssistantPage - Integration', () => {
       renderPage('/assistants/asst-123/edit')
       return screen.findByTestId('assistant-temperature-input')
     }
+
+    const numericInputs = () => ({
+      temperature: screen.getByTestId('assistant-temperature-input'),
+      topP: screen.getByPlaceholderText('0-1'),
+      limit: screen.getByPlaceholderText('30000'),
+    })
 
     it('sends temperature: null and top_p: null in the PUT body when both are cleared', async () => {
       const user = userEvent.setup()
@@ -163,6 +176,91 @@ describe('EditAssistantPage - Integration', () => {
 
       await waitFor(() => expect(putBodyOf()).toBeDefined())
       expect(putBodyOf().temperature).toBe(0.3)
+    })
+
+    it('sends tools_tokens_size_limit: null in the PUT body when cleared', async () => {
+      const user = userEvent.setup()
+      await openEditForm({ tools_tokens_size_limit: 30000 })
+      const limitInput = screen.getByPlaceholderText('30000')
+      expect(limitInput).toHaveValue('30000')
+
+      await user.clear(limitInput)
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => expect(putBodyOf()).toBeDefined())
+      expect(putBodyOf()).toHaveProperty('tools_tokens_size_limit', null)
+    })
+
+    it('sends top_p: 0 and temperature: 0 in the PUT body', async () => {
+      const user = userEvent.setup()
+      const temperatureInput = await openEditForm({ temperature: 0.5, top_p: 0.9 })
+      const topPInput = screen.getByPlaceholderText('0-1')
+
+      await user.clear(temperatureInput)
+      await user.type(temperatureInput, '0')
+      await user.clear(topPInput)
+      await user.type(topPInput, '0')
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => expect(putBodyOf()).toBeDefined())
+      expect(putBodyOf().temperature).toBe(0)
+      expect(putBodyOf().top_p).toBe(0)
+    })
+
+    it('sends a typed tools_tokens_size_limit as a number', async () => {
+      const user = userEvent.setup()
+      await openEditForm({ tools_tokens_size_limit: undefined })
+
+      await user.type(screen.getByPlaceholderText('30000'), '1000')
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => expect(putBodyOf()).toBeDefined())
+      expect(putBodyOf().tools_tokens_size_limit).toBe(1000)
+    })
+
+    it('persists set → clear → reload for temperature, top_p and tools_tokens_size_limit', async () => {
+      const user = userEvent.setup()
+      const cleared = { temperature: null, top_p: null, tools_tokens_size_limit: null }
+
+      await openEditForm(cleared)
+      let inputs = numericInputs()
+      expect(inputs.temperature).toHaveValue('')
+      expect(inputs.topP).toHaveValue('')
+      expect(inputs.limit).toHaveValue('')
+
+      await user.type(inputs.temperature, '0.4')
+      await user.type(inputs.topP, '0.8')
+      await user.type(inputs.limit, '1000')
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => expect(putBodies()).toHaveLength(1))
+      expect(putBodies()[0]).toMatchObject({
+        temperature: 0.4,
+        top_p: 0.8,
+        tools_tokens_size_limit: 1000,
+      })
+
+      cleanup()
+      await openEditForm({ temperature: 0.4, top_p: 0.8, tools_tokens_size_limit: 1000 })
+      inputs = numericInputs()
+      await waitFor(() => expect(inputs.temperature).toHaveValue('0.4'))
+      expect(inputs.topP).toHaveValue('0.8')
+      expect(inputs.limit).toHaveValue('1000')
+
+      await user.clear(inputs.temperature)
+      await user.clear(inputs.topP)
+      await user.clear(inputs.limit)
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => expect(putBodies()).toHaveLength(2))
+      expect(putBodies()[1]).toMatchObject(cleared)
+
+      cleanup()
+      await openEditForm(cleared)
+      inputs = numericInputs()
+      await waitFor(() => expect(inputs.temperature).toHaveValue(''))
+      expect(inputs.topP).toHaveValue('')
+      expect(inputs.limit).toHaveValue('')
     })
   })
 })
