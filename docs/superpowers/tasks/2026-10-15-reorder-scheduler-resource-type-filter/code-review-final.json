@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Compact profile: only the edge-case lens ran, and it returned no findings. Acceptance was skipped because no spec or story artifact was supplied, so the ticket's acceptance criteria were not audited and confidence is low. Standards were not part of this profile; 0 deferred, 0 dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not in compact profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not in compact profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not in compact profile." }
+  ],
+  "findings": []
+}

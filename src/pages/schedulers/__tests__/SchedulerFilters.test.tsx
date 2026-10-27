@@ -114,4 +114,17 @@ describe('SchedulerFilters', () => {
       expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ projectId: undefined }))
     })
   })
+
+  it('renders Resource Type options in order All, Assistant, Workflow, Datasource with All selected', () => {
+    const { container } = render(
+      <SchedulerFilters filterOptions={filterOptions} values={{}} onApply={noop} />
+    )
+    const inputs = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[name="resourceType"]')
+    )
+    const labels = inputs.map((input) => input.closest('label')?.textContent?.trim())
+    expect(labels).toEqual(['All', 'Assistant', 'Workflow', 'Datasource'])
+    expect(inputs[0]).toBeChecked()
+    expect(inputs.slice(1).every((input) => !input.checked)).toBe(true)
+  })
 })

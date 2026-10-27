@@ -1,0 +1,2 @@
+{"ts":"2026-10-15T13:15:08Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved 1-task plan","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-15T13:21:23Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved; 0 findings, compact profile","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

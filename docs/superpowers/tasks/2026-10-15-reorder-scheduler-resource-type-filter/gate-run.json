@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15591_reorder-scheduler-resource-type-filter",
+  "head": "ed85729f843b5a8fb72df46ad149eae44b336ca7",
+  "runner": "custom",
+  "started_at": "2026-10-15T13:21:49Z",
+  "completed_at": "2026-10-15T13:38:37Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 31320, "command": "npm run lint", "exit_code": 0},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 27809, "command": "npm run typecheck", "exit_code": 0},
+    {"id": "license-check", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": "npm run license-check", "exit_code": null, "notes": "Guide Skip-if met: diff vs merge base touches only src/pages/schedulers/SchedulerFilters.tsx and its test; no dependency added, removed, or moved."},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 22469, "command": "npm run secrets:check", "exit_code": 0, "notes": "Output confirms gitleaks ran: 'no leaks found' (~28 MB scanned). Working tree only, not history."},
+    {"id": "unit", "source": "guide", "status": "PASS", "duration_ms": 587450, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "Test Files  696 passed (696); Tests 7043 passed | 1 skipped (7044)."},
+    {"id": "integration", "source": "guide", "status": "PASS", "duration_ms": 240690, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "Test Files  49 passed (49); Tests 558 passed | 1 skipped (559)."},
+    {"id": "test-harness", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": "npm run test-harness", "exit_code": null, "notes": "Not run: ~/.codemie/test-harness.json does not exist and the stack is not up. Guide says Skip if: Never and the MR compliance bot requires the ## Test harness section; this gate is unverified and still owed. Enable by starting the local stack and creating ~/.codemie/test-harness.json."},
+    {"id": "ui", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": "", "exit_code": null, "notes": "UI surface changed (SchedulerFilters.tsx) but no configured UI test script; browser verification is a separate caller decision."},
+    {"id": "lint-staged-prettier", "source": "hook", "status": "PASS", "duration_ms": 2000, "command": "npx prettier --check src/pages/schedulers/SchedulerFilters.tsx src/pages/schedulers/__tests__/SchedulerFilters.test.tsx", "exit_code": 0, "notes": "Non-mutating equivalent of the lint-staged prettier step on changed files (nothing staged). The eslint --fix and tsc steps of lint-staged are covered by the lint and typecheck gates."},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 508, "command": "npm run license-headers:check", "exit_code": 0, "notes": "Checked 2347 files, 0 missing license headers. Not listed in guide gate list; runs from .husky/pre-commit."},
+    {"id": "sonar-local", "source": "hook", "status": "SKIPPED", "duration_ms": 357, "command": "npm run sonar-local", "exit_code": 0, "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 is not a pass. Enable by exporting SONAR_TOKEN (e.g. in .env.local, sourced by the hook). Sonar analysis remains owed to CI."},
+    {"id": "ci-coverage-changed", "source": "ci", "status": "PASS", "duration_ms": 64650, "command": "npx vitest run --coverage --project unit src/pages/schedulers/__tests__/SchedulerFilters.test.tsx", "exit_code": 0, "notes": "Changed test file under coverage (CI runs test:coverage, per AGENTS.md). Test Files 1 passed (1); Tests 3 passed (3). Full coverage run not repeated locally."},
+    {"id": "ci-pipeline", "source": "ci", "status": "N/A", "duration_ms": 0, "command": "external: epm-cdme/codemie-gitlab-templates pre-ci-guard", "exit_code": null, "notes": ".gitlab-ci.yml only includes an external pre-ci-guard template that waits for ci-pipeline and compliance-report contexts (server-side gitleaks-scan, Sonar, compliance bot); definitions not in this repo and require CI infrastructure. Only CI can settle these."}
+  ],
+  "failures": {}
+}

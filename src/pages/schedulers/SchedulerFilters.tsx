@@ -44,8 +44,8 @@ const ALL_OPTION: FilterOption = { label: 'All', value: '' }
 
 const RESOURCE_TYPE_OPTIONS: FilterOption[] = [
   ALL_OPTION,
-  { label: 'Workflow', value: 'Workflow' },
   { label: 'Assistant', value: 'Assistant' },
+  { label: 'Workflow', value: 'Workflow' },
   { label: 'Datasource', value: 'Datasource' },
 ]
 
