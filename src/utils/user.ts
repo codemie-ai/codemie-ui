@@ -57,11 +57,11 @@ export const prioritizeName = (name: string): number => {
 export const formatUserOptions = (
   users: any[]
 ): Array<{ label: string; value: string; email?: string }> => {
-  // Group users by ID and merge names
   const userMap = new Map<string, string[]>()
+  const emailMap = new Map<string, string>()
 
   users.forEach((user: any) => {
-    const { id } = user
+    const { id, email } = user
     const name = createdBy(user, true)
 
     if (!userMap.has(id)) {
@@ -72,31 +72,28 @@ export const formatUserOptions = (
     if (!names.includes(name)) {
       names.push(name)
     }
+
+    if (email && !emailMap.has(id)) {
+      emailMap.set(id, email)
+    }
   })
 
-  // Format options with smart name selection
   return Array.from(userMap.entries()).map(([id, allNames]) => {
-    // Filter out empty strings if there are multiple names
     let names =
       allNames.length > 1 ? allNames.filter((name) => name && name.trim() !== '') : allNames
 
-    // If all names were empty, keep at least one
     if (names.length === 0) {
       names = allNames
     }
 
-    // Sort names by priority (non-UUID first, then non-empty, then rest)
     names.sort((a, b) => {
       const priorityA = prioritizeName(a)
       const priorityB = prioritizeName(b)
       return priorityA - priorityB
     })
 
-    // Create label with the best name first, others in parentheses
     const label = names.length > 1 ? `${names[0]} (${names.slice(1).join(', ')})` : names[0]
-
-    // Pick the first non-empty email from all entries for this user id
-    const email = users.find((u: any) => u.id === id && u.email)?.email as string | undefined
+    const email = emailMap.get(id)
 
     return {
       label,
