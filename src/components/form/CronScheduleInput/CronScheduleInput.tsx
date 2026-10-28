@@ -28,6 +28,7 @@ import {
   CRON_HELP_TEXT,
   CRON_PLACEHOLDER,
   CRON_HELP_URL,
+  CRON_TRIGGER_TIME_WARNING,
   REINDEX_TYPE_OPTIONS,
   REINDEX_TYPES,
   ReindexType,
@@ -139,16 +140,19 @@ const CronScheduleInput = forwardRef<HTMLDivElement, CronScheduleInputProps>(
         {hint && <InfoBox text={hint} />}
 
         {preset !== SCHEDULE_PRESETS.NONE && (
-          <Autocomplete
-            label="Timezone"
-            value={timezone ?? ''}
-            onChange={onTimezoneChange}
-            options={getIANATimezoneOptions()}
-            localFilter={true}
-            allowNew={false}
-            placeholder="e.g. Europe/Warsaw"
-            disabled={disabled}
-          />
+          <>
+            <Autocomplete
+              label="Timezone"
+              value={timezone ?? ''}
+              onChange={onTimezoneChange}
+              options={getIANATimezoneOptions()}
+              localFilter={true}
+              allowNew={false}
+              placeholder="e.g. Europe/Warsaw"
+              disabled={disabled}
+            />
+            <InfoBox text={CRON_TRIGGER_TIME_WARNING} />
+          </>
         )}
 
         {isCustom && (

@@ -197,6 +197,9 @@ export const CRON_EXAMPLES: CronExample[] = [
   { expression: '0 0 1 * *', description: 'First day of every month at midnight' },
 ]
 
+export const CRON_TRIGGER_TIME_WARNING =
+  'The scheduled time is approximate. Actual indexing may start up to an hour later to avoid overloading the queue.'
+
 export const CRON_HELP_TEXT = 'Cron expression format: minute hour day month weekday'
 export const CRON_PLACEHOLDER = '0 0 * * *'
 export const CRON_HELP_URL =
