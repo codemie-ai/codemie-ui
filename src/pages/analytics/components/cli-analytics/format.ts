@@ -15,6 +15,7 @@
 
 import { ColumnType, MetricFormat, type Metric } from '@/types/analytics'
 import type { RepositoryRow } from '@/types/cliAnalytics'
+import { formatMetricValue } from '@/utils/analyticsFormatters'
 
 // session_count/cost_usd/files_changed/net_lines/tool_success_rate are shared by RepositoryRow
 // and RepositoryBranchRow, so either can be passed without reshaping into the other's type.
@@ -35,6 +36,15 @@ export function formatDuration(ms: number | null | undefined): string {
   if (h > 0 || m > 0) parts.push(`${m}m`)
   parts.push(`${s}s`)
   return parts.join(' ')
+}
+
+// Branch on the counter, not the rate: 0 of 0 is "no data", 0 of 12 is a real 0%.
+export function formatToolSuccess(
+  rate: number | null | undefined,
+  toolCalls: number | null | undefined
+): string {
+  if ((toolCalls ?? 0) === 0) return '—'
+  return formatMetricValue(rate ?? 0, MetricFormat.PERCENTAGE)
 }
 
 export function truncateModelName(name: string, max = 25): string {

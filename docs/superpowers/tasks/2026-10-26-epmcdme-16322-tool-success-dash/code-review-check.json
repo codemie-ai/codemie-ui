@@ -1,0 +1,53 @@
+{
+  "decision": "approve",
+  "rationale": "All three blocking findings from code-review-final.json are resolved in commit b311ea19a. The fix-up diff is confined to one enum value in UsersView.tsx and the OverviewView test fixture/assertions, introducing no new high-risk surface (no security, public-API, data-loss or runtime-correctness exposure), so no narrow confirmation pass was warranted. Fix-up evidence is strong: npm run typecheck exit 0, npm run lint exit 0, and 22/22 tests passing across both affected files including the bare-render tests, which confirms beforeEach(mockReset) correctly restores the module factory's default implementation rather than leaving the hook undefined. CR-003's new test was additionally mutation-verified: with the guard rewritten to the naive kpis.tool_call_success_rate ? ... truthiness check, the two pre-existing Overview subtitle tests still passed while the new test failed, proving it pins the intended counter-based semantics rather than merely restating current output. An independently launched /code-review pass over the same branch reported no correctness defects and raised only the ColumnType declaration (CR-001, fixed here) and the out-of-scope Repositories inconsistency, corroborating this round. The 4 deferred findings from the final round remain deferred and unchanged; the most user-visible of them - Repositories, branch rows and session detail still rendering 0.00% at a zero denominator - is a scope boundary the human confirmed when approving the plan, and is worth naming in the MR description for the reviewer.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Tool Calls = 0 -> Tool Success is displayed as a dash on Overview, in Per-user detail and in the user modal Summary.",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final. Unaffected by the fix-up: ColumnType.STRING does not change what formatMetricValue returns for a string with no format."
+    },
+    {
+      "criterion": "Tool Calls > 0 -> Tool Success is displayed as a percentage as before (including a real 0% when all calls failed).",
+      "status": "pass",
+      "notes": "Carried forward from code-review.final, and now strengthened: CR-003 added the Overview real-0% test that was the criterion's only untested surface."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit message format (.ai-run/guides/standards/git-workflow.md)",
+      "status": "pass",
+      "notes": "Carried forward. The fix-up commit subject 'EPMCDME-16322: Address review - metric type, fixture override, AC2 coverage' also matches the Tekton CI regex."
+    },
+    {
+      "standard": "Code quality (.ai-run/guides/standards/code-quality.md)",
+      "status": "na",
+      "notes": "Carried forward - guide not present in this repository."
+    },
+    {
+      "standard": "Secure frontend patterns (.ai-run/guides/development/security-patterns.md)",
+      "status": "pass",
+      "notes": "Carried forward. The fix-up touches an enum value and test fixtures only."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "evidence": "UsersView.tsx:68 now declares type: ColumnType.STRING for the pre-formatted tool_success_rate metric, matching the SessionBody.tsx:90 convention. The comment was expanded to record why NUMBER was wrong and why format must stay off. npm run typecheck exit 0."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "evidence": "renderWithKpis now uses mockReturnValue (OverviewView.test.tsx:181) with beforeEach(() => vi.mocked(useCliAnalyticsOverview).mockReset()) added at :194-198, matching the sibling UsersView.test.tsx pattern. The positive test now uses 640 calls / 81.3% - both distinct from the module factory's 850 / 94.5 - so it can no longer pass with the override inert. All 9 bare-render tests in the file still pass, confirming mockReset restores the factory implementation."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "evidence": "New test 'keeps a real 0.0% success subtitle when calls exist but none succeeded' at OverviewView.test.tsx:325-330 asserts total_tool_calls: 12 / tool_call_success_rate: 0 renders '0.0% success'. Mutation-verified: replacing the guard with kpis.tool_call_success_rate ? ... made exactly this test fail (1 failed | 15 passed) while the other two subtitle tests still passed."
+    }
+  ],
+  "findings": []
+}

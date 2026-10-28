@@ -28,7 +28,7 @@ import {
 } from '@/types/analytics'
 import type { ExtendedSessionsTarget, UserRow } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
-import { formatMetricValue, formatTokens } from '@/utils/analyticsFormatters'
+import { formatTokens } from '@/utils/analyticsFormatters'
 import { formatCliAnalyticsCost } from '@/utils/currency'
 import { formatDate } from '@/utils/helpers'
 
@@ -36,7 +36,7 @@ import ExtendedSessionsModal from './ExtendedSessionsModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
 import DonutChartWidget from '../../widgets/DonutChartWidget'
-import { formatDuration } from '../format'
+import { formatDuration, formatToolSuccess } from '../format'
 import { useCliAnalyticsUsers } from '../hooks/useCliAnalyticsUsers'
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
@@ -59,11 +59,11 @@ function buildUserMetrics(row: UserRow): Metric[] {
     { id: 'turns', label: 'Turns', type: ColumnType.INTEGER, value: row.turns ?? 0 },
     { id: 'net_lines', label: 'Net Lines', type: ColumnType.INTEGER, value: row.net_lines ?? 0 },
     {
+      // Pre-formatted, so no format: MetricFormat.PERCENTAGE renders '—' as NaN%.
       id: 'tool_success_rate',
       label: 'Tool Success',
-      type: ColumnType.NUMBER,
-      format: MetricFormat.PERCENTAGE,
-      value: row.tool_success_rate ?? 0,
+      type: ColumnType.STRING,
+      value: formatToolSuccess(row.tool_success_rate, row.tool_calls),
     },
   ]
 }
@@ -96,9 +96,7 @@ const ToolCallsCell: FC<{ row: UserRow }> = ({ row }) => (
 )
 
 const ToolSuccessRateCell: FC<{ row: UserRow }> = ({ row }) => (
-  <div className="text-right">
-    {formatMetricValue(row.tool_success_rate ?? 0, MetricFormat.PERCENTAGE)}
-  </div>
+  <div className="text-right">{formatToolSuccess(row.tool_success_rate, row.tool_calls)}</div>
 )
 
 const NetLinesCell: FC<{ row: UserRow }> = ({ row }) => (

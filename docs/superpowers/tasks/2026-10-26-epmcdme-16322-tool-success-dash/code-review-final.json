@@ -1,0 +1,67 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three lenses ran and returned substantive results; the acceptance lens independently traced all three AC surfaces to the rendered DOM and passed both criteria (it confirmed the em dash reaches MetricCard unchanged rather than becoming NaN%). Three blocking findings remain, all cheap: a Metric that declares ColumnType.NUMBER while carrying a pre-formatted string against an established in-repo convention, and two real test-validity gaps on the Overview surface (a tautological positive test that cannot detect its own fixture override failing, and no coverage at all for AC2's real-0% case on the one surface that does not use the unit-tested helper). 4 findings were deferred and are recorded in the notes: the Repositories/branch/session surfaces still render 0.00% at a zero denominator (user-visible inconsistency, but explicitly outside this ticket's AC and a scope call the human already made when approving the plan); the Overview subtitle duplicates the dash logic inline and keeps a pre-existing unguarded .toFixed(1) plus a pre-existing 1-vs-2-decimal split; formatToolSuccess treats an absent tool-call counter as zero; and an absent rate with calls present renders 0.00% rather than a dash. All four are latent given the backend always populates these fields (total_tool_calls: int, tool_calls: int = 0, tool_success_rate: float = 0.0) and none is a regression introduced here. 2 blind-lens findings were dismissed as factually incorrect: an allegedly unused MetricFormat import (still used for CURRENCY at UsersView.tsx:56 and :171) and an allegedly broken mockReset (all 6 tests in the file route through renderWithRow).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Tool Calls = 0 -> Tool Success is displayed as a dash on Overview, in Per-user detail and in the user modal Summary.",
+      "status": "pass",
+      "notes": "All three surfaces traced to rendered output. OverviewView.tsx:80-83 dashes the TOOL CALLS subtitle with no '— success' suffix; UsersView.tsx:99-101 ToolSuccessRateCell is wired as the tool_success_rate custom renderer for the TOOL SUCCESS column; UsersView.tsx:61-68 buildUserMetrics feeds the modal tile and drops format: MetricFormat.PERCENTAGE, so formatMetricValue falls through to String(value) and the literal em dash (U+2014) renders rather than NaN%."
+    },
+    {
+      "criterion": "Tool Calls > 0 -> Tool Success is displayed as a percentage as before (including a real 0% when all calls failed).",
+      "status": "pass",
+      "notes": "Every branch is on the tool-call counter, never on the rate, so tool_calls=12 with rate=0 still yields 0.00% - byte-identical to the pre-change formatMetricValue(rate ?? 0, PERCENTAGE). Overview keeps its original one-decimal '% success' copy on the truthy branch. Note CR-003: this criterion is unverified by any test on the Overview surface."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit message format (.ai-run/guides/standards/git-workflow.md)",
+      "status": "pass",
+      "notes": "All 3 subjects match the Tekton CI regex ^EPMCDME-(?!0+)\\d+:\\s[A-Z][a-z]*.*$; branch EPMCDME-16322_tool-success-dash matches the documented EPMCDME-XXXX_short-description pattern."
+    },
+    {
+      "standard": "Code quality (.ai-run/guides/standards/code-quality.md)",
+      "status": "na",
+      "notes": "Guide not present in this repository; standards/ contains only git-workflow.md. No standards invented in its absence."
+    },
+    {
+      "standard": "Secure frontend patterns (.ai-run/guides/development/security-patterns.md)",
+      "status": "pass",
+      "notes": "Guide read. No HTML sink, untrusted navigation, cross-window message, secret, tracked .env change, Sonar suppression or response header touched. The change adds one pure display formatter returning a literal em dash."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/pages/analytics/components/cli-analytics/views/UsersView.tsx:64",
+      "problem": "The tool_success_rate entry of buildUserMetrics now carries a pre-formatted string ('—' or '95.00%') while still declaring type: ColumnType.NUMBER, with format removed. MetricValue is string | number | boolean so this compiles, and it renders correctly today only because formatMetricValue falls through to String(value) for a string with no format.",
+      "impact": "The type field misdescribes the payload. ColumnType.STRING exists and SessionBody.tsx:88-91 is the established in-repo convention for exactly this case (pre-formatted value -> ColumnType.STRING, with a comment saying why). Code elsewhere does read type to decide numeric-ness (useOverviewMetrics.ts:70, useTabularMetrics.ts:68), so a future consumer trusting NUMBER - or anyone re-adding format: MetricFormat.PERCENTAGE - lands on Number('—').toFixed(2) and silently renders NaN%. No live consumer breaks today, so this is latent, not a live defect.",
+      "recommendation": "Change that metric to type: ColumnType.STRING, matching SessionBody.tsx:90, so the declared type cannot mislead a later consumer.",
+      "sources": ["edge-case", "blind"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/pages/analytics/components/cli-analytics/__tests__/OverviewView.test.tsx:180",
+      "problem": "renderWithKpis uses mockReturnValueOnce with no beforeEach reset, so the dash assertion depends on useCliAnalyticsOverview being called exactly once per render; a second call falls through to the module-level factory, which hardcodes total_tool_calls: 850 / tool_call_success_rate: 94.5. Compounding this, the positive test 'keeps the success subtitle when tool calls exist' overrides with those same 850 / 94.5 values, so it passes identically whether or not the override is applied.",
+      "impact": "Test-validity gap. If anyone later adds a mount effect, a store subscription or a StrictMode wrapper to OverviewView, the once-value is consumed by the first pass and the dash test reads '94.5% success' - reporting a production regression that does not exist. Because the paired positive test is tautological, neither test can signal that the fixture override stopped taking effect. The sibling UsersView.test.tsx already uses the robust pattern (mockReturnValue + beforeEach(mockReset)), so the two files now disagree.",
+      "recommendation": "Switch renderWithKpis to mockReturnValue, add beforeEach(() => vi.mocked(useCliAnalyticsOverview).mockReset()), and give the positive test a rate distinct from the module default (e.g. 81.3) so it proves the override is in force.",
+      "sources": ["edge-case", "blind"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/pages/analytics/components/cli-analytics/__tests__/OverviewView.test.tsx:297",
+      "problem": "No test covers AC2's decisive case on the Overview surface: total_tool_calls > 0 with tool_call_success_rate === 0 must still render '0.0% success' and not a dash. The five formatToolSuccess unit tests cover this for the Users table and modal, but Overview deliberately does not use that helper - it has its own inline guard with different copy and precision - so its AC2 behaviour is pinned by nothing.",
+      "impact": "The most likely way to break AC2 is to rewrite the Overview guard as a truthiness check on the rate (if (!kpis.tool_call_success_rate)), which would wrongly dash a genuine total failure. That regression would ship green: the existing Overview tests use an 850-call / 94.5% fixture and a 0-call fixture, neither of which distinguishes a counter guard from a rate guard. This is the Review Focus item the plan itself listed as the single most likely AC2 break.",
+      "recommendation": "Add renderWithKpis({ total_tool_calls: 12, tool_call_success_rate: 0 }) asserting the subtitle reads '0.0% success'.",
+      "sources": ["blind", "edge-case"]
+    }
+  ]
+}

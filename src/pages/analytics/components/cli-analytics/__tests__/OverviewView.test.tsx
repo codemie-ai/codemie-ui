@@ -15,7 +15,7 @@
 
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { cliAnalyticsStore } from '@/store/cliAnalytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
@@ -74,10 +74,15 @@ vi.mock('../../AnalyticsWidget', () => ({
 }))
 
 vi.mock('../../widgets/MetricCard', () => ({
-  default: ({ metric }: { metric: { id: string; label: string; value: unknown } }) => (
+  default: ({
+    metric,
+  }: {
+    metric: { id: string; label: string; value: unknown; description?: string }
+  }) => (
     <div data-testid={`metric-${metric.id}`}>
       <span>{metric.label}</span>
       <span data-testid="metric-value">{String(metric.value)}</span>
+      <span data-testid={`metric-desc-${metric.id}`}>{metric.description}</span>
     </div>
   ),
 }))
@@ -151,7 +156,44 @@ vi.mock('../views/ExtendedSessionsModal', () => ({
 
 const MOCK_FILTERS: AnalyticsQueryParams = { start_date: '2026-07-01', end_date: '2026-07-17' }
 
+const BASE_KPIS = {
+  total_sessions: 142,
+  total_cost_usd: 12.5,
+  duration_ms: 8040000,
+  total_turns: 284,
+  total_tool_calls: 850,
+  tool_call_success_rate: 94.5,
+  total_files_changed: 63,
+  net_lines: 18,
+  dead_sessions: 8,
+  total_input_tokens: 1500000,
+  total_output_tokens: 320000,
+  total_cache_creation_tokens: 200000,
+  total_cache_read_tokens: 400000,
+  total_tokens: 2420000,
+  cache_read_cost_usd: 1.25,
+  bloat_pct: 12.3,
+  avg_context_per_call: 15000,
+}
+
+// mockReturnValue, not ...Once: a second hook call would fall back to the module default.
+function renderWithKpis(overrides: Partial<typeof BASE_KPIS>) {
+  vi.mocked(useCliAnalyticsOverview).mockReturnValue({
+    kpis: { ...BASE_KPIS, ...overrides },
+    dailyBuckets: [{ day: '2026-07-01', net_lines: 18 }],
+    modelBreakdown: [{ model_name: 'claude-sonnet-4-5', session_count: 80 }],
+    loading: false,
+    error: null,
+  } as unknown as ReturnType<typeof useCliAnalyticsOverview>)
+  return render(<OverviewView filters={MOCK_FILTERS} />)
+}
+
 describe('OverviewView', () => {
+  // Restores the module factory default for tests that render without an override.
+  beforeEach(() => {
+    vi.mocked(useCliAnalyticsOverview).mockReset()
+  })
+
   it('renders headline KPI metrics', () => {
     render(<OverviewView filters={MOCK_FILTERS} />)
 
@@ -259,6 +301,26 @@ describe('OverviewView', () => {
 
     await user.click(screen.getByTestId('repo-row-click'))
     expect(screen.getByTestId('modal-title')).toHaveTextContent('org/test-repo')
+  })
+
+  it('dashes the Tool Calls subtitle when there were no tool calls', () => {
+    renderWithKpis({ total_tool_calls: 0, tool_call_success_rate: 0 })
+
+    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('—')
+  })
+
+  // Values differ from the module default, so this fails if the override goes inert.
+  it('keeps the success subtitle when tool calls exist', () => {
+    renderWithKpis({ total_tool_calls: 640, tool_call_success_rate: 81.3 })
+
+    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('81.3% success')
+  })
+
+  // This surface guards inline, not via formatToolSuccess; fails on a rate truthiness check.
+  it('keeps a real 0.0% success subtitle when calls exist but none succeeded', () => {
+    renderWithKpis({ total_tool_calls: 12, tool_call_success_rate: 0 })
+
+    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('0.0% success')
   })
 
   it('does not render stale rows left in the shared repositories store slot', async () => {

@@ -1,0 +1,82 @@
+{
+  "task": "Render CLI Analytics Tool Success as an em dash instead of 0% when the selected sessions contain no tool calls, across the Overview Summary subtitle, the Users per-user detail column and the user modal Summary tile, while preserving a real 0% whenever tool calls exist.",
+  "generated": "2026-10-27",
+  "dimensions": {
+    "component_scope": {
+      "score": 3,
+      "label": "M",
+      "affected": "cli-analytics format.ts (new formatToolSuccess helper), views/UsersView.tsx (ToolSuccessRateCell renderer + buildUserMetrics modal tile), views/OverviewView.tsx (buildHeadlineMetrics total_tool_calls subtitle), plus three co-located test suites (format.test.ts, UsersView.test.tsx, OverviewView.test.tsx)",
+      "layers": "UI (presentation/formatting only)"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Partially Clear",
+      "gaps": "Ticket enumerated the three target surfaces and the keep-real-0% rule explicitly, but was filed against backend behaviour while the defect lived entirely in the frontend render paths; scope boundary for the sibling surfaces (Repositories table, branch rows, session detail) was not stated and was resolved by leaving them untouched as outside the AC. A review pass also found AC2 (real 0% preserved) was initially uncovered on the Overview surface."
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Overview does not route through the shared helper, so the guard is duplicated as an inline conditional and can drift; guarding on the rate instead of the tool-call counter would silently dash a genuine 0% (all calls failed); the modal tile carries a pre-formatted string, so declaring it ColumnType.NUMBER with MetricFormat.PERCENTAGE would run Number('—').toFixed(2) and render NaN%; backend _pct could emit null, which would have crashed Overview and been coerced to 0 on the Users surfaces",
+      "mitigation": "Branch on the tool_calls counter rather than the rate, with dedicated tests pinning the real-0% case on both the helper and the Overview surface; declare the modal metric as ColumnType.STRING with no format, matching the existing SessionBody m() convention; nullish-coalesce rate and counter in the helper; pure presentational change with no persisted state, so rollback is a revert"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M",
+      "modified_files": 6,
+      "modified_file_list": [
+        "src/pages/analytics/components/cli-analytics/format.ts",
+        "src/pages/analytics/components/cli-analytics/views/OverviewView.tsx",
+        "src/pages/analytics/components/cli-analytics/views/UsersView.tsx",
+        "src/pages/analytics/components/cli-analytics/__tests__/format.test.ts",
+        "src/pages/analytics/components/cli-analytics/__tests__/OverviewView.test.tsx",
+        "src/pages/analytics/components/cli-analytics/__tests__/UsersView.test.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/pages/analytics/components/cli-analytics",
+        "src/pages/analytics/components/cli-analytics/views",
+        "src/pages/analytics/components/cli-analytics/__tests__"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 12,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 6,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three production components changed (one new 7-line pure helper in format.ts, two call-site swaps in UsersView.tsx, one inline conditional in OverviewView.tsx) covering three user-visible surfaces, but all within a single UI layer and a single feature folder. Roughly 15 production lines of the 206 insertions."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "6 files modified, 0 new, spanning three directories inside one feature folder. Most of the diff is test work: 10 new cases plus rewiring the Table, ExtendedSessionsModal and MetricCard mocks so they invoke the real renderers instead of rendering only developer_name / title / value."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Acceptance criteria named the three surfaces and the keep-real-0% rule, so no stakeholder alignment was needed; the only genuine gap was repo attribution (filed on the backend, fixed in the frontend) and the unstated boundary around sibling surfaces."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Precedent already existed in the same module (formatDuration and truncateModelName both dash) and the change is presentational and trivially revertible; the non-zero score reflects the real-0% guard-direction trap and the Metric ColumnType declaration trap, both caught in review and fixed."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -15,7 +15,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { buildRepoMetrics, formatDuration, truncateModelName } from '../format'
+import { buildRepoMetrics, formatDuration, formatToolSuccess, truncateModelName } from '../format'
 
 describe('formatDuration', () => {
   it('returns em-dash for null', () => {
@@ -67,5 +67,27 @@ describe('buildRepoMetrics', () => {
     })
     const toolSuccess = metrics.find((m) => m.id === 'tool_success_rate')
     expect(toolSuccess?.value).toBe(28.8)
+  })
+})
+
+describe('formatToolSuccess', () => {
+  it('dashes when there are no tool calls', () => {
+    expect(formatToolSuccess(0, 0)).toBe('—')
+  })
+
+  it('dashes when the tool-call count is missing', () => {
+    expect(formatToolSuccess(undefined, undefined)).toBe('—')
+  })
+
+  it('keeps a real 0% when calls exist and all of them failed', () => {
+    expect(formatToolSuccess(0, 12)).toBe('0.00%')
+  })
+
+  it('formats a normal rate as a two-decimal percentage', () => {
+    expect(formatToolSuccess(95, 20)).toBe('95.00%')
+  })
+
+  it('treats a missing rate with calls present as 0.00%', () => {
+    expect(formatToolSuccess(undefined, 5)).toBe('0.00%')
   })
 })

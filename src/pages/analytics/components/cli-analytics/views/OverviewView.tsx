@@ -77,7 +77,9 @@ function buildHeadlineMetrics(kpis: OverviewKPIs): Metric[] {
       label: 'Tool Calls',
       type: ColumnType.INTEGER,
       value: kpis.total_tool_calls,
-      description: `${kpis.tool_call_success_rate.toFixed(1)}% success`,
+      // No calls means no denominator; a real 0% still shows as a percentage.
+      description:
+        kpis.total_tool_calls > 0 ? `${kpis.tool_call_success_rate.toFixed(1)}% success` : '—',
     },
     {
       id: 'total_cost_usd',
