@@ -200,6 +200,7 @@ const MCPServerModal: React.FC<MCPServerModalProps> = (props) => {
                   {...field}
                   id="source_url"
                   label="Link to Source code"
+                  required
                   placeholder="https://github.com/user/repo"
                   error={errors.source_url?.message}
                 />
