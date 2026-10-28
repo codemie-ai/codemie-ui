@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-FROM dhi.io/node:20-alpine3.23-dev AS build
+FROM dhi.io/node:24-alpine3.23-dev AS build
 
 # hadolint ignore=DL3018
 RUN apk update && apk add --no-cache openjdk17 maven
