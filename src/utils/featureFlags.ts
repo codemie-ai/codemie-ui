@@ -103,3 +103,20 @@ export const isTeamsEnabled = (): boolean => {
 export const isChatContextualNamingEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.CHAT_CONTEXTUAL_NAMING)
 }
+
+/**
+ * Check if the marketplace management administration area is enabled
+ * (non-reactive utility)
+ */
+export const isMarketplaceManagementEnabled = (): boolean => {
+  return isFeatureEnabled(FEATURE_FLAGS.MARKETPLACE_MANAGEMENT)
+}
+
+/**
+ * Check if the marketplace approval gate is armed on the backend, i.e. publishing
+ * queues the assistant for review and editing a live one re-validates it. Independent
+ * of the management console flag (non-reactive utility)
+ */
+export const isMarketplaceApprovalGateEnabled = (): boolean => {
+  return isFeatureEnabled(FEATURE_FLAGS.MARKETPLACE_APPROVAL_GATE)
+}

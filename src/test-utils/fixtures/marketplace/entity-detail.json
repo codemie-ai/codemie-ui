@@ -1,0 +1,55 @@
+{
+  "id": "e60913c3-5ca9-4788-a5ef-9f737e3929b4",
+  "name": "E2E-FIXTURE Release Notes Writer",
+  "description": "Turns merged pull requests into release notes.",
+  "categories": [
+    "business-analysis"
+  ],
+  "icon_url": null,
+  "conversation_starters": [],
+  "submitted_by": "System Administrator",
+  "creator": "system",
+  "project": "codemie",
+  "created_date": "2026-08-24T11:50:14.424430",
+  "updated_date": null,
+  "marketplace_submitted_at": "2026-08-24T08:50:19.761276Z",
+  "marketplace_status": "PENDING_REVIEW",
+  "marketplace_version": 0,
+  "is_global": false,
+  "is_verified": false,
+  "marketplace_decided_at": null,
+  "marketplace_decided_by": null,
+  "marketplace_decision_reason": null,
+  "unique_users_count": 0,
+  "unique_likes_count": 0,
+  "unique_dislikes_count": 0,
+  "clone_count": 0,
+  "toolkit_names": [
+    "Research",
+    "File Analysis"
+  ],
+  "mcp_server_names": [
+    "EPAM People Central",
+    "EPAM Data Catalog",
+    "EPAM OneHub",
+    "EPAM Delivery Central Health",
+    "EPAM Radar",
+    "EPAM Delivery Central"
+  ],
+  "skill_count": 0,
+  "nested_assistant_count": 0,
+  "datasource_count": 0,
+  "prompt_variables": [],
+  "system_prompt_length": 1356,
+  "system_prompt_revisions": 0,
+  "gate_findings": [
+    {
+      "rule": "description_length",
+      "severity": "CRITICAL",
+      "message": "Description is 46 chars, minimum is 100."
+    }
+  ],
+  "critical_count": 1,
+  "optional_count": 0,
+  "top_similar": null
+}

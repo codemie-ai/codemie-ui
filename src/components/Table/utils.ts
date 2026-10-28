@@ -60,6 +60,9 @@ const referenceKeys = [
   'renderExpandedRow',
   'onRowClick',
   'variant',
+  'rowTestIdPrefix',
+  'emptyState',
+  'paginationTestId',
 ] as const satisfies ReadonlyArray<keyof TableProps<unknown>>
 
 // Props compared by value, since callers commonly pass a fresh object/array each render.

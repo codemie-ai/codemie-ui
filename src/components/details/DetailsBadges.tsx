@@ -45,7 +45,10 @@ interface DetailsBadgesProps {
   label?: string
   labelIcon?: ReactNode
   labelClassName?: string
-  items: BadgeItem[]
+  // Optional because callers feed this straight from an API payload whose
+  // list field can be absent (GET /pending has no `categories`), and an
+  // undefined `items` used to crash the whole page on `items.slice`.
+  items?: BadgeItem[]
   filled?: boolean
   className?: string
   badgeClassName?: string
@@ -70,8 +73,9 @@ const DetailsBadges = ({
 }: DetailsBadgesProps) => {
   const [isOpen, setIsOpen] = useState(false)
 
-  const displayedItems = maxDisplayed ? items.slice(0, maxDisplayed) : items
-  const remainingItems = maxDisplayed ? items.slice(maxDisplayed) : []
+  const safeItems = items ?? []
+  const displayedItems = maxDisplayed ? safeItems.slice(0, maxDisplayed) : safeItems
+  const remainingItems = maxDisplayed ? safeItems.slice(maxDisplayed) : []
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,

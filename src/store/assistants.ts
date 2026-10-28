@@ -142,9 +142,12 @@ interface AssistantsStoreType {
     id: string,
     categories?: string[],
     subAssistantsSettings?: SubAssistantPublishSettings[],
-    ignoreRecommendations?: boolean
+    ignoreRecommendations?: boolean,
+    forcePublish?: boolean,
+    overrideNotice?: string
   ) => Promise<any>
   unpublishAssistantFromMarketplace: (id: string) => Promise<any>
+  checkMarketplaceGates: (id: string, values: Assistant, categories: string[]) => Promise<any>
   getUserReactions: () => Promise<any[]>
   updateAssistantsWithLikedStatus: () => Promise<any>
   reactToAssistant: (id: string, reaction: string) => Promise<any>
@@ -624,12 +627,16 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     id,
     categories,
     subAssistantsSettings,
-    ignoreRecommendations = false
+    ignoreRecommendations = false,
+    forcePublish = false,
+    overrideNotice = undefined
   ) {
     const body: {
       categories?: string[]
       sub_assistants_settings?: SubAssistantPublishSettings[]
       ignore_recommendations?: boolean
+      force_publish?: boolean
+      override_notice?: string
     } = {}
     if (categories) {
       body.categories = categories
@@ -639,6 +646,10 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     }
     if (ignoreRecommendations) {
       body.ignore_recommendations = true
+    }
+    if (forcePublish) {
+      body.force_publish = true
+      body.override_notice = overrideNotice
     }
     return api
       .post(`v1/assistants/${id}/marketplace/publish`, body, { skipErrorHandling: true })
@@ -654,6 +665,23 @@ export const assistantsStore = proxy<AssistantsStoreType>({
 
   unpublishAssistantFromMarketplace(id) {
     return api.post(`v1/assistants/${id}/marketplace/unpublish`).then((response) => response.json())
+  },
+
+  checkMarketplaceGates(id, values, categories) {
+    const dto = transformAssistantToCreateDTO(values)
+    return api
+      .post(
+        `v1/assistants/${id}/marketplace/publish/gate-check`,
+        { ...dto, categories },
+        { skipErrorHandling: true }
+      )
+      .then((response) => response.json())
+      .catch((errorResponse) => {
+        if (errorResponse.parsedError) {
+          return { error: errorResponse.parsedError }
+        }
+        throw errorResponse
+      })
   },
 
   getUserReactions() {

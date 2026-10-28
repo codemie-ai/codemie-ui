@@ -16,6 +16,7 @@
 import { AssistantType, ToolkitType } from '@/constants/assistants'
 import type { CreatedBy } from '@/types/common'
 import { DynamicFormFieldSchema } from '@/types/dynamicForm'
+import type { MarketplaceStatus } from '@/types/generated/marketplaceManagement'
 
 import { EntityGuardrailAssignment } from './guardrail'
 
@@ -84,6 +85,9 @@ export interface AssistantListResponse {
   categories?: string[]
   is_global?: boolean
   shared?: boolean
+  marketplace_status?: MarketplaceStatus | null
+  marketplace_decision_reason?: string | null
+  is_verified?: boolean
 }
 
 export interface Assistant {
@@ -164,6 +168,11 @@ export interface Assistant {
   enabled_builtin_subagents?: string[]
 
   tool_permissions?: { tool_call_policy?: string; allow_override?: boolean }
+
+  // Marketplace review fields
+  marketplace_status?: MarketplaceStatus | null
+  marketplace_decision_reason?: string | null
+  is_verified?: boolean
 }
 
 export interface AgentCardCapabilities {

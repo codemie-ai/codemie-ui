@@ -39,6 +39,7 @@ const TabsButton = <TabId extends string>({
     type="button"
     aria-selected={isActive}
     key={tab.id}
+    data-testid={tab.testId}
     onClick={() => handleClick(tab.id)}
     className={cn(
       'pt-2 pb-4 px-2 flex gap-2 justify-center [overflow-wrap:anywhere] items-center text-text-primary text-sm no-underline border-b-2 transition hover:no-underline select-none border-transparent hover:border-text-secondary',

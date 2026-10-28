@@ -24,10 +24,12 @@ import { ToolkitType } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
 import IntegrationSelector from '@/pages/assistants/components/AssistantForm/components/Toolkits/IntegrationSelector'
 import ToolkitsViewList from '@/pages/assistants/components/ToolkitsViewList'
+import { userStore } from '@/store'
 import { settingsStore } from '@/store/settings'
 import { MissingIntegrationByCredentialType } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
 import { flattenMissingIntegrations } from '@/utils/assistantValidation'
+import { isMarketplaceManagementEnabled } from '@/utils/featureFlags'
 import { getCredentialType } from '@/utils/settings'
 import { cn } from '@/utils/utils'
 
@@ -60,6 +62,9 @@ const MissingIntegrationsModal: React.FC<MissingIntegrationsModalProps> = ({
 }) => {
   const { isModalVisible, missingByCredentialType, subAssistantsMissing, validationMessage } = state
   const { settings } = useSnapshot(settingsStore)
+  const { user } = useSnapshot(userStore)
+  const canSkipValidation =
+    !isMarketplaceManagementEnabled() || Boolean(user?.isAdmin || user?.isMaintainer)
   const [selectedIntegrations, setSelectedIntegrations] = useState<
     Record<string, Setting | undefined>
   >({})
@@ -103,9 +108,11 @@ const MissingIntegrationsModal: React.FC<MissingIntegrationsModalProps> = ({
       <Button variant={ButtonType.SECONDARY} onClick={onCancel} disabled={isSubmitting}>
         Cancel
       </Button>
-      <Button variant={ButtonType.SECONDARY} onClick={onSkipValidation} disabled={isSubmitting}>
-        Skip Validation & Save
-      </Button>
+      {canSkipValidation && (
+        <Button variant={ButtonType.SECONDARY} onClick={onSkipValidation} disabled={isSubmitting}>
+          Skip Validation & Save
+        </Button>
+      )}
       <Button variant={ButtonType.PRIMARY} onClick={handleValidateAndSave} disabled={isSubmitting}>
         Validate & Save
       </Button>

@@ -24,3 +24,7 @@ export const formatLabel = (key: string): string => {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
+
+/** Converts a snake_case or kebab-case id to Sentence case, e.g. `name_not_banned` → `Name not banned`. */
+export const formatLabelSentenceCase = (key: string): string =>
+  key.replace(/[_-]+/g, ' ').replace(/^./, (c) => c.toUpperCase())

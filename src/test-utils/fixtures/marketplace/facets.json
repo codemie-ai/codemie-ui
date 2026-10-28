@@ -1,0 +1,377 @@
+{
+  "mcps": [
+    {
+      "value": "EPAM Radar",
+      "count": 16
+    },
+    {
+      "value": "EPAM Delivery Central",
+      "count": 8
+    },
+    {
+      "value": "EPAM People Central",
+      "count": 6
+    },
+    {
+      "value": "EPAM OneHub",
+      "count": 5
+    },
+    {
+      "value": "EPAM OneHub Core",
+      "count": 5
+    },
+    {
+      "value": "EPAM Staffing",
+      "count": 5
+    },
+    {
+      "value": "EPAM Data Catalog",
+      "count": 4
+    },
+    {
+      "value": "EPAM Delivery Central Health",
+      "count": 4
+    },
+    {
+      "value": "EPAM Expertise Search",
+      "count": 3
+    },
+    {
+      "value": "EPAM Heroes (Experimental)",
+      "count": 3
+    },
+    {
+      "value": "EPAM Learn",
+      "count": 2
+    },
+    {
+      "value": "EPAM OneHub Expertise-Search",
+      "count": 2
+    },
+    {
+      "value": "EPAM Presales MCP",
+      "count": 2
+    },
+    {
+      "value": "BA Assistant Figma",
+      "count": 1
+    },
+    {
+      "value": "Context7",
+      "count": 1
+    },
+    {
+      "value": "EPAMBAInterviewCoachFigma",
+      "count": 1
+    },
+    {
+      "value": "EPAM Matching ? Relevance score",
+      "count": 1
+    },
+    {
+      "value": "EPAM Query",
+      "count": 1
+    },
+    {
+      "value": "Exa MCP",
+      "count": 1
+    },
+    {
+      "value": "kb-content-crawler",
+      "count": 1
+    },
+    {
+      "value": "MCP RADAR",
+      "count": 1
+    },
+    {
+      "value": "pnl-mcp",
+      "count": 1
+    },
+    {
+      "value": "puppeteer",
+      "count": 1
+    },
+    {
+      "value": "rest-api-skills",
+      "count": 1
+    },
+    {
+      "value": "sql-lite",
+      "count": 1
+    },
+    {
+      "value": "Technology Copilot AI Assistant",
+      "count": 1
+    },
+    {
+      "value": "time",
+      "count": 1
+    },
+    {
+      "value": "UUI MCP",
+      "count": 1
+    },
+    {
+      "value": "well-being-month-mcp",
+      "count": 1
+    }
+  ],
+  "categories": [
+    {
+      "value": "training",
+      "count": 52
+    },
+    {
+      "value": "knowledge-management",
+      "count": 50
+    },
+    {
+      "value": "project-management",
+      "count": 46
+    },
+    {
+      "value": "business-analysis",
+      "count": 37
+    },
+    {
+      "value": "support",
+      "count": 32
+    },
+    {
+      "value": "engineering",
+      "count": 31
+    },
+    {
+      "value": "quality-assurance",
+      "count": 28
+    },
+    {
+      "value": "product-management",
+      "count": 17
+    },
+    {
+      "value": "presales",
+      "count": 16
+    },
+    {
+      "value": "data-analytics",
+      "count": 14
+    },
+    {
+      "value": "architecture",
+      "count": 10
+    },
+    {
+      "value": "compliance",
+      "count": 7
+    },
+    {
+      "value": "customer-experience",
+      "count": 7
+    },
+    {
+      "value": "ui-ux-design",
+      "count": 7
+    },
+    {
+      "value": "ee0ed514-d868-4ff9-8c62-4fc6e94ff7f6",
+      "count": 5
+    },
+    {
+      "value": "5893e76e-555a-4c18-91ff-e4dbd2c660ef",
+      "count": 4
+    },
+    {
+      "value": "1cab6bfa-2ccd-4c87-bb4a-4c5f55b66b64",
+      "count": 1
+    },
+    {
+      "value": "3ea525dd-181a-4d7b-821d-2a0ede6e6085",
+      "count": 1
+    },
+    {
+      "value": "devops",
+      "count": 1
+    },
+    {
+      "value": "migration-modernization",
+      "count": 1
+    }
+  ],
+  "clusters": [
+    {
+      "cluster_id": 0,
+      "size": 16,
+      "canonical_name": "QA Marketplace Assistant jtp_fqnqojyoxdzamzk"
+    },
+    {
+      "cluster_id": 1,
+      "size": 4,
+      "canonical_name": "System Design. Core agentic patterns (Foundations of Agentic AI Systems)"
+    },
+    {
+      "cluster_id": 2,
+      "size": 3,
+      "canonical_name": "Prompt Engineer"
+    },
+    {
+      "cluster_id": 3,
+      "size": 3,
+      "canonical_name": "Example BA Assistant"
+    },
+    {
+      "cluster_id": 4,
+      "size": 3,
+      "canonical_name": "EPAM Personal BA Assistant – Powered by BABOK and EPAM Knowledge"
+    },
+    {
+      "cluster_id": 5,
+      "size": 2,
+      "canonical_name": "CodeMie Contributors Assistant"
+    },
+    {
+      "cluster_id": 6,
+      "size": 2,
+      "canonical_name": "Level 2 - AI Maturity Artefacts Analysis Assistant"
+    },
+    {
+      "cluster_id": 7,
+      "size": 2,
+      "canonical_name": "AI Maturity Assistant"
+    },
+    {
+      "cluster_id": 8,
+      "size": 2,
+      "canonical_name": "AI/Run Global Business Transform bootcamp"
+    },
+    {
+      "cluster_id": 9,
+      "size": 2,
+      "canonical_name": "QA Test Case Assistant"
+    },
+    {
+      "cluster_id": 10,
+      "size": 2,
+      "canonical_name": "Claude Architect Exam Coach"
+    },
+    {
+      "cluster_id": 11,
+      "size": 2,
+      "canonical_name": "EPAM Presentation Builder"
+    },
+    {
+      "cluster_id": 12,
+      "size": 2,
+      "canonical_name": "EPAM Delivery Central Assistant"
+    },
+    {
+      "cluster_id": 13,
+      "size": 2,
+      "canonical_name": "Account Planner"
+    },
+    {
+      "cluster_id": 14,
+      "size": 2,
+      "canonical_name": "Personal Nutritionist Assistant (UA)"
+    },
+    {
+      "cluster_id": 15,
+      "size": 2,
+      "canonical_name": "People Central Insight Assistant"
+    },
+    {
+      "cluster_id": 16,
+      "size": 2,
+      "canonical_name": "My Meeting Notes Summarizer"
+    },
+    {
+      "cluster_id": 17,
+      "size": 2,
+      "canonical_name": "System Design: Database Basic Overview"
+    },
+    {
+      "cluster_id": 18,
+      "size": 2,
+      "canonical_name": "EPAM SAMP Builder (Strategic Account Management Plan)"
+    }
+  ],
+  "reasons": [
+    {
+      "value": "purpose_duplicate",
+      "count": 5
+    },
+    {
+      "value": "invalid",
+      "count": 4
+    },
+    {
+      "value": "duplicate",
+      "count": 2
+    }
+  ],
+  "tiers": [
+    {
+      "value": "WARM",
+      "count": 90
+    },
+    {
+      "value": "COLD",
+      "count": 85
+    },
+    {
+      "value": "DEAD",
+      "count": 22
+    },
+    {
+      "value": "HOT",
+      "count": 22
+    }
+  ],
+  "buckets": [
+    {
+      "value": "VERIFIED",
+      "count": 116
+    },
+    {
+      "value": "COMMUNITY",
+      "count": 79
+    },
+    {
+      "value": "DELETE",
+      "count": 24
+    }
+  ],
+  "rules": [
+    {
+      "value": "description_length",
+      "count": 39,
+      "severity": "CRITICAL"
+    },
+    {
+      "value": "name_length",
+      "count": 10,
+      "severity": "CRITICAL"
+    },
+    {
+      "value": "description_not_equal_name",
+      "count": 3,
+      "severity": "OPTIONAL"
+    },
+    {
+      "value": "system_prompt_length",
+      "count": 3,
+      "severity": "CRITICAL"
+    },
+    {
+      "value": "substance",
+      "count": 2,
+      "severity": "CRITICAL"
+    },
+    {
+      "value": "at_least_one_category",
+      "count": 1,
+      "severity": "CRITICAL"
+    }
+  ]
+}

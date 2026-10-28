@@ -23,6 +23,10 @@ import { makeCleanObject } from '../utils/utils'
 interface UseTableFiltersProps {
   initialSort?: SortState
   initialPagination?: PaginationState
+  /** Controlled sort state. When provided the hook reflects this value instead of its own state. */
+  sort?: SortState
+  /** Returns the first sort direction for a given column key. Defaults to 'asc' when omitted. */
+  firstOrderByKey?: (key: string) => 'asc' | 'desc'
   onSortCallback?: (sort: SortState) => void
   onApplyFiltersCallback?: (filters: Record<string, unknown>) => void
   onPaginationUpdateCallback?: (pagination: PaginationState) => void
@@ -46,40 +50,55 @@ type FiltersState = Record<string, string | null | Array<string>>
 export const useTableFilters = ({
   initialSort = { sortKey: undefined, sortOrder: undefined },
   initialPagination = { page: DEFAULT_PAGE, perPage: DEFAULT_PER_PAGE },
+  sort: controlledSort,
+  firstOrderByKey,
   onSortCallback,
   onApplyFiltersCallback,
   onPaginationUpdateCallback,
   filterKey,
 }: UseTableFiltersProps = {}): UseTableFiltersReturn => {
-  const [filters, setFilters] = useState<FiltersState>(getFilters(filterKey!))
-  const [sort, setSort] = useState<SortState>(initialSort)
+  const [filters, setFilters] = useState<FiltersState>(filterKey ? getFilters(filterKey) : {})
+  const [internalSort, setInternalSort] = useState<SortState>(initialSort)
   const [pagination, setPagination] = useState<PaginationState>(initialPagination)
+
+  const isControlled = controlledSort !== undefined
+  const sort = isControlled ? controlledSort : internalSort
 
   const onSort = useCallback(
     (key: string) => {
-      setSort((prevSort) => {
-        let newSortOrder: 'asc' | 'desc' | undefined = 'asc'
+      const firstOrder = firstOrderByKey ? firstOrderByKey(key) : 'asc'
+      const secondOrder: 'asc' | 'desc' = firstOrder === 'asc' ? 'desc' : 'asc'
+
+      const computeNext = (prevSort: SortState): SortState => {
+        let newSortOrder: 'asc' | 'desc' | undefined = firstOrder
 
         if (prevSort.sortKey === key) {
-          if (prevSort.sortOrder === 'asc') {
-            newSortOrder = 'desc'
-          } else if (prevSort.sortOrder === 'desc') {
+          if (prevSort.sortOrder === firstOrder) {
+            newSortOrder = secondOrder
+          } else if (prevSort.sortOrder === secondOrder) {
             newSortOrder = undefined
           } else {
-            newSortOrder = 'asc'
+            newSortOrder = firstOrder
           }
         }
 
-        const newSortState = { sortKey: newSortOrder ? key : undefined, sortOrder: newSortOrder }
+        return { sortKey: newSortOrder ? key : undefined, sortOrder: newSortOrder }
+      }
 
+      if (isControlled) {
+        const newSortState = computeNext(controlledSort)
         setPagination((prev) => ({ ...prev, page: DEFAULT_PAGE }))
-
         onSortCallback?.(newSortState)
-
-        return newSortState
-      })
+      } else {
+        setInternalSort((prevSort) => {
+          const newSortState = computeNext(prevSort)
+          setPagination((prev) => ({ ...prev, page: DEFAULT_PAGE }))
+          onSortCallback?.(newSortState)
+          return newSortState
+        })
+      }
     },
-    [onSortCallback]
+    [controlledSort, isControlled, onSortCallback, firstOrderByKey]
   )
 
   const applyFilters = useCallback(
@@ -90,7 +109,7 @@ export const useTableFilters = ({
       setPagination((prev) => ({ ...prev, page: DEFAULT_PAGE }))
 
       onApplyFiltersCallback?.(cleanedFilters)
-      setActiveFilters(filterKey!, cleanedFilters)
+      if (filterKey) setActiveFilters(filterKey, cleanedFilters)
     },
     [sort, pagination, onApplyFiltersCallback]
   )

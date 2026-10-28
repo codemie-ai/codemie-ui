@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "All 6 findings from code-review.final are resolved. CR-001 and CR-002: both async handlers now wrapped in try/catch/finally with setIsValidating(false) in finally and toast in catch. CR-003: handleGateSaveAndUnpublish now skips updateAssistant when pendingFormValues.current is null (post-save path), calling only unpublish — both buttons are now functional. CR-004: unblockTransition moved to finally block. CR-005: unpublish error caught separately with specific toast; pendingFormValues.current and gateError cleared in finally. CR-006: pendingFormValues.current cleared at start of handleGateForcePublish. No new issues introduced.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"criterion": "AC#1 — SubmittedForReviewModal shown after PENDING_REVIEW, correct copy, feature-flagged", "status": "pass", "notes": "Carried forward from final round. Unchanged."},
+    {"criterion": "AC#2 — Revalidation warning ConfirmationModal with exact copy, shown for APPROVED/PENDING_REVIEW, feature-flagged", "status": "pass", "notes": "Carried forward. Unchanged."},
+    {"criterion": "AC#3 — Pre-save gate-check, gate-fail shows PublishGateFindingsModal with correct labels, gate-pass re-queues", "status": "pass", "notes": "Carried forward. Unchanged."},
+    {"criterion": "AC#4 — Force-publish admin path: saves with override notice, publishes with force_publish=true", "status": "pass", "notes": "Carried forward. Unchanged."},
+    {"criterion": "AC#5 — Pending Assistants tab: label, badge from pending.count, hardcoded PENDING, removed filters/column", "status": "pass", "notes": "Carried forward. Unchanged."},
+    {"criterion": "AC#6 — isMarketplaceManagementEnabled gates all new PENDING_REVIEW flows", "status": "pass", "notes": "Carried forward. Unchanged."}
+  ],
+  "standards_review": [
+    {"standard": "git-workflow: commit prefix format", "status": "pass", "notes": "Carried forward."},
+    {"standard": "security-patterns: dangerouslySetInnerHTML, XSS sinks", "status": "pass", "notes": "Carried forward. No new sinks."},
+    {"standard": "code-quality: no blocking violations", "status": "pass", "notes": "Carried forward."}
+  ],
+  "findings": [],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "handleRevalidationConfirm wrapped in try/catch/finally; setIsValidating(false) in finally."},
+    {"id": "CR-002", "status": "resolved", "notes": "handleSuccess publishAssistantToMarketplace call wrapped in try/catch/finally; setIsValidating(false) in finally."},
+    {"id": "CR-003", "status": "resolved", "notes": "handleGateSaveAndUnpublish now skips updateAssistant when pendingFormValues.current is null, calling only unpublish. Both buttons functional in post-save path."},
+    {"id": "CR-004", "status": "resolved", "notes": "unblockTransition moved to finally block in handleGateSaveAndUnpublish."},
+    {"id": "CR-005", "status": "resolved", "notes": "Unpublish error caught separately with specific toast. pendingFormValues.current and gateError cleared in finally."},
+    {"id": "CR-006", "status": "resolved", "notes": "pendingFormValues.current cleared at start of handleGateForcePublish before forcePublishOverrideNotice is set."}
+  ]
+}

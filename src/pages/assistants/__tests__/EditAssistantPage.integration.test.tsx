@@ -18,6 +18,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
+import { assistantsStore } from '@/store'
+import { marketplaceManagementStore } from '@/store/marketplaceManagement'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 
 describe('EditAssistantPage - Integration', () => {
@@ -66,6 +68,79 @@ describe('EditAssistantPage - Integration', () => {
     unique_dislikes_count: 0,
     user_abilities: ['read', 'write'],
     ...overrides,
+  })
+
+  describe('Post-save getAssistant refresh', () => {
+    const user = userEvent.setup()
+
+    it('refreshes via assistantsStore.getAssistant (not the admin-only marketplace-management endpoint) after a successful PUT when pre-save status is APPROVED', async () => {
+      const approvedFixture = createAssistantFixture({ marketplace_status: 'APPROVED' })
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/llm/models', [])
+
+      const getAssistantSpy = vi
+        .spyOn(assistantsStore, 'getAssistant')
+        .mockResolvedValue(approvedFixture as any)
+      const getAssistantDetailSpy = vi
+        .spyOn(marketplaceManagementStore, 'getAssistantDetail')
+        .mockResolvedValue(undefined as any)
+      const updateAssistantSpy = vi
+        .spyOn(assistantsStore, 'updateAssistant')
+        .mockResolvedValue({} as any)
+
+      renderPage('/assistants/asst-123/edit')
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Test Assistant')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      // Once for the initial load, once for the post-save refresh.
+      await waitFor(() => {
+        expect(getAssistantSpy).toHaveBeenCalledTimes(2)
+      })
+      expect(getAssistantSpy).toHaveBeenLastCalledWith('asst-123')
+      // The admin/maintainer-only detail endpoint must never be called from
+      // this regular-user-facing page — it 403s for a non-admin owner.
+      expect(getAssistantDetailSpy).not.toHaveBeenCalled()
+
+      getAssistantSpy.mockRestore()
+      getAssistantDetailSpy.mockRestore()
+      updateAssistantSpy.mockRestore()
+    })
+
+    it('calls getAssistant once more after a successful PUT when pre-save status is PENDING_REVIEW to refresh status badge', async () => {
+      const pendingFixture = createAssistantFixture({ marketplace_status: 'PENDING_REVIEW' })
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/llm/models', [])
+
+      const getAssistantSpy = vi
+        .spyOn(assistantsStore, 'getAssistant')
+        .mockResolvedValue(pendingFixture as any)
+      const updateAssistantSpy = vi
+        .spyOn(assistantsStore, 'updateAssistant')
+        .mockResolvedValue({} as any)
+
+      renderPage('/assistants/asst-123/edit')
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Test Assistant')).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => {
+        expect(updateAssistantSpy).toHaveBeenCalled()
+      })
+
+      // initial load + post-save refresh to update the marketplace status badge
+      expect(getAssistantSpy).toHaveBeenCalledTimes(2)
+      expect(getAssistantSpy).toHaveBeenLastCalledWith('asst-123')
+
+      getAssistantSpy.mockRestore()
+      updateAssistantSpy.mockRestore()
+    })
   })
 
   describe('Header Display', () => {

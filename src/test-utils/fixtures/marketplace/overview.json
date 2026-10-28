@@ -1,0 +1,176 @@
+{
+  "total": 219,
+  "audited_total": 219,
+  "took_seconds": 0.28,
+  "buckets": {
+    "VERIFIED": 116,
+    "COMMUNITY": 79,
+    "DELETE": 24
+  },
+  "bucket_usage": {
+    "DELETE": 0.56,
+    "VERIFIED": 80.34,
+    "COMMUNITY": 19.1
+  },
+  "latest_audit_run_id": "47b6ec30-f149-49d8-af81-4a1ecd948d2b",
+  "last_run_at": "2026-08-25T06:18:49.820198+00:00",
+  "has_ever_run": true,
+  "gate_hits": {
+    "critical": 55,
+    "optional": 3,
+    "per_rule": [
+      {
+        "rule": "description_length",
+        "count": 39,
+        "severity": "CRITICAL"
+      },
+      {
+        "rule": "name_length",
+        "count": 10,
+        "severity": "CRITICAL"
+      },
+      {
+        "rule": "system_prompt_length",
+        "count": 3,
+        "severity": "CRITICAL"
+      },
+      {
+        "rule": "description_not_equal_name",
+        "count": 3,
+        "severity": "OPTIONAL"
+      },
+      {
+        "rule": "substance",
+        "count": 2,
+        "severity": "CRITICAL"
+      },
+      {
+        "rule": "at_least_one_category",
+        "count": 1,
+        "severity": "CRITICAL"
+      }
+    ]
+  },
+  "cleanup_reasons": {
+    "invalid": 4,
+    "duplicate": 2,
+    "purpose_duplicate": 5
+  },
+  "verdicts": {
+    "REVIEW": 42,
+    "CANDIDATE_FOR_CLEANUP": 11,
+    "KEEP": 166
+  },
+  "usage_tiers": {
+    "HOT": 22,
+    "DEAD": 22,
+    "WARM": 90,
+    "COLD": 85
+  },
+  "pending": {
+    "count": 0,
+    "waiting_over_7d": 0,
+    "avg_wait_days": 0
+  },
+  "top_clusters": [
+    {
+      "cluster_id": 0,
+      "size": 16,
+      "label": "marketplace assistant",
+      "canonical_id": "a3093a3e-3355-43ac-a291-e97ca0dc8f60",
+      "canonical_name": "QA Marketplace Assistant wnr_qcifmyczyxwoyfm",
+      "canonical_users": 0,
+      "total_users": 0
+    },
+    {
+      "cluster_id": 1,
+      "size": 4,
+      "label": "system agentic",
+      "canonical_id": "f35a4e1a-b279-4171-8451-1d14afba778f",
+      "canonical_name": "System Design. Core agentic patterns (Foundations of Agentic AI Systems)",
+      "canonical_users": 154,
+      "total_users": 467
+    },
+    {
+      "cluster_id": 2,
+      "size": 3,
+      "label": "prompt engineer",
+      "canonical_id": "6c77fd59-f315-4ca1-814c-3886afdc1484",
+      "canonical_name": "Prompt Engineer",
+      "canonical_users": 5720,
+      "total_users": 5764
+    },
+    {
+      "cluster_id": 3,
+      "size": 3,
+      "label": "assistant jira",
+      "canonical_id": "427d684b-506b-45f1-9bc2-68a88dd13709",
+      "canonical_name": "Example BA Assistant",
+      "canonical_users": 654,
+      "total_users": 798
+    },
+    {
+      "cluster_id": 4,
+      "size": 3,
+      "label": "epam coach",
+      "canonical_id": "c84995d2-e9a8-4e15-b9d0-494ef89e55b9",
+      "canonical_name": "EPAM Personal BA Assistant – Powered by BABOK and EPAM Knowledge",
+      "canonical_users": 228,
+      "total_users": 280
+    }
+  ],
+  "top_mcps": [
+    {
+      "value": "EPAM Radar",
+      "count": 16,
+      "total_users": 1880
+    },
+    {
+      "value": "EPAM Delivery Central",
+      "count": 8,
+      "total_users": 340
+    },
+    {
+      "value": "EPAM People Central",
+      "count": 6,
+      "total_users": 194
+    },
+    {
+      "value": "EPAM Staffing",
+      "count": 5,
+      "total_users": 364
+    },
+    {
+      "value": "EPAM OneHub",
+      "count": 5,
+      "total_users": 207
+    }
+  ],
+  "top_categories": [
+    {
+      "value": "training",
+      "count": 52,
+      "total_users": 6675
+    },
+    {
+      "value": "knowledge-management",
+      "count": 50,
+      "total_users": 6891
+    },
+    {
+      "value": "project-management",
+      "count": 46,
+      "total_users": 4439
+    },
+    {
+      "value": "business-analysis",
+      "count": 37,
+      "total_users": 3786
+    },
+    {
+      "value": "support",
+      "count": 32,
+      "total_users": 9821
+    }
+  ]
+}

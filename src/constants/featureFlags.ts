@@ -49,6 +49,8 @@ export const FEATURE_FLAGS = {
   USAGE_ATTRIBUTION: 'features:usageAttribution',
   PROJECT_MODEL_OVERRIDE: 'features:projectModelOverride',
   WORKSPACE_SCRIPT_BRIDGE: 'features:workspaceScriptBridge',
+  MARKETPLACE_MANAGEMENT: 'features:marketplaceManagement',
+  MARKETPLACE_APPROVAL_GATE: 'features:marketplaceApprovalGate',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

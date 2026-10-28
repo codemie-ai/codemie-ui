@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "rationale": "Three critical async-error-handling bugs in EditAssistantPage — two that permanently lock the UI spinner on network failures and one that leaves both action buttons inert in the server-side race-condition gate-error path — plus three major issues around navigation-guard leak, silent partial failure, and stale ref data. All are clear patch targets. Business ACs (5 of 5) and AC-3 label rendering confirmed pass.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "AC#1 — SubmittedForReviewModal shown after PENDING_REVIEW, correct copy, feature-flagged",
+      "status": "pass",
+      "notes": "SubmittedForReviewModal.tsx created with exact spec header/body/button. Both PublishToMarketplaceModal and EditAssistantPage check isMarketplaceManagementEnabled() && PENDING_REVIEW before showing."
+    },
+    {
+      "criterion": "AC#2 — Revalidation warning ConfirmationModal with exact copy, shown for APPROVED/PENDING_REVIEW, feature-flagged",
+      "status": "pass",
+      "notes": "handleSaveClick shows ConfirmationModal with spec-exact text when flag on and status is APPROVED or PENDING_REVIEW. Confirm='Save', Cancel='Cancel'."
+    },
+    {
+      "criterion": "AC#3 — Pre-save gate-check, gate-fail shows PublishGateFindingsModal with correct labels, gate-pass re-queues",
+      "status": "pass",
+      "notes": "sendForReviewLabel prop IS consumed in PublishGateFindingsModal as {sendForReviewLabel ?? 'Save & Unpublish'}. Gate-pass path sets wasMarketplaceAssistant.current and submits form → handleSuccess publishes. Labels 'Save & Unpublish' (APPROVED) and 'Save and remove from Pending' (PENDING_REVIEW) confirmed rendered."
+    },
+    {
+      "criterion": "AC#4 — Force-publish admin path: saves with override notice, publishes with force_publish=true",
+      "status": "pass",
+      "notes": "handleGateForcePublish stores overrideNotice in ref; handleSuccess passes it to publishAssistantToMarketplace with withIgnoredRecommendations=true."
+    },
+    {
+      "criterion": "AC#5 — Pending Assistants tab: label, badge from pending.count, hardcoded PENDING, removed Status+GateResult filters, removed gate_result column",
+      "status": "pass",
+      "notes": "All five sub-requirements evidenced in MarketplaceManagementLayout.tsx, MarketplaceAssistantsPage.tsx, and MarketplaceAssistantsFilters.tsx."
+    },
+    {
+      "criterion": "AC#6 — isMarketplaceManagementEnabled gates all new PENDING_REVIEW flows",
+      "status": "pass",
+      "notes": "handleSaveClick, handleSuccess, and PublishToMarketplaceModal.handlePublishSuccess all guard new flows behind the flag."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "git-workflow: commit prefix format",
+      "status": "pass",
+      "notes": "Squashed commit follows EPMCDME-14999: ... pattern."
+    },
+    {
+      "standard": "security-patterns: dangerouslySetInnerHTML, XSS sinks",
+      "status": "pass",
+      "notes": "QualityValidationSummary renders rec.name/action/reason as text nodes, not HTML. No new dangerous sinks."
+    },
+    {
+      "standard": "code-quality: no blocking violations",
+      "status": "pass",
+      "notes": "No obvious code-quality guide violations in the diff."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "location": "src/pages/assistants/EditAssistantPage.tsx:189-194",
+      "problem": "handleRevalidationConfirm awaits checkMarketplaceGates with no try/catch. In assistants.ts, checkMarketplaceGates re-throws when the error response has no parsedError (raw network failure, timeout, CORS). When it throws, setIsValidating(false) after the await never executes — isValidating stays true and the blocking spinner modal is stuck permanently.",
+      "impact": "Any network error during pre-save gate-check permanently locks the page UI. User cannot dismiss the spinner, save, or navigate away without a full page reload.",
+      "recommendation": "Wrap the checkMarketplaceGates call in try/finally: setIsValidating(false) in the finally block, and add a catch to surface a toast error.",
+      "severity": "critical"
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "location": "src/pages/assistants/EditAssistantPage.tsx:136-164",
+      "problem": "handleSuccess awaits publishAssistantToMarketplace with no try/catch. publishAssistantToMarketplace re-throws on network errors (same pattern). If it throws, none of the setIsValidating(false) branches in the if/else chain execute — spinner stuck permanently. The assistant was already saved at this point.",
+      "impact": "Any network error during post-save marketplace publish permanently locks the UI. The assistant save succeeded but the page is frozen with no recovery path.",
+      "recommendation": "Wrap publishAssistantToMarketplace in try/catch/finally: always call setIsValidating(false) in finally, show a toast in catch.",
+      "severity": "critical"
+    },
+    {
+      "id": "CR-003",
+      "triage": "patch",
+      "location": "src/pages/assistants/EditAssistantPage.tsx:239-247 and 211-213",
+      "problem": "When gate-check passes (handleRevalidationConfirm), form saves, and then publishAssistantToMarketplace returns gate findings (server-side race condition in handleSuccess), the code auto-unpublishes and sets gateError — but pendingFormValues.current was never set in this path (it is only set when gate-check fails before the save). Both 'Save & Unpublish' (handleGateSaveAndUnpublish early-returns at line 213: !pendingFormValues.current) and 'Force-publish' (handleGateForcePublish early-returns at line 240) are completely inert. The assistant is already unpublished and saved; the user sees action buttons that do nothing with no feedback.",
+      "impact": "In the server-side race-condition gate-error path, the user is stuck in a broken modal state. No recovery path is available without a page reload. Force-publish for admins is also silently broken in this path.",
+      "recommendation": "Distinguish the 'save already done' path from the 'pre-save gate failure' path. Options: (a) set a flag indicating the save+unpublish have already occurred, so the modal's primary action becomes 'Dismiss'; (b) in handleGateSaveAndUnpublish and handleGateForcePublish, when pendingFormValues.current is null but the modal is open from handleSuccess, call only unpublishAssistantFromMarketplace / publishAssistantToMarketplace directly (the save is already complete).",
+      "severity": "critical"
+    },
+    {
+      "id": "CR-004",
+      "triage": "patch",
+      "location": "src/pages/assistants/EditAssistantPage.tsx:211-231",
+      "problem": "handleGateSaveAndUnpublish calls formRef.current?.unblockTransition() only in the happy path (before handleBack()). If updateAssistant or unpublishAssistantFromMarketplace throws, the finally block clears isSavingAndUnpublishing but unblockTransition is never called. The navigation guard remains locked and the user cannot leave the edit page.",
+      "impact": "After any error in the save+unpublish flow, the user is trapped on the edit page and cannot navigate away without a full page reload.",
+      "recommendation": "Move formRef.current?.unblockTransition() to the finally block so it is always called regardless of error.",
+      "severity": "major"
+    },
+    {
+      "id": "CR-005",
+      "triage": "patch",
+      "location": "src/pages/assistants/EditAssistantPage.tsx:216-217",
+      "problem": "handleGateSaveAndUnpublish calls updateAssistant then unpublishAssistantFromMarketplace sequentially with no error isolation between them. If updateAssistant succeeds but unpublishAssistantFromMarketplace throws, the assistant is saved with new values but remains published in the marketplace. The finally block only clears isSavingAndUnpublishing; pendingFormValues.current and gateError are not cleared (only done in the try block after both succeed), so the modal stays open giving the false impression of a retry state.",
+      "impact": "Silent partial failure: assistant saved but still live in marketplace. User has no indication that save succeeded but unpublish failed. Retrying re-saves the same data redundantly.",
+      "recommendation": "Catch errors from unpublishAssistantFromMarketplace separately and show a specific toast ('Assistant saved but could not be unpublished — please try unpublishing manually'). Clear pendingFormValues.current and gateError in the finally block so the modal always closes.",
+      "severity": "major"
+    },
+    {
+      "id": "CR-006",
+      "triage": "patch",
+      "location": "src/pages/assistants/EditAssistantPage.tsx:239-247",
+      "problem": "handleGateForcePublish does not clear pendingFormValues.current before submitting. If the server returns a second gate error after force-publish (the race-condition path in handleSuccess, lines 145-150), setGateError re-opens the modal with pendingFormValues.current still holding the pre-force-publish values. If the user then clicks 'Save & Unpublish', handleGateSaveAndUnpublish calls updateAssistant with those stale values, silently overwriting the version that was just force-published.",
+      "impact": "Potential data loss: a second server-side gate error after force-publish causes the next Save & Unpublish to overwrite the assistant with stale form values from before the force-publish.",
+      "recommendation": "Clear pendingFormValues.current at the start of handleGateForcePublish (before setGateError(null) and formRef.current?.submit()).",
+      "severity": "major"
+    }
+  ]
+}

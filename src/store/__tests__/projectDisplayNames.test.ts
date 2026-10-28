@@ -44,7 +44,11 @@ describe('projectDisplayNamesStore', () => {
 
     await projectDisplayNamesStore.ensure('proj-a')
 
-    expect(mockGet).toHaveBeenCalledWith('v1/projects/proj-a')
+    // The lookup is best-effort and opts out of the API client's global
+    // error toast (see projectDisplayNames.ts).
+    expect(mockGet).toHaveBeenCalledWith('v1/projects/proj-a', {
+      skipErrorHandling: true,
+    })
     expect(projectDisplayNamesStore.cache['proj-a']).toBe('Project Alpha')
   })
 

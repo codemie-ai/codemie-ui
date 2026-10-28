@@ -1,0 +1,61 @@
+{
+  "id": "80281494-523e-4c61-9de3-f59ee1ee143f",
+  "name": "EPAM SAMP Builder (Strategic Account Management Plan)",
+  "description": "//Last Updated 19-06-26 - by Alex\n\nThis SAMP with MCP: adds live data pull from Delivery Central, Radar, and Data Catalog. Delivery metrics pre-populated from internal systems; AM confirms rather than enters from scratch. Naming convention protocol enforced — unit identifier confirmed before any MCP call. \n\nSAMP:\n\nBuilds research-driven strategic account plans for EPAM. Upload your Research or Draup reports, CRM data, and internal docs — the agent handles the rest through directed web research, executive profiling, and competitive intelligence. Produces full account plans for existing clients, SDR outreach plans for prospects, or hybrid plans for growing accounts. Outputs include displacement strategies, phased engagement plans with revenue targets, executive profiles with verbatim quotes and EPAM offering matches, and an operational health dashboard.",
+  "categories": [
+    "presales"
+  ],
+  "icon_url": "",
+  "conversation_starters": [
+    "Build a full account plan for [client name] — we have an active relationship",
+    "Build an SDR outreach plan for [client name] — new prospect, no existing relationship",
+    "Update and deepen our existing account plan — I'll upload the current version",
+    "Profile the executive team at [client name] and map EPAM offerings to each persona"
+  ],
+  "submitted_by": "Alex Goumans",
+  "creator": "system",
+  "project": "samp_project",
+  "created_date": "2026-03-26T13:11:31.286680",
+  "updated_date": "2026-06-19T16:59:45.789916",
+  "marketplace_submitted_at": null,
+  "marketplace_status": "APPROVED",
+  "marketplace_version": 0,
+  "is_global": true,
+  "is_verified": true,
+  "marketplace_decided_at": null,
+  "marketplace_decided_by": null,
+  "marketplace_decision_reason": null,
+  "unique_users_count": 24,
+  "unique_likes_count": 3,
+  "unique_dislikes_count": 0,
+  "clone_count": 0,
+  "toolkit_names": [
+    "Research"
+  ],
+  "mcp_server_names": [
+    "EPAM Data Catalog",
+    "EPAM Delivery Central Health",
+    "EPAM Radar",
+    "EPAM Delivery Central"
+  ],
+  "skill_count": 0,
+  "nested_assistant_count": 0,
+  "datasource_count": 0,
+  "prompt_variables": [],
+  "system_prompt_length": 42891,
+  "system_prompt_revisions": 0,
+  "gate_findings": [],
+  "critical_count": 0,
+  "optional_count": 0,
+  "top_similar": {
+    "a_id": "80281494-523e-4c61-9de3-f59ee1ee143f",
+    "b_id": "688386ea-85ea-48af-b9e6-b0d248b51ee5",
+    "b_name": "EPAM SAMP (Asset's version)",
+    "signals": {
+      "cosine": 0.9038086000000001
+    },
+    "combined": 0.9038086000000001,
+    "severity": null,
+    "reason": "es_knn"
+  }
+}

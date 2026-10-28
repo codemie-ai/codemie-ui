@@ -46,7 +46,8 @@ vi.mock('@/components/Tooltip', () => ({
   default: () => <div data-testid="tooltip">Tooltip</div>,
 }))
 
-vi.mock('@/constants/assistants', () => ({
+vi.mock('@/constants/assistants', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/constants/assistants')>()),
   AssistantType: {},
   ASSISTANT_DESCRIPTION_LIMIT: 100,
   ASSISTANT_NAME_LIMIT: 50,
@@ -83,10 +84,14 @@ vi.mock('@/store/favorites', () => ({
   },
 }))
 
+const { mockMarketplaceFlag } = vi.hoisted(() => ({ mockMarketplaceFlag: { enabled: true } }))
+
 vi.mock('@/hooks/useFeatureFlags', () => ({
   useFavoritesEnabled: () => [false],
   usePinnedAssistantsEnabled: () => [false],
   useFeatureFlag: () => [false],
+  useMarketplaceManagementEnabled: () => [mockMarketplaceFlag.enabled, true],
+  useMarketplaceApprovalGateEnabled: () => [false, true],
 }))
 
 describe('AssistantCard', () => {
@@ -102,8 +107,30 @@ describe('AssistantCard', () => {
     icon_url: 'https://example.com/icon.png',
   } as Assistant
 
+  const OWNER_ID = mockAssistant.created_by!.id
+  const ownedFixture: Partial<Assistant> = {
+    created_by: { id: OWNER_ID, name: 'Test User', email: '' },
+  }
+  const nonOwnedFixture: Partial<Assistant> = {
+    created_by: { id: 'other-user', name: 'Other User', email: '' },
+  }
+
+  const renderCard = (overrides: Partial<Assistant> = {}, isAdmin = false) => {
+    const assistant = { ...mockAssistant, ...overrides }
+    const isOwned = assistant.created_by?.id === OWNER_ID
+    render(
+      <AssistantCard
+        assistant={assistant}
+        isOwned={isOwned}
+        isAdmin={isAdmin}
+        onViewAssistant={() => {}}
+      />
+    )
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
+    mockMarketplaceFlag.enabled = true
   })
 
   it('renders assistant card with correct information', () => {
@@ -219,6 +246,126 @@ describe('AssistantCard', () => {
     expect(mockRouterPush).toHaveBeenCalledWith({
       name: 'clone-assistant',
       params: { id: globalAssistant.id },
+    })
+  })
+
+  it('renders verified badge when is_verified', () => {
+    renderCard({ is_verified: true })
+    expect(
+      screen.getByText(/VERIFIED/i, { selector: '[data-testid="assistant-status-badge"]' })
+    ).toBeInTheDocument()
+  })
+
+  it('does not render verified badge when not verified', () => {
+    renderCard({ is_verified: false })
+    expect(
+      screen.queryByText(/VERIFIED/i, { selector: '[data-testid="assistant-status-badge"]' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders pending badge for owned card with pending marketplace_status', () => {
+    renderCard({ ...ownedFixture, marketplace_status: 'PENDING_REVIEW' })
+    expect(
+      screen.getByText(/REVIEW/i, { selector: '[data-testid="assistant-status-badge"]' })
+    ).toBeInTheDocument()
+  })
+
+  it('does not render pending badge for non-owned, non-admin, non-shared card', () => {
+    renderCard({ ...nonOwnedFixture, marketplace_status: 'PENDING_REVIEW' })
+    expect(
+      screen.queryByText(/REVIEW/i, { selector: '[data-testid="assistant-status-badge"]' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders pending badge for shared non-owned card', () => {
+    const assistant = {
+      ...mockAssistant,
+      ...nonOwnedFixture,
+      marketplace_status: 'PENDING_REVIEW' as const,
+    }
+    render(
+      <AssistantCard
+        assistant={assistant}
+        isOwned={false}
+        isAdmin={false}
+        isShared={true}
+        onViewAssistant={() => {}}
+      />
+    )
+    expect(
+      screen.getByText(/REVIEW/i, { selector: '[data-testid="assistant-status-badge"]' })
+    ).toBeInTheDocument()
+  })
+
+  it('does not render rejected badge for non-owned, non-admin card', () => {
+    // Rejected assistants stay out of the marketplace entirely, so the badge
+    // -- and the reason inside it -- stays restricted to the owner or an admin.
+    renderCard({ ...nonOwnedFixture, marketplace_status: 'REJECTED' })
+    expect(
+      screen.queryByText(/REJECTED/i, { selector: '[data-testid="assistant-status-badge"]' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders rejected badge for non-owned card when viewer is admin', () => {
+    renderCard({ ...nonOwnedFixture, marketplace_status: 'REJECTED' }, true)
+    expect(
+      screen.getByText(/REJECTED/i, { selector: '[data-testid="assistant-status-badge"]' })
+    ).toBeInTheDocument()
+  })
+
+  it('does not render the rejection reason as text on the card', () => {
+    renderCard({
+      ...ownedFixture,
+      marketplace_status: 'REJECTED',
+      marketplace_decision_reason: 'Missing required disclosures',
+    })
+    expect(screen.queryByTestId('assistant-rejection-reason')).not.toBeInTheDocument()
+  })
+
+  it('surfaces the rejection reason to an admin viewing a non-owned card', () => {
+    renderCard(
+      {
+        ...nonOwnedFixture,
+        marketplace_status: 'REJECTED',
+        marketplace_decision_reason: 'Missing required disclosures',
+      },
+      true
+    )
+    expect(screen.getByTestId('assistant-status-badge')).toHaveTextContent(
+      'REJECTED: Missing required disclosures'
+    )
+  })
+
+  describe('when marketplace management is disabled', () => {
+    beforeEach(() => {
+      mockMarketplaceFlag.enabled = false
+    })
+
+    it('does not render the verified badge', () => {
+      renderCard({ is_verified: true })
+      expect(
+        screen.queryByText(/VERIFIED|REVIEW|REJECTED/i, {
+          selector: '[data-testid="assistant-status-badge"]',
+        })
+      ).not.toBeInTheDocument()
+    })
+
+    it('does not render the review badge on an owned pending card', () => {
+      renderCard({ ...ownedFixture, marketplace_status: 'PENDING_REVIEW' })
+      expect(
+        screen.queryByText(/VERIFIED|REVIEW|REJECTED/i, {
+          selector: '[data-testid="assistant-status-badge"]',
+        })
+      ).not.toBeInTheDocument()
+    })
+
+    it('does not render the rejected badge for an admin', () => {
+      renderCard({ ...nonOwnedFixture, marketplace_status: 'REJECTED' }, true)
+      expect(
+        screen.queryByText(/VERIFIED|REVIEW|REJECTED/i, {
+          selector: '[data-testid="assistant-status-badge"]',
+        })
+      ).not.toBeInTheDocument()
     })
   })
 

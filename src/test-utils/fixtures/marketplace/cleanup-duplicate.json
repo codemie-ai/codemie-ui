@@ -1,0 +1,57 @@
+{
+  "total": 2,
+  "page": 1,
+  "page_size": 1,
+  "items": [
+    {
+      "id": "906f493f-df6e-4488-bfc8-50f306d93264",
+      "name": "Prompt Engineer",
+      "creator": "system",
+      "categories": [
+        "support"
+      ],
+      "unique_users_count": 0,
+      "unique_likes_count": 0,
+      "usage_tier": "DEAD",
+      "bucket": "DELETE",
+      "bucket_reason": "duplicate",
+      "verdict_kind": "CANDIDATE_FOR_CLEANUP",
+      "cleanup_reason": "duplicate",
+      "canonical_id": "6c77fd59-f315-4ca1-814c-3886afdc1484",
+      "canonical_name": "Prompt Engineer",
+      "canonical_users": 5720,
+      "cluster_size": null,
+      "verdict": {
+        "kind": "CANDIDATE_FOR_CLEANUP",
+        "reason": "duplicate",
+        "detail": "Near-duplicate of Prompt Engineer (5720u vs 0u)",
+        "canonical_id": "6c77fd59-f315-4ca1-814c-3886afdc1484",
+        "canonical_name": "Prompt Engineer",
+        "canonical_users": 5720,
+        "cluster_size": null,
+        "match_score": 0.16,
+        "bucket": "DELETE",
+        "bucket_reason": "duplicate"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "906f493f-df6e-4488-bfc8-50f306d93264",
+        "b_id": "6c77fd59-f315-4ca1-814c-3886afdc1484",
+        "b_name": "Prompt Engineer",
+        "signals": {
+          "name": 1,
+          "clone": 0,
+          "tools": 0,
+          "skills": 0,
+          "categories": 1,
+          "datasources": 0,
+          "mcp_servers": 0
+        },
+        "combined": 0.16,
+        "severity": "CRITICAL",
+        "reason": "exact_name_match"
+      }
+    }
+  ]
+}

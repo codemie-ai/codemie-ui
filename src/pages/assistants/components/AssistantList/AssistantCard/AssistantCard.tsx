@@ -33,8 +33,18 @@ import UnpinAssistantConfirmPopup from '@/components/PinAssistantButton/UnpinAss
 import Tooltip from '@/components/Tooltip'
 import { AssistantType } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
-import { useFavoritesEnabled, usePinnedAssistantsEnabled } from '@/hooks/useFeatureFlags'
+import {
+  useFavoritesEnabled,
+  useMarketplaceApprovalGateEnabled,
+  useMarketplaceManagementEnabled,
+  usePinnedAssistantsEnabled,
+} from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
+import {
+  AssistantStatusBadge,
+  AssistantBadgeStatus,
+  getAssistantBadgeStatus,
+} from '@/pages/assistants/components/AssistantStatusBadge'
 import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
 import { favoritesStore } from '@/store/favorites'
@@ -50,6 +60,7 @@ interface AssistantCardProps {
   navigation?: React.ReactNode
   isShared?: boolean
   isOwned?: boolean
+  isAdmin?: boolean
   description?: string
   name?: string
   onViewAssistant: (assistant: Assistant) => void
@@ -62,6 +73,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   navigation,
   isShared,
   isOwned,
+  isAdmin,
   description,
   name,
   onViewAssistant,
@@ -75,6 +87,21 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   const [showUnpinConfirm, setShowUnpinConfirm] = useState(false)
 
   const isGlobal = assistant.is_global || false
+  const marketplaceDecisionReason = assistant.marketplace_decision_reason ?? null
+
+  const [isMarketplaceManagementEnabled] = useMarketplaceManagementEnabled()
+  const [isApprovalGateEnabled] = useMarketplaceApprovalGateEnabled()
+  const showMarketplaceBadge = isMarketplaceManagementEnabled || isApprovalGateEnabled
+
+  const badgeStatus = useMemo<AssistantBadgeStatus | null>(
+    () =>
+      getAssistantBadgeStatus(showMarketplaceBadge, assistant, {
+        isOwned,
+        isAdmin,
+        isShared,
+      }),
+    [showMarketplaceBadge, assistant, isOwned, isAdmin, isShared]
+  )
 
   const toggleLike = async (event: React.MouseEvent) => {
     event.stopPropagation()
@@ -295,6 +322,14 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
         title={name || assistant.name}
         onClick={() => onViewAssistant(assistant)}
         subtitle={'by ' + createdBy(assistant.created_by)}
+        subtitleAddon={
+          badgeStatus ? (
+            <AssistantStatusBadge
+              status={badgeStatus}
+              reason={marketplaceDecisionReason ?? undefined}
+            />
+          ) : undefined
+        }
         description={description || assistant.description}
         avatar={renderAvatar()}
         actions={renderActions()}

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "confidence": "high",
+  "risk_flags": [],
+  "rationale": "Fix-up diff (a66ca72..88a115e) touches exactly the two files named by CR-001 and CR-002. CR-001: setGateError(null) and the ref clears moved from finally into the success path; only setIsSavingAndUnpublishing(false) remains in finally — the modal now stays open on error exits. CR-002: success===false guard added to handleSkipValidation, consistent with handleSubmit. No new issues introduced. CR-003 (deferred cosmetic race) intentionally not fixed. AC-7 is now fully satisfied.",
+  "business_review": [
+    {"criterion": "AC-1: FF off → no gate modals", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-2: No marketplace status → no modals", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-3: marketplace_status in {DRAFT,PENDING_REVIEW,APPROVED} + FF on → revalidation modal", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-4: Cancel revalidation → no save, panel stays open", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-5: Gate pass → save + toast + close", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-6: Gate fail → PublishGateFindingsModal with correct props", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-7: Primary action → save + unpublish + close", "status": "pass", "notes": "Now fully pass — CR-001 fix ensures modal stays open on error paths; recovery available via Keep editing or retry"},
+    {"criterion": "AC-8: Keep editing → modal closes, no save", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-9: useMissingIntegrationsModal sentinel → onSuccess not called", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-10: PENDING_REVIEW → review-queue banner", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-11: APPROVED → published-context banner", "status": "pass", "notes": "Unchanged from final round"},
+    {"criterion": "AC-12: Status column absent from Review queue table", "status": "pass", "notes": "Unchanged from final round"}
+  ],
+  "standards_review": [
+    {"standard": "commit-format", "status": "pass", "notes": "Fix commit carries EPMCDME-15254 prefix"},
+    {"standard": "security-patterns", "status": "pass", "notes": "No security-relevant changes in fix-up"},
+    {"standard": "code-quality", "status": "pass", "notes": "Pre-commit hook passed (tsc, prettier, eslint, license headers, secrets scan all clean)"}
+  ],
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "setGateError(null) and ref clears moved to success path; finally now only clears isSavingAndUnpublishing"},
+    {"id": "CR-002", "status": "resolved", "notes": "success===false guard added to handleSkipValidation at line 143"},
+    {"id": "CR-003", "status": "unresolved", "notes": "Deferred by user decision — cosmetic race condition, no correctness impact"}
+  ]
+}

@@ -57,6 +57,14 @@ interface SelectProps<TValue extends string | number | null = string | number | 
   filterPlaceholder?: string
   /** The accessible name when there is no visible label. */
   ariaLabel?: string
+  /**
+   * Selector hooks placed on the Dropdown control itself, not on a layout
+   * wrapper around it. The marketplace filter testids used to sit on the
+   * enclosing `<div>`, so the id and the element a spec interacts with were
+   * different nodes (review-e2e-coverage-spec §3).
+   */
+  'data-testid'?: string
+  'data-value'?: string
 }
 
 interface DefaultOptionTemplateProps {
@@ -122,6 +130,8 @@ const Select = forwardRef(
       loading,
       inputRef,
       hint,
+      'data-testid': dataTestId,
+      'data-value': dataValue,
       appendTo,
       filter,
       filterBy,
@@ -160,6 +170,8 @@ const Select = forwardRef(
                 </div>
               )}
               <Dropdown
+                data-testid={dataTestId}
+                data-value={dataValue}
                 showClear={showClear}
                 id={id}
                 ref={ref}

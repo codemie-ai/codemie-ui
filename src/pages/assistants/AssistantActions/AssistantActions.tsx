@@ -24,7 +24,7 @@ import InfoSvg from '@/assets/icons/info.svg?react'
 import PublishSvg from '@/assets/icons/publish.svg?react'
 import UnpublishSvg from '@/assets/icons/unpublish.svg?react'
 import { ButtonType } from '@/constants'
-import { AssistantType } from '@/constants/assistants'
+import { AssistantType, MARKETPLACE_STATUS } from '@/constants/assistants'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { assistantsStore } from '@/store'
@@ -55,7 +55,9 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
   loadAssistant,
 }) => {
   const router = useVueRouter()
-  const [activeModal, setActiveModal] = useState<'delete' | 'unpublish' | null>(null)
+  const [activeModal, setActiveModal] = useState<'delete' | 'unpublish' | 'remove-pending' | null>(
+    null
+  )
   const [isPublishToMarketplaceModalVisible, setIsPublishToMarketplaceModalVisible] =
     useState(false)
 
@@ -133,8 +135,19 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
       id: 'publish',
       label: 'Publish to Marketplace',
       icon: <PublishSvg />,
-      isVisible: canEditAssistant && !assistant.is_global,
+      isVisible:
+        canEditAssistant &&
+        !assistant.is_global &&
+        assistant.marketplace_status !== MARKETPLACE_STATUS.PENDING_REVIEW,
       onClick: () => handlePublish(),
+    },
+    {
+      id: 'remove-pending',
+      label: 'Remove from Marketplace review queue',
+      icon: <UnpublishSvg />,
+      isVisible:
+        canEditAssistant && assistant.marketplace_status === MARKETPLACE_STATUS.PENDING_REVIEW,
+      onClick: () => setActiveModal('remove-pending'),
     },
     {
       id: 'unpublish',
@@ -182,6 +195,22 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
           reloadAssistants?.()
           loadAssistant?.()
         }}
+      />
+
+      <ActionConfirmationModal
+        isOpen={activeModal === 'remove-pending'}
+        className="w-[480px]"
+        confirmText="Remove from Queue"
+        header="Remove from Review Queue?"
+        message="This will remove your assistant from the marketplace review queue. It will still be available in your personal assistants."
+        confirmButtonType={ButtonType.DELETE}
+        successMessage="Assistant has been removed from the review queue successfully!"
+        onConfirm={async () => assistantsStore.unpublishAssistantFromMarketplace(assistant.id)}
+        onSuccess={() => {
+          reloadAssistants?.()
+          loadAssistant?.()
+        }}
+        onCancel={() => setActiveModal(null)}
       />
 
       <ActionConfirmationModal

@@ -17,6 +17,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+import { MARKETPLACE_STATUS } from '@/constants/assistants'
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { selectMultiSelectOptions } from '@/test-utils/component-interactions'
@@ -65,6 +66,124 @@ describe('AssistantsListPage - Integration', () => {
         name: `${namePrefix} ${i + 1}`,
       })
     )
+
+  // The global fetch mock in setupTests.tsx returns user_id: 'test-user-id' for v1/user.
+  const ownedOverrides = { created_by: { id: 'test-user-id', name: 'Test User' } }
+
+  describe('Marketplace Review Status', () => {
+    beforeEach(() => {
+      mockAPI('GET', 'v1/config', [
+        { id: 'features:marketplaceManagement', settings: { enabled: true } },
+        { id: 'features:marketplaceApprovalGate', settings: { enabled: true } },
+      ])
+    })
+
+    it('shows Pending Review on owned card', async () => {
+      mockAPI('GET', 'v1/assistants', {
+        data: [
+          createAssistantFixture({
+            ...ownedOverrides,
+            marketplace_status: MARKETPLACE_STATUS.PENDING_REVIEW,
+          }),
+        ],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/REVIEW/i, { selector: '[data-testid="assistant-status-badge"]' })
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('shows rejection reason on owned rejected card', async () => {
+      mockAPI('GET', 'v1/assistants', {
+        data: [
+          createAssistantFixture({
+            ...ownedOverrides,
+            marketplace_status: MARKETPLACE_STATUS.REJECTED,
+            marketplace_decision_reason: 'Off-topic',
+          }),
+        ],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(screen.getByTestId('assistant-status-badge')).toHaveTextContent(
+          'REJECTED: Off-topic'
+        )
+      })
+    })
+
+    it('does not show review status on non-owned card', async () => {
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture({ marketplace_status: MARKETPLACE_STATUS.PENDING_REVIEW })],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+      })
+
+      expect(
+        screen.queryByText(/REVIEW/i, { selector: '[data-testid="assistant-status-badge"]' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows Verified badge on owned verified card', async () => {
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture({ ...ownedOverrides, is_verified: true })],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/VERIFIED/i, { selector: '[data-testid="assistant-status-badge"]' })
+        ).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Marketplace Review Status — flag disabled', () => {
+    it('shows no status badge on an owned pending, verified card', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants', {
+        data: [
+          createAssistantFixture({
+            ...ownedOverrides,
+            marketplace_status: MARKETPLACE_STATUS.PENDING_REVIEW,
+            is_verified: true,
+          }),
+        ],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Assistant')).toBeInTheDocument()
+      })
+
+      expect(
+        screen.queryByText(/VERIFIED|REVIEW|REJECTED/i, {
+          selector: '[data-testid="assistant-status-badge"]',
+        })
+      ).not.toBeInTheDocument()
+    })
+  })
 
   describe('Initial Page Load', () => {
     it('loads and displays assistants list on PROJECT tab', async () => {

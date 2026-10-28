@@ -14,13 +14,25 @@
 //
 
 import { useRef } from 'react'
+import { useSnapshot } from 'valtio/react'
 
 import DiagramSvg from '@/assets/icons/diagram.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import Tooltip from '@/components/Tooltip'
 import { AssistantType } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
+import {
+  useMarketplaceApprovalGateEnabled,
+  useMarketplaceManagementEnabled,
+} from '@/hooks/useFeatureFlags'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
+import {
+  AssistantBadgeStatus,
+  AssistantStatusBadge,
+  RejectionReason,
+  getAssistantBadgeStatus,
+} from '@/pages/assistants/components/AssistantStatusBadge'
+import { userStore } from '@/store'
 import { Assistant } from '@/types/entity/assistant'
 import { formatCompactCount } from '@/utils/helpers'
 import { createdBy as getCreatedBy } from '@/utils/utils'
@@ -30,10 +42,29 @@ interface AssistantDetailsProfileProps {
 }
 
 const AssistantDetailsProfile = ({ assistant }: AssistantDetailsProfileProps) => {
+  const { user } = useSnapshot(userStore)
   const formattedTotalUses = formatCompactCount(assistant.unique_users_count)
 
   const nameEl = useRef<HTMLParagraphElement>(null)
   const isNameTruncated = useIsTruncated(nameEl)
+
+  const [isMarketplaceManagementEnabled] = useMarketplaceManagementEnabled()
+  const [isApprovalGateEnabled] = useMarketplaceApprovalGateEnabled()
+
+  const isOwned = assistant.created_by?.id === user?.userId
+  // Same visibility rule AssistantCard/getAssistantCardInfo use — the card
+  // showed a REVIEW/REJECTED badge to isOwned || isAdmin || isShared, but
+  // this detail header only checked isOwned, so an admin or a user the
+  // assistant was shared with saw the badge on the card in the grid and then
+  // no badge at all on the same assistant's detail page
+  // (EPMCDME-14234, CR-010).
+  const isAdmin = user?.isAdmin ?? false
+  const isShared = assistant.shared ?? false
+  const badgeStatus: AssistantBadgeStatus | null = getAssistantBadgeStatus(
+    isMarketplaceManagementEnabled || isApprovalGateEnabled,
+    assistant,
+    { isOwned, isAdmin, isShared }
+  )
 
   return (
     <div className="flex gap-4 justify-center min-w-0 max-w-full">
@@ -51,8 +82,9 @@ const AssistantDetailsProfile = ({ assistant }: AssistantDetailsProfileProps) =>
         >
           {assistant.name}
         </h4>
-        <div className="flex gap-2 text-xs text-text-quaternary">
+        <div className="flex items-center gap-2 text-xs text-text-quaternary">
           <p>by {getCreatedBy(assistant.created_by)}</p>
+          {badgeStatus && <AssistantStatusBadge status={badgeStatus} />}
           {assistant.unique_users_count !== undefined && assistant?.is_global && (
             <p className="flex gap-2">
               |
@@ -61,6 +93,9 @@ const AssistantDetailsProfile = ({ assistant }: AssistantDetailsProfileProps) =>
             </p>
           )}
         </div>
+        {badgeStatus === 'rejected' && assistant.marketplace_decision_reason && (
+          <RejectionReason reason={assistant.marketplace_decision_reason} />
+        )}
       </div>
     </div>
   )

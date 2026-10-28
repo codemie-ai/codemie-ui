@@ -1,0 +1,151 @@
+{
+  "decision": "request-changes",
+  "rationale": "Full-branch review of EPMCDME-14234_marketplace-management (181 files vs merge-base b050db2741fd6d602589e3a3d5bb3921ccdac548), split across 6 parallel agents by area (pages, data/store layer, presentational components, assistant workflow + shared-UI blast radius, test suite, security) so no module was sampled or skipped. One finding (CR-001, the bucket=ALL 422) was independently re-verified against the generated OpenAPI enum and the test harness's own reset helper before being confirmed. Confidence: high for CR-001 through CR-006 (each traced to a specific line and cross-checked against a sibling file or the generated types); medium for the remaining findings (plausible failure scenarios, not runtime-reproduced in this pass). Security lens found no XSS/redirect/secret-leakage/injection issues across the whole diff; one informational note only (frontend-only authorization gating, expected for this repo).",
+  "confidence": "high",
+  "risk_flags": ["blocker"],
+  "business_review": [
+    {
+      "note": "CR-005 (dropped Gate-result filter) and CR-002 (bulk approve has no confirmation) are product/UX regressions, not just code defects — worth a product decision on whether Gate-result filtering is still required and whether bulk-approve should match the confirm pattern every other bulk/single action in this branch uses."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "state-management: single source of truth for shared labels/enums",
+      "status": "fail",
+      "notes": "CR-004 — ActiveFiltersStrip re-derives reason/tier labels instead of importing BucketChip/ReasonChip's exported maps, reproducing the exact F-32/F-68 label-drift class this branch's own comments elsewhere say was fixed."
+    },
+    {
+      "standard": "security-patterns: no unsafe HTML sinks, redirects, or secret/config leakage introduced",
+      "status": "pass",
+      "notes": "Dedicated security-lens agent found no dangerouslySetInnerHTML, no open-redirect construction, no postMessage without origin checks, and no secret/token leakage in new scripts or fixtures across the full diff."
+    },
+    {
+      "standard": "code-organization: no dead code left in a feature branch",
+      "status": "fail",
+      "notes": "CR-006 — MarketplacePendingPage.tsx (677 lines) and its filter component are unreferenced by router.tsx after the Pending→Assistants rename."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "blocker",
+      "triage": "patch",
+      "file": "src/store/marketplaceManagement.ts",
+      "line": 455,
+      "problem": "The Cleanup queue's default and reset bucket state is the literal string 'ALL' (lines 332, 720), but the generated OpenAPI type for GET /cleanup's `bucket` param is `'VERIFIED' | 'COMMUNITY' | 'DELETE' | null` (\"send an empty value to clear the filter\"); filterVocabulary.ts documents that an unrecognised bucket value is a 422, not a 200. loadCleanup() does `params.append('bucket', bucket ?? '')` with no translation of 'ALL' to ''.",
+      "impact": "An admin opening the Cleanup queue fresh, or following any of the six Overview drill-down links that build `?bucket=ALL&...`, sends `GET /cleanup?bucket=ALL...`. The backend 422s and the queue's most common entry point shows a validation-error banner instead of data.",
+      "recommendation": "Normalize 'ALL' → '' once, either where loadCleanup() builds params (`bucket === 'ALL' ? '' : bucket`) or centrally alongside the existing 'ALL'/''-aliasing already handled on the read side in useMarketplaceFilters. Add a test that resets the store to its real production default ('ALL', not '') before asserting on the request params — the current test's resetStore() manually sets bucket='' and would not have caught this.",
+      "sources": ["data-layer-review", "independently-reverified"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "fixed",
+      "file": "src/pages/settings/administration/marketplaceManagement/components/MarketplacePendingBulkActions.tsx",
+      "line": 90,
+      "problem": "handleApproveSelected fires directly from the button's onClick with no ConfirmationModal/Popup step, while single approve, reject (single and bulk), and withdraw all require an explicit confirm or a typed reason.",
+      "impact": "An admin selects many pending assistants for some other reason (e.g. to check details), misclicks 'Approve selected' — positioned exactly where selecting rows reveals the bulk action bar — and every selected assistant publishes to the public marketplace instantly with no undo path exposed in this component.",
+      "recommendation": "Fixed: wrapped the approve action in the same ConfirmationModal pattern used by withdraw/reject in this file and in AssistantDetailsDrawer (testids pending-bulk-approve-confirm/-cancel). Updated the existing unit tests and the e2e bulk-approve spec to click through the confirm step, and added three new unit tests asserting the API call is gated on confirmation (does not fire on the first click, fires after confirm, does not fire after cancel).",
+      "sources": ["presentational-components-review", "fixed-2026-09-30"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "fixed",
+      "file": "src/pages/settings/administration/marketplaceManagement/assistantActions.ts",
+      "line": 21,
+      "problem": "getAssistantActions() only branches on APPROVED / REJECTED / PENDING_REVIEW; the generated MarketplaceStatus enum's other two members, DRAFT and WITHDRAWN, fall through to the final `return []`.",
+      "impact": "An admin withdraws a marketplace assistant, then wants to republish it. MarketplaceAssistantsPage's actions column returns null (no menu at all) when getAssistantActions() is empty, leaving no UI path back into the marketplace for a withdrawn assistant.",
+      "recommendation": "Fixed: WITHDRAWN now returns ['force-publish'], the same way back in REJECTED already has (same force-publish endpoint, same admin flow). DRAFT is left returning [] with an explanatory comment — it has never been submitted for review, and this vocabulary (publish/force-publish/reject/withdraw) has no 'submit' action, so an empty action set is the correct state for it, not a bug. Investigated but did not change toAssistantStatusBadgeStatus's 'pending' fallback: its only consumer (MarketplaceAssistantsPage's withdrawLabel) is invoked only for id==='withdraw', which WITHDRAWN rows no longer produce after this fix, so the fallback does not reach a real render path today.",
+      "sources": ["data-layer-review", "fixed-2026-09-30"]
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "fixed",
+      "file": "src/pages/settings/administration/marketplaceManagement/components/ActiveFiltersStrip.tsx",
+      "line": 47,
+      "problem": "humaniseValue() does a generic snake_case→Sentence-case transform instead of using the canonical reasonLabel (ReasonChip.tsx) or a tier label map. reasonLabel('semantic_clone') is 'Near-identical copy'; humaniseValue produces 'Semantic clone'. For tier, humaniseValue only uppercases the first character, so an all-caps API value like 'HOT' passes through unchanged, while TierChip renders the same value as 'Hot'.",
+      "impact": "An admin follows an Overview drill-down link with reason=semantic_clone; the active-filter chip reads 'Reason: Semantic clone' while the table rows it filters to are all labelled 'Near-identical copy' on the same screen — the same label-drift class of bug (F-32/F-68) this branch's own comments in ReasonChip.tsx and MarketplaceCleanupFilters.tsx explicitly say was fixed elsewhere.",
+      "recommendation": "Fixed: removed the private humaniseValue and imported reasonLabel from ReasonChip.tsx directly. Exported a new tierChipLabel helper (plus the underlying tierLabel map) from TierChip.tsx, which previously had no exported label map at all, and used it here instead. Added a dedicated test file (ActiveFiltersStrip.test.tsx, none existed before) pinning both chips to the canonical label rather than a plausible-looking re-derivation.",
+      "sources": ["presentational-components-review", "fixed-2026-09-30"]
+    },
+    {
+      "id": "CR-005",
+      "severity": "major",
+      "triage": "wontfix",
+      "file": "src/pages/settings/administration/marketplaceManagement/components/MarketplaceAssistantsFilters.tsx",
+      "line": 1,
+      "problem": "The live MarketplaceAssistantsFilters (the replacement for MarketplacePendingFilters after the Pending→Assistants rename) has no Gate-result select, though AssistantsFilters still carries a gateResult field and INITIAL_FILTERS_FOR_CLEAR referenced it with no control ever reading or writing it.",
+      "impact": "An admin who could filter the old Pending queue by 'has a critical gate failure' has no way to do that in the review queue that replaced it — a capability silently lost across a rename. Dead code masked that the loss happened.",
+      "recommendation": "Escalated to the user: confirmed as an accepted, intentional simplification rather than a capability to restore. Removed the dead gateResult field/plumbing entirely (AssistantsFilters type, hydrate/serialize, INITIAL_FILTERS_FOR_CLEAR, the isPendingGateResult import, and a stale comment) instead of leaving an inert field that implies the filter still works.",
+      "sources": ["pages-review", "user-decision-2026-09-30"]
+    },
+    {
+      "id": "CR-006",
+      "severity": "major",
+      "triage": "fixed",
+      "file": "src/pages/settings/administration/MarketplacePendingPage.tsx",
+      "line": 1,
+      "problem": "MarketplacePendingPage.tsx (677 lines, near-duplicate of MarketplaceAssistantsPage) and its sole consumer MarketplacePendingFilters.tsx are never wired into router.tsx after the Pending→Assistants rename — confirmed via `grep -rn \"MarketplacePendingPage\" src`, which only matches the file's own declaration/export.",
+      "impact": "A future maintainer may edit 'the Pending page' believing it's live, burning time on code nothing reaches. It also inflates the bundle/lint/test surface for no product value, and (per CR-005) hides that a real filter capability was lost, since the 'correct', still-working version of that filter is sitting right there looking merely unused rather than a signal of a regression.",
+      "recommendation": "Fixed: deleted MarketplacePendingPage.tsx, MarketplacePendingFilters.tsx, usePendingFilters.ts, and their orphaned tests. Reworked useAssistantsFilters.ts to define its own AssistantsFilters type (without the dropped gateResult field, per CR-005) instead of importing PendingFilters/INITIAL_FILTERS from the deleted filter component. Removed the two MarketplacePendingPage-only test cases from MarketplaceQueuePages.test.tsx and its now-unused import.",
+      "sources": ["pages-review", "fixed-2026-09-30"]
+    },
+    {
+      "id": "CR-007",
+      "severity": "minor",
+      "triage": "fixed",
+      "file": "src/pages/settings/administration/marketplaceManagement/components/SeverityChip.tsx",
+      "line": 48,
+      "problem": "`severity?.toLowerCase()` guards the lookup key on line 48, but the `??` fallback on line 50 calls `severity.replace(...)` directly on the unguarded value, so a falsy severity throws TypeError instead of degrading gracefully. finding.severity is backend-sourced and not runtime-validated — confirmed reachable: at least one generated finding shape types severity as `Severity | null`.",
+      "impact": "A gate/audit finding arrives without a severity field; rendering it in EntityReviewPane throws and takes down the entire Assistant details drawer instead of showing one degraded chip.",
+      "recommendation": "Fixed: guarded both the label fallback and the style-map lookup, falling back to 'Unknown' rather than throwing. Widened the `severity` prop type to `string | null | undefined` to match reality instead of a required `string` that hid the gap. Added a dedicated test file (none existed before) that reproduces the exact crash pre-fix (confirmed via git stash) and asserts the degraded render post-fix.",
+      "sources": ["presentational-components-review", "fixed-2026-09-30"]
+    },
+    {
+      "id": "CR-008",
+      "severity": "minor",
+      "triage": "no_change_needed",
+      "file": "src/pages/assistants/components/MissingIntegrationsModal/MissingIntegrationsModal.tsx",
+      "line": 106,
+      "problem": "The previously-unconditional 'Skip Validation & Save' button is now wrapped in `{canSkipValidation && (...)}` where canSkipValidation = Boolean(user?.isAdmin), with no marketplace-specific condition. This modal is the one missing-integrations flow for ALL assistant creation/editing (grep confirms AssistantForm is its only consumer), not just marketplace ones.",
+      "impact": "A non-admin editing any ordinary (non-marketplace) assistant that references a missing integration loses the 'Skip Validation & Save' option entirely, with no way to save until they add the integration.",
+      "recommendation": "Not a bug: the commit that added this restriction is titled \"EPMCDME-14999 (AC#4): Gate 'Skip Validation & Save' to admin users only in MissingIntegrationsModal\" — an explicit ticket acceptance criterion, not an accidental scope leak. Confirmed with the user (who has ticket context this review does not) to leave as-is rather than scope it to marketplace saves only.",
+      "sources": ["assistant-workflow-review", "closed-not-a-bug-2026-09-30"]
+    },
+    {
+      "id": "CR-009",
+      "severity": "minor",
+      "triage": "fixed",
+      "file": "src/pages/chat/components/ChatConfiguration/ChatConfigAssistants/ChatConfigAssistantForm.tsx",
+      "line": 1,
+      "problem": "ChatConfigAssistantForm renders the same PublishGateFindingsModal as EditAssistantPage but never passes onForcePublish. canForcePublish in the modal is `Boolean(onForcePublish) && Boolean(user?.isAdmin || user?.isMaintainer)`, so with onForcePublish undefined the button can never render regardless of role.",
+      "impact": "An admin/maintainer editing a published marketplace assistant from the chat-config sidebar hits a gate failure on save and has no way to force-publish, though the identical scenario via the full Edit Assistant page does offer it.",
+      "recommendation": "Fixed: no ticket-AC evidence of deliberate scoping was found here (unlike CR-008), so treated as the oversight the review described. Added handleGateForcePublish (saves via updateAssistant, then calls publishAssistantToMarketplace with force_publish=true and the override notice) and wired onForcePublish/isForcing into the modal. Added two tests: an admin/maintainer path exercising the full save-then-force-publish call sequence, and a negative test confirming the button stays hidden for a non-admin, non-maintainer user.",
+      "sources": ["assistant-workflow-review", "fixed-2026-09-30"]
+    },
+    {
+      "id": "CR-010",
+      "severity": "minor",
+      "triage": "fixed",
+      "file": "src/pages/assistants/components/AssistantDetails/components/AssistantDetailsProfile.tsx",
+      "line": 46,
+      "problem": "AssistantCard shows the review/rejected badge when isOwned || isAdmin || isShared. AssistantDetailsProfile only computes a badge when isOwned (`if (!isOwned || !assistant.marketplace_status) return null`), with no isAdmin/isShared allowance.",
+      "impact": "An admin (or a user the assistant is shared with) sees a REVIEW/REJECTED badge on an assistant's card in the grid, then opens its detail page and sees no badge at all for the same assistant — an inconsistency visible to exactly the persona (admins reviewing submissions) this feature targets. Under-shows rather than over-shows, so not a security issue.",
+      "recommendation": "Fixed: aligned the visibility rule with AssistantCard/getAssistantCardInfo exactly — review badge to isOwned || isAdmin || isShared, rejected badge to isOwned || isAdmin only (rejected stays out of the marketplace, so sharing doesn't extend to it, matching the card's own rule). isAdmin/isShared are derived locally from the same userStore snapshot and assistant.shared field the card's own helper reads, no new props needed. Added a dedicated test file (none existed before) covering all six visibility combinations.",
+      "sources": ["assistant-workflow-review", "fixed-2026-09-30"]
+    },
+    {
+      "id": "CR-011",
+      "severity": "minor",
+      "triage": "fixed",
+      "file": "src/store/__tests__/marketplaceManagement.test.ts",
+      "line": 501,
+      "problem": "Unlike approveBulk/rejectBulk, which have dedicated partial-failure tests (plus a component-level partial-failure test for the bulk-actions UI), the only withdrawBulk test exercises the all-success path (`mockApiPost.mockResolvedValueOnce({ ok: true })`). No test covers a 207/multi-status partial failure or an outright rejection of the single POST to bulk-unpublish. The existing test's mock was also broken independent of coverage — it stubbed `{ ok: true }` with no `.json()`, so it threw `response.json is not a function` on every run.",
+      "impact": "If the bulk-unpublish endpoint reports a partial failure, or 500s outright, nothing verifies that the store doesn't blindly clear cleanup.selected and report success for ids that weren't actually withdrawn — the exact bug class the approve/reject partial-failure tests exist to catch, untested for withdraw specifically.",
+      "recommendation": "Fixed: repaired the broken mock, added a partial-failure test and an outright-rejection test. The new partial-failure test caught a real bug it was written to guard against — withdrawBulk cleared the *entire* selection on `response.ok` regardless of the response body's `failed` list, so a partially-failed bulk withdraw silently dropped the failed ids from the admin's selection. Fixed alongside the test: selected now retains only the ids the response reports as failed.",
+      "sources": ["test-suite-review", "fixed-2026-09-30"]
+    }
+  ]
+}

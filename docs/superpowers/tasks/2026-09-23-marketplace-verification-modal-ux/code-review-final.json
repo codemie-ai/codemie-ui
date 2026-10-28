@@ -1,0 +1,59 @@
+{
+  "decision": "request-changes",
+  "rationale": "Three major findings survive triage. (a) In the EditAssistantPage live-edit PENDING_REVIEW flow, the primary button now says 'Save and remove from Pending' but the modal's generic description still talks about 'save and unpublish' — a copy contradiction the removed descriptionText override used to prevent. (b) The new status banner uses role=\"status\", which sets up an implicit live region on a static element rendered once on mount; screen readers that only announce live-region mutations after mount will silently skip it. (c) The banner still renders while an admin is filling in the force-publish override notice, telling them to 'fix the checks below' at the exact moment they are explicitly bypassing them. Confidence: low — no spec/acceptance artifact exists for this sdlc-light run (no-spec round). Blind and edge-case lenses ran; acceptance skipped as no-spec. 1 dismissed suggestion (type-annotation tightening) and 2 deferred nice-to-haves (case-insensitive test, host-integration test) not emitted; noted here for the record.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "git-workflow: ticket-prefixed commit subjects",
+      "status": "pass",
+      "notes": "Both commits carry the EPMCDME-14999 prefix."
+    },
+    {
+      "standard": "code-quality: no nested ternaries (project eslint config)",
+      "status": "pass",
+      "notes": "Nested ternary caught in pre-commit was refactored to if/else before commit."
+    },
+    {
+      "standard": "security-patterns: no unsafe HTML sinks introduced",
+      "status": "pass",
+      "notes": "Banner renders a static string literal via JSX text node; no dangerouslySetInnerHTML."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/EditAssistantPage.tsx",
+      "line": 378,
+      "problem": "The PENDING_REVIEW descriptionText override was removed alongside the headerText override, but sendForReviewLabel still varies ('Save and remove from Pending' vs. 'Save & Unpublish'). In PublishGateFindingsModal the isLiveEditScenario description fallback talks about 'save and unpublish to continue editing the saved version outside the marketplace', which now contradicts the primary button label when marketplace_status === 'PENDING_REVIEW'.",
+      "impact": "Authors editing a pending-review assistant see a Save-and-remove-from-Pending button next to copy telling them the action will 'save and unpublish' — inconsistent UX that regressed from the previous behaviour where the descriptionText override kept them aligned.",
+      "recommendation": "Either (a) restore descriptionText in EditAssistantPage for the PENDING_REVIEW case (parallel to the sendForReviewLabel branch), or (b) push the description branching into PublishGateFindingsModal itself so isLiveEditScenario picks a PENDING_REVIEW-aware fallback when marketplaceStatus === 'PENDING_REVIEW'. Option (b) keeps both call sites symmetric with the new banner-driven pattern.",
+      "sources": ["blind", "edge-case"]
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/AssistantActions/components/PublishGateFindingsModal.tsx",
+      "line": 165,
+      "problem": "The status banner uses role=\"status\", which creates an implicit aria-live='polite' region. The element is rendered once when the modal mounts and its text never mutates, so live-region announcements that fire on subsequent updates are unreliable — many screen readers skip content that is present in the region at mount time.",
+      "impact": "The banner exists precisely to explain why the user is seeing the modal for APPROVED / PENDING_REVIEW assistants. Screen-reader users may not hear that explanation at all, which was the whole reason for adding the banner.",
+      "recommendation": "Use role=\"note\" for a static informational banner (announced via normal reading order), or drop the role entirely and let the visual text serve. If a live announcement is genuinely wanted, use role=\"alert\" (assertive) or add aria-live=\"polite\" aria-atomic=\"true\" explicitly and confirm the modal delays announcement until the region is in the DOM.",
+      "sources": ["blind", "edge-case"]
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/AssistantActions/components/PublishGateFindingsModal.tsx",
+      "line": 163,
+      "problem": "The banner is rendered unconditionally whenever statusBannerText is set, including while an admin is mid-flow inside the Force-Publish reason input (canForcePublish && showForceReason). Its copy is 'Fix the checks below to keep it published/in the queue.' — the opposite of what the admin is doing (bypassing those checks).",
+      "impact": "Contradictory instructions during a privileged bypass flow may cause admins to abandon a legitimate Force-Publish out of uncertainty, or perform it despite the copy — either way the UX is at odds with the action.",
+      "recommendation": "Suppress the banner when showForceReason is true: change the render guard to `{statusBannerText && !showForceReason && (...)}`.",
+      "sources": ["edge-case"]
+    }
+  ]
+}

@@ -13,17 +13,18 @@
 // limitations under the License.
 //
 
-import { createBrowserRouter, Outlet, redirect, RouteObject } from 'react-router'
+import { createBrowserRouter, Navigate, Outlet, redirect, RouteObject } from 'react-router'
 
 import SignInPage from '@/authentication/local/SignInPage'
 import SignUpPage from '@/authentication/local/SignUpPage'
-import { AssistantTab } from '@/constants'
+import { AssistantTab, SettingsTab } from '@/constants'
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import {
   ANALYTICS,
   ANALYTICS_EDIT_DASHBOARD,
   ANALYTICS_NEW_DASHBOARD,
   CLONE_DATA_SOURCE,
+  MARKETPLACE_MANAGEMENT_PATH,
   VIEW_WORKFLOW,
   WOKRFLOW_EXECUTIONS,
 } from '@/constants/routes'
@@ -74,6 +75,11 @@ import CostCenterDetailsPage from '@/pages/settings/administration/CostCenterDet
 import CostCentersManagementPage from '@/pages/settings/administration/CostCentersManagementPage'
 import CustomerConfigurationPage from '@/pages/settings/administration/CustomerConfigurationPage'
 import GlobalModelsManagementPage from '@/pages/settings/administration/GlobalModelsManagementPage'
+import MarketplaceAssistantsPage from '@/pages/settings/administration/MarketplaceAssistantsPage'
+import MarketplaceCleanupPage from '@/pages/settings/administration/MarketplaceCleanupPage'
+import MarketplaceManagementLayout from '@/pages/settings/administration/marketplaceManagement/MarketplaceManagementLayout'
+import MarketplaceSettingsTab from '@/pages/settings/administration/marketplaceManagement/MarketplaceSettingsTab'
+import MarketplaceOverviewPage from '@/pages/settings/administration/MarketplaceOverviewPage'
 import MCPManagementPage from '@/pages/settings/administration/MCPManagementPage'
 import ProjectDetailsPage from '@/pages/settings/administration/ProjectDetailsPage'
 import ProjectsManagementPage from '@/pages/settings/administration/ProjectsManagementPage'
@@ -605,6 +611,46 @@ const settingsRoutes: RouteObject[] = [
         <UsersManagementPage />
       </FeatureGuard>
     ),
+  },
+  {
+    // Single layout route: SettingsLayout + the tab bar are rendered once
+    // here, so the chrome cannot drift between the three tabs.
+    path: MARKETPLACE_MANAGEMENT_PATH,
+    // Gated at the route as well as in the settings sidebar, so a direct URL
+    // cannot reach the pages while the flag is off.
+    element: (
+      <FeatureGuard featureFlags={FEATURE_FLAGS.MARKETPLACE_MANAGEMENT}>
+        <MarketplaceManagementLayout />
+      </FeatureGuard>
+    ),
+    children: [
+      {
+        id: SettingsTab.MARKETPLACE_MANAGEMENT_OVERVIEW,
+        index: true,
+        Component: MarketplaceOverviewPage,
+      },
+      {
+        id: SettingsTab.MARKETPLACE_MANAGEMENT_ASSISTANTS,
+        path: 'marketplace-assistants',
+        Component: MarketplaceAssistantsPage,
+      },
+      {
+        // Redirect old /pending path to the replacement tab so that bookmarks
+        // and in-product links from other services continue to work.
+        path: 'pending',
+        element: <Navigate to="../marketplace-assistants" replace />,
+      },
+      {
+        id: SettingsTab.MARKETPLACE_MANAGEMENT_CLEANUP,
+        path: 'cleanup',
+        Component: MarketplaceCleanupPage,
+      },
+      {
+        id: 'marketplace-management-settings',
+        path: 'settings',
+        Component: MarketplaceSettingsTab,
+      },
+    ],
   },
   {
     path: '/settings/administration/mcps',

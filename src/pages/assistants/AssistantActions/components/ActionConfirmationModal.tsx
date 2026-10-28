@@ -26,6 +26,7 @@ interface ActionConfirmationModalProps {
   confirmText?: string
   confirmButtonType?: ButtonType
   confirmButtonIcon?: React.ReactNode
+  className?: string
   onConfirm: () => Promise<void>
   onCancel: () => void
   onSuccess?: () => Promise<void> | void
@@ -40,6 +41,7 @@ const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = ({
   confirmText,
   confirmButtonType,
   confirmButtonIcon,
+  className,
   onConfirm,
   onCancel,
   onSuccess,
@@ -70,6 +72,7 @@ const ActionConfirmationModal: React.FC<ActionConfirmationModalProps> = ({
       onConfirm={handleConfirm}
       onCancel={onCancel}
       confirmButtonIcon={confirmButtonIcon}
+      className={className}
     />
   )
 }

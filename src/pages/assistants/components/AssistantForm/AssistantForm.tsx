@@ -14,7 +14,6 @@
 //
 
 import { yupResolver } from '@hookform/resolvers/yup'
-import isString from 'lodash/isString'
 import uniq from 'lodash/uniq'
 import {
   createContext,
@@ -59,7 +58,6 @@ import {
   AssistantAIGeneratedFields,
   AssistantAIRefineFields,
   AssistantAIFieldMarkers,
-  AssistantCategory,
   AssistantToolkit,
   AssistantContext,
   ContextType,
@@ -67,6 +65,7 @@ import {
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { Provider } from '@/types/entity/provider'
+import { getCategoryIds } from '@/utils/assistants'
 import { isFeatureEnabled } from '@/utils/featureFlags'
 import { SETTING_TYPE_USER } from '@/utils/settings'
 import toaster from '@/utils/toaster'
@@ -207,8 +206,15 @@ export type AssistantFormSchema = Yup.InferType<typeof formSchema>
 
 export interface AssistantFormRef {
   submit: () => void
+  getValues: () => AssistantFormSchema
   addAIGeneratedFields: (values: AssistantAIGeneratedFields) => void
   handleRefineWithAI: () => void
+  unblockTransition: () => void
+  /** Open the missing-integrations modal for a validation result obtained outside the form. */
+  showMissingIntegrations: (
+    validation: NonNullable<SubmitResponse['validation']>,
+    values: AssistantFormSchema
+  ) => void
 }
 
 interface AssistantFormProps {
@@ -271,17 +277,6 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
         .replace(/(?:^-)|(?:-$)/g, '')
-
-    const getCategoryIds = (categories?: AssistantCategory[]): string[] => {
-      if (!categories || !Array.isArray(categories)) return []
-
-      return categories
-        .map((cat) => {
-          if (isString(cat)) return cat
-          return cat?.id
-        })
-        .filter((id): id is string => id != null)
-    }
 
     const { control, formState, watch, handleSubmit, setValue, getValues, trigger } =
       useForm<AssistantFormSchema>({
@@ -386,6 +381,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       handleSaveWithValidation,
       handleSkipValidation,
       handleCancelValidationModal,
+      openMissingIntegrations,
     } = useMissingIntegrationsModal({
       onSubmit,
       onSuccess,
@@ -591,8 +587,11 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
 
     useImperativeHandle(ref, () => ({
       submit: handleFormSubmit,
+      getValues: prepareFormData,
       addAIGeneratedFields,
       handleRefineWithAI,
+      unblockTransition,
+      showMissingIntegrations: openMissingIntegrations,
     }))
 
     useEffect(() => {

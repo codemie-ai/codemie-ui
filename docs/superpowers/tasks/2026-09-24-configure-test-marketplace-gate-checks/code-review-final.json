@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.final",
+  "decision": "request-changes",
+  "confidence": "medium",
+  "risk_flags": [],
+  "rationale": "All three review lenses converged on one major finding: the finally block in handleGateSaveAndUnpublish unconditionally clears gateError and pending refs, which closes the PublishGateFindingsModal on save-error exit paths — leaving the user unable to retry. Two minor findings were also raised: handleSkipValidation in useMissingIntegrationsModal lacks the success===false guard added to handleSubmit, and the status toast message snapshots the store state after async calls that may mutate it. Acceptance criteria 1–12 all pass on the happy path; the major finding is in the error-recovery path. The 174-file diff is full branch history from main; all 5 task-relevant files were fully reviewed.",
+  "business_review": [
+    {"criterion": "AC-1: FF off → no gate modals", "status": "pass", "notes": "isMarketplaceManagementEnabled() guard in handleSubmit"},
+    {"criterion": "AC-2: No marketplace status → no modals", "status": "pass", "notes": "status && MARKETPLACE_STATUSES.has(status) guard covers null/undefined"},
+    {"criterion": "AC-3: marketplace_status in {DRAFT,PENDING_REVIEW,APPROVED} + FF on → revalidation modal", "status": "pass", "notes": "setRevalidationVisible(true) fires; ConfirmationModal renders correctly"},
+    {"criterion": "AC-4: Cancel revalidation → no save, panel stays open", "status": "pass", "notes": "handleRevalidationCancel clears refs without calling updateAssistant or closeConfigForm"},
+    {"criterion": "AC-5: Gate pass → save + toast + close", "status": "pass", "notes": "handleRevalidationConfirm → updateAssistant → handleSuccess → toaster.info + closeConfigForm"},
+    {"criterion": "AC-6: Gate fail → PublishGateFindingsModal with correct props", "status": "pass", "notes": "All required props wired: marketplaceStatus, error, descriptionText, sendForReviewLabel, statusBannerOverride"},
+    {"criterion": "AC-7: Primary action → save + unpublish + close", "status": "partial", "notes": "Happy path correct; on save error the finally block closes modal and wipes refs — see CR-001"},
+    {"criterion": "AC-8: Keep editing → modal closes, no save", "status": "pass", "notes": "handleGateKeepEditing clears gateError; panel stays open"},
+    {"criterion": "AC-9: useMissingIntegrationsModal sentinel → onSuccess not called", "status": "pass", "notes": "success===false guard at line 75-77 returns early before onSuccess()"},
+    {"criterion": "AC-10: PENDING_REVIEW → review-queue banner", "status": "pass", "notes": "gateBannerText returns correct text; wired via statusBannerOverride in both edit paths"},
+    {"criterion": "AC-11: APPROVED → published-context banner", "status": "pass", "notes": "gateBannerText returns correct APPROVED text in both edit paths"},
+    {"criterion": "AC-12: Status column absent from Review queue table", "status": "pass", "notes": "Removed from COLUMN_DEFINITIONS and customRenderColumns; AssistantStatusBadge import removed"}
+  ],
+  "standards_review": [
+    {"standard": "commit-format", "status": "pass", "notes": "All commits carry EPMCDME-15254 prefix per workflow guide"},
+    {"standard": "security-patterns", "status": "pass", "notes": "No dangerouslySetInnerHTML, no open redirects, no secrets in any changed file"},
+    {"standard": "code-quality", "status": "pass", "notes": "No blocking quality issues; formatting auto-applied by PostToolUse hook"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "triage": "patch",
+      "severity": "major",
+      "file": "src/pages/chat/components/ChatConfiguration/ChatConfigAssistants/ChatConfigAssistantForm.tsx",
+      "line_hint": "handleGateSaveAndUnpublish finally block (~lines 165-169)",
+      "problem": "The finally block calls setGateError(null) and clears pendingFormValues/pendingAssistantId unconditionally, including on the two early-return error paths (save failure and unpublish failure). This closes the PublishGateFindingsModal and wipes all recovery state on error.",
+      "impact": "When updateAssistant returns an error, the user sees the toast then the modal disappears. All pending state is gone — the only recovery is to re-trigger the full gate-check flow (form save → revalidation modal → gate check) from scratch.",
+      "recommendation": "Move setGateError(null) and the ref clears out of finally and into the success path only (after closeConfigForm() on line 164). Keep setIsSavingAndUnpublishing(false) in finally so the spinner always clears. On error exits leave gateError set so the modal stays visible and the user can retry or choose 'Keep editing'."
+    },
+    {
+      "id": "CR-002",
+      "triage": "patch",
+      "severity": "minor",
+      "file": "src/pages/assistants/hooks/useMissingIntegrationsModal.ts",
+      "line_hint": "handleSkipValidation (~lines 134-154)",
+      "problem": "handleSkipValidation calls onSuccess() unconditionally after a non-error response, without the success===false guard that was added to handleSubmit. Currently unreachable from the gate-check flow, but any future caller whose onSubmit returns { success: false } as a non-error intercept would cause handleSkipValidation to call onSuccess() and close the form without a real save.",
+      "impact": "No current breakage. Future callers wiring the same sentinel pattern would silently trigger success callbacks on a paused-save scenario.",
+      "recommendation": "Add the same guard to handleSkipValidation after the response is received: if (response.success === false) return { success: false }."
+    },
+    {
+      "id": "CR-003",
+      "triage": "defer",
+      "severity": "minor",
+      "file": "src/pages/chat/components/ChatConfiguration/ChatConfigAssistants/ChatConfigAssistantForm.tsx",
+      "line_hint": "handleGateSaveAndUnpublish toast message (~lines 156-163)",
+      "problem": "The toast message is derived from selectedAssistant?.marketplace_status after the async updateAssistant call, which may have mutated the store and changed the status before the toast runs.",
+      "impact": "Cosmetically wrong toast text (generic 'unpublished' instead of 'removed from review queue') in a race-condition scenario. Does not affect correctness of save or unpublish.",
+      "recommendation": "Snapshot the status before the async calls: const statusSnapshot = selectedAssistant?.marketplace_status?.toUpperCase() at the start of the function, and use statusSnapshot in the toast logic."
+    }
+  ]
+}

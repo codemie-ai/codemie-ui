@@ -34,6 +34,8 @@ export interface PaginationProps {
   perPageOptions?: Array<{ value: string; label: string }>
   responsive?: boolean
   alwaysShowPerPage?: boolean
+  /** Selector hook, so a spec can address the control instead of its copy. */
+  'data-testid'?: string
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -45,6 +47,7 @@ const Pagination: React.FC<PaginationProps> = ({
   perPageOptions,
   responsive = false,
   alwaysShowPerPage = false,
+  'data-testid': dataTestId,
 }) => {
   const { isDark, appearance } = useTheme()
   const isMobileLayout = useIsMobileLayout()
@@ -108,6 +111,7 @@ const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <div
+      data-testid={dataTestId}
       className={cn(
         'flex items-center text-sm gap-2 border-t-1 border-border-structural bg-surface-base-primary bg-no-repeat bg-right-bottom',
         // On small screens the page size moves to its own line rather than past the screen edge.

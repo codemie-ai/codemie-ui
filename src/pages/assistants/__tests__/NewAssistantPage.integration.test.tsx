@@ -15,11 +15,17 @@
 
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { renderPage, mockAPI } from '@/test-utils/integration'
+import * as featureFlags from '@/utils/featureFlags'
 import toaster from '@/utils/toaster'
+
+vi.mock('@/utils/featureFlags', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/utils/featureFlags')>()
+  return { ...original, isMarketplaceManagementEnabled: vi.fn(() => false) }
+})
 
 // This suite verifies NewAssistantPage behaviour. App-level chrome has dedicated tests
 // and must not turn an unrelated background-widget render failure into a cascade of
@@ -396,6 +402,12 @@ describe('NewAssistantPage - Integration', () => {
   })
 
   describe('Missing Integrations Modal', () => {
+    const adminUser = { ...userWithProject, is_admin: true }
+
+    afterEach(() => {
+      vi.mocked(featureFlags.isMarketplaceManagementEnabled).mockReturnValue(false)
+    })
+
     const missingIntegrationsResponse = {
       message: 'Missing integrations found',
       assistantId: null,
@@ -433,7 +445,7 @@ describe('NewAssistantPage - Integration', () => {
     }
 
     it('shows Missing Integrations modal when API returns has_missing_integrations', async () => {
-      mockAPI('GET', 'v1/user', userWithProject)
+      mockAPI('GET', 'v1/user', adminUser)
       mockAPI('POST', 'v1/assistants', missingIntegrationsResponse)
 
       renderPage('/assistants/new')
@@ -453,6 +465,30 @@ describe('NewAssistantPage - Integration', () => {
       expect(
         within(dialog).getByRole('button', { name: 'Skip Validation & Save' })
       ).toBeInTheDocument()
+      expect(within(dialog).getByRole('button', { name: 'Validate & Save' })).toBeInTheDocument()
+    })
+
+    it('hides Skip Validation & Save button for non-admin users when marketplace management is enabled', async () => {
+      vi.mocked(featureFlags.isMarketplaceManagementEnabled).mockReturnValue(true)
+      mockAPI('GET', 'v1/user', userWithProject)
+      mockAPI('POST', 'v1/assistants', missingIntegrationsResponse)
+
+      renderPage('/assistants/new')
+
+      await waitFor(() => {
+        expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+      })
+
+      await fillAndSubmitForm()
+
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+      })
+
+      const dialog = getDialog()
+      expect(
+        within(dialog).queryByRole('button', { name: 'Skip Validation & Save' })
+      ).not.toBeInTheDocument()
       expect(within(dialog).getByRole('button', { name: 'Validate & Save' })).toBeInTheDocument()
     })
 
@@ -483,7 +519,7 @@ describe('NewAssistantPage - Integration', () => {
     })
 
     it('navigates to assistants list after clicking Skip Validation & Save', async () => {
-      mockAPI('GET', 'v1/user', userWithProject)
+      mockAPI('GET', 'v1/user', adminUser)
       mockAPI('POST', 'v1/assistants', missingIntegrationsResponse)
 
       renderPage('/assistants/new')

@@ -1,0 +1,4325 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FastAPI - marketplace management",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/marketplace-management/entities/{kind}/{eid}": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Get Entity Detail",
+        "description": "Drawer detail view for a single entity — dispatches by kind.",
+        "operationId": "get_entity_detail_v1_marketplace_management_entities__kind___eid__get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Eid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityReviewDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/{eid}/assess": {
+      "post": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Assess Assistant",
+        "description": "Run an LLM quality assessment on a single entity.\n\nRate limited (F-37): every call bills a provider, so an impatient click or\na retry loop is a cost incident as well as a load one.",
+        "operationId": "assess_assistant_v1_marketplace_management_entities__kind___eid__assess_post",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Eid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessIn",
+                "default": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/{eid}/prompt": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Get Entity Prompt",
+        "description": "The current system prompt, as a separate and separately audited read.\n\nEXECUTION-PLAN 8.1 allows the full prompt \"behind a separate, separately\naudited call\" — this is it. Splitting it out means opening the review\ndrawer no longer discloses the instructions of every assistant in the\ntenant as a side effect; reading them is now a deliberate act recorded as\na real `activity_events` row naming the reader and the entity, not just a\nlog line (MR !4070 review comment #16).\n\nSuperseded revisions (`system_prompt_history`) are *not* returned: no\nreview decision depends on what the prompt used to say, and the history is\nthe largest share of what F-18 exposed. Only how many there are.",
+        "operationId": "get_entity_prompt_v1_marketplace_management_entities__kind___eid__prompt_get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Eid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityPromptResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/audit/history": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Get Audit History",
+        "description": "List recent persisted audit runs.",
+        "operationId": "get_audit_history_v1_marketplace_management_entities__kind__audit_history_get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/audit/run": {
+      "post": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Run Audit",
+        "description": "Start an audit pass in the background and return immediately.\n\nA full audit takes minutes (gate checks + similarity + persistence), so\nrunning it inline held the request open and starved the worker; clients\ncould not tell a slow audit from a dead button. The run now happens on a\nworker thread and the caller polls ``GET /audit/status``.\n\nA run of one entity kind is a **deployment-wide** singleton, enforced by the\npartial unique index `uq_mm_audit_run_active` rather than by any in-process\nflag (design-persistence.md 3.3). A second call — a double-click, a second\nadmin, or an admin served by a different pod mid-rollout — is refused with\n**409** carrying the in-flight run's id, so the caller can poll that run\ninstead of believing it started one (F-17, F-49).\n\nRate limited (F-37): a run is one ES round trip and one insert per entity.\n`request` is present because slowapi reads the client key off it; it is not\nused by the handler itself.",
+        "operationId": "run_audit_v1_marketplace_management_entities__kind__audit_run_post",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/audit/status": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Get Audit Status",
+        "description": "Whether an audit is currently running, and how the last one ended.\n\nServer-held state, so it is correct for every admin and survives a page\nreload — the UI cannot know this on its own.",
+        "operationId": "get_audit_status_v1_marketplace_management_entities__kind__audit_status_get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/bulk-unpublish": {
+      "post": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Bulk Unpublish",
+        "description": "Unpublish multiple entities in a single request.\n\nPartial semantics: every entity_id is attempted independently -- one\nentity_id raising never aborts the ones after it (MR !4070 review comment\n#17), and a de-index failure is reported as a failure rather than folded\ninto the success count, since `withdraw()` commits the status change and\nonly reports indexing as a best-effort side effect (CR-023 in\nqueue_service.decide). The response documents which succeeded (unpublished\ncount) and which failed (failed list with per-entity reasons). Callers\nshould inspect the failed list to identify IDs that need a retry or manual\nintervention. FastAPI automatically validates entity_ids constraints (422\nfor empty or >500 items).",
+        "operationId": "bulk_unpublish_v1_marketplace_management_entities__kind__bulk_unpublish_post",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUnpublishRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUnpublishResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/cleanup": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Get Cleanup",
+        "description": "Filtered cleanup queue.\n\nDefaults to bucket=DELETE.  Pass bucket=\"\" (or bucket=ALL) to clear the\nbucket filter — that lists every bucket, VERIFIED included. An explicit\nbucket=VERIFIED still narrows to just that one. The filter logic mirrors\nthe PoC /api/marketplace/cleanup.\n\n`order_by` is accepted as a raw string and coerced to `CleanupOrderBy`\nsafely: an unrecognised value silently falls back to the default ordering\nrather than returning a 422, so a FE client using a value the current\nserver does not know yet degrades gracefully (EPMCDME-15333).",
+        "operationId": "get_cleanup_v1_marketplace_management_entities__kind__cleanup_get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Bucket-Input"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Surface bucket to list. Send ALL to clear the filter and list every bucket, VERIFIED included.",
+              "default": "DELETE",
+              "title": "Bucket"
+            },
+            "description": "Surface bucket to list. Send ALL to clear the filter and list every bucket, VERIFIED included."
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CleanupReason"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reason"
+            }
+          },
+          {
+            "name": "tier",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UsageTier"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tier"
+            }
+          },
+          {
+            "name": "verdict",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/VerdictKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Verdict"
+            }
+          },
+          {
+            "name": "mcp",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mcp"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "cluster_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cluster Id"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "rule",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GateRule"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Quality-check id from GET /overview's gate_hits.per_rule — returns only entities that failed that check.",
+              "title": "Rule"
+            },
+            "description": "Quality-check id from GET /overview's gate_hits.per_rule — returns only entities that failed that check."
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Order By"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CleanupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/config": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Get Config",
+        "description": "Return the audit engine configuration for a specific entity kind.\n\nEach kind carries its own gate thresholds, similarity settings, and\nweights — assistants and workflows may enforce different rules.",
+        "operationId": "get_config_v1_marketplace_management_entities__kind__config_get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditConfigResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Update Config",
+        "description": "Apply partial config updates to the kind-scoped audit config.\n\nChanges are persisted to DynamicConfigService (CR-012) so they survive a\npod restart.  The sections written back to storage use the camelCase JSON\nkeys that `_read_*_overrides()` already knows how to read:\n\n* ``gates``       → ``CUSTOMER_CONFIG__MARKETPLACE_CORE_GATES``\n* ``similarity``  → ``CUSTOMER_CONFIG__MARKETPLACE_SIMILARITY``\n\n``usage_tiers`` (percentile thresholds) has no corresponding reader in\n`configs/marketplace_management.py` yet, so it cannot be persisted and the\naudit would never see it (the validator Config is rebuilt from storage on\nevery call). It is refused with 400 rather than acknowledged and ignored.\n\nEach persisted section records a ``THRESHOLD_UPDATED`` activity event, the\nsame way the declarations router does for these settings.\n\nReturns 503 when the DynamicConfigService write fails so that a silent\n200 cannot imply a durable update that was not actually stored.",
+        "operationId": "update_config_v1_marketplace_management_entities__kind__config_put",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigUpdateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/facets": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Get Facets",
+        "description": "Distinct MCP, category, and cluster facets for dropdown filters.",
+        "operationId": "get_facets_v1_marketplace_management_entities__kind__facets_get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacetsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/marketplace-assistants": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "List Marketplace Assistants",
+        "description": "List of marketplace assistants, filterable by review status.\n\nPaginated when `page_size` is given; omit it to get every matching row in one response.",
+        "operationId": "list_marketplace_assistants_v1_marketplace_management_entities__kind__marketplace_assistants_get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MarketplaceStatusFilter"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 100,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAssistantsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/overview": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Get Overview",
+        "description": "High-level marketplace health KPIs: bucket rollup, gate hits, discovery hints.",
+        "operationId": "get_overview_v1_marketplace_management_entities__kind__overview_get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/pending": {
+      "get": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "List Pending",
+        "description": "Paginated list of entities awaiting marketplace review.",
+        "operationId": "list_pending_v1_marketplace_management_entities__kind__pending_get",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "gate_result",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/GateResultFilter"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Gate Result"
+            }
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PendingOrderBy"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Order By"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/pending/{eid}/approve": {
+      "post": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Approve Pending",
+        "description": "Approve a pending marketplace submission.\n\nThe body is the compare-and-set in `queue_service.decide`; a second admin\nacting on the same version gets 409, not a silently discarded decision.",
+        "operationId": "approve_pending_v1_marketplace_management_entities__kind__pending__eid__approve_post",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Eid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Replay token. Sending the same key twice returns the first call's stored response with `Idempotency-Replayed: true` instead of deciding again.",
+              "title": "Idempotency-Key"
+            },
+            "description": "Replay token. Sending the same key twice returns the first call's stored response with `Idempotency-Replayed: true` instead of deciding again."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/pending/{eid}/force-publish": {
+      "post": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Force Publish Pending",
+        "description": "Force-publish an entity to the marketplace, bypassing review gates.\n\nThe `override_notice` is now *persisted* on the decision row rather than\nvalidated, echoed and discarded (F-34), and\n`ck_mm_review_decision_override_notice` makes losing it again impossible.",
+        "operationId": "force_publish_pending_v1_marketplace_management_entities__kind__pending__eid__force_publish_post",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Eid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Replay token. Sending the same key twice returns the first call's stored response with `Idempotency-Replayed: true` instead of deciding again.",
+              "title": "Idempotency-Key"
+            },
+            "description": "Replay token. Sending the same key twice returns the first call's stored response with `Idempotency-Replayed: true` instead of deciding again."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForcePublishIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForcePublishResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/pending/{eid}/reject": {
+      "post": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Reject Pending",
+        "description": "Reject a pending submission: unpublish, unverify and de-index it.\n\nRejection is a takedown, not a relabelling — see `queue_service` (F-04).",
+        "operationId": "reject_pending_v1_marketplace_management_entities__kind__pending__eid__reject_post",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Eid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Replay token. Sending the same key twice returns the first call's stored response with `Idempotency-Replayed: true` instead of deciding again.",
+              "title": "Idempotency-Key"
+            },
+            "description": "Replay token. Sending the same key twice returns the first call's stored response with `Idempotency-Replayed: true` instead of deciding again."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/marketplace-management/entities/{kind}/pending/{eid}/withdraw": {
+      "post": {
+        "tags": [
+          "Marketplace Management"
+        ],
+        "summary": "Withdraw Pending",
+        "description": "Withdraw an entity from the marketplace: unpublish, unverify, de-index.",
+        "operationId": "withdraw_pending_v1_marketplace_management_entities__kind__pending__eid__withdraw_post",
+        "security": [
+          {
+            "user-id": []
+          },
+          {
+            "X-Bind-Key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Eid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Replay token. Sending the same key twice returns the first call's stored response with `Idempotency-Replayed: true` instead of deciding again.",
+              "title": "Idempotency-Key"
+            },
+            "description": "Replay token. Sending the same key twice returns the first call's stored response with `Idempotency-Replayed: true` instead of deciding again."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawIn",
+                "default": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewActionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApproveIn": {
+        "properties": {
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version",
+            "description": "The `marketplace_version` the reviewer looked at. The decision applies only if the row is still at this version, otherwise 409. Omit to decide against whatever version the row has now."
+          }
+        },
+        "type": "object",
+        "title": "ApproveIn",
+        "description": "The decider comes from the access token; `expected_version` pins the content that was reviewed."
+      },
+      "AssessIn": {
+        "properties": {
+          "llm_model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._\\-/:]{0,127}$",
+                "description": "Model ID from the configured LLM catalog."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Model"
+          }
+        },
+        "type": "object",
+        "title": "AssessIn"
+      },
+      "AssessmentDimension": {
+        "properties": {
+          "score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Score"
+          },
+          "justification": {
+            "type": "string",
+            "title": "Justification"
+          },
+          "suggested_fix": {
+            "type": "string",
+            "title": "Suggested Fix"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "score",
+          "justification",
+          "suggested_fix"
+        ],
+        "title": "AssessmentDimension",
+        "description": "Score + rationale for one quality dimension.\n\nOpenAI structured-output requires closed schemas (no extra keys), so we\nmodel each dimension explicitly instead of using a bare Dict[str, Any].\n\n`score` is bounded 0-100 (F-75): the prompt has always declared the range\nand nothing enforced it, so a model that answered 900 propagated straight\nthrough to the reviewer and into `mm_llm_assessment`, where the CHECK\nconstraint `ck_mm_llm_assessment_score` would then reject the row."
+      },
+      "AssessmentFields": {
+        "properties": {
+          "metadata_polish": {
+            "$ref": "#/components/schemas/AssessmentDimension"
+          },
+          "description_quality": {
+            "$ref": "#/components/schemas/AssessmentDimension"
+          },
+          "prompt_substance": {
+            "$ref": "#/components/schemas/AssessmentDimension"
+          },
+          "category_fit": {
+            "$ref": "#/components/schemas/AssessmentDimension"
+          },
+          "uniqueness": {
+            "$ref": "#/components/schemas/AssessmentDimension"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metadata_polish",
+          "description_quality",
+          "prompt_substance",
+          "category_fit",
+          "uniqueness"
+        ],
+        "title": "AssessmentFields",
+        "description": "Per-dimension scores for the 5 quality dimensions.\n\nFixed keys instead of a free-form dict so the schema is closed for\nOpenAI's structured-output validator."
+      },
+      "AssessmentResponse": {
+        "properties": {
+          "fields": {
+            "$ref": "#/components/schemas/AssessmentFields"
+          },
+          "suggested_fixes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggested Fixes"
+          },
+          "overall_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Overall Score"
+          },
+          "verdict_recommendation": {
+            "$ref": "#/components/schemas/Bucket-Output"
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached",
+            "default": false
+          },
+          "source": {
+            "$ref": "#/components/schemas/AssessmentSource",
+            "default": "LLM"
+          },
+          "assessed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessed At"
+          },
+          "llm_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Model"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fields",
+          "suggested_fixes",
+          "overall_score",
+          "verdict_recommendation"
+        ],
+        "title": "AssessmentResponse",
+        "description": "Structured quality assessment for a single assistant, as returned by the API.\n\nThe LLM-authored half is inherited; the four fields below are provenance the\nservice fills in. `cached` and `assessed_at` make the §4.3 cache visible\nrather than silent — a reviewer who sees a stale-looking verdict can tell\nthat it was produced earlier, and by which model."
+      },
+      "AssessmentSource": {
+        "type": "string",
+        "enum": [
+          "LLM",
+          "DETERMINISTIC"
+        ],
+        "title": "AssessmentSource",
+        "description": "Which engine produced an assessment.\n\n`DETERMINISTIC` is not a degraded LLM answer — it is the eight-gate registry\nat `validator/gates.py` scored into the same five dimensions. Per\n`design-persistence.md` §7 F1 the LLM is *advisory*, so a model outage must\ndowngrade the answer, never fail the request. The reviewer needs to know\nwhich one they are reading, hence the field on the wire."
+      },
+      "AuditConfigResponse": {
+        "properties": {
+          "gates": {
+            "$ref": "#/components/schemas/GatesConfig"
+          },
+          "similarity": {
+            "$ref": "#/components/schemas/SimilarityConfig"
+          },
+          "usage_tiers": {
+            "$ref": "#/components/schemas/UsageTiersConfig"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/VerificationConfig"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gates",
+          "similarity",
+          "usage_tiers",
+          "verification"
+        ],
+        "title": "AuditConfigResponse",
+        "description": "The audit engine configuration for one entity kind."
+      },
+      "AuditHistoryResponse": {
+        "properties": {
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/AuditRunRow"
+            },
+            "type": "array",
+            "title": "Runs",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "AuditHistoryResponse",
+        "description": "Recent audit runs, newest first."
+      },
+      "AuditRunRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "entity_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntityKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "started_ts": {
+            "type": "number",
+            "title": "Started Ts"
+          },
+          "finished_ts": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished Ts"
+          },
+          "total_records": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Records"
+          },
+          "engine_took_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Took Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "started_ts"
+        ],
+        "title": "AuditRunRow",
+        "description": "One persisted `mm_audit_run` row, as the history table renders it."
+      },
+      "AuditStatusResponse": {
+        "properties": {
+          "is_running": {
+            "type": "boolean",
+            "title": "Is Running"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "similarity_backend": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similarity Backend"
+          },
+          "es_doc_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Es Doc Count"
+          },
+          "degraded": {
+            "type": "boolean",
+            "title": "Degraded",
+            "default": false
+          },
+          "degraded_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Degraded Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_running"
+        ],
+        "title": "AuditStatusResponse",
+        "description": "Server-held state of the current or most recent audit for one kind.\n\n`POST /audit/run` returns this too: it hands the work to a worker thread\nand answers 202 with the status of the run it just started (or, if one was\nalready in flight, of that one)."
+      },
+      "Bucket-Input": {
+        "type": "string",
+        "enum": [
+          "VERIFIED",
+          "COMMUNITY",
+          "DELETE"
+        ],
+        "title": "Bucket",
+        "description": "Adoption-aware, tier-driven surface bucket. Orthogonal to VerdictKind.\n\nThree buckets — the sub-type of a delete (dead / semantic-clone / big-cluster\nsurplus / invalid metadata / etc.) is carried in `Verdict.bucket_reason`.\n\nOrdering matches the display order in the Overview KPI row."
+      },
+      "Bucket-Output": {
+        "type": "string",
+        "enum": [
+          "VERIFIED",
+          "COMMUNITY",
+          "DELETE"
+        ],
+        "title": "Bucket"
+      },
+      "BulkUnpublishFailure": {
+        "properties": {
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity_id",
+          "reason"
+        ],
+        "title": "BulkUnpublishFailure"
+      },
+      "BulkUnpublishRequest": {
+        "properties": {
+          "entity_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Entity Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity_ids"
+        ],
+        "title": "BulkUnpublishRequest"
+      },
+      "BulkUnpublishResponse": {
+        "properties": {
+          "unpublished": {
+            "type": "integer",
+            "title": "Unpublished"
+          },
+          "failed": {
+            "items": {
+              "$ref": "#/components/schemas/BulkUnpublishFailure"
+            },
+            "type": "array",
+            "title": "Failed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unpublished"
+        ],
+        "title": "BulkUnpublishResponse"
+      },
+      "CleanupReason": {
+        "type": "string",
+        "enum": [
+          "duplicate",
+          "purpose_duplicate",
+          "semantic_clone",
+          "invalid",
+          "dead"
+        ],
+        "title": "CleanupReason"
+      },
+      "CleanupResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CleanupRow"
+            },
+            "type": "array",
+            "title": "Items",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "CleanupResponse",
+        "description": "A page of the Cleanup table. `total` counts the whole filtered set."
+      },
+      "CleanupRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "creator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creator"
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Categories",
+            "default": []
+          },
+          "unique_users_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unique Users Count"
+          },
+          "unique_likes_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unique Likes Count"
+          },
+          "usage_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageTier"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bucket": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Bucket-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bucket_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bucket Reason"
+          },
+          "verdict_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerdictKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cleanup_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CleanupReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canonical_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Id"
+          },
+          "canonical_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Name"
+          },
+          "canonical_users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Users"
+          },
+          "cluster_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cluster Size"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerdictPayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "critical_count": {
+            "type": "integer",
+            "title": "Critical Count",
+            "default": 0
+          },
+          "optional_count": {
+            "type": "integer",
+            "title": "Optional Count",
+            "default": 0
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "top_similar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SimilarPair"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "CleanupRow",
+        "description": "One row of the Cleanup table.\n\nEvery field the table renders is flat on the row. `verdict_kind`,\n`cleanup_reason` and the `canonical_*` refs used to exist only inside the\nnested `verdict` object while the frontend read them flat, so the Decision\ncolumn rendered an em-dash on every row (F-15); `unique_likes_count` rode\nalong on the record but was never put on the row, so Likes was\npermanently empty (F-58)."
+      },
+      "ClusterFacet": {
+        "properties": {
+          "cluster_id": {
+            "type": "integer",
+            "title": "Cluster Id"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "canonical_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cluster_id",
+          "size"
+        ],
+        "title": "ClusterFacet",
+        "description": "A duplicate cluster, as offered by the Cleanup filter bar."
+      },
+      "codemie__rest_api__routers__marketplace_management__ReviewGateFinding": {
+        "properties": {
+          "rule": {
+            "type": "string",
+            "title": "Rule"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule",
+          "severity",
+          "message"
+        ],
+        "title": "ReviewGateFinding",
+        "description": "One deterministic gate finding, without its `detail` payload.\n\n`Finding.detail` carries the matched location and the pattern that fired;\nthe rule, the severity and the (already redacted) message are what a\nreviewer acts on."
+      },
+      "codemie__service__marketplace_management__models__ReviewGateFinding": {
+        "properties": {
+          "rule": {
+            "type": "string",
+            "title": "Rule"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule",
+          "severity",
+          "message"
+        ],
+        "title": "ReviewGateFinding",
+        "description": "One deterministic gate finding returned on the pending queue row.\n\nMirrors the same-named class in `rest_api/routers/marketplace_management.py`\n(rule, severity, message) so that `PendingRow.gate_findings` is typed\nrather than left as `List[Dict[str, Any]]`, which gave no schema to callers.\n`detail` is intentionally absent: the raw gate detail carries matched\nlocations and patterns that are not needed for queue review."
+      },
+      "ConfigUpdate": {
+        "properties": {
+          "gates": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GatesConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "similarity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SimilarityConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "usage_tiers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageTiersConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ConfigUpdate",
+        "description": "Partial config update for one entity kind's audit engine configuration.\n\nEach field corresponds to a top-level section of `AuditConfigResponse`.\nTyped models replace bare `dict` so that unknown keys are rejected (422)\nand integer thresholds cannot be zeroed out via the API (CR-002)."
+      },
+      "ConfigUpdateResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "entity_kind": {
+            "$ref": "#/components/schemas/EntityKind"
+          },
+          "config": {
+            "$ref": "#/components/schemas/AuditConfigResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "entity_kind",
+          "config"
+        ],
+        "title": "ConfigUpdateResponse",
+        "description": "Result of `PUT /config`: the config as it now stands, after the merge."
+      },
+      "ConsolidationConfig": {
+        "properties": {
+          "big_cluster_min": {
+            "type": "integer",
+            "title": "Big Cluster Min"
+          },
+          "keep_top_n_per_cluster": {
+            "type": "integer",
+            "title": "Keep Top N Per Cluster"
+          }
+        },
+        "type": "object",
+        "required": [
+          "big_cluster_min",
+          "keep_top_n_per_cluster"
+        ],
+        "title": "ConsolidationConfig"
+      },
+      "CoreGatesConfig": {
+        "properties": {
+          "description_min": {
+            "type": "integer",
+            "title": "Description Min"
+          },
+          "system_prompt_min": {
+            "type": "integer",
+            "title": "System Prompt Min"
+          },
+          "substance_prompt_alt_min": {
+            "type": "integer",
+            "title": "Substance Prompt Alt Min"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description_min",
+          "system_prompt_min",
+          "substance_prompt_alt_min"
+        ],
+        "title": "CoreGatesConfig"
+      },
+      "EntityKind": {
+        "type": "string",
+        "enum": [
+          "ASSISTANT",
+          "WORKFLOW"
+        ],
+        "title": "EntityKind"
+      },
+      "EntityPromptResponse": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "system_prompt": {
+            "type": "string",
+            "title": "System Prompt"
+          },
+          "system_prompt_revisions": {
+            "type": "integer",
+            "title": "System Prompt Revisions",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "system_prompt"
+        ],
+        "title": "EntityPromptResponse",
+        "description": "The current system prompt, on its own separately audited endpoint."
+      },
+      "EntityReviewDetail": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Categories",
+            "default": []
+          },
+          "icon_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Url"
+          },
+          "conversation_starters": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Conversation Starters",
+            "default": []
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By"
+          },
+          "creator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creator"
+          },
+          "project": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project"
+          },
+          "created_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created Date"
+          },
+          "updated_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated Date"
+          },
+          "marketplace_submitted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marketplace Submitted At"
+          },
+          "marketplace_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marketplace Status"
+          },
+          "marketplace_version": {
+            "type": "integer",
+            "title": "Marketplace Version",
+            "default": 0
+          },
+          "is_global": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Global"
+          },
+          "is_verified": {
+            "type": "boolean",
+            "title": "Is Verified",
+            "default": false
+          },
+          "marketplace_decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marketplace Decided At"
+          },
+          "marketplace_decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marketplace Decided By"
+          },
+          "marketplace_decision_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marketplace Decision Reason"
+          },
+          "unique_users_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unique Users Count"
+          },
+          "unique_likes_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unique Likes Count"
+          },
+          "unique_dislikes_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unique Dislikes Count"
+          },
+          "clone_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clone Count"
+          },
+          "toolkit_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Toolkit Names",
+            "default": []
+          },
+          "mcp_server_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Mcp Server Names",
+            "default": []
+          },
+          "skill_count": {
+            "type": "integer",
+            "title": "Skill Count",
+            "default": 0
+          },
+          "nested_assistant_count": {
+            "type": "integer",
+            "title": "Nested Assistant Count",
+            "default": 0
+          },
+          "datasource_count": {
+            "type": "integer",
+            "title": "Datasource Count",
+            "default": 0
+          },
+          "prompt_variables": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewPromptVariable"
+            },
+            "type": "array",
+            "title": "Prompt Variables",
+            "default": []
+          },
+          "system_prompt_length": {
+            "type": "integer",
+            "title": "System Prompt Length",
+            "default": 0
+          },
+          "system_prompt_revisions": {
+            "type": "integer",
+            "title": "System Prompt Revisions",
+            "default": 0
+          },
+          "gate_findings": {
+            "items": {
+              "$ref": "#/components/schemas/codemie__rest_api__routers__marketplace_management__ReviewGateFinding"
+            },
+            "type": "array",
+            "title": "Gate Findings",
+            "default": []
+          },
+          "critical_count": {
+            "type": "integer",
+            "title": "Critical Count",
+            "default": 0
+          },
+          "optional_count": {
+            "type": "integer",
+            "title": "Optional Count",
+            "default": 0
+          },
+          "top_similar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SimilarPair"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "override_notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Notice"
+          },
+          "overridden_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overridden By"
+          },
+          "bypassed_gate_findings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/codemie__rest_api__routers__marketplace_management__ReviewGateFinding"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bypassed Gate Findings"
+          },
+          "bypassed_gate_findings_unavailable": {
+            "type": "boolean",
+            "title": "Bypassed Gate Findings Unavailable",
+            "default": false
+          },
+          "verdict_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict Kind"
+          },
+          "cleanup_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cleanup Reason"
+          },
+          "bucket": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bucket"
+          },
+          "decision_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Detail"
+          },
+          "bucket_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bucket Reason"
+          },
+          "usage_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Tier"
+          },
+          "polish_check_results": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PolishCheckResult"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Polish Check Results"
+          },
+          "similarity_failed": {
+            "type": "boolean",
+            "title": "Similarity Failed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description"
+        ],
+        "title": "EntityReviewDetail",
+        "description": "What a moderator is shown about one entity — and nothing more.\n\nEXECUTION-PLAN 8.1 (F-18, F-19, S11, S12, R6). This route used to answer\nwith `assistant.model_dump(mode=\"json\")`: all 54 columns, to an audience of\nevery admin **or maintainer**, for every assistant in the tenant. Three of\nthose columns are the problem:\n\n* `toolkits` and `mcp_servers` embed `SettingsBase.credential_values` and\n  raw MCP arguments — the very structures the publish gate scans *for\n  inline credentials* (`gates.gate_no_inline_credentials`);\n* `system_prompt_history` is every superseded revision of the instructions;\n* `prompt_variables` carried unmasked sensitive defaults, which the\n  canonical `/v1/assistants/id/{id}` route masks.\n\nSo this is an allow-list, not a redaction pass: a column added to\n`Assistant` tomorrow is absent here until somebody decides it belongs.\nCapability is reported as *names and counts*, which is what \"does this\nassistant do anything, and with what\" actually needs.\n\nThe current system prompt is not here either. A reviewer does need to read\nit, so it has its own endpoint (`GET /entities/{kind}/{eid}/prompt`) that\nlogs who read which prompt — a separately auditable call, per 8.1."
+      },
+      "FacetCount": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "count"
+        ],
+        "title": "FacetCount",
+        "description": "One selectable filter value and how many entities carry it."
+      },
+      "FacetCountWithUsers": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "total_users": {
+            "type": "integer",
+            "title": "Total Users"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "count",
+          "total_users"
+        ],
+        "title": "FacetCountWithUsers",
+        "description": "A facet count that also carries the adoption behind it (Overview only)."
+      },
+      "FacetsResponse": {
+        "properties": {
+          "mcps": {
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            },
+            "type": "array",
+            "title": "Mcps"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "clusters": {
+            "items": {
+              "$ref": "#/components/schemas/ClusterFacet"
+            },
+            "type": "array",
+            "title": "Clusters"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            },
+            "type": "array",
+            "title": "Tiers"
+          },
+          "buckets": {
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            },
+            "type": "array",
+            "title": "Buckets"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/RuleFacet"
+            },
+            "type": "array",
+            "title": "Rules"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mcps",
+          "categories",
+          "clusters",
+          "reasons",
+          "tiers",
+          "buckets",
+          "rules"
+        ],
+        "title": "FacetsResponse",
+        "description": "Every vocabulary the Cleanup filter bar offers.\n\nAll seven keys are required: a facet served as `undefined` is a dropdown\nthe UI has to hardcode, which is how the reason filter came to offer nine\ncodes of which one was reachable (F-33, F-68)."
+      },
+      "ForcePublishIn": {
+        "properties": {
+          "override_notice": {
+            "type": "string",
+            "title": "Override Notice"
+          },
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version",
+            "description": "The `marketplace_version` the reviewer looked at. The decision applies only if the row is still at this version, otherwise 409. Omit to decide against whatever version the row has now."
+          }
+        },
+        "type": "object",
+        "required": [
+          "override_notice"
+        ],
+        "title": "ForcePublishIn"
+      },
+      "ForcePublishResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "entity_kind": {
+            "$ref": "#/components/schemas/EntityKind"
+          },
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MarketplaceStatus"
+          },
+          "indexing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexingOutcomeModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "override_notice": {
+            "type": "string",
+            "title": "Override Notice"
+          },
+          "bypassed_gate_findings": {
+            "items": {
+              "$ref": "#/components/schemas/codemie__service__marketplace_management__models__ReviewGateFinding"
+            },
+            "type": "array",
+            "title": "Bypassed Gate Findings",
+            "default": []
+          },
+          "bypassed_gate_findings_unavailable": {
+            "type": "boolean",
+            "title": "Bypassed Gate Findings Unavailable",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "entity_kind",
+          "entity_id",
+          "status",
+          "override_notice"
+        ],
+        "title": "ForcePublishResponse",
+        "description": "Force-publish additionally echoes the override notice and what it bypassed."
+      },
+      "GateHits": {
+        "properties": {
+          "critical": {
+            "type": "integer",
+            "title": "Critical"
+          },
+          "optional": {
+            "type": "integer",
+            "title": "Optional"
+          },
+          "per_rule": {
+            "items": {
+              "$ref": "#/components/schemas/RuleHit"
+            },
+            "type": "array",
+            "title": "Per Rule",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "critical",
+          "optional"
+        ],
+        "title": "GateHits",
+        "description": "Rollup of the deterministic quality checks across the whole catalogue."
+      },
+      "GateResultFilter": {
+        "type": "string",
+        "enum": [
+          "all_clear",
+          "has_critical",
+          "has_optional_only"
+        ],
+        "title": "GateResultFilter",
+        "description": "Post-filter for the pending queue by live gate finding severity.\n\nApplied after live gate recompute in the router (`_apply_gate_result_filter`).\nDoes not affect `PendingResponse.total`, which always reflects the SQL count."
+      },
+      "GateRule": {
+        "type": "string",
+        "enum": [
+          "name_length",
+          "name_not_banned",
+          "description_length",
+          "description_not_equal_name",
+          "system_prompt_length",
+          "at_least_one_category",
+          "substance",
+          "no_inline_credentials",
+          "credential_scan_timeout"
+        ],
+        "title": "GateRule",
+        "description": "Every deterministic quality check `gates.py` can emit a Finding for.\n\nThis is the vocabulary `GET /entities/{kind}/facets` publishes under\n`rules` and `GET /entities/{kind}/cleanup?rule=` accepts. It was an\nunconstrained `str` on both sides, so a stale bookmark or a typo returned\n`200 {\"total\": 0}` — indistinguishable from \"nothing failed that check\"\n(F-48).\n\nKept in lockstep with `gates.py` by\n`test_marketplace_management_contract.py::test_gate_rule_enum_matches_the_gates`."
+      },
+      "GatesConfig": {
+        "properties": {
+          "name_min": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Name Min"
+          },
+          "name_max": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Name Max"
+          },
+          "description_min": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Description Min"
+          },
+          "system_prompt_min": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "System Prompt Min"
+          },
+          "substance_prompt_alt_min": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Substance Prompt Alt Min"
+          },
+          "banned_generic_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Banned Generic Names",
+            "default": []
+          },
+          "credential_patterns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Credential Patterns",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name_min",
+          "name_max",
+          "description_min",
+          "system_prompt_min",
+          "substance_prompt_alt_min"
+        ],
+        "title": "GatesConfig"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IndexingOutcomeModel": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "title": "Action",
+            "description": "\"index\" or \"remove\""
+          },
+          "state": {
+            "type": "string",
+            "title": "State",
+            "description": "\"OK\" or \"FAILED\""
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "description": "How many times the write was tried"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "state",
+          "attempts"
+        ],
+        "title": "IndexingOutcomeModel",
+        "description": "What happened to this entity's marketplace search-index projection.\n\nPresent on every decision that has one (approve / reject / force-publish /\nwithdraw). It exists because its absence was the delivery mechanism for\nF-87: the index write was wrapped in a bare `except`, so a decision whose\nprojection never landed answered 200 exactly like one that worked, and 200\npublished assistants went missing from marketplace search with no response,\nmetric or status anywhere reporting it.\n\n`state == \"FAILED\"` does **not** mean the decision failed. The decision is\ncommitted and authoritative; the index is a projection of it and is\nself-healing on the next replay, reindex or backfill."
+      },
+      "MarketplaceAssistantsResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceAssistantsRow"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "page",
+          "page_size",
+          "items"
+        ],
+        "title": "MarketplaceAssistantsResponse"
+      },
+      "MarketplaceAssistantsRow": {
+        "properties": {
+          "assistant_id": {
+            "type": "string",
+            "title": "Assistant Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "project": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project"
+          },
+          "marketplace_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marketplace Status"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By"
+          },
+          "gate_findings": {
+            "items": {
+              "$ref": "#/components/schemas/codemie__service__marketplace_management__models__ReviewGateFinding"
+            },
+            "type": "array",
+            "title": "Gate Findings",
+            "default": []
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Categories",
+            "default": []
+          },
+          "gate_recompute_failed": {
+            "type": "boolean",
+            "title": "Gate Recompute Failed",
+            "default": false
+          },
+          "is_verified": {
+            "type": "boolean",
+            "title": "Is Verified",
+            "default": false
+          },
+          "marketplace_decision_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marketplace Decision Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assistant_id"
+        ],
+        "title": "MarketplaceAssistantsRow",
+        "description": "PendingRow extended with status-badge fields for the multi-status tab."
+      },
+      "MarketplaceStatus": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "PENDING_REVIEW",
+          "APPROVED",
+          "REJECTED",
+          "WITHDRAWN"
+        ],
+        "title": "MarketplaceStatus"
+      },
+      "MarketplaceStatusFilter": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "VERIFIED",
+          "PENDING",
+          "REJECTED"
+        ],
+        "title": "MarketplaceStatusFilter"
+      },
+      "OverviewResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "marketplace_assistants_total": {
+            "type": "integer",
+            "title": "Marketplace Assistants Total"
+          },
+          "audited_total": {
+            "type": "integer",
+            "title": "Audited Total"
+          },
+          "took_seconds": {
+            "type": "number",
+            "title": "Took Seconds"
+          },
+          "buckets": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Buckets",
+            "default": {}
+          },
+          "bucket_usage": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Bucket Usage",
+            "default": {}
+          },
+          "latest_audit_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Audit Run Id"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "has_ever_run": {
+            "type": "boolean",
+            "title": "Has Ever Run"
+          },
+          "gate_hits": {
+            "$ref": "#/components/schemas/GateHits"
+          },
+          "cleanup_reasons": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Cleanup Reasons"
+          },
+          "verdicts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Verdicts"
+          },
+          "usage_tiers": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Usage Tiers"
+          },
+          "pending": {
+            "$ref": "#/components/schemas/PendingKpi"
+          },
+          "top_clusters": {
+            "items": {
+              "$ref": "#/components/schemas/TopCluster"
+            },
+            "type": "array",
+            "title": "Top Clusters",
+            "default": []
+          },
+          "top_mcps": {
+            "items": {
+              "$ref": "#/components/schemas/FacetCountWithUsers"
+            },
+            "type": "array",
+            "title": "Top Mcps",
+            "default": []
+          },
+          "top_categories": {
+            "items": {
+              "$ref": "#/components/schemas/FacetCountWithUsers"
+            },
+            "type": "array",
+            "title": "Top Categories",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "marketplace_assistants_total",
+          "audited_total",
+          "took_seconds",
+          "has_ever_run",
+          "gate_hits",
+          "cleanup_reasons",
+          "verdicts",
+          "usage_tiers",
+          "pending"
+        ],
+        "title": "OverviewResponse",
+        "description": "High-level marketplace health KPIs.\n\n`cleanup_reasons`, `verdicts`, `usage_tiers` and `pending` are declared\nrequired on purpose: all four were absent from the payload while the UI\ncontract already promised them (F-06, F-59), and an optional field would let\nthat regress silently a second time."
+      },
+      "PendingKpi": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "waiting_over_7d": {
+            "type": "integer",
+            "title": "Waiting Over 7D"
+          },
+          "avg_wait_days": {
+            "type": "number",
+            "title": "Avg Wait Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "waiting_over_7d",
+          "avg_wait_days"
+        ],
+        "title": "PendingKpi",
+        "description": "The review queue as a dashboard tile (EXECUTION-PLAN 7.3, F-59).\n\n`count` is the same number `GET /pending` reports as `total` -- both read\n`marketplace_status = 'PENDING_REVIEW'`, so the KPI and the page it links to\ncannot drift.\n\n`waiting_over_7d` and `avg_wait_days` are measured from\n`marketplace_submitted_at` and are taken only over the rows that carry one.\nRows published before the approval gate existed have no submission time, so\nthey contribute to `count` and to nothing else -- reporting their age as\nzero would make a stale queue look fresh."
+      },
+      "PendingOrderBy": {
+        "type": "string",
+        "enum": [
+          "submitted_asc",
+          "submitted_desc",
+          "name_asc"
+        ],
+        "title": "PendingOrderBy",
+        "description": "Sort order for the pending queue SQL ORDER BY clause.\n\n`submitted_asc` is the default (oldest-first, specs D-53, P2-18)."
+      },
+      "PendingResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PendingRow"
+            },
+            "type": "array",
+            "title": "Items",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PendingResponse",
+        "description": "A page of the moderation queue."
+      },
+      "PendingRow": {
+        "properties": {
+          "assistant_id": {
+            "type": "string",
+            "title": "Assistant Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "project": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project"
+          },
+          "marketplace_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marketplace Status"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By"
+          },
+          "gate_findings": {
+            "items": {
+              "$ref": "#/components/schemas/codemie__service__marketplace_management__models__ReviewGateFinding"
+            },
+            "type": "array",
+            "title": "Gate Findings",
+            "default": []
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Categories",
+            "default": []
+          },
+          "gate_recompute_failed": {
+            "type": "boolean",
+            "title": "Gate Recompute Failed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "assistant_id"
+        ],
+        "title": "PendingRow",
+        "description": "Summary of an assistant awaiting marketplace review."
+      },
+      "PolishCheckResult": {
+        "properties": {
+          "check": {
+            "type": "string",
+            "title": "Check"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
+          }
+        },
+        "type": "object",
+        "required": [
+          "check",
+          "passed"
+        ],
+        "title": "PolishCheckResult",
+        "description": "Result of a single Polish quality gate check for one assistant (EPMCDME-15352)."
+      },
+      "PolishGatesConfig": {
+        "properties": {
+          "description_min": {
+            "type": "integer",
+            "title": "Description Min"
+          },
+          "categories_min": {
+            "type": "integer",
+            "title": "Categories Min"
+          },
+          "require_icon": {
+            "type": "boolean",
+            "title": "Require Icon"
+          },
+          "conversation_starters_min": {
+            "type": "integer",
+            "title": "Conversation Starters Min"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description_min",
+          "categories_min",
+          "require_icon",
+          "conversation_starters_min"
+        ],
+        "title": "PolishGatesConfig"
+      },
+      "RejectIn": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version",
+            "description": "The `marketplace_version` the reviewer looked at. The decision applies only if the row is still at this version, otherwise 409. Omit to decide against whatever version the row has now."
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "RejectIn"
+      },
+      "ReviewActionResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "entity_kind": {
+            "$ref": "#/components/schemas/EntityKind"
+          },
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MarketplaceStatus"
+          },
+          "indexing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexingOutcomeModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "entity_kind",
+          "entity_id",
+          "status"
+        ],
+        "title": "ReviewActionResponse",
+        "description": "Outcome of approve / reject / withdraw on one entity."
+      },
+      "ReviewPromptVariable": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "default_value": {
+            "type": "string",
+            "title": "Default Value",
+            "default": ""
+          },
+          "is_sensitive": {
+            "type": "boolean",
+            "title": "Is Sensitive",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "ReviewPromptVariable",
+        "description": "One prompt variable as a reviewer may see it.\n\nSame three fields the canonical assistant detail returns, and the same\nmasking rule: the default of an `is_sensitive` variable is replaced with\n`SENSITIVE_VALUE_MASK` (F-19). Nothing else about the variable is secret,\nand a reviewer needs the key and the description to judge the assistant."
+      },
+      "RuleFacet": {
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/GateRule"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "count",
+          "severity"
+        ],
+        "title": "RuleFacet",
+        "description": "A quality check as the Cleanup *filter bar* offers it.\n\nDeliberately separate from `RuleHit`: `/facets` keys the rule id as\n`value` (uniform with every other facet, so one dropdown component renders\nall seven) while `/overview`'s `gate_hits.per_rule` keys it as `rule`. The\ntwo shapes are not interchangeable and modelling them as one silently\ndropped the id from whichever endpoint lost the coin toss."
+      },
+      "RuleHit": {
+        "properties": {
+          "rule": {
+            "$ref": "#/components/schemas/GateRule"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule",
+          "count",
+          "severity"
+        ],
+        "title": "RuleHit",
+        "description": "One quality check, how many entities failed it, and how much it matters.\n\n`rule` is the `GateRule` enum rather than a bare string so the values the\nfacet offers and the values `GET /cleanup?rule=` accepts are the same\nclosed set by construction — the drift between those two that produced\nunreachable filter options (F-68) cannot recur."
+      },
+      "RunStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "SUCCEEDED",
+          "PARTIAL",
+          "FAILED",
+          "CANCELLED"
+        ],
+        "title": "RunStatus",
+        "description": "Lifecycle of one audit run — `ck_mm_audit_run_status` in `n1a2u3d4i5t6`.\n\n`PENDING`/`RUNNING` are the two non-terminal values, and the partial unique\nindex `uq_mm_audit_run_active` makes \"at most one active run per entity\nkind\" a database invariant over exactly this pair."
+      },
+      "Severity": {
+        "type": "string",
+        "enum": [
+          "CRITICAL",
+          "OPTIONAL"
+        ],
+        "title": "Severity",
+        "description": "Finding severity per EPMCDME-14231."
+      },
+      "SimilarityConfig": {
+        "properties": {
+          "weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Weights",
+            "default": {}
+          },
+          "thresholds": {
+            "$ref": "#/components/schemas/SimilarityThresholds"
+          },
+          "report_threshold": {
+            "type": "number",
+            "title": "Report Threshold"
+          },
+          "text_backend": {
+            "type": "string",
+            "title": "Text Backend"
+          },
+          "minilm_model": {
+            "type": "string",
+            "title": "Minilm Model"
+          },
+          "system_prompt_ceiling": {
+            "type": "integer",
+            "title": "System Prompt Ceiling"
+          },
+          "shortlist_size": {
+            "type": "integer",
+            "title": "Shortlist Size"
+          },
+          "tfidf": {
+            "$ref": "#/components/schemas/TfidfConfig"
+          }
+        },
+        "type": "object",
+        "required": [
+          "thresholds",
+          "report_threshold",
+          "text_backend",
+          "minilm_model",
+          "system_prompt_ceiling",
+          "shortlist_size",
+          "tfidf"
+        ],
+        "title": "SimilarityConfig"
+      },
+      "SimilarityThresholds": {
+        "properties": {
+          "critical": {
+            "type": "number",
+            "title": "Critical"
+          },
+          "optional": {
+            "type": "number",
+            "title": "Optional"
+          }
+        },
+        "type": "object",
+        "required": [
+          "critical",
+          "optional"
+        ],
+        "title": "SimilarityThresholds"
+      },
+      "SimilarPair": {
+        "properties": {
+          "a_id": {
+            "type": "string",
+            "title": "A Id"
+          },
+          "b_id": {
+            "type": "string",
+            "title": "B Id"
+          },
+          "b_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "B Name"
+          },
+          "b_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "B Slug"
+          },
+          "b_project": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "B Project"
+          },
+          "signals": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Signals",
+            "default": {}
+          },
+          "combined": {
+            "type": "number",
+            "title": "Combined"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Severity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "b_verdict_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "B Verdict Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "a_id",
+          "b_id",
+          "combined"
+        ],
+        "title": "SimilarPair",
+        "description": "The closest other entity found for a row. Mirrors `SimilarityPair.to_dict()`."
+      },
+      "TfidfConfig": {
+        "properties": {
+          "max_features": {
+            "type": "integer",
+            "title": "Max Features"
+          },
+          "ngram_range": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Ngram Range",
+            "default": []
+          },
+          "min_df": {
+            "type": "integer",
+            "title": "Min Df"
+          }
+        },
+        "type": "object",
+        "required": [
+          "max_features",
+          "min_df"
+        ],
+        "title": "TfidfConfig"
+      },
+      "TopCluster": {
+        "properties": {
+          "cluster_id": {
+            "type": "integer",
+            "title": "Cluster Id"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "canonical_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Id"
+          },
+          "canonical_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Name"
+          },
+          "canonical_users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Users"
+          },
+          "total_users": {
+            "type": "integer",
+            "title": "Total Users"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cluster_id",
+          "size",
+          "label",
+          "total_users"
+        ],
+        "title": "TopCluster",
+        "description": "A large duplicate cluster with the member the audit would keep."
+      },
+      "UsageTier": {
+        "type": "string",
+        "enum": [
+          "HOT",
+          "WARM",
+          "COLD",
+          "DEAD"
+        ],
+        "title": "UsageTier"
+      },
+      "UsageTiersConfig": {
+        "properties": {
+          "hot_percentile": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Hot Percentile"
+          },
+          "warm_percentile": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Warm Percentile"
+          },
+          "cold_percentile": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Cold Percentile"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hot_percentile",
+          "warm_percentile",
+          "cold_percentile"
+        ],
+        "title": "UsageTiersConfig"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VerdictKind": {
+        "type": "string",
+        "enum": [
+          "KEEP",
+          "REVIEW",
+          "CANDIDATE_FOR_CLEANUP"
+        ],
+        "title": "VerdictKind",
+        "description": "Per-assistant triage verdict, aggregated by the engine."
+      },
+      "VerdictPayload": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/VerdictKind"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CleanupReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": ""
+          },
+          "canonical_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Id"
+          },
+          "canonical_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Name"
+          },
+          "canonical_users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical Users"
+          },
+          "cluster_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cluster Size"
+          },
+          "match_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Score"
+          },
+          "bucket": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Bucket-Output"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bucket_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bucket Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "VerdictPayload",
+        "description": "The nested verdict object, kept for one release alongside the flat fields.\n\nMirrors `validator.models.Verdict.to_dict()`. Deprecated — the Cleanup\ntable reads the flat `verdict_kind` / `cleanup_reason` / `canonical_*`\nfields on the row itself (F-15)."
+      },
+      "VerificationConfig": {
+        "properties": {
+          "hot_min_users": {
+            "type": "integer",
+            "title": "Hot Min Users"
+          },
+          "warm_min_users": {
+            "type": "integer",
+            "title": "Warm Min Users"
+          },
+          "cold_min_users": {
+            "type": "integer",
+            "title": "Cold Min Users"
+          },
+          "grace_days": {
+            "type": "integer",
+            "title": "Grace Days"
+          },
+          "archive_dead_after_days": {
+            "type": "integer",
+            "title": "Archive Dead After Days"
+          },
+          "core_gates": {
+            "$ref": "#/components/schemas/CoreGatesConfig"
+          },
+          "polish_gates": {
+            "$ref": "#/components/schemas/PolishGatesConfig"
+          },
+          "consolidation": {
+            "$ref": "#/components/schemas/ConsolidationConfig"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hot_min_users",
+          "warm_min_users",
+          "cold_min_users",
+          "grace_days",
+          "archive_dead_after_days",
+          "core_gates",
+          "polish_gates",
+          "consolidation"
+        ],
+        "title": "VerificationConfig"
+      },
+      "WithdrawIn": {
+        "properties": {},
+        "type": "object",
+        "title": "WithdrawIn",
+        "description": "Withdraw carries no fields; the decider comes from the access token."
+      }
+    }
+  }
+}

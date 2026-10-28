@@ -14,6 +14,7 @@
 //
 
 import React, { useState, useEffect } from 'react'
+import { useSnapshot } from 'valtio'
 
 import Avatar from '@/components/Avatar/Avatar'
 import Button from '@/components/Button/Button'
@@ -21,6 +22,7 @@ import ConfirmationModal from '@/components/ConfirmationModal'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import { ButtonType } from '@/constants'
+import { MARKETPLACE_STATUS } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
 import {
   CategorySelector,
@@ -28,6 +30,7 @@ import {
   PromptVariablesReview,
 } from '@/pages/assistants/components'
 import { assistantsStore } from '@/store'
+import { userStore } from '@/store/user'
 import {
   Assistant,
   PublishValidationResponse,
@@ -35,26 +38,21 @@ import {
   SubAssistantInfo,
   QualityValidation,
 } from '@/types/entity/assistant'
+import type { MarketplaceStatus } from '@/types/generated/marketplaceManagement'
+import { getCategoryIds, isAdvisoryOnlyQualityValidation } from '@/utils/assistants'
+import { isMarketplaceManagementEnabled } from '@/utils/featureFlags'
 import toaster from '@/utils/toaster'
 
+import PublishGateFindingsModal, { type PublishGateError } from './PublishGateFindingsModal'
 import QualityValidationModal from './QualityValidationModal'
 import SubAssistantSettings from './SubAssistantSettings'
+import SubmittedForReviewModal from './SubmittedForReviewModal'
 
 interface PublishToMarketplaceModalProps {
   isOpen: boolean
   assistant: Assistant
   onClose: () => void
   onSuccess: () => void
-}
-
-const getCategoryIds = (categories: any) => {
-  if (!categories || !Array.isArray(categories)) return []
-
-  return categories.map((cat) => {
-    if (typeof cat === 'string') return cat
-    if (typeof cat === 'object' && cat.id) return cat.id
-    return cat
-  })
 }
 
 /**
@@ -76,11 +74,19 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { user } = useSnapshot(userStore)
+  // With marketplace management on, waiving a CRITICAL quality failure is an admin/maintainer
+  // override that needs a reason (force_publish). With it off, anyone may waive the verdict
+  // (ignore_recommendations), as before.
+  const managementEnabled = isMarketplaceManagementEnabled()
+  const isPrivilegedUser = Boolean(user?.isAdmin || user?.isMaintainer)
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     getCategoryIds(assistant.categories) || []
   )
   const [categoriesError, setCategoriesError] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isForcing, setIsForcing] = useState(false)
   const [validationData, setValidationData] = useState<PublishValidationResponse | null>(null)
   const [subAssistantsSettings, setSubAssistantsSettings] = useState<SubAssistantPublishSettings[]>(
     []
@@ -90,12 +96,17 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
     SubAssistantInfo[]
   >([])
   const [showQualityValidationModal, setShowQualityValidationModal] = useState(false)
+  // A CRITICAL deterministic-gate failure is a different thing from the
+  // advisory LLM verdict and needs its own dialog — see
+  // PublishGateFindingsModal for why "Publish Anyway" must not be offered here.
+  const [gateError, setGateError] = useState<PublishGateError | null>(null)
   const [qualityValidationError, setQualityValidationError] = useState<QualityValidation | null>(
     null
   )
+  const [showPendingReviewConfirm, setShowPendingReviewConfirm] = useState(false)
 
   useEffect(() => {
-    if (isOpen && !showQualityValidationModal) {
+    if (isOpen && !showQualityValidationModal && !gateError) {
       handleValidate()
       setSelectedCategories(getCategoryIds(assistant.categories) || [])
     }
@@ -107,6 +118,8 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
       setCategoriesError('')
       setShowQualityValidationModal(false)
       setQualityValidationError(null)
+      setGateError(null)
+      setShowPendingReviewConfirm(false)
     }
   }, [isOpen, assistant.id])
 
@@ -175,9 +188,31 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
     await performPublish()
   }
 
-  const performPublish = async (ignoreRecommendations: boolean = false) => {
+  const handlePublishSuccess = (marketplaceStatus?: MarketplaceStatus) => {
+    if (showQualityValidationModal) {
+      setShowQualityValidationModal(false)
+      setQualityValidationError(null)
+    }
+    if (marketplaceStatus?.toUpperCase() === MARKETPLACE_STATUS.PENDING_REVIEW) {
+      setShowPendingReviewConfirm(true)
+    } else {
+      toaster.info('Assistant has been published to marketplace successfully!')
+      onSuccess()
+      onClose()
+    }
+  }
+
+  const performPublish = async (
+    ignoreRecommendations: boolean = false,
+    forcePublish: boolean = false,
+    overrideNotice: string | undefined = undefined
+  ) => {
     setCategoriesError('')
-    setIsLoading(true)
+    if (forcePublish) {
+      setIsForcing(true)
+    } else {
+      setIsLoading(true)
+    }
 
     try {
       // Populate missing categories from parent assistant
@@ -195,7 +230,9 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
         assistant.id,
         selectedCategories,
         settingsWithCategories.length > 0 ? settingsWithCategories : undefined,
-        ignoreRecommendations
+        ignoreRecommendations,
+        forcePublish,
+        overrideNotice
       )
 
       // Check if result contains an error
@@ -205,28 +242,29 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
           const qualityValidation = result.error.details.quality_validation
           setQualityValidationError(qualityValidation)
           setShowQualityValidationModal(true)
+        } else if (result.error.details?.gate_findings || result.error.details?.failed_rules) {
+          // The eight deterministic gates run at publish and a CRITICAL finding
+          // is a 422 naming every failing rule. Routed to a dialog rather than
+          // `displayError`, which interpolates `details` — an object — into a
+          // toast and showed the author "[object Object]" under a message that
+          // then vanished.
+          setGateError(result.error as PublishGateError)
+          // Publish Anyway can land here with the quality dialog still open
+          setShowQualityValidationModal(false)
+          setQualityValidationError(null)
         } else {
           // Handle all other errors uniformly (400, 404, 500, etc.)
           displayError(result.error, 'Failed to publish assistant to marketplace')
         }
       } else {
-        // Success
-        toaster.info('Assistant has been published to marketplace successfully!')
-
-        // Close quality validation modal if it's open
-        if (showQualityValidationModal) {
-          setShowQualityValidationModal(false)
-          setQualityValidationError(null)
-        }
-
-        onSuccess()
-        onClose()
+        handlePublishSuccess(result.marketplace_status)
       }
     } catch (error: any) {
       console.error('Failed to publish assistant:', error)
       displayError(error?.error, 'Failed to publish assistant to marketplace')
     } finally {
       setIsLoading(false)
+      setIsForcing(false)
     }
   }
 
@@ -245,6 +283,12 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
     setSelectedCategories(categories)
   }
 
+  const handlePendingReviewConfirmClose = () => {
+    setShowPendingReviewConfirm(false)
+    onSuccess()
+    onClose()
+  }
+
   const handleQualityValidationModalHide = () => {
     setShowQualityValidationModal(false)
     // Clear quality validation state when hiding
@@ -253,8 +297,19 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
     onClose()
   }
 
-  const handlePublishAnyway = async () => {
-    await performPublish(true)
+  // Advisory-only verdicts (no CRITICAL recommendation) never block the owner: anyone may
+  // waive them without a reason. A CRITICAL failure still needs the admin override when
+  // marketplace management is on.
+  const isAdvisoryOnly = isAdvisoryOnlyQualityValidation(qualityValidationError)
+  const canPublishAnyway = isAdvisoryOnly || !managementEnabled || isPrivilegedUser
+
+  const handlePublishAnyway = async (reason?: string) => {
+    if (reason) await performPublish(false, true, reason)
+    else await performPublish(true, false)
+  }
+
+  const handleForcePublish = async (overrideNotice: string) => {
+    await performPublish(false, true, overrideNotice)
   }
 
   const footerContent = (
@@ -283,7 +338,9 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
         className="w-[650px]"
         hideClose
         header="Publish to Marketplace"
-        visible={isOpen && !showQualityValidationModal}
+        visible={
+          isOpen && !showQualityValidationModal && gateError == null && !showPendingReviewConfirm
+        }
         onHide={onClose}
         withBorder
         footerContent={isLoading ? <></> : footerContent}
@@ -373,12 +430,32 @@ const PublishToMarketplaceModal: React.FC<PublishToMarketplaceModalProps> = ({
         )}
       </Popup>
 
+      <PublishGateFindingsModal
+        visible={gateError != null}
+        assistant={assistant}
+        marketplaceStatus={assistant.marketplace_status}
+        error={gateError}
+        onHide={() => {
+          setGateError(null)
+          onClose()
+        }}
+        onForcePublish={handleForcePublish}
+        isForcing={isForcing}
+      />
+
       <QualityValidationModal
         visible={showQualityValidationModal}
         qualityValidation={qualityValidationError}
         assistant={assistant}
         onHide={handleQualityValidationModalHide}
+        canPublishAnyway={canPublishAnyway}
+        requireReason={managementEnabled && !isAdvisoryOnly}
         onPublishAnyway={handlePublishAnyway}
+      />
+
+      <SubmittedForReviewModal
+        isOpen={showPendingReviewConfirm}
+        onClose={handlePendingReviewConfirmClose}
       />
     </>
   )

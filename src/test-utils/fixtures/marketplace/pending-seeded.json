@@ -1,0 +1,16 @@
+{
+  "total": 1,
+  "page": 1,
+  "page_size": 100,
+  "items": [
+    {
+      "assistant_id": "55063452-e081-4b65-bb9b-9ee45c68fbe3",
+      "name": "FIXTURE mt8mmsqf pending",
+      "project": "codemie",
+      "marketplace_status": "PENDING_REVIEW",
+      "submitted_at": 1787660042.64114,
+      "submitted_by": "System Administrator",
+      "gate_findings": []
+    }
+  ]
+}

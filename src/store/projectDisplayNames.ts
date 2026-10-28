@@ -54,7 +54,15 @@ export const projectDisplayNamesStore = proxy<ProjectDisplayNamesStore>({
 
     inFlight.add(projectName)
     try {
-      const response = await api.get(`v1/projects/${encodeURIComponent(projectName)}`)
+      // This lookup is best-effort by design (see the catch below — a
+      // missing/invisible project just yields no tooltip). Opt out of the
+      // API client's global 404-toast behaviour so users never see a
+      // "Project not found" toast for a display-name lookup they didn't
+      // trigger. Without this flag, api.ts:handleError fires the toast
+      // BEFORE our catch swallows the rejection.
+      const response = await api.get(`v1/projects/${encodeURIComponent(projectName)}`, {
+        skipErrorHandling: true,
+      })
       const data = await response.json()
       // Cache the trimmed display name, or '' to mark the lookup resolved with
       // no name; either way the project is never fetched again.

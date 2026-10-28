@@ -19,7 +19,13 @@ import {
   Toolkit,
   UserSetting,
 } from '@/pages/assistants/components/AssistantDetails/components/UserMapping/types'
-import { Assistant } from '@/types/entity/assistant'
+import {
+  Assistant,
+  AssistantCategory,
+  AssistantCreateResponse,
+  QualityValidation,
+  RecommendationSeverity,
+} from '@/types/entity/assistant'
 import { getCredentialType, SETTING_TYPE_PROJECT } from '@/utils/settings'
 
 // Whether an assistant exposes the per-user "Your Integration Settings" section.
@@ -336,4 +342,42 @@ export const sortToolkitsByOrder = (toolkits, order, keyField = TOOLKIT_KEY) => 
 
     return indexA - indexB
   })
+}
+
+/** Extracts category ids from a categories field that may carry strings or full `AssistantCategory` objects. */
+export const getCategoryIds = (categories?: AssistantCategory[] | string[] | null): string[] => {
+  if (!categories || !Array.isArray(categories)) return []
+  return categories
+    .map((cat) => {
+      if (typeof cat === 'string') return cat
+      return (cat as AssistantCategory).id
+    })
+    .filter((id): id is string => id != null)
+}
+
+/**
+ * The update endpoint answers 200 with `validation.has_missing_integrations` and saves nothing
+ * when a toolkit integration is missing, so `error` alone does not tell whether the save landed.
+ */
+export const isAssistantSaveFailed = (result?: Partial<AssistantCreateResponse> | null): boolean =>
+  Boolean(result?.error) || Boolean(result?.validation?.has_missing_integrations)
+
+export const getAssistantSaveFailureMessage = (
+  result?: Partial<AssistantCreateResponse> | null
+): string =>
+  result?.validation?.has_missing_integrations
+    ? 'Assistant was not saved because some integrations are missing. Save it from the form to set them up.'
+    : 'Failed to save assistant. Please try again.'
+
+/** True when the quality verdict carries no CRITICAL recommendation, only optional ones. */
+export const isAdvisoryOnlyQualityValidation = (
+  qualityValidation: QualityValidation | null | undefined
+): boolean => {
+  const { fields = [], context = [], toolkits = [] } = qualityValidation?.recommendations ?? {}
+  const severities = [
+    ...fields.map((f) => f.severity),
+    ...context.map((c) => c.severity),
+    ...toolkits.flatMap((tk) => tk.tools.map((t) => t.severity)),
+  ]
+  return !severities.includes(RecommendationSeverity.CRITICAL)
 }

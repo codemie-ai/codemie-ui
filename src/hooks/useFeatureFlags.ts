@@ -136,3 +136,11 @@ export const useSchedulersViewEnabled = (): FeatureFlagResult => {
 export const useWorkspaceScriptBridgeEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.WORKSPACE_SCRIPT_BRIDGE)
 }
+
+export const useMarketplaceManagementEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.MARKETPLACE_MANAGEMENT)
+}
+
+export const useMarketplaceApprovalGateEnabled = (): FeatureFlagResult => {
+  return useFeatureFlag(FEATURE_FLAGS.MARKETPLACE_APPROVAL_GATE)
+}

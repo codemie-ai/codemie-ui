@@ -21,10 +21,16 @@ import TabsButton from './Tab'
 
 export interface Tab<Id extends string = string> {
   id: Id
-  label: string
+  /**
+   * ReactNode rather than string so a tab can carry a trailing element such
+   * as a count badge. A plain string is still the common case.
+   */
+  label: ReactNode
   element: ReactNode
   icon?: ReactNode
   className?: string
+  /** Rendered as `data-testid` on the tab button, for e2e selectors. */
+  testId?: string
 }
 
 export interface TabsProps<TabId extends string = string> {

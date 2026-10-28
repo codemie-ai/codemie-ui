@@ -18,11 +18,14 @@ import { Assistant } from '@/types/entity/assistant'
 export const getAssistantCardInfo = (assistant: Assistant, user) => {
   const isShared = assistant.shared
   const isOwned = assistant.created_by?.id === user?.userId
-
   return {
     description: assistant.description,
     name: assistant.name,
     isShared,
     isOwned,
+    isAdmin: user?.isAdmin ?? false,
+    isVerified: assistant.is_verified ?? false,
+    marketplaceStatus: assistant.marketplace_status ?? null,
+    marketplaceDecisionReason: assistant.marketplace_decision_reason ?? null,
   }
 }

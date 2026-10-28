@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import type { MarketplaceStatus } from '@/types/generated/marketplaceManagement'
+
 export const ONBOARDING_ASSISTANT_SLUG = import.meta.env.VITE_ONBOARDING_ASSISTANT_SLUG
 export const FEEDBACK_ASSISTANT_SLUG = import.meta.env.VITE_FEEDBACK_ASSISTANT_SLUG
 export const CHATBOT_ASSISTANT_SLUG = import.meta.env.VITE_CHATBOT_ASSISTANT_SLUG
@@ -218,3 +220,29 @@ export const FILTER_INITIAL_STATE: {
   sort_order: 'desc',
   integration_type: [],
 }
+
+/** Backend `marketplace_status` values; `satisfies` makes the compiler flag drift from the generated enum. */
+export const MARKETPLACE_STATUS = {
+  DRAFT: 'DRAFT',
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  WITHDRAWN: 'WITHDRAWN',
+} as const satisfies Record<MarketplaceStatus, MarketplaceStatus>
+
+/** Statuses where the assistant is live or waiting for review, so editing it re-runs the marketplace gates. */
+const LIVE_MARKETPLACE_STATUSES: readonly string[] = [
+  MARKETPLACE_STATUS.APPROVED,
+  MARKETPLACE_STATUS.PENDING_REVIEW,
+]
+
+export const isLiveMarketplaceStatus = (status?: string | null): boolean =>
+  LIVE_MARKETPLACE_STATUSES.includes(status?.toUpperCase() ?? '')
+
+/**
+ * Editing re-runs the marketplace gates for live/pending assistants and for a DRAFT that is
+ * still global (marketplace-bound); a private DRAFT saves directly.
+ */
+export const isMarketplaceGatedEdit = (status?: string | null, isGlobal?: boolean): boolean =>
+  isLiveMarketplaceStatus(status) ||
+  (status?.toUpperCase() === MARKETPLACE_STATUS.DRAFT && Boolean(isGlobal))

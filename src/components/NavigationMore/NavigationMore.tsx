@@ -42,6 +42,12 @@ export interface NavigationItem {
   onClick?: MouseEventHandler<HTMLButtonElement>
   href?: string
   divider?: false
+  /**
+   * Selector hook for the menu item. Row actions that change externally
+   * visible state (approve publishes to every user) must be addressable by a
+   * stable id rather than by their copy — review-e2e-coverage-spec §3.
+   */
+  testId?: string
   icon?: React.ReactNode
   disabled?: boolean
   hidden?: boolean
@@ -78,6 +84,8 @@ interface NavigationMoreProps {
   menuClassName?: string
   'data-tooltip-content'?: string
   contextId?: string
+  /** Selector hook for the trigger button (e.g. `pending-row-actions-{id}`). */
+  triggerTestId?: string
 }
 
 const NavigationMore: React.FC<NavigationMoreProps> = ({
@@ -97,6 +105,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   onOpenChange,
   'data-tooltip-content': dataTooltipContent,
   contextId,
+  triggerTestId,
 }) => {
   const [show, setShow] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -207,6 +216,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
                         className={itemClassName}
                         aria-disabled={item.disabled}
                         aria-label={item.title}
+                        data-testid={item.testId}
                         data-tooltip-id="react-tooltip"
                         data-tooltip-content={item.tooltip}
                         onClick={(e) => {
@@ -237,6 +247,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
                       }}
                       disabled={item.disabled}
                       aria-label={item.title}
+                      data-testid={item.testId}
                       data-tooltip-id="react-tooltip"
                       data-tooltip-content={item.tooltip}
                     >
@@ -273,6 +284,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
         aria-haspopup="menu"
         aria-expanded={show}
         aria-controls={show ? menuId : undefined}
+        data-testid={triggerTestId}
         data-tooltip-id="react-tooltip"
         data-tooltip-content={dataTooltipContent}
       >

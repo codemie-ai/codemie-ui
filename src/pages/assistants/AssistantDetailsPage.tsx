@@ -66,6 +66,7 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
   const router = useVueRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [assistant, setAssistant] = useState<Assistant | null>(null)
+  const [error, setError] = useState(false)
   const assistantId = router.currentRoute.value.params.id as string
   const slug = router.currentRoute.value.params.slug as string
   const projectName = router.currentRoute.value.params.projectName as string
@@ -107,6 +108,7 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
   }
 
   const loadAssistant = async () => {
+    setAssistant(null)
     setIsLoading(true)
 
     try {
@@ -119,9 +121,10 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
         const assistantData = await assistantsStore.getAssistantBySlug(slug, false, projectName)
         setAssistant(assistantData)
       }
-    } catch (error) {
-      console.error('Error loading assistant:', error)
+    } catch (loadError) {
+      console.error('Error loading assistant:', loadError)
       toaster.error('Failed to load assistant details')
+      setError(true)
     } finally {
       setIsLoading(false)
     }
@@ -141,6 +144,12 @@ const AssistantDetailsPage = ({ isTemplate }: AssistantDetailsPageProps) => {
         {isLoading && (
           <div className="flex justify-center m-40">
             <Spinner />
+          </div>
+        )}
+
+        {!isLoading && !assistant && error && (
+          <div role="alert" data-testid="assistant-detail-error">
+            Failed to load assistant details.
           </div>
         )}
 

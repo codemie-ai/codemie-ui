@@ -108,6 +108,71 @@ describe('CustomerConfigurationPage', () => {
     expect(await screen.findByText(/no dynamic settings/i)).toBeInTheDocument()
   })
 
+  it('excludes marketplaceThresholds — it now lives only on the Marketplace Management Config tab', async () => {
+    withSettings([
+      declaration(),
+      declaration({
+        component_id: 'marketplaceThresholds',
+        label: 'Marketplace Thresholds',
+        value: {
+          hotMinUsers: '50',
+          warmMinUsers: '6',
+          graceDays: '30',
+          archiveDeadAfterDays: '90',
+        },
+      }),
+    ])
+
+    render(<CustomerConfigurationPage />)
+
+    expect(await screen.findByText('Chat disclaimer')).toBeInTheDocument()
+    expect(screen.queryByText('Marketplace Thresholds')).not.toBeInTheDocument()
+  })
+
+  it('excludes all five marketplace component IDs from the customer configuration page', async () => {
+    withSettings([
+      declaration(),
+      declaration({
+        component_id: 'marketplaceThresholds',
+        label: 'Marketplace Thresholds',
+        value: {},
+      }),
+      declaration({ component_id: 'marketplaceCoreGates', label: 'Core Gates', value: {} }),
+      declaration({ component_id: 'marketplacePolishGates', label: 'Polish Gates', value: {} }),
+      declaration({ component_id: 'marketplaceConsolidation', label: 'Consolidation', value: {} }),
+      declaration({ component_id: 'marketplaceSimilarity', label: 'Similarity', value: {} }),
+    ])
+
+    render(<CustomerConfigurationPage />)
+
+    expect(await screen.findByText('Chat disclaimer')).toBeInTheDocument()
+    expect(screen.queryByText('Marketplace Thresholds')).not.toBeInTheDocument()
+    expect(screen.queryByText('Core Gates')).not.toBeInTheDocument()
+    expect(screen.queryByText('Polish Gates')).not.toBeInTheDocument()
+    expect(screen.queryByText('Consolidation')).not.toBeInTheDocument()
+    expect(screen.queryByText('Similarity')).not.toBeInTheDocument()
+  })
+
+  it('shows the empty state when marketplaceThresholds is the only declared setting', async () => {
+    withSettings([
+      declaration({
+        component_id: 'marketplaceThresholds',
+        label: 'Marketplace Thresholds',
+        value: {
+          hotMinUsers: '50',
+          warmMinUsers: '6',
+          graceDays: '30',
+          archiveDeadAfterDays: '90',
+        },
+      }),
+    ])
+
+    render(<CustomerConfigurationPage />)
+
+    expect(await screen.findByText(/no dynamic settings/i)).toBeInTheDocument()
+    expect(screen.queryByText('Marketplace Thresholds')).not.toBeInTheDocument()
+  })
+
   it('marks an overridden setting', async () => {
     withSettings([declaration({ overridden: true, value: { enabled: true, text: 'hi' } })])
 

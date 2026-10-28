@@ -92,6 +92,59 @@ describe('AssistantDetailsPage - Integration', () => {
     ...overrides,
   })
 
+  describe('Verified Badge', () => {
+    const MARKETPLACE_FLAG_ON = [
+      { id: 'features:marketplaceManagement', settings: { enabled: true } },
+      { id: 'features:marketplaceApprovalGate', settings: { enabled: true } },
+    ]
+
+    it('shows Verified pill in detail header when is_verified', async () => {
+      mockAPI('GET', 'v1/config', MARKETPLACE_FLAG_ON)
+      mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture({ is_verified: true }))
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/VERIFIED/, { selector: '[data-testid="assistant-status-badge"]' })
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('shows no Verified pill when is_verified is absent', async () => {
+      mockAPI('GET', 'v1/config', MARKETPLACE_FLAG_ON)
+      mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture({ is_verified: false }))
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Test Assistant').length).toBeGreaterThan(0)
+      })
+
+      expect(
+        screen.queryByText(/VERIFIED/, { selector: '[data-testid="assistant-status-badge"]' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows no Verified pill when marketplace management is disabled', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture({ is_verified: true }))
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      await waitFor(() => {
+        expect(screen.getAllByText('Test Assistant').length).toBeGreaterThan(0)
+      })
+
+      expect(
+        screen.queryByText(/VERIFIED/, { selector: '[data-testid="assistant-status-badge"]' })
+      ).not.toBeInTheDocument()
+    })
+  })
+
   describe('Initial Page Load', () => {
     it('renders conversation starters as a semantic list', async () => {
       mockAPI('GET', 'v1/config', [])
@@ -699,6 +752,25 @@ describe('AssistantDetailsPage - Integration', () => {
       })
 
       expect(mockRouterState.push).not.toHaveBeenCalledWith({ name: 'assistants' })
+    })
+
+    it('shows an alert element when the assistant fails to load', async () => {
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants/id/asst-123', { error: 'Not found' }, 404)
+
+      renderPage('/assistants/asst-123')
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('v1/assistants/id/asst-123'),
+          expect.anything()
+        )
+      })
+
+      await waitFor(() => {
+        expect(screen.getByTestId('assistant-detail-error')).toBeInTheDocument()
+      })
+      expect(screen.getByRole('alert')).toBeInTheDocument()
     })
   })
 

@@ -126,3 +126,6 @@ docs/codemie/analytics/
 codemie-test-reports/
 output/playwright
 .playwright-cli
+
+# Code-review diff artifacts
+*.diff

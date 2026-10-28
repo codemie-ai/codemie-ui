@@ -57,6 +57,10 @@ describe('getAssistantCardInfo', () => {
       description: 'Brief desc',
       isShared: false,
       isOwned: true,
+      isAdmin: false,
+      isVerified: false,
+      marketplaceStatus: null,
+      marketplaceDecisionReason: null,
     })
   })
 
@@ -90,5 +94,23 @@ describe('getAssistantCardInfo', () => {
     const result = getAssistantCardInfo(assistant, undefined)
 
     expect(result.isOwned).toBe(false)
+    expect(result.isAdmin).toBe(false)
+  })
+
+  it('correctly identifies admin viewer', () => {
+    const assistant = createMockAssistant('Name', 'Description', false, 'different-user')
+
+    const result = getAssistantCardInfo(assistant, { ...mockUser, isAdmin: true })
+
+    expect(result.isOwned).toBe(false)
+    expect(result.isAdmin).toBe(true)
+  })
+
+  it('correctly identifies non-admin viewer', () => {
+    const assistant = createMockAssistant()
+
+    const result = getAssistantCardInfo(assistant, mockUser)
+
+    expect(result.isAdmin).toBe(false)
   })
 })

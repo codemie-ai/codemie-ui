@@ -21,6 +21,7 @@ vi.mock('@/utils/featureFlags', () => ({
   isMcpEnabled: () => false,
   isCostCentersEnabled: () => false,
   isTeamsEnabled: () => false,
+  isMarketplaceManagementEnabled: () => true,
 }))
 
 vi.mock('@/utils/enterpriseEdition', () => ({
@@ -87,6 +88,11 @@ describe('getNavigationTabs — auditor role', () => {
       isMcpEnabled: () => false,
       isCostCentersEnabled: () => false,
       isTeamsEnabled: () => false,
+      // Added alongside isMarketplaceManagementEnabled's introduction to
+      // getNavigationTabs (tabs.tsx) — this local mock predated that change
+      // and was never updated, so every call here threw instead of testing
+      // the Users-management-hidden behavior it's named for.
+      isMarketplaceManagementEnabled: () => false,
     }))
     const { getNavigationTabs } = await import('@/pages/settings/tabs')
     const adminChildIds =

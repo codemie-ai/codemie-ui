@@ -21,6 +21,7 @@ vi.mock('@/utils/featureFlags', () => ({
   isMcpEnabled: () => false,
   isCostCentersEnabled: () => false,
   isTeamsEnabled: () => false,
+  isMarketplaceManagementEnabled: () => false,
 }))
 
 vi.mock('@/utils/enterpriseEdition', () => ({

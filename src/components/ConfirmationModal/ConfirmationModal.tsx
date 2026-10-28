@@ -36,6 +36,13 @@ export interface ConfirmationModalProps {
   className?: string
   limitWidth?: boolean
   hideIcon?: boolean
+  /**
+   * Selector hooks for the two buttons. Approving a marketplace submission
+   * publishes it to every user, so the confirm step has to be assertable by a
+   * stable id rather than by its copy — review-e2e-coverage-spec §3 item 13.
+   */
+  confirmTestId?: string
+  cancelTestId?: string
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -53,11 +60,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   className,
   limitWidth = false,
   hideIcon = false,
+  confirmTestId,
+  cancelTestId,
 }) => {
   const footerContent = (
     <div className="flex justify-end gap-3">
       <Button
         variant={ButtonType.BASE}
+        data-testid={cancelTestId}
         onClick={(e) => {
           e.stopPropagation()
           onCancel()
@@ -68,6 +78,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       <Button
         variant={confirmButtonType}
         disabled={confirmDisabled}
+        data-testid={confirmTestId}
         onClick={(e) => {
           e.stopPropagation()
           onConfirm()

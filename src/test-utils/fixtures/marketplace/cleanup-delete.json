@@ -1,0 +1,229 @@
+{
+  "total": 24,
+  "page": 1,
+  "page_size": 5,
+  "items": [
+    {
+      "id": "02009c59-14c9-491e-baa9-db3786536a62",
+      "name": "QA Marketplace Assistant jtp_fqnqojyoxdzamzk",
+      "creator": "system",
+      "categories": [
+        "quality-assurance"
+      ],
+      "unique_users_count": 0,
+      "unique_likes_count": 0,
+      "usage_tier": "DEAD",
+      "bucket": "DELETE",
+      "bucket_reason": "big_cluster_surplus",
+      "verdict_kind": "KEEP",
+      "cleanup_reason": null,
+      "canonical_id": "a3093a3e-3355-43ac-a291-e97ca0dc8f60",
+      "canonical_name": "QA Marketplace Assistant wnr_qcifmyczyxwoyfm",
+      "canonical_users": 0,
+      "cluster_size": 16,
+      "verdict": {
+        "kind": "KEEP",
+        "reason": null,
+        "detail": "",
+        "canonical_id": "a3093a3e-3355-43ac-a291-e97ca0dc8f60",
+        "canonical_name": "QA Marketplace Assistant wnr_qcifmyczyxwoyfm",
+        "canonical_users": 0,
+        "cluster_size": 16,
+        "match_score": null,
+        "bucket": "DELETE",
+        "bucket_reason": "big_cluster_surplus"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "02009c59-14c9-491e-baa9-db3786536a62",
+        "b_id": "7728651e-fd84-4b38-a222-6b6699b52eee",
+        "b_name": "QA Marketplace Assistant jtp_okpzunozixuhdpa",
+        "signals": {
+          "cosine": 0.9010009999999999
+        },
+        "combined": 0.9010009999999999,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    },
+    {
+      "id": "0d736b3a-d3d7-47fc-af59-194807b0ef03",
+      "name": "QA Marketplace Assistant dpy_mxtvnkneucajhab",
+      "creator": "system",
+      "categories": [
+        "quality-assurance"
+      ],
+      "unique_users_count": 0,
+      "unique_likes_count": 0,
+      "usage_tier": "DEAD",
+      "bucket": "DELETE",
+      "bucket_reason": "big_cluster_surplus",
+      "verdict_kind": "KEEP",
+      "cleanup_reason": null,
+      "canonical_id": "a3093a3e-3355-43ac-a291-e97ca0dc8f60",
+      "canonical_name": "QA Marketplace Assistant wnr_qcifmyczyxwoyfm",
+      "canonical_users": 0,
+      "cluster_size": 16,
+      "verdict": {
+        "kind": "KEEP",
+        "reason": null,
+        "detail": "",
+        "canonical_id": "a3093a3e-3355-43ac-a291-e97ca0dc8f60",
+        "canonical_name": "QA Marketplace Assistant wnr_qcifmyczyxwoyfm",
+        "canonical_users": 0,
+        "cluster_size": 16,
+        "match_score": null,
+        "bucket": "DELETE",
+        "bucket_reason": "big_cluster_surplus"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "0d736b3a-d3d7-47fc-af59-194807b0ef03",
+        "b_id": "40f0bd61-7b8f-489c-9a9e-bf2090d61a87",
+        "b_name": "QA Marketplace Assistant dpy_lmwbqwidycldxxa",
+        "signals": {
+          "cosine": 0.8935852
+        },
+        "combined": 0.8935852,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    },
+    {
+      "id": "0df85a1f-6348-48c3-809d-0158d9ded3f3",
+      "name": "QA Marketplace Assistant sjn_fmsrnldtcfdolzz",
+      "creator": "system",
+      "categories": [
+        "quality-assurance"
+      ],
+      "unique_users_count": 0,
+      "unique_likes_count": 0,
+      "usage_tier": "DEAD",
+      "bucket": "DELETE",
+      "bucket_reason": "big_cluster_surplus",
+      "verdict_kind": "KEEP",
+      "cleanup_reason": null,
+      "canonical_id": "a3093a3e-3355-43ac-a291-e97ca0dc8f60",
+      "canonical_name": "QA Marketplace Assistant wnr_qcifmyczyxwoyfm",
+      "canonical_users": 0,
+      "cluster_size": 16,
+      "verdict": {
+        "kind": "KEEP",
+        "reason": null,
+        "detail": "",
+        "canonical_id": "a3093a3e-3355-43ac-a291-e97ca0dc8f60",
+        "canonical_name": "QA Marketplace Assistant wnr_qcifmyczyxwoyfm",
+        "canonical_users": 0,
+        "cluster_size": 16,
+        "match_score": null,
+        "bucket": "DELETE",
+        "bucket_reason": "big_cluster_surplus"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "0df85a1f-6348-48c3-809d-0158d9ded3f3",
+        "b_id": "70a76910-b884-4d1d-9d0b-e65c5e7a264f",
+        "b_name": "QA Marketplace Assistant sjn_fgfrqppcjgetkpu",
+        "signals": {
+          "cosine": 0.894928
+        },
+        "combined": 0.894928,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    },
+    {
+      "id": "26c542fb-e804-427e-9df6-ee9127443189",
+      "name": "QA Marketplace Assistant mcl_fnbqgngtramtrqt",
+      "creator": "system",
+      "categories": [
+        "quality-assurance"
+      ],
+      "unique_users_count": 0,
+      "unique_likes_count": 0,
+      "usage_tier": "DEAD",
+      "bucket": "DELETE",
+      "bucket_reason": "big_cluster_surplus",
+      "verdict_kind": "KEEP",
+      "cleanup_reason": null,
+      "canonical_id": "a3093a3e-3355-43ac-a291-e97ca0dc8f60",
+      "canonical_name": "QA Marketplace Assistant wnr_qcifmyczyxwoyfm",
+      "canonical_users": 0,
+      "cluster_size": 16,
+      "verdict": {
+        "kind": "KEEP",
+        "reason": null,
+        "detail": "",
+        "canonical_id": "a3093a3e-3355-43ac-a291-e97ca0dc8f60",
+        "canonical_name": "QA Marketplace Assistant wnr_qcifmyczyxwoyfm",
+        "canonical_users": 0,
+        "cluster_size": 16,
+        "match_score": null,
+        "bucket": "DELETE",
+        "bucket_reason": "big_cluster_surplus"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "26c542fb-e804-427e-9df6-ee9127443189",
+        "b_id": "70a76910-b884-4d1d-9d0b-e65c5e7a264f",
+        "b_name": "QA Marketplace Assistant sjn_fgfrqppcjgetkpu",
+        "signals": {
+          "cosine": 0.8883667
+        },
+        "combined": 0.8883667,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    },
+    {
+      "id": "28318843-b743-4061-bc35-b523e7fc2e24",
+      "name": "EPAM Radar",
+      "creator": "system",
+      "categories": [
+        "data-analytics",
+        "project-management",
+        "knowledge-management"
+      ],
+      "unique_users_count": 24,
+      "unique_likes_count": 0,
+      "usage_tier": "COLD",
+      "bucket": "DELETE",
+      "bucket_reason": "purpose_duplicate",
+      "verdict_kind": "CANDIDATE_FOR_CLEANUP",
+      "cleanup_reason": "purpose_duplicate",
+      "canonical_id": "b0674bd3-00a1-476c-820c-1c9004fa21e0",
+      "canonical_name": "Radar MCP Example",
+      "canonical_users": 484,
+      "cluster_size": null,
+      "verdict": {
+        "kind": "CANDIDATE_FOR_CLEANUP",
+        "reason": "purpose_duplicate",
+        "detail": "Purpose-clone of Radar MCP Example (cosine 0.87, 484u vs 24u)",
+        "canonical_id": "b0674bd3-00a1-476c-820c-1c9004fa21e0",
+        "canonical_name": "Radar MCP Example",
+        "canonical_users": 484,
+        "cluster_size": null,
+        "match_score": 0.8658,
+        "bucket": "DELETE",
+        "bucket_reason": "purpose_duplicate"
+      },
+      "critical_count": 1,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "28318843-b743-4061-bc35-b523e7fc2e24",
+        "b_id": "b0674bd3-00a1-476c-820c-1c9004fa21e0",
+        "b_name": "Radar MCP Example",
+        "signals": {
+          "cosine": 0.8657836999999999
+        },
+        "combined": 0.8657836999999999,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    }
+  ]
+}

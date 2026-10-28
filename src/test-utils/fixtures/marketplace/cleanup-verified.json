@@ -1,0 +1,234 @@
+{
+  "total": 116,
+  "page": 1,
+  "page_size": 5,
+  "items": [
+    {
+      "id": "025f09d6-f119-48a3-bde0-1fccc19f0de6",
+      "name": "AI Adoption & AI Maturity Advisor",
+      "creator": "system",
+      "categories": [
+        "training",
+        "project-management",
+        "engineering"
+      ],
+      "unique_users_count": 45,
+      "unique_likes_count": 0,
+      "usage_tier": "WARM",
+      "bucket": "VERIFIED",
+      "bucket_reason": "warm_qualified",
+      "verdict_kind": "KEEP",
+      "cleanup_reason": null,
+      "canonical_id": null,
+      "canonical_name": null,
+      "canonical_users": null,
+      "cluster_size": null,
+      "verdict": {
+        "kind": "KEEP",
+        "reason": null,
+        "detail": "",
+        "canonical_id": null,
+        "canonical_name": null,
+        "canonical_users": null,
+        "cluster_size": null,
+        "match_score": null,
+        "bucket": "VERIFIED",
+        "bucket_reason": "warm_qualified"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "025f09d6-f119-48a3-bde0-1fccc19f0de6",
+        "b_id": "3ab09f41-f9d5-4309-b53e-6c3831d586ef",
+        "b_name": "AI Maturity Framework Evaluator",
+        "signals": {
+          "cosine": 0.8395995999999999
+        },
+        "combined": 0.8395995999999999,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    },
+    {
+      "id": "0329dfc9-3ab8-4197-9a0a-73036c845ab4",
+      "name": "Jira Project Management Assistant",
+      "creator": "system",
+      "categories": [
+        "product-management",
+        "project-management",
+        "quality-assurance"
+      ],
+      "unique_users_count": 72,
+      "unique_likes_count": 2,
+      "usage_tier": "WARM",
+      "bucket": "VERIFIED",
+      "bucket_reason": "hot_adoption",
+      "verdict_kind": "KEEP",
+      "cleanup_reason": null,
+      "canonical_id": null,
+      "canonical_name": null,
+      "canonical_users": null,
+      "cluster_size": null,
+      "verdict": {
+        "kind": "KEEP",
+        "reason": null,
+        "detail": "",
+        "canonical_id": null,
+        "canonical_name": null,
+        "canonical_users": null,
+        "cluster_size": null,
+        "match_score": null,
+        "bucket": "VERIFIED",
+        "bucket_reason": "hot_adoption"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "0329dfc9-3ab8-4197-9a0a-73036c845ab4",
+        "b_id": "289d2751-afd9-4c77-a272-90df7cd71702",
+        "b_name": "CodeMie JIRA Assistant",
+        "signals": {
+          "cosine": 0.8836364800000001
+        },
+        "combined": 0.8836364800000001,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    },
+    {
+      "id": "08788d39-7a25-4e97-b42e-ac34b12a209c",
+      "name": "Release Manager Assistant",
+      "creator": "system",
+      "categories": [
+        "project-management"
+      ],
+      "unique_users_count": 21,
+      "unique_likes_count": 1,
+      "usage_tier": "COLD",
+      "bucket": "VERIFIED",
+      "bucket_reason": "warm_qualified",
+      "verdict_kind": "KEEP",
+      "cleanup_reason": null,
+      "canonical_id": null,
+      "canonical_name": null,
+      "canonical_users": null,
+      "cluster_size": null,
+      "verdict": {
+        "kind": "KEEP",
+        "reason": null,
+        "detail": "",
+        "canonical_id": null,
+        "canonical_name": null,
+        "canonical_users": null,
+        "cluster_size": null,
+        "match_score": null,
+        "bucket": "VERIFIED",
+        "bucket_reason": "warm_qualified"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "08788d39-7a25-4e97-b42e-ac34b12a209c",
+        "b_id": "289d2751-afd9-4c77-a272-90df7cd71702",
+        "b_name": "CodeMie JIRA Assistant",
+        "signals": {
+          "cosine": 0.8390198
+        },
+        "combined": 0.8390198,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    },
+    {
+      "id": "0c303bd1-0714-442f-83fc-9d73e97b749e",
+      "name": "Well Being Month HU Assistant",
+      "creator": "system",
+      "categories": [
+        "support",
+        "knowledge-management"
+      ],
+      "unique_users_count": 18,
+      "unique_likes_count": 0,
+      "usage_tier": "COLD",
+      "bucket": "VERIFIED",
+      "bucket_reason": "warm_qualified",
+      "verdict_kind": "KEEP",
+      "cleanup_reason": null,
+      "canonical_id": null,
+      "canonical_name": null,
+      "canonical_users": null,
+      "cluster_size": null,
+      "verdict": {
+        "kind": "KEEP",
+        "reason": null,
+        "detail": "",
+        "canonical_id": null,
+        "canonical_name": null,
+        "canonical_users": null,
+        "cluster_size": null,
+        "match_score": null,
+        "bucket": "VERIFIED",
+        "bucket_reason": "warm_qualified"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "0c303bd1-0714-442f-83fc-9d73e97b749e",
+        "b_id": "01ea7508-e60d-4f30-a2f1-bb2057fecc2d",
+        "b_name": "Application Ideation Workshop Assistant",
+        "signals": {
+          "cosine": 0.7834778
+        },
+        "combined": 0.7834778,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    },
+    {
+      "id": "0d1fd5b8-4534-42b3-bfa0-cc0ad76e46f0",
+      "name": " Global BGC Intelligence & Compliance Assistant",
+      "creator": "system",
+      "categories": [
+        "compliance",
+        "knowledge-management",
+        "ee0ed514-d868-4ff9-8c62-4fc6e94ff7f6"
+      ],
+      "unique_users_count": 23,
+      "unique_likes_count": 0,
+      "usage_tier": "COLD",
+      "bucket": "VERIFIED",
+      "bucket_reason": "warm_qualified",
+      "verdict_kind": "KEEP",
+      "cleanup_reason": null,
+      "canonical_id": null,
+      "canonical_name": null,
+      "canonical_users": null,
+      "cluster_size": null,
+      "verdict": {
+        "kind": "KEEP",
+        "reason": null,
+        "detail": "",
+        "canonical_id": null,
+        "canonical_name": null,
+        "canonical_users": null,
+        "cluster_size": null,
+        "match_score": null,
+        "bucket": "VERIFIED",
+        "bucket_reason": "warm_qualified"
+      },
+      "critical_count": 0,
+      "optional_count": 0,
+      "top_similar": {
+        "a_id": "0d1fd5b8-4534-42b3-bfa0-cc0ad76e46f0",
+        "b_id": "d76cb6f0-929e-4c47-ac51-75b375f2a690",
+        "b_name": "Software Contract Assistant",
+        "signals": {
+          "cosine": 0.7891235400000001
+        },
+        "combined": 0.7891235400000001,
+        "severity": null,
+        "reason": "es_knn"
+      }
+    }
+  ]
+}

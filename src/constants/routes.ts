@@ -74,6 +74,8 @@ export const PROJECTS_MANAGEMENT_INTEGRATIONS = 'projects-management-integration
 export const ADMINISTRATION_USERS = 'administration-users'
 export const COST_CENTERS_MANAGEMENT_DETAIL = 'cost-centers-management-detail'
 
+export const MARKETPLACE_MANAGEMENT_PATH = '/settings/administration/marketplace-management'
+
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES = 'aws-agentcore-runtimes-settings'
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES_LIST = 'aws-agentcore-runtimes-settings-detail'
 export const SETTINGS_AWS_AGENTCORE_RUNTIMES_RUNTIME = 'aws-agentcore-runtimes-settings-runtime'

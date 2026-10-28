@@ -37,7 +37,7 @@ export interface PaginationState {
 }
 
 export interface ColumnDefinition {
-  label?: string
+  label?: import('react').ReactNode
   key: string
   type: DefinitionTypes | `${DefinitionTypes}`
   maxLength?: number

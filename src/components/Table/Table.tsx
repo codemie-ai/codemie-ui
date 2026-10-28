@@ -14,7 +14,7 @@
 //
 
 import { classNames as cn } from 'primereact/utils'
-import React, { memo, MouseEvent, useCallback, useMemo } from 'react'
+import React, { KeyboardEvent, memo, MouseEvent, useCallback, useMemo } from 'react'
 
 import Spinner from '@/components/Spinner'
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
@@ -81,6 +81,9 @@ export interface TableProps<T = TableItem> {
   onRowClick?: (item: T) => void
 
   ariaLabel?: string
+  emptyState?: React.ReactNode
+  rowTestIdPrefix?: string
+  paginationTestId?: string
 }
 
 const Table = <T,>({
@@ -114,6 +117,9 @@ const Table = <T,>({
   onRowClick,
 
   ariaLabel,
+  emptyState,
+  rowTestIdPrefix,
+  paginationTestId,
 }: TableProps<T>): React.ReactNode => {
   const isLazyMode = !!pagination?.totalCount && !!onSelectAllChange
 
@@ -172,10 +178,15 @@ const Table = <T,>({
     (item: T, event: MouseEvent<HTMLTableRowElement>) => {
       const target = event.target as HTMLElement
 
+      // The row itself carries role="button" whenever onSelectRow is set, so
+      // an unscoped closest() always matched the <tr> and every row click was
+      // swallowed — clickable rows navigated nowhere (F-90). Only a genuinely
+      // interactive DESCENDANT of the row should suppress row selection.
       const interactiveElement = target.closest('button, a, input, [role="button"], [role="link"]')
       const isSelectionCheckbox = target.closest('[data-selection-checkbox]')
 
-      if (interactiveElement && !isSelectionCheckbox) return
+      if (interactiveElement && interactiveElement !== event.currentTarget && !isSelectionCheckbox)
+        return
 
       if (onRowClick && !isSelectionCheckbox) {
         // Selecting text in the row (to copy a name, say) is not a click on it.
@@ -186,6 +197,27 @@ const Table = <T,>({
       handleRowSelect(item)
     },
     [handleRowSelect, onRowClick]
+  )
+
+  /**
+   * Keyboard equivalent of a row click. Rows that act on selection are real
+   * controls, so they must be reachable by Tab and activatable with Enter or
+   * Space — previously they were a bare `<tr onClick>`, silent to screen
+   * readers and unreachable without a mouse. Key presses originating inside a
+   * nested control (a menu button, a link, the selection checkbox) are left to
+   * that control.
+   */
+  const handleRowKeyDown = useCallback(
+    (item: T, event: KeyboardEvent<HTMLTableRowElement>) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return
+
+      const target = event.target as HTMLElement
+      if (target !== event.currentTarget) return
+
+      event.preventDefault()
+      handleRowSelect(item)
+    },
+    [handleRowSelect]
   )
 
   const isMobileLayout = useIsMobileLayout()
@@ -257,7 +289,14 @@ const Table = <T,>({
             </thead>
             <tbody>
               {!items.length ? (
-                <EmptyList colSpan={renderedColumns.length} />
+                // An embedded table has no horizontal scrollport of its own,
+                // so viewport-sticky centering would push the message out of
+                // the card it belongs to.
+                <EmptyList
+                  colSpan={renderedColumns.length}
+                  content={emptyState}
+                  stickyCenter={!embedded}
+                />
               ) : (
                 items.map((value, rowIndex) => {
                   const idField = idPath ?? 'id'
@@ -276,12 +315,30 @@ const Table = <T,>({
                   return (
                     <React.Fragment key={rowKey}>
                       <tr
+                        data-testid={
+                          rowTestIdPrefix && idValue
+                            ? `${rowTestIdPrefix}-${String(idValue)}`
+                            : undefined
+                        }
                         onClick={(e) => handleRowClick(value, e)}
+                        onKeyDown={onSelectRow ? (e) => handleRowKeyDown(value, e) : undefined}
+                        tabIndex={onSelectRow ? 0 : undefined}
+                        // F-65: this row used to declare role="button", which
+                        // replaces the implicit `row` role and detaches it from
+                        // its table — so the table stopped being a table to
+                        // assistive technology, app-wide, and `getByRole('row')`
+                        // stopped finding anything. A selectable row is a row
+                        // whose selection state is `aria-selected`; the keyboard
+                        // handler above keeps Enter/Space working without
+                        // lying about what the element is.
+                        aria-selected={onSelectRow ? isSelected : undefined}
                         className={cn(
                           (onSelectRow || onRowClick) &&
                             !isSelected &&
                             '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
-                          isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer'
+                          isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer',
+                          onSelectRow &&
+                            'focus-visible:outline-none focus-visible:[&_td]:bg-surface-base-tertiary'
                         )}
                       >
                         {renderedColumns.map((definition, colIndex) => (
@@ -330,6 +387,7 @@ const Table = <T,>({
       {pagination && !embedded && (
         <Pagination
           {...paginationProps}
+          data-testid={paginationTestId}
           className={cn(
             'fixed bottom-0 right-0 bg-surface-base-primary max-w-full px-6 pt-[20px] pb-[14px] transition-all duration-150 z-40',
             paginationOffset

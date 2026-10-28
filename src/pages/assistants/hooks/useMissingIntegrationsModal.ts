@@ -22,6 +22,7 @@ import { buildAssistantMaps, applySettingsToToolkits } from '../utils/missingInt
 
 export interface SubmitResponse {
   error?: string
+  success?: boolean
   validation?: {
     has_missing_integrations: boolean
     missing_by_credential_type: MissingIntegrationByCredentialType[]
@@ -69,6 +70,10 @@ export const useMissingIntegrationsModal = <T = any>({
 
         if (response.error) {
           return { success: false, error: response.error }
+        }
+
+        if (response.success === false) {
+          return { success: false }
         }
 
         if (response.validation?.has_missing_integrations) {
@@ -137,6 +142,9 @@ export const useMissingIntegrationsModal = <T = any>({
       if (response.error) {
         return { success: false, error: response.error }
       }
+      if (response.success === false) {
+        return { success: false }
+      }
       unblockTransition?.()
       onSuccess?.()
       return { success: true }
@@ -147,6 +155,20 @@ export const useMissingIntegrationsModal = <T = any>({
       setMissingIntegrationsState((prev) => ({ ...prev, pendingAssistantValues: null }))
     }
   }, [missingIntegrationsState.pendingAssistantValues, onSubmit, onSuccess, unblockTransition])
+
+  /** Open the modal for a validation result obtained outside this hook's own submit. */
+  const openMissingIntegrations = useCallback(
+    (validation: NonNullable<SubmitResponse['validation']>, values: T) => {
+      setMissingIntegrationsState({
+        isModalVisible: true,
+        missingByCredentialType: validation.missing_by_credential_type,
+        subAssistantsMissing: validation.sub_assistants_missing,
+        validationMessage: validation.message,
+        pendingAssistantValues: values,
+      })
+    },
+    []
+  )
 
   const handleCancelValidationModal = useCallback(() => {
     setMissingIntegrationsState((prev) => ({
@@ -163,5 +185,6 @@ export const useMissingIntegrationsModal = <T = any>({
     handleSaveWithValidation,
     handleSkipValidation,
     handleCancelValidationModal,
+    openMissingIntegrations,
   }
 }

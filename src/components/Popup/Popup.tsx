@@ -34,6 +34,10 @@ export interface PopupProps {
   onHide: () => void
   onSubmit?: () => void
   submitText?: string
+  /** Selector hook for the submit button (e.g. `moderation-submit`). */
+  submitTestId?: string
+  /** Selector hook for the cancel button. */
+  cancelTestId?: string
   submitDisabled?: boolean
   overlayClassName?: string
   hideFooter?: boolean
@@ -65,6 +69,8 @@ const Popup: React.FC<PopupProps> = ({
   onHide,
   onSubmit,
   submitText = 'Create',
+  submitTestId,
+  cancelTestId,
   submitDisabled = false,
   overlayClassName = '',
   hideFooter = false,
@@ -170,13 +176,18 @@ const Popup: React.FC<PopupProps> = ({
 
     return (
       <div className="flex justify-end gap-4">
-        <CustomButton variant={cancelButtonType ?? ButtonType.SECONDARY} onClick={onHide}>
+        <CustomButton
+          variant={cancelButtonType ?? ButtonType.SECONDARY}
+          onClick={onHide}
+          data-testid={cancelTestId}
+        >
           {cancelText}
         </CustomButton>
         <CustomButton
           disabled={submitDisabled}
           onClick={onSubmit}
           variant={submitButtonType ?? ButtonType.PRIMARY}
+          data-testid={submitTestId}
         >
           {submitText}
         </CustomButton>

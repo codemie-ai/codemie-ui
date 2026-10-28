@@ -23,10 +23,13 @@ import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { useTheme } from '@/hooks/useTheme'
 import { truncateInput } from '@/utils/helpers'
 
+import type { ReactNode } from 'react'
+
 export interface CardProps {
   title: string
   titleId?: string
   subtitle?: string
+  subtitleAddon?: ReactNode
   description: string
   label?: string
   avatar: React.ReactNode
@@ -41,6 +44,7 @@ const Card: React.FC<CardProps> = ({
   title,
   titleId,
   subtitle,
+  subtitleAddon,
   description,
   label = null,
   avatar,
@@ -112,9 +116,10 @@ const Card: React.FC<CardProps> = ({
                   )}
                 </h3>
 
-                {subtitle && (
-                  <div className="text-xs text-text-quaternary z-[1] whitespace-nowrap overflow-hidden text-ellipsis">
-                    {subtitle}
+                {(subtitle || subtitleAddon) && (
+                  <div className="text-xs text-text-quaternary z-[1] flex items-center gap-1.5 min-w-0">
+                    {subtitle && <span className="truncate min-w-0">{subtitle}</span>}
+                    {subtitleAddon && <span className="shrink-0">{subtitleAddon}</span>}
                   </div>
                 )}
 

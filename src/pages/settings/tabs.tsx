@@ -18,12 +18,15 @@ import AdminTabSvg from '@/assets/icons/lightning.svg?react'
 import ProfileTabSvg from '@/assets/icons/profile-tab.svg?react'
 import { LayoutTab } from '@/components/Layouts/Layout/Layout'
 import { SettingsTab } from '@/constants'
+import { MARKETPLACE_MANAGEMENT_PATH } from '@/constants/routes'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 import {
   isCostCentersEnabled,
   isMcpEnabled,
   isUserManagementEnabled,
   isBudgetManagementEnabled,
+  isTeamsEnabled,
+  isMarketplaceManagementEnabled,
 } from '@/utils/featureFlags'
 
 // Enterprise-only admin items. Users management is intentionally NOT part of this list —
@@ -66,6 +69,8 @@ interface AdminChildrenContext {
   isMcpFeatureEnabled: boolean
   isCostCentersFeatureEnabled: boolean
   isUserMgmtEnabled: boolean
+  isTeamsBotEnabled: boolean
+  isMarketplaceMgmtEnabled: boolean
   isEnterprise: boolean
   projectsTab: LayoutTab
   activityEventsTab: LayoutTab[]
@@ -96,6 +101,21 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
         : []),
       ctx.projectsTab,
       ...ctx.usersManagementTab,
+      ...(ctx.isMarketplaceMgmtEnabled
+        ? [
+            {
+              id: SettingsTab.MARKETPLACE_MANAGEMENT_OVERVIEW,
+              name: 'Marketplace management',
+              title: 'Marketplace management',
+              // Sub-navigation lives in the in-page MarketplaceTabsBar, which
+              // also carries the pending/cleanup counts. Duplicating it as
+              // sidebar `children` gave two controls for the same three URLs,
+              // and the sidebar's prefix matching highlighted "Overview" on all
+              // three routes.
+              url: MARKETPLACE_MANAGEMENT_PATH,
+            },
+          ]
+        : []),
       ...(ctx.isEnterprise
         ? getEnterpriseAdminItems(ctx.isMcpFeatureEnabled, ctx.budgetsManagementTab)
         : []),
@@ -111,6 +131,16 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
     // the write guard admits maintainers too, so the tab must reach them
     ...(ctx.isMaintainer ? [customerConfigurationTab] : []),
     ctx.projectsTab,
+    ...(ctx.isMaintainer && ctx.isMarketplaceMgmtEnabled
+      ? [
+          {
+            id: SettingsTab.MARKETPLACE_MANAGEMENT_OVERVIEW,
+            name: 'Marketplace management',
+            title: 'Marketplace management',
+            url: MARKETPLACE_MANAGEMENT_PATH,
+          },
+        ]
+      : []),
   ]
 }
 
@@ -125,6 +155,8 @@ export const getNavigationTabs = (
   const isCostCentersFeatureEnabled = isCostCentersEnabled()
   const isUserMgmtEnabled = isUserManagementEnabled()
   const isBudgetMgmtEnabled = isBudgetManagementEnabled()
+  const isTeamsBotEnabled = isTeamsEnabled()
+  const isMarketplaceMgmtEnabled = isMarketplaceManagementEnabled()
   const isEnterprise = isEnterpriseEdition()
 
   const budgetsManagementTab: LayoutTab[] =
@@ -177,6 +209,8 @@ export const getNavigationTabs = (
     isMcpFeatureEnabled,
     isCostCentersFeatureEnabled,
     isUserMgmtEnabled,
+    isTeamsBotEnabled,
+    isMarketplaceMgmtEnabled,
     isEnterprise,
     projectsTab,
     activityEventsTab,
