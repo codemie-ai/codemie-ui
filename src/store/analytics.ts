@@ -123,6 +123,9 @@ interface Analytics {
   startRequest: (type: string) => AbortSignal
 }
 
+/** Largest page the backend accepts (`per_page` le=1000), so most projects fit in one request. */
+const PROJECT_MEMBER_SPENDING_PAGE_SIZE = 1000
+
 /**
  * Helper function to start a new request for a specific metric type
  * - Cancels any existing request for this type
@@ -302,11 +305,26 @@ export const analyticsStore = proxy<Analytics>({
     )
   },
 
-  /** Per-member spending inside one project (project details Spending column). */
+  /**
+   * Per-member spending inside one project (project details Spending column).
+   * Fetches every page: a member missing from the rows renders as "-" instead of their spend.
+   * Returns null if any page fails, so a partial member list is never shown as complete.
+   */
   async fetchProjectMemberSpending(projectName: string) {
-    return this.fetchTabularData(TabularMetricType.PROJECT_MEMBER_SPENDING, {
-      projects: [projectName],
-    })
+    let merged: TabularResponse | null = null
+    for (let page = 0; ; page += 1) {
+      // eslint-disable-next-line no-await-in-loop -- sequential: fetchTabularData aborts a concurrent request of the same type
+      const result = await this.fetchTabularData(TabularMetricType.PROJECT_MEMBER_SPENDING, {
+        projects: [projectName],
+        page,
+        per_page: PROJECT_MEMBER_SPENDING_PAGE_SIZE,
+      })
+      if (!result) return null
+      merged = merged
+        ? { ...result, data: { ...result.data, rows: [...merged.data.rows, ...result.data.rows] } }
+        : result
+      if (!result.pagination?.has_more) return merged
+    }
   },
 
   async fetchLeaderboardProjects() {
