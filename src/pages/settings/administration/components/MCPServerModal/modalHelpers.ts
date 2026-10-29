@@ -45,21 +45,15 @@ export const transformFormDataToSubmit = (data: MCPServerFormData): Partial<MCPC
   return {
     name: data.name,
     description: data.description,
-    categories:
-      data.categories && data.categories.length > 0
-        ? data.categories.filter((c): c is string => Boolean(c))
-        : undefined,
+    categories: (data.categories ?? []).filter((c): c is string => Boolean(c)),
     logo_url: data.icon_url ?? undefined,
     server_home_url: data.server_home_url,
     source_url: data.source_url,
     config,
-    required_env_vars:
-      data.required_env_vars && data.required_env_vars.length > 0
-        ? (data.required_env_vars.map((v) => ({
-            name: v.name,
-            description: v.description ?? undefined,
-            required: v.required ?? true,
-          })) as MCPVariableDefinition[])
-        : undefined,
+    required_env_vars: (data.required_env_vars ?? []).map((v) => ({
+      name: v.name,
+      description: v.description ?? undefined,
+      required: v.required ?? true,
+    })) as MCPVariableDefinition[],
   }
 }
