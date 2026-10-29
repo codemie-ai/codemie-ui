@@ -1,5 +1,282 @@
 [
   {
+    "version": "2.63.0",
+    "date": "2026-10-29",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "GitLab image-download support",
+            "description": "GitLab tools can now download image content for use in assistant workflows.",
+            "issues": [
+              {
+                "key": "EPMCDME-14273",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14273"
+              }
+            ]
+          },
+          {
+            "title": "Marketplace approval controls",
+            "description": "Added an administrator approval gate for Marketplace content.",
+            "issues": [
+              {
+                "key": "EPMCDME-14234",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14234"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "ServiceNow project-budget integration",
+            "description": "Introduced an API integration for synchronizing project budget information with ServiceNow.",
+            "issues": [
+              {
+                "key": "EPMCDME-16127",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16127"
+              }
+            ]
+          },
+          {
+            "title": "MCP client-registration configuration",
+            "description": "Added a setting to disable the client metadata document and require Dynamic Client Registration.",
+            "issues": [
+              {
+                "key": "EPMCDME-16344",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16344"
+              }
+            ]
+          },
+          {
+            "title": "Marketplace cleanup configuration",
+            "description": "Added configurable thresholds for determining active Marketplace usage.",
+            "issues": [
+              {
+                "key": "EPMCDME-14765",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14765"
+              }
+            ]
+          },
+          {
+            "title": "Streaming payload enrichment",
+            "description": "Added end-to-end support for streaming payload fields, including event and tool types.",
+            "issues": [
+              {
+                "key": "EPMCDME-16017",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16017"
+              }
+            ]
+          },
+          {
+            "title": "Scheduler usability improvements",
+            "description": "Updated scheduler resource-type filter ordering.",
+            "issues": [
+              {
+                "key": "EPMCDME-15591",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15591"
+              }
+            ]
+          },
+          {
+            "title": "Platform maintenance",
+            "description": "Updated the Keycloak custom-theme image to a newer Node.js version.",
+            "issues": [
+              {
+                "key": "EPMCDME-16254",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16254"
+              }
+            ]
+          },
+          {
+            "title": "Security hardening",
+            "description": "Included non-sensitive security remediation and platform-hardening updates.",
+            "issues": []
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "MCP catalog and custom-server validation",
+            "description": "Fixed environment-variable editing, validation messaging, and required-field indication in MCP Server configuration.",
+            "issues": [
+              {
+                "key": "EPMCDME-16516",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16516"
+              },
+              {
+                "key": "EPMCDME-15775",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15775"
+              },
+              {
+                "key": "EPMCDME-14838",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14838"
+              }
+            ]
+          },
+          {
+            "title": "Analytics performance and date accuracy",
+            "description": "Fixed slow Analytics-page loading and incorrect budget-period dates in user analytics.",
+            "issues": [
+              {
+                "key": "EPMCDME-16434",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16434"
+              },
+              {
+                "key": "EPMCDME-15737",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15737"
+              }
+            ]
+          },
+          {
+            "title": "Project-members and cost-center pagination",
+            "description": "Fixed page-size selection and control display issues in project-member and cost-center project lists.",
+            "issues": [
+              {
+                "key": "EPMCDME-16410",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16410"
+              },
+              {
+                "key": "EPMCDME-16408",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16408"
+              },
+              {
+                "key": "EPMCDME-16326",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16326"
+              },
+              {
+                "key": "EPMCDME-16325",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16325"
+              }
+            ]
+          },
+          {
+            "title": "Scheduler configuration and execution",
+            "description": "Fixed local-development URL handling, multi-project selection, and scheduled datasource reindexing.",
+            "issues": [
+              {
+                "key": "EPMCDME-16242",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16242"
+              },
+              {
+                "key": "EPMCDME-16235",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16235"
+              },
+              {
+                "key": "EPMCDME-10937",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-10937"
+              }
+            ]
+          },
+          {
+            "title": "Workflow execution reliability",
+            "description": "Fixed workflow cancellation, iterator handling, state-output truncation reporting, and supervisor completion after token limits.",
+            "issues": [
+              {
+                "key": "EPMCDME-16233",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16233"
+              },
+              {
+                "key": "EPMCDME-14145",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14145"
+              },
+              {
+                "key": "EPMCDME-11735",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-11735"
+              },
+              {
+                "key": "EPMCDME-11725",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-11725"
+              }
+            ]
+          },
+          {
+            "title": "CLI Analytics accuracy",
+            "description": "Fixed failures in non-Latin file paths, session-duration calculation, turn counting, and pricing attribution.",
+            "issues": [
+              {
+                "key": "EPMCDME-16260",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16260"
+              },
+              {
+                "key": "EPMCDME-16256",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16256"
+              },
+              {
+                "key": "EPMCDME-15584",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15584"
+              },
+              {
+                "key": "EPMCDME-15542",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15542"
+              }
+            ]
+          },
+          {
+            "title": "Assistant configuration and model visibility",
+            "description": "Fixed persistence of cleared model parameters and router-model visibility in chat configuration.",
+            "issues": [
+              {
+                "key": "EPMCDME-16088",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16088"
+              },
+              {
+                "key": "EPMCDME-15676",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15676"
+              }
+            ]
+          },
+          {
+            "title": "Tool invocation stability",
+            "description": "Fixed omitted-argument handling and validation-error formatting during tool invocation.",
+            "issues": [
+              {
+                "key": "EPMCDME-15607",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15607"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.62.0",
     "date": "2026-10-26",
     "sections": [
