@@ -26,6 +26,7 @@ import { Doughnut } from 'react-chartjs-2'
 
 import CurrencySvg from '@/assets/icons/currency.svg?react'
 import InfoIcon from '@/assets/icons/info.svg?react'
+import DetailsBadge from '@/components/details/DetailsBadge'
 import Spinner from '@/components/Spinner'
 import Tooltip from '@/components/Tooltip/Tooltip'
 import {
@@ -40,6 +41,7 @@ import {
   Metric,
   TabularMetricType,
   MetricFormat,
+  MetricValue,
   TabularResponse,
 } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
@@ -90,7 +92,7 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
           type: column.type,
           format: column.format,
           description: column.description,
-          value: row[column.id] as string | number | boolean,
+          value: row[column.id] as MetricValue,
         })),
       },
       metadata: keySpendingData.metadata,
@@ -223,16 +225,23 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
   }
 
   const getSpendingCustomRenderColumns = () => {
-    const customColumns: Record<
-      string,
-      (item: Record<string, string | number | boolean>) => ReactElement
-    > = {}
+    const customColumns: Record<string, (item: Record<string, MetricValue>) => ReactElement> = {}
 
     if (!keySpendingData) return customColumns
 
     keySpendingData.data.columns.forEach((col) => {
+      if (col.id === 'project_name') {
+        customColumns[col.id] = (item: Record<string, MetricValue>) => (
+          <div className="flex flex-wrap items-center gap-2">
+            <span>{item[col.id]}</span>
+            {item.is_default === true && (
+              <DetailsBadge value="DEFAULT" className="py-1 text-[11px] leading-none" />
+            )}
+          </div>
+        )
+      }
       if (col.format === MetricFormat.PERCENTAGE && col.id === 'total') {
-        customColumns[col.id] = (item: Record<string, string | number | boolean>) => {
+        customColumns[col.id] = (item: Record<string, MetricValue>) => {
           const value = item[col.id]
           const percentage: number = typeof value === 'number' ? value : 0
           return (
