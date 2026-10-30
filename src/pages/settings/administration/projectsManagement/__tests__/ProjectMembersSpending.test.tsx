@@ -149,6 +149,25 @@ describe('ProjectMembersManager — merged Spending column', () => {
     expect(screen.queryByText('$250.00')).not.toBeInTheDocument()
   })
 
+  it('does not show a category the project has no budget for, even if the user has a personal one', async () => {
+    userStore.getUsers = vi
+      .fn()
+      .mockResolvedValue(
+        usersResponse([
+          buildUser('u-1', 'Jane Doe', 'jane@epam.com', [
+            { category: 'cli', budget_id: 'personal-cli', current_spending: 7, max_budget: 250 },
+          ]),
+        ])
+      )
+
+    render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
+
+    await screen.findByText('Jane Doe')
+
+    expect(screen.queryByRole('button', { name: /CLI/i })).not.toBeInTheDocument()
+    expect(screen.queryByText('$250.00')).not.toBeInTheDocument()
+  })
+
   it('renders a dash for the spend side when a member has no spending row', async () => {
     render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
 

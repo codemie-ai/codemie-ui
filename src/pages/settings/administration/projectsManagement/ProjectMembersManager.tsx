@@ -138,7 +138,7 @@ interface ProjectMembersManagerProps {
   project: ProjectDetail
   onMembersChanged?: () => Promise<void> | void
   budgets?: ProjectBudget[]
-  onBudgetsChanged?: (budgets: ProjectBudget[]) => void
+  onBudgetsChanged?: () => void | Promise<void>
   isModelsConfigEnabled?: boolean
 }
 
@@ -479,24 +479,20 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   }, [loadUsers])
 
   // Per-member spend inside this project — the left-hand number in the Budget Allocations column.
-  useEffect(() => {
-    if (!showBudgets) return () => {}
-    let cancelled = false
-    analyticsStore
-      .fetchProjectMemberSpending(project.name)
-      .then((result) => {
-        if (cancelled) return
-        const rows = (result?.data?.rows as unknown as ProjectMemberSpendingRow[]) ?? []
-        setSpendingByUserId(Object.fromEntries(rows.map((row) => [row.user_id, row])))
-      })
-      .catch((error) => {
-        console.error('Failed to fetch project member spending:', error)
-        if (!cancelled) setSpendingByUserId({})
-      })
-    return () => {
-      cancelled = true
+  const loadSpending = useCallback(async () => {
+    try {
+      const result = await analyticsStore.fetchProjectMemberSpending(project.name)
+      const rows = (result?.data?.rows as unknown as ProjectMemberSpendingRow[]) ?? []
+      setSpendingByUserId(Object.fromEntries(rows.map((row) => [row.user_id, row])))
+    } catch (error) {
+      console.error('Failed to fetch project member spending:', error)
+      setSpendingByUserId({})
     }
-  }, [project.name, showBudgets])
+  }, [project.name])
+
+  useEffect(() => {
+    if (showBudgets) loadSpending()
+  }, [showBudgets, loadSpending])
 
   // Fetch project budgets independently for the "View analytics" link period calculation.
   // This is guarded by canManageProject and does NOT affect showBudgets or the budget column.
@@ -632,6 +628,16 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     }
   }, [deletingUser, project.name, selected, selection, handlePageChange, onMembersChanged])
 
+  const refreshBudgets = useCallback(async () => {
+    if (!showBudgets) return
+    await onBudgetsChanged?.()
+  }, [showBudgets, onBudgetsChanged])
+
+  const refreshBudgetData = useCallback(
+    () => Promise.all([refreshBudgets(), showBudgets ? loadSpending() : undefined]),
+    [refreshBudgets, loadSpending, showBudgets]
+  )
+
   const handleAddUserSubmit = useCallback(
     async (data: AddUserFormData) => {
       const userId = Array.isArray(data.userIdentifier)
@@ -644,24 +650,20 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         setShowAddUserModal(false)
         await reloadUsers()
         await onMembersChanged?.()
+        await refreshBudgetData()
       } catch (error: any) {
         console.error('Failed to add user:', error)
         toaster.error(getErrorMessage(error, 'Failed to add user to project'))
       }
     },
-    [project.name, reloadUsers, onMembersChanged]
+    [project.name, reloadUsers, onMembersChanged, refreshBudgetData]
   )
 
   const handleImportSuccess = useCallback(async () => {
     await reloadUsers()
     await onMembersChanged?.()
-  }, [reloadUsers, onMembersChanged])
-
-  const refreshBudgets = useCallback(async () => {
-    if (!budgets?.length) return
-    const updated = await projectBudgetsStore.listProjectBudgets({ projectName: project.name })
-    onBudgetsChanged?.(updated)
-  }, [project.name, budgets, onBudgetsChanged])
+    await refreshBudgetData()
+  }, [reloadUsers, onMembersChanged, refreshBudgetData])
 
   const handleOverrideMember = useCallback(
     async (updates: MemberAllocationOverrideUpdate[]) => {

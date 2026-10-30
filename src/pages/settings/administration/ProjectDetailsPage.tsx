@@ -66,11 +66,11 @@ const getVisibleTabs = ({
   canViewBudgets: boolean
   isModelsConfigEnabled: boolean
 }): ProjectDetailsTab[] => [
-  'overview',
-  ...(isPersonalProject ? [] : (['members'] as const)),
-  ...(canManageProject && isModelsConfigEnabled ? (['models'] as const) : []),
-  ...(canViewBudgets ? (['budgets'] as const) : []),
-  ...(canManageProject ? (['integrations'] as const) : []),
+  ProjectDetailsTab.Overview,
+  ...(isPersonalProject ? [] : [ProjectDetailsTab.Members]),
+  ...(canManageProject && isModelsConfigEnabled ? [ProjectDetailsTab.Models] : []),
+  ...(canViewBudgets ? [ProjectDetailsTab.Budgets] : []),
+  ...(canManageProject ? [ProjectDetailsTab.Integrations] : []),
 ]
 
 const resolveBudgetsAccess = ({
@@ -154,23 +154,19 @@ const ProjectDetailsPage = () => {
     }
   }, [loadProject])
 
+  const loadBudgets = useCallback(async () => {
+    try {
+      setBudgets(await projectBudgetsStore.listProjectBudgets({ projectName }))
+    } catch (error) {
+      console.error('Failed to load project budgets for members:', error)
+    }
+  }, [projectName])
+
   useEffect(() => {
-    let cancelled = false
-    if (activeTab !== 'members' || !canViewBudgets || !projectName) {
-      return () => {
-        cancelled = true
-      }
+    if (activeTab === ProjectDetailsTab.Members && canViewBudgets && projectName) {
+      loadBudgets()
     }
-    projectBudgetsStore
-      .listProjectBudgets({ projectName })
-      .then((data) => {
-        if (!cancelled) setBudgets(data)
-      })
-      .catch((error) => console.error('Failed to load project budgets for members:', error))
-    return () => {
-      cancelled = true
-    }
-  }, [activeTab, canViewBudgets, projectName])
+  }, [activeTab, canViewBudgets, projectName, loadBudgets])
 
   const handleBack = useCallback(() => {
     goBackProjectDetails()
@@ -248,7 +244,7 @@ const ProjectDetailsPage = () => {
     )
   }
 
-  const isMembersView = activeTab === 'members' && canOpenActiveTab
+  const isMembersView = activeTab === ProjectDetailsTab.Members && canOpenActiveTab
 
   const tabContent = (
     <>
@@ -257,7 +253,7 @@ const ProjectDetailsPage = () => {
         activeTab={activeTab}
         visibleTabs={visibleTabs}
       />
-      {activeTab === 'overview' && (
+      {activeTab === ProjectDetailsTab.Overview && (
         <ProjectOverviewSection
           project={project}
           onCostCenterOpen={handleCostCenterOpen}
@@ -271,10 +267,10 @@ const ProjectDetailsPage = () => {
           onProjectChanged={loadProject}
         />
       )}
-      {activeTab === 'models' && canOpenActiveTab && (
+      {activeTab === ProjectDetailsTab.Models && canOpenActiveTab && (
         <ProjectModelsSection projectName={project.name} />
       )}
-      {activeTab === 'integrations' && canOpenActiveTab && (
+      {activeTab === ProjectDetailsTab.Integrations && canOpenActiveTab && (
         <ProjectIntegrationsSection projectName={project.name} />
       )}
       {isMembersView && (
@@ -283,7 +279,7 @@ const ProjectDetailsPage = () => {
             project={project}
             onMembersChanged={loadProject}
             budgets={isMaintainer || isProjectAdmin ? budgets : undefined}
-            onBudgetsChanged={isMaintainer || isProjectAdmin ? setBudgets : undefined}
+            onBudgetsChanged={isMaintainer || isProjectAdmin ? loadBudgets : undefined}
             // Per-member model overrides have no backend support yet (EPMCDME-14349
             // scoped the FE to the flat project-level allow-list); keep this entry
             // point hidden regardless of the Models tab's own feature flag.
@@ -291,7 +287,7 @@ const ProjectDetailsPage = () => {
           />
         </div>
       )}
-      {activeTab === 'budgets' && canOpenActiveTab && (
+      {activeTab === ProjectDetailsTab.Budgets && canOpenActiveTab && (
         <div className="pt-5 pb-8">
           <ProjectBudgetsSection
             projectName={project.name}

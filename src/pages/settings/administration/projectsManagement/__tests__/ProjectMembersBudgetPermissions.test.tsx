@@ -268,15 +268,11 @@ describe('ProjectMembersManager — budget permissions', () => {
       expect(screen.getByText('Reset budget usage (bulk)')).toBeInTheDocument()
     })
 
-    it('refetches project budgets after a bulk override and hands them to onBudgetsChanged', async () => {
+    it('asks the parent to reload project budgets after a bulk override', async () => {
       userStore.user = PROJECT_ADMIN as never
-      const refreshed = [{ ...mockBudgets[0], name: 'Refetched budget' }]
       vi.spyOn(projectBudgetsStore, 'overrideMemberAllocation').mockResolvedValue(
         undefined as never
       )
-      const listSpy = vi
-        .spyOn(projectBudgetsStore, 'listProjectBudgets')
-        .mockResolvedValue(refreshed as never)
       const onBudgetsChanged = vi.fn()
       render(
         <ProjectMembersManager
@@ -289,8 +285,7 @@ describe('ProjectMembersManager — budget permissions', () => {
       await openBulkModal()
       fireEvent.click(screen.getByText('Submit bulk override'))
 
-      await waitFor(() => expect(onBudgetsChanged).toHaveBeenCalledWith(refreshed))
-      expect(listSpy).toHaveBeenCalledWith({ projectName: 'Test Project' })
+      await waitFor(() => expect(onBudgetsChanged).toHaveBeenCalledTimes(1))
     })
   })
 })

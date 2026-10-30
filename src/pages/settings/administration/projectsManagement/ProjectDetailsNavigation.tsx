@@ -14,7 +14,13 @@ import {
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { cn } from '@/utils/utils'
 
-export type ProjectDetailsTab = 'overview' | 'members' | 'models' | 'budgets' | 'integrations'
+export enum ProjectDetailsTab {
+  Overview = 'overview',
+  Members = 'members',
+  Models = 'models',
+  Budgets = 'budgets',
+  Integrations = 'integrations',
+}
 
 /**
  * Sections of the Project Details page. A new project-level area (e.g. MCP) is one entry
@@ -25,24 +31,28 @@ export const PROJECT_DETAILS_TABS: ReadonlyArray<{
   label: string
   route: string
 }> = [
-  { id: 'overview', label: 'Overview', route: PROJECTS_MANAGEMENT_DETAIL },
-  { id: 'members', label: 'Members', route: PROJECTS_MANAGEMENT_MEMBERS },
-  { id: 'models', label: 'Models', route: PROJECTS_MANAGEMENT_MODELS },
-  { id: 'budgets', label: 'Budgets', route: PROJECTS_MANAGEMENT_BUDGETS },
-  { id: 'integrations', label: 'Integrations', route: PROJECTS_MANAGEMENT_INTEGRATIONS },
+  { id: ProjectDetailsTab.Overview, label: 'Overview', route: PROJECTS_MANAGEMENT_DETAIL },
+  { id: ProjectDetailsTab.Members, label: 'Members', route: PROJECTS_MANAGEMENT_MEMBERS },
+  { id: ProjectDetailsTab.Models, label: 'Models', route: PROJECTS_MANAGEMENT_MODELS },
+  { id: ProjectDetailsTab.Budgets, label: 'Budgets', route: PROJECTS_MANAGEMENT_BUDGETS },
+  {
+    id: ProjectDetailsTab.Integrations,
+    label: 'Integrations',
+    route: PROJECTS_MANAGEMENT_INTEGRATIONS,
+  },
 ]
 
 const TAB_BY_ROUTE: Record<string, ProjectDetailsTab> = {
-  [PROJECTS_MANAGEMENT_DETAIL]: 'overview',
-  [PROJECTS_MANAGEMENT_OVERVIEW]: 'overview',
-  [PROJECTS_MANAGEMENT_MEMBERS]: 'members',
-  [PROJECTS_MANAGEMENT_MODELS]: 'models',
-  [PROJECTS_MANAGEMENT_BUDGETS]: 'budgets',
-  [PROJECTS_MANAGEMENT_INTEGRATIONS]: 'integrations',
+  [PROJECTS_MANAGEMENT_DETAIL]: ProjectDetailsTab.Overview,
+  [PROJECTS_MANAGEMENT_OVERVIEW]: ProjectDetailsTab.Overview,
+  [PROJECTS_MANAGEMENT_MEMBERS]: ProjectDetailsTab.Members,
+  [PROJECTS_MANAGEMENT_MODELS]: ProjectDetailsTab.Models,
+  [PROJECTS_MANAGEMENT_BUDGETS]: ProjectDetailsTab.Budgets,
+  [PROJECTS_MANAGEMENT_INTEGRATIONS]: ProjectDetailsTab.Integrations,
 }
 
 export const getProjectDetailsTab = (routeName: string): ProjectDetailsTab =>
-  TAB_BY_ROUTE[routeName] ?? 'overview'
+  TAB_BY_ROUTE[routeName] ?? ProjectDetailsTab.Overview
 
 interface Props {
   projectName: string

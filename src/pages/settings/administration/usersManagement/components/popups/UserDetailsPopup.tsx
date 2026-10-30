@@ -280,7 +280,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
             {isMaintainer && (
               <div className="flex flex-col gap-3 rounded-lg border border-border-structural p-4">
                 <span className="text-xs font-medium text-text-primary">Platform Roles</span>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-12">
                   <span
                     className="user-auditor-role-tooltip"
                     data-pr-tooltip={
@@ -303,6 +303,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
                     />
                   </span>
                   <Tooltip target=".user-auditor-role-tooltip" appendTo={document.body} />
+
                   <Switch
                     id="user-admin-role"
                     label="Admin"
@@ -310,6 +311,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
                     disabled={!canEditPlatformRoles || isUpdatingRoles || roleFlags.is_maintainer}
                     onChange={(e) => handleRoleChange('is_admin', e.target.checked)}
                   />
+
                   <Switch
                     id="user-maintainer-role"
                     label="Maintainer"

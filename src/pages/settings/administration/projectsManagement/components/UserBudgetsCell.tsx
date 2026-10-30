@@ -24,10 +24,9 @@ export const getUserBudgetUsage = (
   spendingRow: ProjectMemberSpendingRow | undefined,
   category: BudgetCategory
 ): number | null => {
-  const assignment = user.budget_assignments?.find((item) => item.category === category)
   const allocation = budgetAllocationLookup?.[user.id]?.[category]
   const spent = spendingRow ? getCategorySpend(spendingRow, category) ?? null : null
-  const limit = allocation?.allocated_max_budget ?? assignment?.max_budget
+  const limit = allocation?.allocated_max_budget
   return spent != null && limit != null && limit > 0 ? (spent / limit) * 100 : null
 }
 
@@ -44,22 +43,19 @@ const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
   spendingRow,
   onOverride,
 }) => {
-  const rows = BUDGET_CATEGORIES.filter(
-    (cat) =>
-      user.budget_assignments?.some((item) => item.category === cat) ||
-      budgetAllocationLookup?.[user.id]?.[cat]
-  )
+  const rows = BUDGET_CATEGORIES.filter((cat) => budgetAllocationLookup?.[user.id]?.[cat])
+
   if (!rows.length) {
     return <span className="text-xs text-text-quaternary">-</span>
   }
+
   return (
     <div className="flex flex-col gap-0.5">
       {rows.map((cat) => {
-        const assignment = user.budget_assignments?.find((item) => item.category === cat)
         const alloc = budgetAllocationLookup?.[user.id]?.[cat]
         const isFixed = alloc?.allocation_mode === 'fixed'
         const usage = spendingRow ? getCategorySpend(spendingRow, cat) ?? null : null
-        const limit = alloc?.allocated_max_budget ?? assignment?.max_budget
+        const limit = alloc?.allocated_max_budget
         const spendColor = getSpendColorFromValues(usage, limit)
         const content = (
           <>
