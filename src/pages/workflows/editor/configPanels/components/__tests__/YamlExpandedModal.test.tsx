@@ -81,6 +81,13 @@ describe('YamlExpandedModal', () => {
     expect(screen.getByText('YAML Error: bad indent')).toBeInTheDocument()
   })
 
+  it('shows no Copy or Download actions in the expanded editor', () => {
+    renderModal()
+
+    expect(screen.queryByRole('button', { name: /Copy/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Download/ })).not.toBeInTheDocument()
+  })
+
   it('renders nothing when not visible', () => {
     renderModal({ visible: false })
 

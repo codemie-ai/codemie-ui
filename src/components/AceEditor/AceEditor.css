@@ -33,6 +33,79 @@
   left: 0;
 }
 
+.expanded-yaml-frame .ace_editor,
+.expanded-yaml-frame .ace_editor div {
+  font-family: var(--font-family-code-block, GeistMono, monospace) !important;
+}
+
+.expanded-yaml-frame .ace_editor {
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+  color: rgb(var(--colors-text-primary));
+}
+
+.expanded-yaml-frame .ace_gutter-cell {
+  padding-right: 0.75rem;
+}
+
+/* Prism palette (prism.css / prism-tomorrow.css) so expanded YAML matches CodeBlock highlighting. */
+.expanded-yaml-frame .ace_editor.ace-tomorrow {
+  --yaml-punctuation: #999;
+  --yaml-key: #07a;
+  --yaml-string: #690;
+  --yaml-number: #905;
+  --yaml-important: #e90;
+  --yaml-comment: slategray;
+  --yaml-tag: #905;
+}
+
+.expanded-yaml-frame .ace_editor.ace-tomorrow-night {
+  --yaml-punctuation: #ccc;
+  --yaml-key: #cc99cd;
+  --yaml-string: #7ec699;
+  --yaml-number: #f08d49;
+  --yaml-important: #cc99cd;
+  --yaml-comment: #999;
+  --yaml-tag: #e2777a;
+}
+
+.expanded-yaml-frame .ace_editor,
+.expanded-yaml-frame .ace_editor .ace_gutter {
+  background: transparent;
+}
+
+.expanded-yaml-frame .ace_editor .ace_comment {
+  color: var(--yaml-comment) !important;
+  font-style: normal;
+}
+
+.expanded-yaml-frame .ace_editor .ace_keyword,
+.expanded-yaml-frame .ace_editor .ace_list.ace_markup,
+.expanded-yaml-frame .ace_editor .ace_paren {
+  color: var(--yaml-punctuation) !important;
+}
+
+.expanded-yaml-frame .ace_editor .ace_constant {
+  color: var(--yaml-tag) !important;
+}
+
+.expanded-yaml-frame .ace_editor .ace_meta.ace_tag {
+  color: var(--yaml-key) !important;
+}
+
+.expanded-yaml-frame .ace_editor .ace_string {
+  color: var(--yaml-string) !important;
+}
+
+.expanded-yaml-frame .ace_editor .ace_constant.ace_numeric {
+  color: var(--yaml-number) !important;
+}
+
+.expanded-yaml-frame .ace_editor .ace_constant.ace_language {
+  color: var(--yaml-important) !important;
+  font-weight: bold;
+}
+
 /* Override Ace Tomorrow Night theme colors for WCAG AA contrast compliance (EPMCDME-8518) */
 .ace-tomorrow-night .ace_entity.ace_name.ace_tag,
 .ace-tomorrow-night .ace_entity.ace_other.ace_attribute-name,

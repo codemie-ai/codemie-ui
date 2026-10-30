@@ -13,12 +13,7 @@
 // limitations under the License.
 //
 
-import CollapseSvg from '@/assets/icons/collapse.svg?react'
-import AceEditor from '@/components/AceEditor/AceEditor'
-import Button from '@/components/Button'
-import Popup from '@/components/Popup'
-import { ButtonType } from '@/constants'
-import { cn } from '@/utils/utils'
+import ExpandedYamlView from '@/components/ExpandedYaml/ExpandedYamlView'
 
 interface YamlExpandedModalProps {
   visible: boolean
@@ -34,47 +29,16 @@ const YamlExpandedModal = ({
   validationError,
   onChange,
   onCollapse,
-}: YamlExpandedModalProps) => {
-  return (
-    <Popup
-      hideFooter
-      hideClose
-      isFullWidth
-      visible={visible}
-      onHide={onCollapse}
-      className="h-[90vh] pb-6"
-      headerContent={
-        <div className="flex w-full items-center justify-between py-1">
-          <span className="text-sm font-semibold font-mono text-text-primary">
-            YAML Configuration
-          </span>
-          <Button variant={ButtonType.SECONDARY} onClick={onCollapse}>
-            <CollapseSvg />
-            Collapse
-          </Button>
-        </div>
-      }
-    >
-      <div className="flex flex-col gap-2">
-        {validationError && (
-          <div className="text-failed-secondary text-xs">YAML Error: {validationError}</div>
-        )}
-        <div
-          className={cn('h-[calc(90vh-8rem)] rounded-lg border border-transparent', {
-            'border-failed-secondary': validationError,
-          })}
-        >
-          <AceEditor
-            value={value}
-            onChange={onChange}
-            lang="yaml"
-            name="yaml_config_expanded"
-            showInvisibles
-          />
-        </div>
-      </div>
-    </Popup>
-  )
-}
+}: YamlExpandedModalProps) => (
+  <ExpandedYamlView
+    visible={visible}
+    onCollapse={onCollapse}
+    title="yaml"
+    wrap
+    value={value}
+    onChange={onChange}
+    validationError={validationError}
+  />
+)
 
 export default YamlExpandedModal

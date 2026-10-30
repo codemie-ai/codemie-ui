@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15809-workflow-editor-yaml-config-ui",
+  "head": "f880d0897773f9ea1e776343bccdf17373bf3ddf",
+  "runner": "npm",
+  "started_at": "2026-10-14T07:44:52Z",
+  "completed_at": "2026-10-14T08:36:16.553Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 74384,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 57593,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if satisfied: no dependency added, removed or moved (package.json and package-lock.json are not in the merge-base...HEAD diff)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 27860,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output read: no leaks found. Same command is also the pre-commit hook; covered once here."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1101895,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 689 passed (689); Tests 6949 passed | 1 skipped (6950)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 1637078,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 1,
+      "notes": "Test Files 4 failed | 45 passed (49); Tests 7 failed | 551 passed | 1 skipped (559). Failing files: FavoritesPagePagination, WorkflowsListPage, SkillsListPagePagination, KatasListPagination."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 1179922,
+      "command": "npm run test-harness",
+      "exit_code": 1,
+      "notes": "Summary: 1 failed, 92 passed, 7 rerun. Failed: tests/ui/chats/test_chat_input_field.py::test_chat_input_dynamic_tools_adding_web_search[chromium]. Harness ran although ~/.codemie/test-harness.json is absent; log line reads AWS credentials: Not configured. Run against a deployed environment, not the working tree."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (.tsx files in diff) but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1069,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Output: No staged files found. Hook did no work. Its prettier, eslint and tsc steps are covered by the full-tree lint and typecheck gates above; hook ran at commit time, not re-verified here."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 901,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2338 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 319,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Output: [sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set. SAST did not run locally; export SONAR_TOKEN to run it, otherwise only the MR sonar CI task settles it."
+    },
+    {
+      "id": "pre-ci-guard",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "Defined in .gitlab-ci.yml via external template epm-cdme/codemie-gitlab-templates@0.1.2; requires the MR pipeline, not runnable locally. Local .gitlab-ci.yml defines no lint or test jobs."
+    }
+  ],
+  "failures": {
+    "integration": "If this is a long-running test, pass a timeout value as the last argument or configure it globally with \"testTimeout\".\n ❯ src/pages/skills/__tests__/SkillsListPagePagination.integration.test.tsx:274:3\n    272|   })\n    273|\n    274|   it('Next page button absent on last page for marketplace tab', async…\n       |   ^\n    275|     // \"Current page\" is local component state (starts at 0) — reach t…\n    276|     // via a real click rather than mocking pagination.page on initial…\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/14]⎯\n\n FAIL  |integration| src/pages/skills/__tests__/SkillsListPagePagination.integration.test.tsx > SkillsListPage - Favorites tab - Pagination > shows next page of favorite skills when pagination button is clicked\n FAIL  |integration| src/pages/skills/__tests__/SkillsListPagePagination.integration.test.tsx > SkillsListPage - Favorites tab - Pagination > shows next page of favorite skills when pagination button is clicked\nError: Test timed out in 30000ms.\nIf this is a long-running test, pass a timeout value as the last argument or configure it globally with \"testTimeout\".\n ❯ src/pages/skills/__tests__/SkillsListPagePagination.integration.test.tsx:313:3\n    311|   })\n    312|\n    313|   it('shows next page of favorite skills when pagination button is cli…\n       |   ^\n    314|     mockFavoritesFeatureFlag()\n    315|     mockAPI('GET', 'v1/preferences/test-user-id/favorites/skills', {\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/14]⎯\n\n FAIL  |integration| src/pages/katas/__tests__/KatasListPagination.integration.test.tsx > KatasPage - ALL_KATAS - Pagination > shows next page of katas when pagination button is clicked and updates the URL\n FAIL  |integration| src/pages/katas/__tests__/KatasListPagination.integration.test.tsx > KatasPage - ALL_KATAS - Pagination > shows next page of katas when pagination button is clicked and updates the URL\nError: Test timed out in 30000ms.\nIf this is a long-running test, pass a timeout value as the last argument or configure it globally with \"testTimeout\".\n ❯ src/pages/katas/__tests__/KatasListPagination.integration.test.tsx:71:3\n     69|   })\n     70|\n     71|   it('shows next page of katas when pagination button is clicked and u…\n       |   ^\n     72|     // useKatasList's own DEFAULT_PER_PAGE (12) — not KATA_CONSTRAINTS…\n     73|     // is what its updateURL() compares against to decide whether to i…\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/14]⎯\n\n\n Test Files  4 failed | 45 passed (49)\n      Tests  7 failed | 551 passed | 1 skipped (559)\n   Start at  13:06:38\n   Duration  1629.08s (tests 52%, import 35%, transform 8%, environment 4%, setup 1%)\n\n     Import  |integration| 2257 modules were evaluated 102844 times · 1676.71s total, 35% of tracked time\n             ~522.83s faster with isolate: false — shared modules are evaluated once per worker instead of once per file\n             learn more: https://vitest.dev/guide/improving-performance#test-isolation\n\n",
+    "test-harness": "INFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/config/declarations/features:webSearch\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/conversations/ec1fab06-4a08-4db6-b7f9-d417d1d57dc7\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/assistants/c5fe364d-018c-4798-80cd-fd70765bf0e3\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_chat_input_dynamic_tools_adding_web_search[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/config/declarations/features:webSearch\n------------------------------ Captured log call -------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/config/declarations/features:webSearch\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/conversations/557aeb40-622e-48e6-a50f-66d347610e58\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/assistants/8d990514-280b-42c1-b2d3-d24a2d5d3a23\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_chat_input_dynamic_tools_adding_web_search[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations2026-10-14 13:35:22,006 - codemie_test_harness.tests.conftest - INFO - Starting session cleanup...\n2026-10-14 13:35:23,270 - codemie_test_harness.tests.conftest - INFO - Session cleanup completed.\n\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/config/declarations/features:webSearch\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/conversations/ec1fab06-4a08-4db6-b7f9-d417d1d57dc7\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/assistants/c5fe364d-018c-4798-80cd-fd70765bf0e3\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_chat_input_dynamic_tools_adding_web_search[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/config/declarations/features:webSearch\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/conversations/da2c212a-720f-4d59-9b41-0ecca4ccce00\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/assistants/a5782bf9-74a9-46d5-8162-fa4fce6d9d70\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_chat_input_dynamic_tools_adding_web_search[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n- generated xml file: /home/siarhei/projects/codemie-dev/codemie-ui/codemie-test-reports/junit.xml -\n=========================== short test summary info ============================\nFAILED tests/ui/chats/test_chat_input_field.py::test_chat_input_dynamic_tools_adding_web_search[chromium]\n============== 1 failed, 92 passed, 7 rerun in 1158.35s (0:19:18) ==============\nexit=1 dur_ms=1179922\n"
+  }
+}

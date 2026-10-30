@@ -1,0 +1,33 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 (patch: shared CodeBlock expand popup hardcoded the YAML Configuration header) is resolved on current source: CodeBlockExpandPopup now labels with label, then title, then uppercased language, and only WorkflowExecutionConfigYaml passes the YAML label, which is the sole expandable CodeBlock caller. The fix-up's new popup tests were not executed by this round; Stage 7 owns test execution. Business and standards rows are carried forward from the final round; no standards gap was raised.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not run; compact profile omits standards." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not run; compact profile omits standards." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not run; compact profile omits standards." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/CodeBlock/CodeBlockExpandPopup.tsx",
+      "line": 39,
+      "title": "Expandable non-YAML CodeBlocks labelled YAML Configuration",
+      "problem": "CodeBlockExpandPopup now renders ExpandedYamlShell, which hardcodes the header to 'YAML Configuration'. The previous popup used header ?? title ?? language.toUpperCase() ?? 'Code', so any expandable CodeBlock with a non-YAML language or a title now shows the wrong label.",
+      "impact": "Latent regression in the shared CodeBlock API. No live caller passes a non-YAML expandable block today (the only expandable caller, WorkflowExecutionConfigYaml, uses language yaml), so the mislabel is not reached on a live path yet.",
+      "recommendation": "Add an optional label prop to ExpandedYamlShell (default 'YAML Configuration') and have CodeBlockExpandPopup pass title ?? (language ? language.toUpperCase() : 'Code'). Keep the YAML callers' label unchanged and add a CodeBlockExpandPopup test for a non-YAML header."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Source confirmed: ExpandedYamlShell takes label (default YAML Configuration); CodeBlockExpandPopup passes label ?? title ?? language-uppercase ?? Code; WorkflowExecutionConfigYaml passes expandLabel YAML Configuration, the only expandable caller."
+    }
+  ]
+}

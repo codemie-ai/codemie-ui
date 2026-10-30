@@ -18,7 +18,45 @@ import { describe, it, expect } from 'vitest'
 
 import CodeBlockExpandPopup from '../CodeBlockExpandPopup'
 
+// The popup header is the ExpandedYamlShell font-mono span; the inner CodeBlock renders its title in a <p>.
+const getPopupHeader = () =>
+  screen.getByRole('dialog').querySelector<HTMLElement>('span.font-mono')!
+
 describe('CodeBlockExpandPopup', () => {
+  it('shows the block title in the header for a non-YAML CodeBlock', () => {
+    render(
+      <CodeBlockExpandPopup
+        isVisible
+        onHide={() => {}}
+        title="Request body"
+        text="{}"
+        language="json"
+      />
+    )
+    expect(getPopupHeader()).toHaveTextContent('Request body')
+    expect(getPopupHeader()).not.toHaveTextContent('YAML Configuration')
+  })
+
+  it('falls back to the uppercased language in the header when there is no title', () => {
+    render(<CodeBlockExpandPopup isVisible onHide={() => {}} text="{}" language="json" />)
+    expect(getPopupHeader()).toHaveTextContent('JSON')
+    expect(getPopupHeader()).not.toHaveTextContent('YAML Configuration')
+  })
+
+  it('uses an explicit label over the title and language', () => {
+    render(
+      <CodeBlockExpandPopup
+        isVisible
+        onHide={() => {}}
+        label="YAML Configuration"
+        title="Ignored"
+        text="a: 1"
+        language="yaml"
+      />
+    )
+    expect(getPopupHeader()).toHaveTextContent('YAML Configuration')
+  })
+
   it('passes isInExpandPopup to the inner CodeBlock so Download tooltip avoids the close icon', () => {
     const { getByText } = render(
       <CodeBlockExpandPopup isVisible onHide={() => {}} text="const x = 1;" language="js" />

@@ -34,6 +34,7 @@ interface AceEditorProps {
   className?: string
   placeholder?: string
   showInvisibles?: boolean
+  wrap?: boolean
 }
 
 export interface AceEditorRef {
@@ -52,6 +53,7 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
       className,
       placeholder,
       showInvisibles = false,
+      wrap = false,
     },
     ref
   ) => {
@@ -83,6 +85,7 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
         placeholder: placeholder || '',
         enableKeyboardAccessibility: true,
         showInvisibles,
+        wrap: wrap ? 'free' : 'off',
       })
 
       editorRef.current = editor

@@ -25,6 +25,18 @@ vi.mock('@/assets/icons/copy.svg?react', () => ({ default: () => null }))
 vi.mock('@/assets/icons/download.svg?react', () => ({ default: () => null }))
 vi.mock('@/assets/icons/expand.svg?react', () => ({ default: () => null }))
 vi.mock('@/assets/icons/view.svg?react', () => ({ default: () => null }))
+vi.mock('@/assets/icons/collapse.svg?react', () => ({ default: () => null }))
+
+vi.mock('@/components/AceEditor/AceEditor', () => ({
+  default: ({ value, readonly }: { value: string; readonly?: boolean }) => (
+    <textarea
+      data-testid="ace-editor"
+      data-readonly={String(Boolean(readonly))}
+      readOnly
+      value={value}
+    />
+  ),
+}))
 
 vi.mock('@/hooks/useVueRouter', () => ({
   useVueRouter: () => ({ push: vi.fn() }),
@@ -49,18 +61,19 @@ const openExpanded = () => {
 }
 
 describe('WorkflowExecutionConfigYaml expand', () => {
-  it('opens a Configuration dialog that shows the same YAML text', () => {
+  it('opens a YAML Configuration dialog that shows the same YAML text', () => {
     const dialog = openExpanded()
 
-    expect(within(dialog).getByText('Configuration')).toBeInTheDocument()
-    expect(dialog.querySelector('code')?.textContent).toBe(yamlConfig)
+    expect(within(dialog).getByText('YAML Configuration')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: /Collapse/ })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: /close/i })).not.toBeInTheDocument()
+    expect(within(dialog).getByTestId('ace-editor')).toHaveValue(yamlConfig)
   })
 
   it('renders the expanded YAML read-only', () => {
     const dialog = openExpanded()
 
-    expect(within(dialog).queryByRole('textbox')).not.toBeInTheDocument()
-    expect(dialog.querySelector('textarea, input, [contenteditable="true"]')).toBeNull()
+    expect(within(dialog).getByTestId('ace-editor')).toHaveAttribute('data-readonly', 'true')
   })
 
   it('offers Copy and Download inside the dialog', () => {

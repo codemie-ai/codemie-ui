@@ -1,0 +1,33 @@
+{
+  "decision": "approve",
+  "rationale": "Final round requested changes for CR-001; the fix-up was then verified by a check round on reviewed_head 734c52920 with check_scope code, which approved with high confidence and 0 findings. CR-001 is resolved: CodeBlockExpandPopup labels with label, then title, then uppercased language, then 'Code', and only WorkflowExecutionConfigYaml passes the YAML label. No spec was supplied, so acceptance did not run; the compact profile omits the blind, verification-gap and standards lenses. 0 deferred, 0 dismissed.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not run; compact profile omits standards." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not run; compact profile omits standards." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not run; compact profile omits standards." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/CodeBlock/CodeBlockExpandPopup.tsx",
+      "line": 39,
+      "title": "Expandable non-YAML CodeBlocks labelled YAML Configuration",
+      "problem": "CodeBlockExpandPopup now renders ExpandedYamlShell, which hardcodes the header to 'YAML Configuration'. The previous popup used header ?? title ?? language.toUpperCase() ?? 'Code', so any expandable CodeBlock with a non-YAML language or a title now shows the wrong label.",
+      "impact": "Latent regression in the shared CodeBlock API. No live caller passes a non-YAML expandable block today (the only expandable caller, WorkflowExecutionConfigYaml, uses language yaml), so the mislabel is not reached on a live path yet.",
+      "recommendation": "Add an optional label prop to ExpandedYamlShell (default 'YAML Configuration') and have CodeBlockExpandPopup pass title ?? (language ? language.toUpperCase() : 'Code'). Keep the YAML callers' label unchanged and add a CodeBlockExpandPopup test for a non-YAML header."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Fixed in e23d74d67 (rewritten from f880d0897 by the planning-artifacts reword); verified by the check round on 734c52920."
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-14T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 9,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Shared ExpandedYamlShell is consumed by CodeBlockExpandPopup and YamlExpandedModal; CodeBlock.tsx and WorkflowExecutionConfigYaml.tsx are also touched across the components/ and pages/workflows/ trees. Four components, one UI layer, no service or persistence boundary crossed." },
+    { "dimension": "file_change_estimate", "reason": "9 files changed (diffstat), spread across three directories (components/CodeBlock, components/ExpandedYaml, pages/workflows). Roughly 8-10 modified-or-new band, mapped to L per the rubric." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

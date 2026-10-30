@@ -45,7 +45,8 @@ interface CodeBlockProps {
   headerActionsLast?: boolean
   headerActionsTemplate?: ReactNode
   expandable?: boolean
-  expandTitle?: string
+  expandLabel?: string
+  expandWithEditor?: boolean
   isInExpandPopup?: boolean
   headerBadge?: ReactNode
 }
@@ -63,7 +64,8 @@ const CodeBlock: FC<CodeBlockProps> = ({
   headerActionsLast,
   headerActionsTemplate,
   expandable,
-  expandTitle,
+  expandLabel,
+  expandWithEditor,
   isInExpandPopup,
   headerBadge,
 }) => {
@@ -199,11 +201,12 @@ const CodeBlock: FC<CodeBlockProps> = ({
         <CodeBlockExpandPopup
           isVisible={isExpandPopupVisible}
           onHide={() => setIsExpandPopupVisible(false)}
-          header={expandTitle}
+          label={expandLabel}
           title={title}
           language={language}
           text={text}
           downloadFilename={downloadFilename}
+          expandWithEditor={expandWithEditor}
         />
       )}
     </div>

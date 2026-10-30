@@ -51,7 +51,8 @@ const WorkflowExecutionConfigYaml: FC<WorkflowExecutionConfigYamlProps> = ({ wor
 
       <CodeBlock
         expandable
-        expandTitle="Configuration"
+        expandLabel="YAML Configuration"
+        expandWithEditor
         language="yaml"
         text={workflow.yaml_config ?? ''}
       />
