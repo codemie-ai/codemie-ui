@@ -151,7 +151,7 @@ const CronScheduleInput = forwardRef<HTMLDivElement, CronScheduleInputProps>(
               placeholder="e.g. Europe/Warsaw"
               disabled={disabled}
             />
-            <InfoBox text={CRON_TRIGGER_TIME_WARNING} />
+            {!isCustom && <InfoBox text={CRON_TRIGGER_TIME_WARNING} />}
           </>
         )}
 
