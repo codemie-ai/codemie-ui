@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Add independent showTask/showOutputSchema visibility options to the shared CommonStateFields component so Task and Output Schema only render for node types that actually consume them.",
+  "generated": "2026-10-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 15,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "The change touches the shared CommonStateFields component plus four call sites (ToolTab, SubWorkflowTab, CustomTab, AssistantTab) and likely requires lifting custom_node_id state out of CustomNodeForm into CustomTab so Task visibility reacts to in-progress edits. CommonStateFields is a core shared utility, which raises the base component count/layer score from M to L." },
+    { "dimension": "requirements_clarity", "reason": "Ten explicit ACs give a clear visibility matrix and preserve-hidden-value requirement, but the ticket itself flags one unresolved mapping ('Bedrock flow' has no corresponding CustomNodeType today) that must be confirmed during implementation, and the live vs. saved custom_node_id wiring is an open design decision not spelled out in the ACs." },
+    { "dimension": "technical_risk", "reason": "TransformTab's existing showAllFields={false} override is an exact precedent for the core mechanism, and hidden-but-defaulted react-hook-form values already satisfy the preserve-stored-value requirement without new plumbing — low base risk. Bumped one step because AC10 requires a full visibility-matrix regression suite and CommonStateFields.test.tsx currently has zero coverage of its primary rendering logic, so that defensive test pattern must be built from scratch." },
+    { "dimension": "file_change_estimate", "reason": "Estimated ~5-6 modified files (CommonStateFields.tsx, ToolTab.tsx, SubWorkflowTab.tsx, CustomTab.tsx, AssistantTab.tsx, possibly CustomNodeForm.tsx) plus 1-2 new files (a custom-node Task-visibility rule and new/expanded tests) across configPanels/ and configPanels/__tests__/." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: CommonStateFields is a core shared utility consumed by ToolTab, SubWorkflowTab, CustomTab, and AssistantTab.",
+    "Technical Risk bumped from S to M: AC10 enumerates a visibility-matrix regression suite with no existing render/visibility test template for CommonStateFields to extend."
+  ],
+  "split_recommendation": null
+}

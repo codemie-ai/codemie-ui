@@ -44,6 +44,7 @@ interface CustomNodeFormProps {
   project: string
   isGlobal?: boolean
   customNodeConfig: CustomNodeConfiguration
+  onCustomNodeIdChange?: (customNodeId?: CustomNodeType) => void
 }
 
 export interface CustomNodeFormValues {
@@ -69,9 +70,7 @@ const getValidationSchema = (requiredFields: string[]) => {
           'required-fields',
           'Required fields are missing',
           function (value) {
-            if (!value) return requiredFields.length === 0
-
-            const configObj = value as Record<string, unknown>
+            const configObj = (value ?? {}) as Record<string, unknown>
             const missingFields = requiredFields.filter((fieldName) => {
               const fieldValue = configObj[fieldName]
               return (
@@ -81,14 +80,13 @@ const getValidationSchema = (requiredFields: string[]) => {
               )
             })
 
-            if (missingFields.length > 0) {
-              return this.createError({
+            return (
+              missingFields.length === 0 ||
+              this.createError({
                 message: `Required fields: ${missingFields.join(', ')}`,
                 path: 'config',
               })
-            }
-
-            return true
+            )
           }
         )
       : Yup.mixed<CustomNodeConfigurationValues>().optional()
@@ -111,7 +109,7 @@ const getDefaultValues = (config?: CustomNodeConfiguration): Partial<CustomNodeF
 })
 
 const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
-  ({ customNodeConfig, project, isGlobal }, ref) => {
+  ({ customNodeConfig, project, isGlobal, onCustomNodeIdChange }, ref) => {
     const [dynamicSchema, setDynamicSchema] = useState(() => getValidationSchema([]))
     const isInitialLoad = useRef(true)
 
@@ -131,6 +129,10 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
 
     const customNodeId = watch('custom_node_id')
     const config = watch('config')
+
+    useEffect(() => {
+      onCustomNodeIdChange?.(customNodeId)
+    }, [customNodeId, onCustomNodeIdChange])
     const yamlHasError = useRef(false)
     const yamlWasEdited = useRef(false)
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})

@@ -1,0 +1,40 @@
+{
+  "decision": "request-changes",
+  "rationale": "Edge-case lens raised 4 candidates (one pair merged as the same preserve-hidden-value claim); all were verified against source and dismissed — the stale Task/Output Schema value on an in-panel custom-node-type switch matches the explicitly tested AC9 preserve-while-hidden design, and the mount-order-flash and liveCustomNodeId-staleness claims are unreachable given CustomTab's single-mount-per-selectedNode architecture. Acceptance lens found AC10 (regression test matrix) partial: CustomTab.test.tsx render-verifies Task-visibility wiring for only 2 of 5 custom node types, raised as CR-001 (critical, patch), which forces request-changes. Standards review passed cleanly with no coverage gap.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "CommonStateFields accepts independent showTask/showOutputSchema props, default true, gating only task/output_schema", "status": "pass", "notes": "CommonStateFields.tsx adds showTask=true/showOutputSchema=true; each wraps only its own FieldController" },
+    { "kind": "spec", "item": "ToolTab and SubWorkflowTab pass showTask={false} showOutputSchema={false}", "status": "pass", "notes": "Both pass showTask={false} showOutputSchema={false} to CommonStateFields" },
+    { "kind": "spec", "item": "CustomTab passes showOutputSchema={false} unconditionally", "status": "pass", "notes": "CustomTab.tsx passes showOutputSchema={false}" },
+    { "kind": "spec", "item": "CustomTab passes showTask derived from CUSTOM_NODE_TYPES_USING_TASK, reacting live to in-panel type change", "status": "pass", "notes": "liveCustomNodeId state wired via onCustomNodeIdChange; verified against source in CustomTab.tsx and CustomNodeForm.tsx" },
+    { "kind": "spec", "item": "Task-visibility rule is a single named, exported constant/predicate, not duplicated per call site", "status": "pass", "notes": "CUSTOM_NODE_TYPES_USING_TASK exported once from CustomNodeSelector.tsx, imported in CustomTab.tsx" },
+    { "kind": "spec", "item": "AssistantTab unmodified; Task and Output Schema remain visible and functionally unchanged", "status": "pass", "notes": "No edits to AssistantTab.tsx; new AssistantTab.test.tsx asserts both fields render" },
+    { "kind": "spec", "item": "TransformTab's showAllFields={false} call and behavior unmodified", "status": "pass", "notes": "No edits to TransformTab.tsx in the diff" },
+    { "kind": "spec", "item": "A stored task/output_schema value survives open -> edit unrelated field -> save -> reopen, even while hidden, with no new persistence code", "status": "pass", "notes": "RHF v7 default shouldUnregister=false keeps unregistered field values; confirmed in CommonStateFields.tsx and covered by test" },
+    { "kind": "spec", "item": "interrupt_before, finish_iteration, resolve_dynamic_values_in_prompt, result_as_human_message, Transition/Retry stay governed only by showAllFields", "status": "pass", "notes": "Those fields remain outside the new showTask/showOutputSchema guards in CommonStateFields.tsx" },
+    { "kind": "spec", "item": "New regression tests cover the visibility matrix, Assistant/Transform preservation, live reaction, and hidden-value survival", "status": "partial", "notes": "CustomTab.test.tsx only render-tests STATE_PROCESSOR and GENERATE_DOCUMENT_TREE; RESULT_FINALIZER/SUPERVISOR/SUMMARIZE_CONVERSATION only Set-tested; no TransformTab test added" },
+    { "kind": "spec", "item": "No backend, API, execution-behavior, or stored-configuration-schema changes", "status": "pass", "notes": "Diff touches only src/pages/workflows/editor/configPanels/** and its tests" },
+    { "kind": "spec", "item": "No backend capability API for custom-node Task support; rule is a hard-coded UI-side list", "status": "pass", "notes": "CUSTOM_NODE_TYPES_USING_TASK is a hard-coded Set<CustomNodeType>, no API call added" },
+    { "kind": "spec", "item": "No change to registerFields validation/issue-routing registry", "status": "pass", "notes": "No edits to visualEditorFieldRegistry or registerFields calls in the diff" },
+    { "kind": "spec", "item": "No renaming/restructuring of CommonNodeFieldValues, getDefaultValues, or the validation schema beyond keeping fields registered-but-hidden", "status": "pass", "notes": "Only new props added on the interface/destructure; getDefaultValues and validationSchema bodies untouched" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 4 commit subjects match EPMCDME-XXXX: Capital sentence format" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality guide exists in the repo and no code_quality ArtifactRef was passed" },
+    { "kind": "security", "status": "pass", "notes": "Changed files contain no dangerouslySetInnerHTML/innerHTML, redirect logic, postMessage listeners, or secret/config handling; grep found no matches. Change is scoped to conditional rendering only." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/__tests__/CustomTab.test.tsx",
+      "title": "Task-visibility test matrix incomplete for custom node types",
+      "problem": "CustomTab.test.tsx only renders the full panel for STATE_PROCESSOR and GENERATE_DOCUMENT_TREE; RESULT_FINALIZER, SUPERVISOR, and SUMMARIZE_CONVERSATION are verified only via CUSTOM_NODE_TYPES_USING_TASK Set membership in CustomNodeSelector.test.tsx, not through a rendered CustomTab.",
+      "impact": "The showTask wiring in CustomTab is integration-tested for only 2 of 5 custom node types; a regression in the wiring itself (as opposed to the Set contents) for the other 3 types would not be caught by the existing suite.",
+      "recommendation": "Add CustomTab render-based test cases asserting Task visibility for RESULT_FINALIZER, SUPERVISOR, and SUMMARIZE_CONVERSATION, mirroring the existing STATE_PROCESSOR/GENERATE_DOCUMENT_TREE cases."
+    }
+  ]
+}

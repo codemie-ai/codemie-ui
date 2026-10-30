@@ -36,7 +36,7 @@ vi.mock('../../hooks/useWorkflowContext', () => ({
 }))
 
 vi.mock('../CommonStateFields', () => ({
-  default: forwardRef((_props: any, ref: any) => {
+  default: forwardRef(({ showTask = true, showOutputSchema = true }: any, ref: any) => {
     useImperativeHandle(ref, () => ({
       validate: () => Promise.resolve(true),
       getValues: () => ({
@@ -53,7 +53,14 @@ vi.mock('../CommonStateFields', () => ({
       isDirty: () => false,
       reset: vi.fn(),
     }))
-    return <div data-testid="common-state-fields" />
+    return (
+      <div data-testid="common-state-fields">
+        {showTask && <textarea aria-label="Task" placeholder="Describe the task for this node" />}
+        {showOutputSchema && (
+          <textarea aria-label="Output Schema" placeholder="Expected output format (JSON Schema)" />
+        )}
+      </div>
+    )
   }),
 }))
 
@@ -153,6 +160,14 @@ describe('SubWorkflowTab', () => {
     await waitFor(() => {
       expect(screen.getByTestId('workflow-selector')).toBeInTheDocument()
     })
+  })
+
+  it('hides Task and Output Schema', () => {
+    render(<SubWorkflowTab {...defaultProps} />)
+    expect(screen.queryByPlaceholderText('Describe the task for this node')).not.toBeInTheDocument()
+    expect(
+      screen.queryByPlaceholderText('Expected output format (JSON Schema)')
+    ).not.toBeInTheDocument()
   })
 
   it('isDirty() returns false on initial mount when workflow_id is empty (regression EPMCDME-14620)', async () => {

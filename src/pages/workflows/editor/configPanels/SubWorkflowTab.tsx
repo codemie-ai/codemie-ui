@@ -160,7 +160,12 @@ const SubWorkflowTab = forwardRef<SubWorkflowTabRef, SubWorkflowTabProps>(
             />
           </ConfigAccordion>
 
-          <CommonStateFields ref={commonStateFieldsRef} state={state} />
+          <CommonStateFields
+            ref={commonStateFieldsRef}
+            state={state}
+            showTask={false}
+            showOutputSchema={false}
+          />
         </form>
 
         <TabFooter

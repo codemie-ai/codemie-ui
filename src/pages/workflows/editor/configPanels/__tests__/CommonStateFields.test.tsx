@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React, { createRef } from 'react'
 import { Controller, useForm } from 'react-hook-form'
@@ -83,6 +83,85 @@ describe('CommonStateFields — Reset Context Keys input', () => {
   it('displays an existing string[] as a comma-joined string on initial render', () => {
     const { input } = renderWithResetKeys(['alpha', 'beta'])
     expect(input).toHaveValue('alpha, beta')
+  })
+})
+
+describe('CommonStateFields — Task/Output Schema visibility', () => {
+  it('renders Task and Output Schema by default', () => {
+    render(<CommonStateFields state={{ id: 's' }} />)
+    expect(screen.getByPlaceholderText('Describe the task for this node')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Expected output format (JSON Schema)')).toBeInTheDocument()
+  })
+
+  it('hides Task independently of Output Schema', () => {
+    render(<CommonStateFields state={{ id: 's' }} showTask={false} />)
+    expect(screen.queryByPlaceholderText('Describe the task for this node')).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Expected output format (JSON Schema)')).toBeInTheDocument()
+  })
+
+  it('hides Output Schema independently of Task', () => {
+    render(<CommonStateFields state={{ id: 's' }} showOutputSchema={false} />)
+    expect(screen.getByPlaceholderText('Describe the task for this node')).toBeInTheDocument()
+    expect(
+      screen.queryByPlaceholderText('Expected output format (JSON Schema)')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps every other State Settings field visible when only Task/Output Schema are hidden', () => {
+    render(<CommonStateFields state={{ id: 's' }} showTask={false} showOutputSchema={false} />)
+
+    // State Settings accordion (besides Task/Output Schema)
+    expect(screen.getByPlaceholderText('e.g., analyze_code')).toBeInTheDocument()
+    expect(screen.getByText('Interrupt Before')).toBeInTheDocument()
+    expect(screen.getByText('Finish Iteration')).toBeInTheDocument()
+    expect(screen.getByText('Resolve Dynamic Values in Prompt')).toBeInTheDocument()
+    expect(screen.getByText('Result as Human Message')).toBeInTheDocument()
+
+    // Transition Settings accordion
+    expect(screen.getByPlaceholderText('e.g.: analysis_result')).toBeInTheDocument()
+    expect(screen.getByText('Append to Context')).toBeInTheDocument()
+    expect(screen.getByText('Keep History')).toBeInTheDocument()
+    expect(screen.getByText('Override Task')).toBeInTheDocument()
+    expect(screen.getByText('Store in Context')).toBeInTheDocument()
+    expect(screen.getByText('Clear Prior Messages')).toBeInTheDocument()
+    expect(screen.getByText('Clear Context Store')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(PLACEHOLDER)).toBeInTheDocument()
+
+    // Retry Policy accordion
+    expect(screen.getByPlaceholderText('1')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('2')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('60')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('3')).toBeInTheDocument()
+  })
+
+  it('showAllFields={false} still hides Task/Output Schema regardless of new props defaults', () => {
+    render(<CommonStateFields state={{ id: 's' }} showAllFields={false} />)
+    expect(screen.queryByPlaceholderText('Describe the task for this node')).not.toBeInTheDocument()
+    expect(
+      screen.queryByPlaceholderText('Expected output format (JSON Schema)')
+    ).not.toBeInTheDocument()
+  })
+
+  it('preserves a stored task/output_schema value while hidden, through getValues and a simulated reopen', () => {
+    const ref = createRef<CommonStateFieldsRef>()
+    render(
+      <CommonStateFields
+        ref={ref}
+        state={{ id: 'test-state', task: 'existing task', output_schema: '{"type":"object"}' }}
+        showTask={false}
+        showOutputSchema={false}
+      />
+    )
+
+    expect(ref.current!.getValues().task).toBe('existing task')
+    expect(ref.current!.getValues().output_schema).toBe('{"type":"object"}')
+
+    // Simulate "edit an unrelated field" — id is always rendered
+    const idInput = screen.getByPlaceholderText('e.g., analyze_code')
+    fireEvent.change(idInput, { target: { value: 'test-state-renamed' } })
+
+    expect(ref.current!.getValues().task).toBe('existing task')
+    expect(ref.current!.getValues().output_schema).toBe('{"type":"object"}')
   })
 })
 

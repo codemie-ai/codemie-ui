@@ -19,6 +19,7 @@ import { ActorTypes } from '@/types/workflowEditor/base'
 import {
   CustomNodeConfiguration,
   CustomNodeStateConfiguration,
+  CustomNodeType,
   WorkflowConfiguration,
 } from '@/types/workflowEditor/configuration'
 import { ConfigurationUpdate } from '@/utils/workflowEditor'
@@ -27,6 +28,7 @@ import { generateActorID, shouldReuseActorId } from '@/utils/workflowEditor/help
 import CommonStateFields, { CommonStateFieldsRef } from './CommonStateFields'
 import ConfigAccordion from './components/ConfigAccordion'
 import CustomNodeForm, { CustomNodeFormRef } from './components/CustomNodeForm'
+import { CUSTOM_NODE_TYPES_USING_TASK } from './components/CustomNodeSelector'
 import TabFooter from './components/TabFooter'
 import ValidationError from './components/ValidationError'
 import { buildCommonStateConfig } from './utils/formUtils'
@@ -83,6 +85,9 @@ const CustomTab = forwardRef<CustomTabRef, CustomTabProps>(
     const state = config.states?.find((s) => s.id === stateId) as CustomNodeStateConfiguration
     const [customNodeActorConfig, setCustomNodeActorConfig] = useState<CustomNodeConfiguration>(
       () => getCustomNodeActorConfig(config, state)
+    )
+    const [liveCustomNodeId, setLiveCustomNodeId] = useState<CustomNodeType | undefined>(
+      customNodeActorConfig?.custom_node_id
     )
 
     const commonStateFieldsRef = useRef<CommonStateFieldsRef>(null)
@@ -188,10 +193,18 @@ const CustomTab = forwardRef<CustomTabRef, CustomTabProps>(
               project={project}
               isGlobal={isGlobal}
               customNodeConfig={customNodeActorConfig}
+              onCustomNodeIdChange={setLiveCustomNodeId}
             />
           </ConfigAccordion>
 
-          <CommonStateFields ref={commonStateFieldsRef} state={state} />
+          <CommonStateFields
+            ref={commonStateFieldsRef}
+            state={state}
+            showOutputSchema={false}
+            showTask={
+              liveCustomNodeId !== undefined && CUSTOM_NODE_TYPES_USING_TASK.has(liveCustomNodeId)
+            }
+          />
         </form>
 
         <TabFooter

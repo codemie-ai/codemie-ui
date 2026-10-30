@@ -1,0 +1,35 @@
+{
+  "decision": "approve",
+  "rationale": "The fix-up adds the three missing CustomTab render-based test cases (RESULT_FINALIZER, SUPERVISOR, SUMMARIZE_CONVERSATION) called for in CR-001's recommendation, each asserting Task is hidden; combined with the pre-existing STATE_PROCESSOR and GENERATE_DOCUMENT_TREE cases this now covers the full 5-type visibility matrix. CR-001 verified resolved against the current source; no new findings raised.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "CommonStateFields accepts independent showTask/showOutputSchema props, default true, gating only task/output_schema", "status": "pass", "notes": "CommonStateFields.tsx adds showTask=true/showOutputSchema=true; each wraps only its own FieldController" },
+    { "kind": "spec", "item": "ToolTab and SubWorkflowTab pass showTask={false} showOutputSchema={false}", "status": "pass", "notes": "Both pass showTask={false} showOutputSchema={false} to CommonStateFields" },
+    { "kind": "spec", "item": "CustomTab passes showOutputSchema={false} unconditionally", "status": "pass", "notes": "CustomTab.tsx passes showOutputSchema={false}" },
+    { "kind": "spec", "item": "CustomTab passes showTask derived from CUSTOM_NODE_TYPES_USING_TASK, reacting live to in-panel type change", "status": "pass", "notes": "liveCustomNodeId state wired via onCustomNodeIdChange; verified against source in CustomTab.tsx and CustomNodeForm.tsx" },
+    { "kind": "spec", "item": "Task-visibility rule is a single named, exported constant/predicate, not duplicated per call site", "status": "pass", "notes": "CUSTOM_NODE_TYPES_USING_TASK exported once from CustomNodeSelector.tsx, imported in CustomTab.tsx" },
+    { "kind": "spec", "item": "AssistantTab unmodified; Task and Output Schema remain visible and functionally unchanged", "status": "pass", "notes": "No edits to AssistantTab.tsx; new AssistantTab.test.tsx asserts both fields render" },
+    { "kind": "spec", "item": "TransformTab's showAllFields={false} call and behavior unmodified", "status": "pass", "notes": "No edits to TransformTab.tsx in the diff" },
+    { "kind": "spec", "item": "A stored task/output_schema value survives open -> edit unrelated field -> save -> reopen, even while hidden, with no new persistence code", "status": "pass", "notes": "RHF v7 default shouldUnregister=false keeps unregistered field values; confirmed in CommonStateFields.tsx and covered by test" },
+    { "kind": "spec", "item": "interrupt_before, finish_iteration, resolve_dynamic_values_in_prompt, result_as_human_message, Transition/Retry stay governed only by showAllFields", "status": "pass", "notes": "Those fields remain outside the new showTask/showOutputSchema guards in CommonStateFields.tsx" },
+    { "kind": "spec", "item": "New regression tests cover the visibility matrix, Assistant/Transform preservation, live reaction, and hidden-value survival", "status": "pass", "notes": "CustomTab.test.tsx now render-tests Task visibility for all 5 custom node types (STATE_PROCESSOR, GENERATE_DOCUMENT_TREE, RESULT_FINALIZER, SUPERVISOR, SUMMARIZE_CONVERSATION); no TransformTab test added but TransformTab is unmodified" },
+    { "kind": "spec", "item": "No backend, API, execution-behavior, or stored-configuration-schema changes", "status": "pass", "notes": "Diff touches only src/pages/workflows/editor/configPanels/** and its tests" },
+    { "kind": "spec", "item": "No backend capability API for custom-node Task support; rule is a hard-coded UI-side list", "status": "pass", "notes": "CUSTOM_NODE_TYPES_USING_TASK is a hard-coded Set<CustomNodeType>, no API call added" },
+    { "kind": "spec", "item": "No change to registerFields validation/issue-routing registry", "status": "pass", "notes": "No edits to visualEditorFieldRegistry or registerFields calls in the diff" },
+    { "kind": "spec", "item": "No renaming/restructuring of CommonNodeFieldValues, getDefaultValues, or the validation schema beyond keeping fields registered-but-hidden", "status": "pass", "notes": "Only new props added on the interface/destructure; getDefaultValues and validationSchema bodies untouched" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 4 commit subjects match EPMCDME-XXXX: Capital sentence format" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality guide exists in the repo and no code_quality ArtifactRef was passed" },
+    { "kind": "security", "status": "pass", "notes": "Changed files contain no dangerouslySetInnerHTML/innerHTML, redirect logic, postMessage listeners, or secret/config handling; grep found no matches. Change is scoped to conditional rendering only." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Added render-based CustomTab test cases for RESULT_FINALIZER, SUPERVISOR, and SUMMARIZE_CONVERSATION, each asserting Task is hidden, closing the gap against STATE_PROCESSOR/GENERATE_DOCUMENT_TREE coverage; matrix is now complete for all 5 custom node types."
+    }
+  ]
+}

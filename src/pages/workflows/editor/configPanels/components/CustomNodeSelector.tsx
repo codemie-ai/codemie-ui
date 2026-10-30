@@ -54,6 +54,24 @@ const CUSTOM_NODE_OPTIONS: CustomNodeOption[] = [
   },
 ]
 
+// Custom node types whose panel shows the Task field.
+//
+// A node consumes the author's Task only if its backend `get_task()` returns
+// `workflow_state.task`; the rest return a hardcoded string and ignore it.
+// Verified against codemie @ ae985d2db: only `state_processor` reads it —
+// `generate_documents_tree`, `result_finalizer`, `supervisor` and
+// `summarize_conversation` all return hardcoded strings.
+//
+// This set is hide-by-default: a type missing from it hides Task with no error.
+// When adding a custom node type, check its backend `get_task()` and add it here
+// if it returns `workflow_state.task`.
+//
+// `CustomNodeType.TRANSFORM` is absent by design — it routes to TransformTab
+// (ConfigPanel.tsx), never to CustomTab, so it never consults this set.
+export const CUSTOM_NODE_TYPES_USING_TASK = new Set<CustomNodeType>([
+  CustomNodeType.STATE_PROCESSOR,
+])
+
 const CustomNodeSelector = ({
   customNodeConfig,
   onCustomNodeConfigUpdate,

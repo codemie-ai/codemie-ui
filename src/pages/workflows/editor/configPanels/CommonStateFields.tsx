@@ -118,11 +118,8 @@ registerFields(
 )
 
 /** Normalize clear_context_store value to valid option */
-const normalizeClearContextStore = (val: any): boolean | 'keep_current' => {
-  if (val === CONTEXT_STORE_KEEP_CURRENT) return CONTEXT_STORE_KEEP_CURRENT
-  if (val === true || val === 'true') return true
-  return false
-}
+const normalizeClearContextStore = (val: any): boolean | 'keep_current' =>
+  val === CONTEXT_STORE_KEEP_CURRENT ? CONTEXT_STORE_KEEP_CURRENT : val === true || val === 'true'
 
 export interface CommonNodeFieldValues {
   id: string
@@ -149,6 +146,8 @@ interface CommonNodeFieldsProps {
   state: CommonStateConfiguration
   idDisabled?: boolean
   showAllFields?: boolean
+  showTask?: boolean
+  showOutputSchema?: boolean
 }
 
 const getDefaultValues = (state: CommonStateConfiguration): CommonNodeFieldValues => {
@@ -228,7 +227,10 @@ const validationSchema = Yup.object().shape({
 })
 
 const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps>(
-  ({ state, idDisabled = false, showAllFields = true }, ref) => {
+  (
+    { state, idDisabled = false, showAllFields = true, showTask = true, showOutputSchema = true },
+    ref
+  ) => {
     const { setActiveIssue, activeIssue } = useWorkflowContext()
     const {
       control,
@@ -300,33 +302,37 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
 
             {showAllFields && (
               <>
-                <FieldController
-                  name="task"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <ExpandableTextarea
-                      {...field}
-                      label="Task"
-                      placeholder="Describe the task for this node"
-                      rows={4}
-                      error={fieldState.error?.message}
-                    />
-                  )}
-                />
+                {showTask && (
+                  <FieldController
+                    name="task"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <ExpandableTextarea
+                        {...field}
+                        label="Task"
+                        placeholder="Describe the task for this node"
+                        rows={4}
+                        error={fieldState.error?.message}
+                      />
+                    )}
+                  />
+                )}
 
-                <FieldController
-                  name="output_schema"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <ExpandableTextarea
-                      {...field}
-                      label="Output Schema"
-                      placeholder="Expected output format (JSON Schema)"
-                      rows={4}
-                      error={fieldState.error?.message}
-                    />
-                  )}
-                />
+                {showOutputSchema && (
+                  <FieldController
+                    name="output_schema"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <ExpandableTextarea
+                        {...field}
+                        label="Output Schema"
+                        placeholder="Expected output format (JSON Schema)"
+                        rows={4}
+                        error={fieldState.error?.message}
+                      />
+                    )}
+                  />
+                )}
 
                 <FieldController
                   name="interrupt_before"

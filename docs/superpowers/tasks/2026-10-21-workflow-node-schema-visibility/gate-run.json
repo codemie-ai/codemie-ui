@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15961_show-schema-for-supported-nodes",
+  "head": "b4a93314dae9644f3cb41f18cc596079f317e5cc",
+  "runner": "npm",
+  "started_at": "2026-10-26T17:30:21Z",
+  "completed_at": "2026-10-26T17:39:49Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "notes": "Re-run on the current branch HEAD (the final source commit, a comment-only change in CustomNodeSelector.tsx, on top of the branch rebased onto the newer main). The earlier record was taken at 8d865e6, which a rebase removed from the branch history. `npm ci` was run first per AGENTS.md and each gate was invoked individually, never chained.",
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "npm run license-check",
+      "notes": "Guide Skip-if: no dependency added, removed, or moved. Re-confirmed on this HEAD \u2014 `git diff --name-only $(git merge-base origin/main HEAD)...HEAD` lists neither package.json nor package-lock.json."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 26000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output confirmed, not the exit code alone: gitleaks scanned ~106.81 MB and reported 'no leaks found'."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 131000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 759 passed (759); Tests 7685 passed | 1 skipped (7686). Higher than the 724/7337 recorded at 8d865e6 because the rebase brought in main's newer suites."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 66000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 53 passed (53); Tests 593 passed | 1 skipped (594)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "PASS",
+      "command": "uvx codemie-test-harness run sanity-ui -n 2",
+      "notes": "Settled since the 8d865e6 record, where it stood at N/A with an owed check. Run on this HEAD: '91 passed, 2 rerun in 876.51s'. `-n 2` instead of the npm script's default `-n 8`, which overloaded the local backend (local-verification.md). The two first-attempt failures passed on rerun and both cover the workflow list and execution restore, not the node config panels this branch changes. Independently re-run server-side: the `/sanity` pipeline codemie-sanity-codemie-ui-2178-btprj passed on 2026-10-26."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 0,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Pre-commit hook step not in the guide's ordered gate list. Checked 2458 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 is not evidence of a run. Settled by CI instead \u2014 the MR pipeline's sonar task passed and the Quality Gate reported 0 new issues, 0 security hotspots, 0.00% duplicated code."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1000,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: 'No staged files found.' Nothing was staged at run time. The full-repo 'lint' gate above already covers every source file in this diff."
+    }
+  ],
+  "failures": {}
+}
