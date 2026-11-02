@@ -33,6 +33,16 @@ describe('formatCurrency', () => {
   it('rounds to two decimals', () => {
     expect(formatCurrency(10.126)).toBe('$10.13')
   })
+
+  it('keeps two significant digits below one cent, so real spend never reads as $0.00', () => {
+    expect(formatCurrency(0.0042)).toBe('$0.0042')
+    expect(formatCurrency(0.004999)).toBe('$0.005')
+    expect(formatCurrency(0.0000026)).toBe('$0.0000026')
+  })
+
+  it('formats exactly one cent with two decimals', () => {
+    expect(formatCurrency(0.01)).toBe('$0.01')
+  })
 })
 
 describe('formatSpend', () => {
@@ -50,6 +60,10 @@ describe('formatSpend', () => {
 
   it('formats a number', () => {
     expect(formatSpend(1234.5)).toBe('$1,234.50')
+  })
+
+  it('formats a sub-cent amount with significant digits', () => {
+    expect(formatSpend(0.0042)).toBe('$0.0042')
   })
 })
 

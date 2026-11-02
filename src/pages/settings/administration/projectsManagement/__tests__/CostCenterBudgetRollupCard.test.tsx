@@ -393,7 +393,7 @@ describe('CostCenterBudgetRollupCard', () => {
     // that the hint still surfaces, rather than disappearing because 1000 - 600 - 400 = 0
     expect(document.getElementById('cost-center-budget-rollup-key-spend')).toBeInTheDocument()
     expect(getHintText('cost-center-budget-rollup-key-spend')).toBe(
-      'Includes $400.00 API key spend'
+      'Includes $400.00 spend in budget categories removed this period'
     )
   })
 
@@ -431,7 +431,7 @@ describe('CostCenterBudgetRollupCard', () => {
     )
   })
 
-  it('shows a hint on header Spend when it includes API key spend the category cards do not', async () => {
+  it('shows a hint on header Spend when it includes spend the category cards do not show', async () => {
     const mockSummary: CostCenterBudgetSummary = {
       current_spending: 1300.0,
       budget_limit: 2000.0,
@@ -472,7 +472,7 @@ describe('CostCenterBudgetRollupCard', () => {
     // 1300 header spend - (600 + 400) category spend = 300 key spend
     expect(document.getElementById('cost-center-budget-rollup-key-spend')).toBeInTheDocument()
     expect(getHintText('cost-center-budget-rollup-key-spend')).toBe(
-      'Includes $300.00 API key spend'
+      'Includes $300.00 spend in budget categories removed this period'
     )
   })
 
@@ -708,7 +708,9 @@ describe('CostCenterBudgetRollupCard', () => {
       expect(screen.getByText('Platform')).toBeInTheDocument()
     })
     // 100 header spend - 20 (platform's own card total) = 80, not 100 - 20 - 30 = 50
-    expect(getHintText('cost-center-budget-rollup-key-spend')).toBe('Includes $80.00 API key spend')
+    expect(getHintText('cost-center-budget-rollup-key-spend')).toBe(
+      'Includes $80.00 spend in budget categories removed this period'
+    )
   })
 
   it('treats a negative budget_limit as invalid rather than a real total', async () => {
@@ -1010,5 +1012,87 @@ describe('CostCenterBudgetRollupCard', () => {
     await waitFor(() => {
       expect(costCentersStore.getCostCenterBudgetSummary).toHaveBeenCalledTimes(2)
     })
+  })
+})
+
+describe('CostCenterBudgetRollupCard with unknown or qualified spend', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const category = (
+    overrides: Partial<CostCenterBudgetSummary['budgets'][number]> = {}
+  ): CostCenterBudgetSummary['budgets'][number] => ({
+    budget_category: 'platform',
+    budget_duration: '30d',
+    soft_budget: 10.0,
+    max_budget: 20.0,
+    member_count: 1,
+    allocated_member_budget_total: 10.0,
+    current_spending: 5.0,
+    excluded_count: 0,
+    unsynced_count: 0,
+    ...overrides,
+  })
+
+  const renderWith = async (summary: CostCenterBudgetSummary) => {
+    vi.mocked(costCentersStore.getCostCenterBudgetSummary).mockResolvedValue(summary)
+    render(<CostCenterBudgetRollupCard costCenterId="test-id" projectCount={1} />)
+    await waitFor(() => {
+      expect(screen.getByText('Platform')).toBeInTheDocument()
+    })
+  }
+
+  it('renders an unknown category spend as absent, and no remaining amount', async () => {
+    await renderWith({
+      current_spending: null,
+      budget_limit: 20.0,
+      total_percent: null,
+      budgets: [category({ current_spending: null })],
+    })
+
+    const spendLine = screen.getByText('Spend / hard limit').nextElementSibling
+    expect(spendLine).toHaveTextContent('— / $20.00')
+    expect(screen.getByText('Remaining').nextElementSibling).toHaveTextContent('—')
+  })
+
+  it('renders "% used" as "—" when the total is unknown, without throwing', async () => {
+    await renderWith({
+      current_spending: null,
+      budget_limit: 60.0,
+      total_percent: null,
+      budgets: [category({ current_spending: null, max_budget: 60.0 })],
+    })
+
+    expect(screen.getByText('% used').nextElementSibling).toHaveTextContent('—')
+  })
+
+  it('names removed-category spend, not API key spend, when the total exceeds the categories', async () => {
+    await renderWith({
+      current_spending: 8.5,
+      budget_limit: 40.0,
+      total_percent: 21.25,
+      budgets: [
+        category({ current_spending: 5.0 }),
+        category({ budget_category: 'cli', current_spending: 0.0 }),
+      ],
+    })
+
+    const hint = getHintText('cost-center-budget-rollup-key-spend')
+    expect(hint).toContain('removed')
+    expect(hint).not.toContain('API key')
+  })
+
+  it('qualifies a partial total', async () => {
+    await renderWith({
+      current_spending: 15.0,
+      budget_limit: 20.0,
+      total_percent: 75.0,
+      spend_partial: true,
+      spend_missing_amount: 2.0,
+      budgets: [category({ current_spending: 15.0 })],
+    })
+
+    expect(screen.getByText('$15.00 (at least; $2.00 unattributed)')).toBeInTheDocument()
   })
 })

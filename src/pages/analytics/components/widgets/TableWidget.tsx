@@ -23,7 +23,13 @@ import type { AnalyticsPaginatedRequestParams, TabularResponse } from '@/types/a
 import { TabularMetricType, ColumnType, MetricFormat } from '@/types/analytics'
 import type { ColumnDefinition, SortState } from '@/types/table'
 import { DefinitionTypes } from '@/types/table'
-import { formatMetricValue } from '@/utils/analyticsFormatters'
+import {
+  ABSENT_VALUE_MARKER,
+  formatMetricValue,
+  formatSpendQualificationSuffix,
+  readCellSpendQualification,
+  readSpendQualification,
+} from '@/utils/analyticsFormatters'
 import { cn } from '@/utils/utils'
 
 import AnalyticsWidget from '../AnalyticsWidget'
@@ -204,8 +210,8 @@ const TableWidget: FC<TableWidgetProps> = ({
     }
   })
 
-  const formatCellValue = (col: any, rawValue: any): unknown => {
-    if (rawValue === null || rawValue === undefined) return '-'
+  const formatCellValue = (col: any, rawValue: any, row: Record<string, unknown>): unknown => {
+    if (rawValue === null || rawValue === undefined) return ABSENT_VALUE_MARKER
 
     if (
       col.format === MetricFormat.PERCENTAGE &&
@@ -215,7 +221,10 @@ const TableWidget: FC<TableWidgetProps> = ({
       return rawValue as number
     }
 
-    return formatMetricValue(rawValue as string | number | boolean, col.format)
+    return `${formatMetricValue(
+      rawValue as string | number | boolean,
+      col.format
+    )}${formatSpendQualificationSuffix(readCellSpendQualification(row, col))}`
   }
 
   // Format table items with proper value formatting
@@ -229,7 +238,7 @@ const TableWidget: FC<TableWidgetProps> = ({
           return
         }
 
-        formattedRow[col.id] = formatCellValue(col, row[col.id])
+        formattedRow[col.id] = formatCellValue(col, row[col.id], row)
       })
 
       return formattedRow
@@ -266,6 +275,15 @@ const TableWidget: FC<TableWidgetProps> = ({
         {columnDefinitions.map((col, index) => {
           const totalValue = data.data.totals?.[col.key]
           const hasTotal = totalValue !== null && totalValue !== undefined
+          // A column the backend footers but could not size is different from a column it never
+          // footers at all: the first is an unknown total and must show the absent marker, the second
+          // is a string or activity column where a blank cell is correct. An unsized money footer
+          // arrives with its key null or, when no row produced a figure, without the key and with its
+          // `_spend_unavailable` flag alone, so either marks the total unknown and neither renders as
+          // an empty cell that reads like a column with no total.
+          const totals = data.data.totals ?? {}
+          const totalIsUnknown =
+            !hasTotal && (col.key in totals || totals[`${col.key}_spend_unavailable`] === true)
 
           // Get the format from the original column definition
           const originalCol = data.data.columns.find((c) => c.id === col.key)
@@ -274,8 +292,18 @@ const TableWidget: FC<TableWidgetProps> = ({
           let displayValue = ''
           if (index === 0) {
             displayValue = 'Total'
+          } else if (totalIsUnknown) {
+            displayValue = ABSENT_VALUE_MARKER
           } else if (hasTotal) {
-            displayValue = formatMetricValue(totalValue as string | number, originalCol?.format)
+            // A total summed from only the rows that resolved is otherwise indistinguishable from a
+            // whole one, and the backend has no other way to say so.
+            const qualificationSuffix = formatSpendQualificationSuffix(
+              readSpendQualification(data.data.totals, `${col.key}_`)
+            )
+            displayValue = `${formatMetricValue(
+              totalValue as string | number,
+              originalCol?.format
+            )}${qualificationSuffix}`
           }
 
           return (

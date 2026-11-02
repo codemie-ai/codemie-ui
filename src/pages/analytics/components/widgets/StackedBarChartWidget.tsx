@@ -29,6 +29,12 @@ import { useSnapshot } from 'valtio'
 
 import { analyticsStore } from '@/store/analytics'
 import type { TabularMetricType, TabularResponse, AnalyticsQueryParams } from '@/types/analytics'
+import {
+  ABSENT_VALUE_MARKER,
+  formatChartSpendQualificationSuffix,
+  readSpendQualification,
+  toSeriesPoint,
+} from '@/utils/analyticsFormatters'
 import { generateChartColors } from '@/utils/chartColors'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
@@ -115,7 +121,10 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
         const baseColor = seriesColors[idx % seriesColors.length]
         return {
           label: s.label,
-          data: data?.data.rows.map((row) => Number(row[s.field] ?? 0)) ?? [],
+          // A null cell means nobody measured that series for that window: it must stay null so
+          // Chart.js leaves a gap. Coercing it to 0 would paint an unmeasured window as a
+          // measured zero.
+          data: data?.data.rows.map((row) => toSeriesPoint(row[s.field])) ?? [],
           backgroundColor: baseColor,
           borderColor: baseColor,
           borderWidth: 0,
@@ -194,9 +203,15 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
               return context[0].label
             },
             label: (context) => {
-              const value = Number(context.raw ?? context.parsed.y ?? 0)
+              const field = series[context.datasetIndex]?.field
+              const point = field
+                ? toSeriesPoint(data?.data.rows[context.dataIndex]?.[field])
+                : context.parsed.y
+              if (point === null || point === undefined) {
+                return ` ${context.dataset.label}: ${ABSENT_VALUE_MARKER}`
+              }
               const formattedValue =
-                valueFormat === 'currency' ? `$${value.toFixed(4)}` : value.toLocaleString()
+                valueFormat === 'currency' ? `$${point.toFixed(4)}` : point.toLocaleString()
               return ` ${context.dataset.label}: ${formattedValue}`
             },
           },
@@ -254,9 +269,20 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
         },
       },
     }
-  }, [gridColor, textColor, data, labelField, valueFormat])
+  }, [gridColor, textColor, data, labelField, valueFormat, series])
 
-  const hasData = chartData.datasets.some((ds) => ds.data.some((v) => v > 0))
+  // One qualification for the whole chart, not one per tooltip: the backend puts the window's
+  // residue on every bucket and series.
+  const chartQualification = useMemo(() => {
+    if (valueFormat !== 'currency') return ''
+    return formatChartSpendQualificationSuffix(
+      (data?.data.rows ?? []).flatMap((row) =>
+        series.map((s) => readSpendQualification(row, `${s.field}_`))
+      )
+    )
+  }, [data, series, valueFormat])
+
+  const hasData = chartData.datasets.some((ds) => ds.data.some((v) => v !== null && v > 0))
 
   const renderChartContent = () => {
     if (!hasData) {
@@ -268,9 +294,16 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
     }
 
     return (
-      <div className="w-full h-[400px] p-4">
-        <Bar data={chartData} options={chartOptions} />
-      </div>
+      <>
+        <div className="w-full h-[400px] p-4">
+          <Bar data={chartData} options={chartOptions} />
+        </div>
+        {chartQualification && (
+          <p className="px-4 pb-2 text-[11px] leading-4 text-text-quaternary">
+            Bars show spend{chartQualification}
+          </p>
+        )}
+      </>
     )
   }
 

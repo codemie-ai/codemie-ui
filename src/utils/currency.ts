@@ -13,9 +13,20 @@
 // limitations under the License.
 //
 
-/** Formats a number as USD with thousands separators and exactly two decimals. */
+const ONE_CENT = 0.01
+
+/**
+ * Formats a number as USD with thousands separators and two decimals - except a positive amount
+ * below one cent, which keeps two significant digits. Real spend must never read as `$0.00`: an LLM
+ * call commonly costs a fraction of a cent, and a reader takes `$0.00` for "nothing spent" - the
+ * same failure as rendering an absent figure as zero (EPMCDME-15204). Significant digits rather
+ * than `formatCliAnalyticsCost`'s fixed four decimals, so an embedding-sized cost (0.0000026) does
+ * not read `$0.0000` either.
+ */
 export const formatCurrency = (value: number): string =>
-  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  value > 0 && value < ONE_CENT
+    ? `$${value.toLocaleString('en-US', { maximumSignificantDigits: 2 })}`
+    : `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 /**
  * Formats a possibly-absent spend value.
@@ -23,6 +34,21 @@ export const formatCurrency = (value: number): string =>
  */
 export const formatSpend = (value: number | null | undefined): string =>
   value == null ? '-' : formatCurrency(value)
+
+// Mutually exclusive: pending -> a final cost is coming; unavailable -> none will arrive for
+// this record, and the figure is only the settled subtotal. Rendering the wrong one
+// promises a human a figure that will never arrive.
+export const formatMoneySpentSuffix = ({
+  pending,
+  unavailable,
+}: {
+  pending?: boolean | null
+  unavailable?: boolean | null
+}): string => {
+  if (pending) return ' (awaiting final cost)'
+  if (unavailable) return ' (final cost unavailable)'
+  return ''
+}
 
 /**
  * Formats an LLM session cost with precision tiers appropriate for AI spend:

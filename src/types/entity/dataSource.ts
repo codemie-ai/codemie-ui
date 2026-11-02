@@ -287,6 +287,10 @@ export interface DataSourceDetailsResponse {
     input_tokens: number
     output_tokens: number
     money_spent: number
+    // Mutually exclusive: pending -> a final cost is coming; unavailable -> none will arrive
+    // for this record, and money_spent is only the settled subtotal.
+    money_spent_pending?: boolean
+    money_spent_unavailable?: boolean
   }
   processing_info: { unique_extensions: Array<string> } & Record<string, unknown>
   provider_fields: any

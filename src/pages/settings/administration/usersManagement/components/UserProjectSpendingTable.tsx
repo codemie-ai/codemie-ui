@@ -27,6 +27,7 @@ import { analyticsStore } from '@/store/analytics'
 import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
 import {
   getCategoryLimit,
+  getCategoryQualification,
   getCategorySpend,
   SPENDING_CATEGORY_KEYS,
   UserProjectSpendingRow,
@@ -76,7 +77,11 @@ interface CategorySpendCellProps {
 }
 
 const CategorySpendCell: FC<CategorySpendCellProps> = ({ row, category }) => (
-  <SpendingAmount spend={getCategorySpend(row, category)} limit={getCategoryLimit(row, category)} />
+  <SpendingAmount
+    spend={getCategorySpend(row, category)}
+    limit={getCategoryLimit(row, category)}
+    qualification={getCategoryQualification(row, category)}
+  />
 )
 
 const customRenderColumns = {

@@ -20,27 +20,49 @@ import { WORKFLOW_FINAL_STATUSES } from '@/constants/workflows'
 import { usePolling } from '@/hooks/usePolling'
 import { workflowExecutionsStore } from '@/store/workflowExecutions'
 
+// A finished execution's cost settles on the first GET after its ledger row lands, which can be
+// minutes after the run ended, so polling outlives the run while that cost is pending. Bounded,
+// because the row can also land hours later or never: an open tab must not poll for it forever,
+// and a reload settles it whenever it lands. 75 polls at the 4 s interval is five minutes.
+const MAX_COST_SETTLEMENT_POLLS = 75
+
 export const useWorkflowData = (workflowId: string, executionId?: string | null) => {
   const { workflow: originalWorkflow, execution } = useSnapshot(workflowExecutionsStore)
   const [isLoading, setIsLoading] = useState(true)
+  // Polls spent after the opened execution finished; the bound applies per execution. State, not a
+  // ref: the snapshot re-renders only when a field read here changes, so an execution that stays
+  // pending would never re-render to read a ref and polling would never stop.
+  const [costSettlementPolls, setCostSettlementPolls] = useState(0)
+
+  useEffect(() => {
+    setCostSettlementPolls(0)
+  }, [executionId])
 
   // Fetch single execution
   const fetchExecution = useCallback(async () => {
     try {
       if (!executionId || !workflowId) return
+      const current = workflowExecutionsStore.execution
+      if (current && WORKFLOW_FINAL_STATUSES.includes(current.overall_status)) {
+        setCostSettlementPolls((polls) => polls + 1)
+      }
       await workflowExecutionsStore.getExecution(workflowId, executionId)
     } catch (error) {
       console.error('Error fetching workflow execution: ', error)
     }
   }, [workflowId, executionId])
 
-  // Poll active execution
+  // Poll an active execution, and a finished one until its cost settles
   usePolling({
     interval: 4000,
-    enabled: useMemo(
-      () => !!(execution && !WORKFLOW_FINAL_STATUSES.includes(execution.overall_status)),
-      [execution]
-    ),
+    enabled: useMemo(() => {
+      if (!execution) return false
+      if (!WORKFLOW_FINAL_STATUSES.includes(execution.overall_status)) return true
+      return (
+        !!execution.tokens_usage?.money_spent_pending &&
+        costSettlementPolls < MAX_COST_SETTLEMENT_POLLS
+      )
+    }, [execution, costSettlementPolls]),
     fetchFn: fetchExecution,
   })
 

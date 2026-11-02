@@ -44,7 +44,13 @@ import {
   MetricValue,
   TabularResponse,
 } from '@/types/analytics'
-import { formatMetricValue } from '@/utils/analyticsFormatters'
+import {
+  ABSENT_VALUE_MARKER,
+  formatMetricValue,
+  formatSpendQualificationSuffix,
+  readSpendQualification,
+} from '@/utils/analyticsFormatters'
+import { getTailwindColor } from '@/utils/tailwindColors'
 
 import InfoCard from './InfoCard'
 
@@ -52,6 +58,11 @@ ChartJS.register(ArcElement, ChartTooltip, Legend, ChartDataLabels)
 
 const SPENDING_DANGER_THRESHOLD = 75
 const SPENDING_WARNING_THRESHOLD = 50
+
+// The colour this app already uses for "nothing is known here" - the empty-state labels below and in
+// DonutChartWidget. An unknown consumption must not borrow the green/yellow/red vocabulary that only
+// a measured one has earned.
+const UNKNOWN_CONSUMPTION_COLOR_PROPERTY = '--colors-text-quaternary'
 
 interface SpendingCardProps {
   userId?: string
@@ -93,6 +104,9 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
           format: column.format,
           description: column.description,
           value: row[column.id] as MetricValue,
+          // budget_usage annotates the row, not the column, so carry those annotations onto the
+          // money metric; a floor figure must not be shown as an exact one.
+          ...(column.format === MetricFormat.CURRENCY ? readSpendQualification(row) : {}),
         })),
       },
       metadata: keySpendingData.metadata,
@@ -102,20 +116,24 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
   const currentMetric = summaries?.data.metrics.find((m: any) => m.id === 'current_spending')
   const limitMetric = summaries?.data.metrics.find((m: any) => m.id === 'budget_limit')
 
+  // null, never 0: the backend refuses to compute a percentage when the spend figure is absent or no
+  // limit is configured, and "0% consumed" would assert a fact nobody has.
   const percentage = useMemo(() => {
-    if (keySpendingData && rowCount === 1) {
-      const row = keySpendingData.data.rows[0]
-      const rawPercentage = Math.min(typeof row.total === 'number' ? row.total : 0, 100)
-      return rawPercentage
-    }
-    return 0
+    if (!keySpendingData || rowCount !== 1) return null
+
+    const { total } = keySpendingData.data.rows[0]
+    return typeof total === 'number' ? Math.min(total, 100) : null
   }, [keySpendingData, rowCount])
 
   const statusColor = useMemo(() => {
+    if (percentage === null) return getTailwindColor(UNKNOWN_CONSUMPTION_COLOR_PROPERTY)
     return getStatusColor(percentage, SPENDING_DANGER_THRESHOLD, SPENDING_WARNING_THRESHOLD)
   }, [percentage])
 
   const statusColorWithOpacity = useMemo(() => {
+    if (percentage === null) {
+      return getTailwindColor(UNKNOWN_CONSUMPTION_COLOR_PROPERTY, undefined, 0.2)
+    }
     return getStatusColorWithOpacity(
       percentage,
       SPENDING_DANGER_THRESHOLD,
@@ -124,12 +142,13 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
   }, [percentage])
 
   const chartData = useMemo(() => {
-    const remainingPercentage = Math.max(0, 100 - percentage)
+    // An unknown consumption draws no filled arc at all, leaving a neutral empty ring.
+    const consumedPercentage = percentage ?? 0
     return {
       labels: ['Value', 'Remaining'],
       datasets: [
         {
-          data: [percentage, remainingPercentage],
+          data: [consumedPercentage, Math.max(0, 100 - consumedPercentage)],
           backgroundColor: [statusColor, statusColorWithOpacity],
           borderColor: 'transparent',
           borderWidth: 2,
@@ -203,7 +222,10 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
 
                 <div className="text-right flex-shrink-0">
                   <span className="text-sm leading-lg font-normal text-text-primary whitespace-nowrap">
-                    {formatMetricValue(metric.value, metric.format)}
+                    {`${formatMetricValue(
+                      metric.value,
+                      metric.format
+                    )}${formatSpendQualificationSuffix(metric)}`}
                   </span>
                 </div>
               </div>
@@ -215,7 +237,7 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
             <Doughnut data={chartData} options={chartOptions} />
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-2">
               <div className="text-base font-bold" style={{ color: statusColor }}>
-                {percentage.toFixed(1)}%
+                {percentage === null ? ABSENT_VALUE_MARKER : `${percentage.toFixed(1)}%`}
               </div>
             </div>
           </div>
@@ -243,10 +265,12 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
       if (col.format === MetricFormat.PERCENTAGE && col.id === 'total') {
         customColumns[col.id] = (item: Record<string, MetricValue>) => {
           const value = item[col.id]
-          const percentage: number = typeof value === 'number' ? value : 0
+          // A zero-length bar reads as "none of the budget consumed" - a claim nobody can make when
+          // the backend declined to compute the percentage.
+          if (typeof value !== 'number') return <span>{ABSENT_VALUE_MARKER}</span>
           return (
             <SpendingProgressBar
-              percentage={percentage}
+              percentage={value}
               dangerThreshold={SPENDING_DANGER_THRESHOLD}
               warningThreshold={SPENDING_WARNING_THRESHOLD}
             />

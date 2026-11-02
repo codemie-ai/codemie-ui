@@ -35,7 +35,13 @@ import type {
   TabularMetricType,
   TabularResponse,
 } from '@/types/analytics'
-import { formatMetricValue } from '@/utils/analyticsFormatters'
+import {
+  formatChartSpendQualificationSuffix,
+  formatMetricValue,
+  formatSpendQualificationSuffix,
+  readCellSpendQualification,
+  toSeriesPoint,
+} from '@/utils/analyticsFormatters'
 import { generateChartColors } from '@/utils/chartColors'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
@@ -129,7 +135,9 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
       return 'Unknown'
     }) ?? []
 
-  const values = data?.data.rows.map((row) => Number(row[valueField] ?? 0)) ?? []
+  // A null cell is a figure nobody could produce: it stays null so Chart.js draws no bar, where 0
+  // would draw it as a measured zero.
+  const values = data?.data.rows.map((row) => toSeriesPoint(row[valueField])) ?? []
 
   const barColor = getTailwindColor('--colors-surface-specific-charts-bar-background', '#06B6D4')
   const gridColor = getTailwindColor(
@@ -170,6 +178,12 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
 
   const yAxisLabelValue = data?.data.columns.find((c) => c.id === yAxisLabel)?.label
   const valueFormat = data?.data.columns.find((c) => c.id === valueField)?.format
+  // Each bar's figure is qualified exactly as the tables qualify the same cell.
+  const qualifications =
+    data?.data.rows.map((row) =>
+      readCellSpendQualification(row, { id: valueField, format: valueFormat })
+    ) ?? []
+  const chartQualification = formatChartSpendQualificationSuffix(qualifications)
 
   const chartOptions: ChartOptions<'bar'> = useMemo(
     () => ({
@@ -215,8 +229,11 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
               return context[0].label
             },
             label: (context) => {
-              const value = horizontal ? context.parsed.x ?? 0 : context.parsed.y ?? 0
-              return ` ${yAxisLabelValue}: ${formatMetricValue(value, valueFormat)}`
+              const value = horizontal ? context.parsed.x : context.parsed.y
+              const qualification = formatSpendQualificationSuffix(
+                qualifications[context.dataIndex]
+              )
+              return ` ${yAxisLabelValue}: ${formatMetricValue(value, valueFormat)}${qualification}`
             },
           },
         },
@@ -290,7 +307,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     ]
   )
 
-  const hasData = values.length > 0 && values.some((v) => v !== 0)
+  const hasData = values.length > 0 && values.some((v) => v !== null && v !== 0)
 
   const renderChartContent = () => {
     if (!hasData) {
@@ -302,9 +319,16 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     }
 
     return (
-      <div className="w-full h-[400px] p-4">
-        <Bar data={chartData} options={chartOptions} />
-      </div>
+      <>
+        <div className="w-full h-[400px] p-4">
+          <Bar data={chartData} options={chartOptions} />
+        </div>
+        {chartQualification && (
+          <p className="px-4 pb-2 text-[11px] leading-4 text-text-quaternary">
+            Bars show spend{chartQualification}
+          </p>
+        )}
+      </>
     )
   }
 

@@ -15,8 +15,16 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { MetricFormat } from '@/types/analytics'
-import { formatMetricValue, humanizeAnalyticsLabel } from '@/utils/analyticsFormatters'
+import { ColumnType, Metric, MetricFormat } from '@/types/analytics'
+import {
+  ABSENT_VALUE_MARKER,
+  SPEND_QUALIFICATION_FIELDS,
+  formatMetricValue,
+  formatQualifiedMetricValue,
+  formatSpendQualificationSuffix,
+  humanizeAnalyticsLabel,
+  readSpendQualification,
+} from '@/utils/analyticsFormatters'
 import { formatDateTime } from '@/utils/helpers'
 
 describe('analyticsFormatters', () => {
@@ -28,6 +36,10 @@ describe('analyticsFormatters', () => {
 
     it('formats currency values with two decimal places', () => {
       expect(formatMetricValue(1234.5, MetricFormat.CURRENCY)).toBe('$1,234.50')
+    })
+
+    it('renders sub-cent spend with significant digits, never as $0.00', () => {
+      expect(formatMetricValue(0.0042, MetricFormat.CURRENCY)).toBe('$0.0042')
     })
 
     it('formats percentage values with two decimal places', () => {
@@ -58,6 +70,157 @@ describe('analyticsFormatters', () => {
 
     it('returns strings unchanged when no explicit format is provided', () => {
       expect(formatMetricValue('production')).toBe('production')
+    })
+
+    it('renders an absent currency figure as the absent marker, never as $0.00', () => {
+      expect(formatMetricValue(null, MetricFormat.CURRENCY)).toBe(ABSENT_VALUE_MARKER)
+      expect(formatMetricValue(undefined, MetricFormat.CURRENCY)).toBe(ABSENT_VALUE_MARKER)
+      expect(formatMetricValue(null, MetricFormat.CURRENCY)).not.toContain('0')
+    })
+
+    it('renders a measured zero as $0.00, because an absent figure and a zero are not the same', () => {
+      expect(formatMetricValue(0, MetricFormat.CURRENCY)).toBe('$0.00')
+    })
+
+    it('renders an absent percentage as the absent marker, never as 0.00%', () => {
+      expect(formatMetricValue(null, MetricFormat.PERCENTAGE)).toBe(ABSENT_VALUE_MARKER)
+      expect(formatMetricValue(undefined, MetricFormat.PERCENTAGE)).toBe(ABSENT_VALUE_MARKER)
+    })
+
+    it('renders a measured zero percentage as 0.00%', () => {
+      expect(formatMetricValue(0, MetricFormat.PERCENTAGE)).toBe('0.00%')
+    })
+
+    it('renders an absent unformatted value as the absent marker', () => {
+      expect(formatMetricValue(null)).toBe(ABSENT_VALUE_MARKER)
+    })
+  })
+
+  describe('readSpendQualification', () => {
+    it('reads the unprefixed, row-level annotation form', () => {
+      expect(
+        readSpendQualification({ spend_partial: true, spend_missing_amount: 3.25 })
+      ).toStrictEqual({
+        spend_unavailable: false,
+        spend_partial: true,
+        spend_missing_amount: 3.25,
+      })
+    })
+
+    it('reads the column-prefixed annotation form', () => {
+      expect(readSpendQualification({ cost_spend_unavailable: true }, 'cost_')).toStrictEqual({
+        spend_unavailable: true,
+        spend_partial: false,
+        spend_missing_amount: null,
+      })
+    })
+
+    it('ignores a prefixed annotation when reading the unprefixed form', () => {
+      expect(readSpendQualification({ cost_spend_partial: true })).toStrictEqual({
+        spend_unavailable: false,
+        spend_partial: false,
+        spend_missing_amount: null,
+      })
+    })
+
+    it('treats a non-numeric missing amount as unknown', () => {
+      expect(readSpendQualification({ spend_missing_amount: null }).spend_missing_amount).toBeNull()
+    })
+
+    it('returns no annotations for an absent source', () => {
+      expect(readSpendQualification(null)).toStrictEqual({})
+      expect(readSpendQualification(undefined)).toStrictEqual({})
+    })
+  })
+
+  describe('formatSpendQualificationSuffix', () => {
+    it('adds no suffix to a fully resolved figure', () => {
+      expect(formatSpendQualificationSuffix({})).toBe('')
+      expect(
+        formatSpendQualificationSuffix({ spend_partial: false, spend_unavailable: false })
+      ).toBe('')
+    })
+
+    it('names the unattributed amount for a partial figure when it is known', () => {
+      expect(
+        formatSpendQualificationSuffix({ spend_partial: true, spend_missing_amount: 3.25 })
+      ).toBe(' (at least; $3.25 unattributed)')
+    })
+
+    it('names a sub-cent unattributed amount rather than rounding it to $0.00', () => {
+      expect(
+        formatSpendQualificationSuffix({ spend_partial: true, spend_missing_amount: 0.003 })
+      ).toBe(' (at least; $0.003 unattributed)')
+    })
+
+    it('omits the amount for a partial figure when nobody knows the size of the hole', () => {
+      expect(
+        formatSpendQualificationSuffix({ spend_partial: true, spend_missing_amount: null })
+      ).toBe(' (at least; some spend unattributed)')
+    })
+
+    it('marks an uncovered window as incomplete data', () => {
+      expect(formatSpendQualificationSuffix({ spend_unavailable: true })).toBe(' (incomplete data)')
+    })
+
+    it('prefers the partial suffix over the unavailable one, as the more specific statement', () => {
+      expect(formatSpendQualificationSuffix({ spend_partial: true, spend_unavailable: true })).toBe(
+        ' (at least; some spend unattributed)'
+      )
+    })
+  })
+
+  describe('SPEND_QUALIFICATION_FIELDS', () => {
+    it('names exactly the keys readSpendQualification reads, so a screen can filter them out', () => {
+      const source = Object.fromEntries(
+        SPEND_QUALIFICATION_FIELDS.map((field) => [`cost_${field}`, true])
+      )
+
+      expect(readSpendQualification(source, 'cost_')).toStrictEqual({
+        spend_unavailable: true,
+        spend_partial: true,
+        spend_missing_amount: null,
+      })
+    })
+  })
+
+  describe('formatQualifiedMetricValue', () => {
+    const buildMetric = (overrides: Partial<Metric> = {}): Metric =>
+      ({
+        id: 'total_money_spent',
+        label: 'Total Money Spent',
+        type: ColumnType.NUMBER,
+        format: MetricFormat.CURRENCY,
+        value: 1234.56,
+        ...overrides,
+      } as Metric)
+
+    it('appends the qualification to a currency metric', () => {
+      expect(
+        formatQualifiedMetricValue(buildMetric({ spend_partial: true, spend_missing_amount: 40 }))
+      ).toBe('$1,234.56 (at least; $40.00 unattributed)')
+    })
+
+    it('leaves a fully resolved currency metric unannotated', () => {
+      expect(formatQualifiedMetricValue(buildMetric())).toBe('$1,234.56')
+    })
+
+    it('renders an absent currency figure as the marker rather than a zero', () => {
+      expect(formatQualifiedMetricValue(buildMetric({ value: null as unknown as number }))).toBe(
+        ABSENT_VALUE_MARKER
+      )
+    })
+
+    it('keeps a measured zero as a zero', () => {
+      expect(formatQualifiedMetricValue(buildMetric({ value: 0 }))).toBe('$0.00')
+    })
+
+    it('does not annotate a non-currency metric, which the qualification does not describe', () => {
+      expect(
+        formatQualifiedMetricValue(
+          buildMetric({ format: undefined, value: 12, spend_unavailable: true })
+        )
+      ).toBe('12')
     })
   })
 

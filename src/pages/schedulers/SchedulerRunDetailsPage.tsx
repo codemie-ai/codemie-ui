@@ -26,7 +26,14 @@ import Sidebar from '@/components/Sidebar'
 import Spinner from '@/components/Spinner'
 import StatusBadge, { StatusEnum } from '@/components/StatusBadge/StatusBadge'
 import { useVueRouter } from '@/hooks/useVueRouter'
-import { SchedulerRunDetails, SchedulerRunStatus, schedulerRunsStore } from '@/store/schedulerRuns'
+import {
+  SchedulerRunDetails,
+  SchedulerRunMetrics,
+  SchedulerRunStatus,
+  schedulerRunsStore,
+} from '@/store/schedulerRuns'
+import { ABSENT_VALUE_MARKER, formatMetricValue } from '@/utils/analyticsFormatters'
+import { formatMoneySpentSuffix } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 
 const RUN_STATUS_MAP: Record<SchedulerRunStatus, (typeof StatusEnum)[keyof typeof StatusEnum]> = {
@@ -45,6 +52,17 @@ const formatDuration = (ms: number | null): string => {
   if (ms === null) return 'Running'
   if (ms < 60_000) return `${Math.round(ms / 1000)}s`
   return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`
+}
+
+// Four decimals: one run's spend is routinely sub-cent. A cost nobody recorded renders as absent,
+// never as $0, qualified with the chat header's pending/unavailable wording.
+const formatRunCost = (metrics: SchedulerRunMetrics): string => {
+  const figure = metrics.cost == null ? ABSENT_VALUE_MARKER : `$${metrics.cost.toFixed(4)}`
+  const suffix = formatMoneySpentSuffix({
+    pending: metrics.moneySpentPending,
+    unavailable: metrics.moneySpentUnavailable,
+  })
+  return `${figure}${suffix}`
 }
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
@@ -148,13 +166,13 @@ const SchedulerRunDetailsPage = () => {
                   <>
                     <DetailsProperty
                       label="Input tokens"
-                      value={run.metrics.inputTokens.toLocaleString()}
+                      value={formatMetricValue(run.metrics.inputTokens)}
                     />
                     <DetailsProperty
                       label="Output tokens"
-                      value={run.metrics.outputTokens.toLocaleString()}
+                      value={formatMetricValue(run.metrics.outputTokens)}
                     />
-                    <DetailsProperty label="Cost" value={`$${run.metrics.cost.toFixed(4)}`} />
+                    <DetailsProperty label="Cost" value={formatRunCost(run.metrics)} />
                   </>
                 )}
               </div>

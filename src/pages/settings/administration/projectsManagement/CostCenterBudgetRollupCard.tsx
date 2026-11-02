@@ -27,6 +27,7 @@ import {
   getBudgetCategoryLabel,
 } from '@/types/entity/budget'
 import { CostCenterAssignedBudgetSummary, CostCenterBudgetSummary } from '@/types/entity/costCenter'
+import { formatSpendQualificationSuffix, readSpendQualification } from '@/utils/analyticsFormatters'
 
 import BudgetSpendMetrics from './components/BudgetSpendMetrics'
 import { formatCurrency, formatResetPeriod } from './components/spendPresentation'
@@ -95,7 +96,12 @@ const CategoryCard: FC<{
             spent={budgetData.current_spending}
             max={budgetData.max_budget}
             soft={budgetData.soft_budget}
-            remaining={Math.max(0, budgetData.max_budget - budgetData.current_spending)}
+            remaining={
+              budgetData.current_spending == null
+                ? null
+                : Math.max(0, budgetData.max_budget - budgetData.current_spending)
+            }
+            spendQualification={readSpendQualification({ ...budgetData })}
           />
 
           <div className="mt-auto text-xs text-text-quaternary">
@@ -196,15 +202,20 @@ const CostCenterBudgetRollupCard: FC<CostCenterBudgetRollupCardProps> = ({
         .join(', ')
     : null
 
-  // "Spend" includes key spend (to match the project page) while the category cards only ever
-  // show assigned-budget spend, so the two don't add up to the same total - surface the gap
-  // rather than leave it unexplained. Sum only the rows that actually render a card (recognized
-  // category, an accepted budget, and at least one linked project) - matching CategoryCard's own
-  // showCard condition, so an unrecognized category, a pending-sync/excluded-only row, or a
-  // cost center with no projects linked isn't silently absorbed into "key spend".
+  // "Spend" also counts spend in budget categories removed earlier this period, which no category
+  // card shows, so the two don't add up to the same total - surface the gap rather than leave it
+  // unexplained. Sum only the rows that actually render a card (recognized category, an accepted
+  // budget, and at least one linked project) - matching CategoryCard's own showCard condition, so
+  // an unrecognized category, a pending-sync/excluded-only row, or a cost center with no projects
+  // linked isn't silently absorbed into the gap. An unknown figure on either side leaves the gap
+  // unknown, so no hint is shown rather than one computed from the figures that happened to resolve.
+  const isSpendGapKnown =
+    summary.current_spending != null && renderedBudgets.every((b) => b.current_spending != null)
   const categorySpendTotal =
-    projectCount === 0 ? 0 : renderedBudgets.reduce((sum, b) => sum + b.current_spending, 0)
-  const keySpend = Math.round((summary.current_spending - categorySpendTotal) * 100) / 100
+    projectCount === 0 ? 0 : renderedBudgets.reduce((sum, b) => sum + (b.current_spending ?? 0), 0)
+  const unexplainedSpend = isSpendGapKnown
+    ? Math.round(((summary.current_spending ?? 0) - categorySpendTotal) * 100) / 100
+    : 0
 
   let totalBudgetContent: ReactNode = '— not assigned —'
   if (hasMixedPeriods) {
@@ -238,14 +249,16 @@ const CostCenterBudgetRollupCard: FC<CostCenterBudgetRollupCardProps> = ({
           <div>
             <div className="text-xs text-text-quaternary mb-1">
               Spend
-              {keySpend !== 0 && (
+              {unexplainedSpend !== 0 && (
                 <Hint
                   id="cost-center-budget-rollup-key-spend"
                   hint={
-                    keySpend > 0
-                      ? `Includes ${formatCurrency(keySpend)} API key spend`
+                    unexplainedSpend > 0
+                      ? `Includes ${formatCurrency(
+                          unexplainedSpend
+                        )} spend in budget categories removed this period`
                       : `Spend figures don't reconcile: category cards total ${formatCurrency(
-                          Math.abs(keySpend)
+                          Math.abs(unexplainedSpend)
                         )} more than this`
                   }
                   position="bottom"
@@ -254,12 +267,16 @@ const CostCenterBudgetRollupCard: FC<CostCenterBudgetRollupCardProps> = ({
             </div>
             <div className="text-base font-semibold">
               {formatCurrency(summary.current_spending)}
+              {formatSpendQualificationSuffix(readSpendQualification({ ...summary }))}
             </div>
           </div>
           <div>
             <div className="text-xs text-text-quaternary mb-1">% used</div>
             <div className="text-base font-semibold">
-              {!hasMixedPeriods && summary.budget_limit != null && summary.budget_limit > 0
+              {!hasMixedPeriods &&
+              summary.budget_limit != null &&
+              summary.budget_limit > 0 &&
+              summary.total_percent != null
                 ? `${summary.total_percent.toFixed(1)}%`
                 : '—'}
             </div>

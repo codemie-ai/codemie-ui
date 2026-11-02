@@ -130,4 +130,41 @@ describe('SchedulerRunDetailsPage', () => {
       expect(screen.getByText('execution')).toBeInTheDocument()
     })
   })
+
+  describe('Metrics', () => {
+    // DetailsProperty renders a label and its value as sibling paragraphs.
+    const findValueOf = async (label: string) =>
+      (await screen.findByText(`${label}:`)).nextElementSibling?.textContent
+
+    it('renders a recorded cost with four decimals', async () => {
+      mockAPI('GET', 'v1/scheduler-runs/run-123', baseRun)
+      renderPage('/schedulers/sched-1/runs/run-123')
+
+      expect(await findValueOf('Cost')).toBe('$0.0125')
+    })
+
+    it('renders an absent cost and absent token counts as the absent marker, never as zero', async () => {
+      const unmeasuredRun = {
+        ...baseRun,
+        metrics: { inputTokens: null, outputTokens: null, cost: null },
+      }
+      mockAPI('GET', 'v1/scheduler-runs/run-123', unmeasuredRun)
+      renderPage('/schedulers/sched-1/runs/run-123')
+
+      expect(await findValueOf('Cost')).toBe('-')
+      expect(await findValueOf('Input tokens')).toBe('-')
+      expect(await findValueOf('Output tokens')).toBe('-')
+    })
+
+    it('marks a pending cost as awaiting final cost', async () => {
+      const pendingRun = {
+        ...baseRun,
+        metrics: { ...baseRun.metrics, cost: null, moneySpentPending: true },
+      }
+      mockAPI('GET', 'v1/scheduler-runs/run-123', pendingRun)
+      renderPage('/schedulers/sched-1/runs/run-123')
+
+      expect(await findValueOf('Cost')).toBe('- (awaiting final cost)')
+    })
+  })
 })

@@ -78,7 +78,13 @@ export type WorkflowExecutionStatus =
 export interface WorkflowExecutionTokensUsage {
   input_tokens: number
   output_tokens: number
-  money_spent: number
+  // `null` when the execution was never priced - the backend maps that case to `None` rather than to
+  // a zero, and so must every screen reading it.
+  money_spent: number | null
+  // Mutually exclusive: pending -> a final cost is coming; unavailable -> none will arrive
+  // for this record, and money_spent is only the settled subtotal.
+  money_spent_pending?: boolean
+  money_spent_unavailable?: boolean
 }
 
 export interface WorkflowExecution {

@@ -130,9 +130,27 @@ export interface ColumnDefinition {
   description?: string
 }
 
-export type MetricValue = string | number | boolean
+export type MetricValue = string | number | boolean | null
 
-export interface Metric {
+/**
+ * Annotations the analytics API attaches to a money figure it could not fully resolve, so that an
+ * incomplete figure never renders like a complete one.
+ *
+ * `spend_unavailable` - part or all of the requested window has no coverage, so the figure is short
+ * by an unknown amount. `spend_partial` - the figure exists but some rows could not be attributed
+ * to the thing being reported, so the number is a floor rather than a total;
+ * `spend_missing_amount` says how much is unaccounted for, or `null` when nobody can compute it.
+ *
+ * Tabular rows and totals carry the same annotations under a `<columnId>_` prefix; they already
+ * fit `Record<string, unknown>` and need no declaration of their own.
+ */
+export interface SpendQualification {
+  spend_unavailable?: boolean
+  spend_partial?: boolean
+  spend_missing_amount?: number | null
+}
+
+export interface Metric extends SpendQualification {
   id: string
   label: string
   type: ColumnType
@@ -408,7 +426,9 @@ export interface LeaderboardUserDetail {
   usage_intent: string
   intent?: LeaderboardIntentInfo
   projects: string[]
-  summary_metrics: Record<string, number>
+  // Money figures are `null` when nobody could price them, and each is followed by its
+  // `<prefix>_spend_unavailable` / `_partial` / `_missing_amount` annotations in the same flat map.
+  summary_metrics: Record<string, number | boolean | null>
   dimensions: LeaderboardDimension[]
 }
 

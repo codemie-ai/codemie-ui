@@ -19,6 +19,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { dataSourceStore } from '@/store/dataSources'
 import { userStore } from '@/store/user'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
+import { ABSENT_VALUE_MARKER } from '@/utils/analyticsFormatters'
 
 import DataSourceDetails from '../DataSourceDetails'
 
@@ -199,6 +200,83 @@ describe('DataSourceDetails — xWiki properties', () => {
       <DataSourceDetails dataSource={{ ...xwikiDataSource, xwiki: { space: 'KB' } }} />
     )
     expect(getByText('xwiki')).toBeInTheDocument()
+  })
+})
+
+describe('DataSourceDetails — money spent state markers', () => {
+  it('renders the settled figure with no marker when neither flag is set', () => {
+    const { getByText, queryByText } = render(<DataSourceDetails dataSource={dataSource} />)
+    expect(getByText('$0.0000')).toBeInTheDocument()
+    expect(queryByText(/awaiting final cost/)).not.toBeInTheDocument()
+    expect(queryByText(/final cost unavailable/)).not.toBeInTheDocument()
+  })
+
+  it('marks a pending figure as awaiting final cost', () => {
+    const pendingDataSource = {
+      ...dataSource,
+      tokens_usage: {
+        input_tokens: 0,
+        output_tokens: 0,
+        money_spent: 0.5,
+        money_spent_pending: true,
+      },
+    }
+    const { getByText, queryByText } = render(<DataSourceDetails dataSource={pendingDataSource} />)
+    expect(getByText('$0.5000 (awaiting final cost)')).toBeInTheDocument()
+    expect(queryByText(/final cost unavailable/)).not.toBeInTheDocument()
+  })
+
+  it('marks an unavailable figure as final cost unavailable, distinct from pending', () => {
+    const unavailableDataSource = {
+      ...dataSource,
+      tokens_usage: {
+        input_tokens: 0,
+        output_tokens: 0,
+        money_spent: 0.5,
+        money_spent_unavailable: true,
+      },
+    }
+    const { getByText, queryByText } = render(
+      <DataSourceDetails dataSource={unavailableDataSource} />
+    )
+    expect(getByText('$0.5000 (final cost unavailable)')).toBeInTheDocument()
+    expect(queryByText(/awaiting final cost/)).not.toBeInTheDocument()
+  })
+
+  // A zero flagged pending or unavailable is the placeholder written before any cost settled, not
+  // an indexing run that cost nothing.
+  it('renders a pending zero as the absent marker, never as a measured $0.0000', () => {
+    const pendingZeroDataSource = {
+      ...dataSource,
+      tokens_usage: {
+        input_tokens: 0,
+        output_tokens: 0,
+        money_spent: 0,
+        money_spent_pending: true,
+      },
+    }
+    const { getByText, queryByText } = render(
+      <DataSourceDetails dataSource={pendingZeroDataSource} />
+    )
+    expect(getByText(`${ABSENT_VALUE_MARKER} (awaiting final cost)`)).toBeInTheDocument()
+    expect(queryByText(/\$0\.0000/)).not.toBeInTheDocument()
+  })
+
+  it('renders an unavailable zero as the absent marker, never as a measured $0.0000', () => {
+    const unavailableZeroDataSource = {
+      ...dataSource,
+      tokens_usage: {
+        input_tokens: 0,
+        output_tokens: 0,
+        money_spent: 0,
+        money_spent_unavailable: true,
+      },
+    }
+    const { getByText, queryByText } = render(
+      <DataSourceDetails dataSource={unavailableZeroDataSource} />
+    )
+    expect(getByText(`${ABSENT_VALUE_MARKER} (final cost unavailable)`)).toBeInTheDocument()
+    expect(queryByText(/\$0\.0000/)).not.toBeInTheDocument()
   })
 })
 

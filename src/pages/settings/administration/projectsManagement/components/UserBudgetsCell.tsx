@@ -6,7 +6,12 @@ import { FC } from 'react'
 import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
 import { ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
 import { UserListItem } from '@/types/entity/user'
-import { getCategorySpend, ProjectMemberSpendingRow } from '@/types/entity/userProjectSpending'
+import {
+  getCategoryQualification,
+  getCategorySpend,
+  ProjectMemberSpendingRow,
+} from '@/types/entity/userProjectSpending'
+import { formatSpendQualificationSuffix } from '@/utils/analyticsFormatters'
 
 import BudgetOverrideIndicator from './BudgetOverrideIndicator'
 import { formatCurrency, getSpendColorFromValues } from './spendPresentation'
@@ -65,6 +70,7 @@ const UserBudgetsCell: FC<UserBudgetsCellProps> = ({
             <span className="inline-flex items-center gap-1 whitespace-nowrap text-text-primary tabular-nums">
               <span className="shrink-0" style={spendColor ? { color: spendColor } : undefined}>
                 {formatCurrency(usage, '-')}
+                {formatSpendQualificationSuffix(getCategoryQualification(spendingRow ?? {}, cat))}
               </span>
               <span className="text-text-secondary">/</span>
               <span className="shrink-0 text-text-secondary">{formatCurrency(limit, '-')}</span>

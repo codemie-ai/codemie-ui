@@ -58,6 +58,7 @@ import { dataSourceStore } from '@/store/dataSources'
 import { userStore } from '@/store/user'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
 import { GuardrailEntity } from '@/types/entity/guardrail'
+import { formatRecordMoneySpent } from '@/utils/analyticsFormatters'
 import { getCronDescription, getNextCronRun } from '@/utils/cronValidator'
 import { canDelete, canEdit } from '@/utils/entity'
 import { formatDateTime, formatScheduleDate, humanize, isNumberValue } from '@/utils/helpers'
@@ -810,7 +811,7 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
               <div className="flex flex-row gap-2 items-center">
                 <p className="text-xs text-text-quaternary">Money spent:</p>
                 <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-xs leading-5">
-                  ${dataSource.tokens_usage?.money_spent?.toFixed(4) || '0'}
+                  {formatRecordMoneySpent(dataSource.tokens_usage)}
                 </div>
               </div>
             </DetailsSidebarSection>

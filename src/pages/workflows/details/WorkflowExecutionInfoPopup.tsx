@@ -21,6 +21,7 @@ import StatusBadge from '@/components/StatusBadge'
 import { WORKFLOW_FINAL_STATUSES } from '@/constants/workflows'
 import { WORKFLOW_STATUS_BADGE_MAPPING } from '@/pages/workflows/constants'
 import { WorkflowExecution } from '@/types/entity/workflow'
+import { formatRecordMoneySpent } from '@/utils/analyticsFormatters'
 import { formatDateTime } from '@/utils/helpers'
 import { copyToClipboard, createdBy } from '@/utils/utils'
 
@@ -106,7 +107,7 @@ const WorkflowExecutionInfoPopup: FC<WorkflowExecutionInfoPopupProps> = ({
           <h4 className="text-sm font-semibold">Spending metrics</h4>
           <div className="flex gap-6">
             <InfoItem label="Money spent:">
-              ${execution.tokens_usage?.money_spent?.toFixed(4) ?? '0.0000'}
+              {formatRecordMoneySpent(execution.tokens_usage)}
             </InfoItem>
             <InfoItem label="Input tokens:">
               {execution.tokens_usage?.input_tokens?.toLocaleString() ?? 0}

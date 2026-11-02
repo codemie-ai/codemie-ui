@@ -31,17 +31,21 @@ const DataOverlayButton = <T,>({ title, subtitle, data, render }: DataOverlayBut
   const ref = useRef<OverlayPanel>(null)
   const [resolvedData, setResolvedData] = useState<T | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSeeUsageDetails = async (e: MouseEvent<HTMLButtonElement>) => {
+    const isOpening = !ref.current?.isVisible()
     ref.current?.toggle(e)
-    if (ref.current?.isVisible()) return
+    if (!isOpening) return
 
     setIsLoading(true)
+    setError(null)
     try {
       const result = await data()
       setResolvedData(result)
-    } catch (error) {
-      console.error('Failed to fetch data:', error)
+    } catch (fetchError) {
+      console.error('Failed to fetch data:', fetchError)
+      setError('Could not load usage details')
     } finally {
       setIsLoading(false)
     }
@@ -75,20 +79,24 @@ const DataOverlayButton = <T,>({ title, subtitle, data, render }: DataOverlayBut
             {title && <div className="font-semibold text-sm mb-2">{title}</div>}
             {subtitle && <div className="mb-3 text-text-quaternary text-xs">{subtitle}</div>}
 
-            {content && (
-              <div className="flex flex-col gap-2">
-                {Object.keys(content).map((key) => (
-                  <div
-                    key={key}
-                    className="flex gap-2 justify-between items-center text-text-quaternary text-xs"
-                  >
-                    <span>{key}:</span>
-                    <div className="rounded-lg border border-border-structural border-solid px-2 py-1">
-                      <span className="font-semibold text-text-primary">{content[key] ?? 0}</span>
+            {error ? (
+              <div className="text-text-primary text-xs">{error}</div>
+            ) : (
+              content && (
+                <div className="flex flex-col gap-2">
+                  {Object.keys(content).map((key) => (
+                    <div
+                      key={key}
+                      className="flex gap-2 justify-between items-center text-text-quaternary text-xs"
+                    >
+                      <span>{key}:</span>
+                      <div className="rounded-lg border border-border-structural border-solid px-2 py-1">
+                        <span className="font-semibold text-text-primary">{content[key] ?? 0}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )
             )}
           </>
         )}

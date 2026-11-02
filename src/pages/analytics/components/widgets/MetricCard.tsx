@@ -16,7 +16,7 @@
 import { FC, ReactNode } from 'react'
 
 import { Metric } from '@/types/analytics'
-import { formatMetricValue } from '@/utils/analyticsFormatters'
+import { formatMetricQualification, formatMetricValue } from '@/utils/analyticsFormatters'
 import { cn } from '@/utils/utils'
 
 interface MetricCardProps {
@@ -32,10 +32,13 @@ const MetricCard: FC<MetricCardProps> = ({
   metric,
   mutedTextClassName = 'text-text-quaternary',
   badge,
-  valueClassName = 'text-lg sm:text-xl font-semibold leading-snug tracking-tight text-text-primary break-all [font-variant-numeric:tabular-nums]',
+  // `break-words`, not `break-all`: a long unbroken number wraps instead of overflowing. The qualification
+  // below sets its own rule.
+  valueClassName = 'text-lg sm:text-xl font-semibold leading-snug tracking-tight text-text-primary break-words [font-variant-numeric:tabular-nums]',
   valueColorClassName,
   valueOverride,
 }) => {
+  const qualification = formatMetricQualification(metric)
   return (
     <div className="bg-surface-elevated rounded-md p-3 border border-border-specific-panel-outline shadow-sm">
       {/* Phones: the label keeps its own line and a period badge goes below it. */}
@@ -50,6 +53,15 @@ const MetricCard: FC<MetricCardProps> = ({
       {valueOverride || (
         <p className={cn(valueClassName, valueColorClassName)}>
           {formatMetricValue(metric.value, metric.format)}
+          {/* Its own smaller line: at the figure's size, "(at least; some spend unattributed)" does not fit a
+              narrow card. `-mr-3` hands it the card's right padding (`p-3`), so a word wider than the content
+              box but not the card stays whole, and `break-words` splits only a word wider than that - one
+              that would otherwise draw onto the next card. */}
+          {qualification && (
+            <span className="-mr-3 block break-words text-[11px] font-normal leading-4 tracking-normal text-text-quaternary">
+              {qualification}
+            </span>
+          )}
         </p>
       )}
       {metric.description && (

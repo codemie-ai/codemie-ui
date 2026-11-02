@@ -65,3 +65,19 @@ describe('BudgetSpendMetrics', () => {
     expect(screen.getByText(`$${spent}.00`)).toHaveStyle({ color })
   })
 })
+
+describe('BudgetSpendMetrics spend qualification', () => {
+  it('qualifies a partial spend figure', () => {
+    render(
+      <BudgetSpendMetrics
+        spent={10}
+        max={100}
+        soft={80}
+        remaining={90}
+        spendQualification={{ spend_partial: true, spend_missing_amount: 1.5 }}
+      />
+    )
+
+    expect(screen.getByText('$10.00 (at least; $1.50 unattributed)')).toBeInTheDocument()
+  })
+})

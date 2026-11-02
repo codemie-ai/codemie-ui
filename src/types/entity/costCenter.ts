@@ -13,27 +13,38 @@
 // limitations under the License.
 //
 
-import { ProjectAssignedBudgetSummary, ProjectSpendingSummaryCompact } from './project'
+import { SpendQualification } from '@/types/analytics'
+
+import { ProjectAssignedBudgetSummary } from './project'
 import { ProjectListItem } from './projectManagement'
 
 export interface CostCenterAssignedBudgetSummary
   extends Pick<
-    ProjectAssignedBudgetSummary,
-    | 'budget_category'
-    | 'soft_budget'
-    | 'max_budget'
-    | 'member_count'
-    | 'allocated_member_budget_total'
-  > {
+      ProjectAssignedBudgetSummary,
+      | 'budget_category'
+      | 'soft_budget'
+      | 'max_budget'
+      | 'member_count'
+      | 'allocated_member_budget_total'
+    >,
+    SpendQualification {
   budget_duration: string | null
-  current_spending: number
+  /** null when the spend port could not produce a figure - never a zero. */
+  current_spending: number | null
   /** Rows dropped because their project uses a different reset window than this category's others. */
   excluded_count: number
   /** Rows dropped because the provider-side budget sync hasn't completed (or failed) yet. */
   unsynced_count: number
 }
 
-export interface CostCenterBudgetSummary extends ProjectSpendingSummaryCompact {
+/**
+ * `current_spending` can exceed the sum of the categories' spend: it also counts spend in budget
+ * categories removed earlier in the current period.
+ */
+export interface CostCenterBudgetSummary extends SpendQualification {
+  current_spending: number | null
+  budget_limit: number | null
+  total_percent: number | null
   budgets: CostCenterAssignedBudgetSummary[]
 }
 

@@ -41,6 +41,16 @@ export interface SchedulerRunLogEntry {
   step: string
 }
 
+export interface SchedulerRunMetrics {
+  inputTokens: number | null
+  outputTokens: number | null
+  // null is "no figure", never $0. Mutually exclusive flags: pending -> a final cost is coming;
+  // unavailable -> none will arrive, and a non-null cost is only the settled subtotal.
+  cost: number | null
+  moneySpentPending?: boolean | null
+  moneySpentUnavailable?: boolean | null
+}
+
 export interface SchedulerRunDetails {
   id: string
   scheduler: { id: string; name: string }
@@ -60,7 +70,7 @@ export interface SchedulerRunDetails {
   input: Record<string, unknown> | null
   result: { available: boolean; content?: string }
   logs: SchedulerRunLogEntry[]
-  metrics: { inputTokens: number; outputTokens: number; cost: number } | null
+  metrics: SchedulerRunMetrics | null
   conversationId: string | null
   workflowExecutionId: string | null
   error?: { code: string; message: string; details?: string }

@@ -385,4 +385,55 @@ describe('ChatHeader', () => {
     render(<ChatHeader />)
     expect(screen.getByText('|')).toBeInTheDocument()
   })
+
+  describe('Money spent state markers', () => {
+    beforeEach(() => {
+      mockChatsStore.currentChat = mockChat
+    })
+
+    it('renders the settled figure without the dropped "(approx)" hedge when neither flag is set', async () => {
+      mockChatsStore.getMetrics.mockResolvedValueOnce({
+        total_input_tokens: 10,
+        total_output_tokens: 20,
+        total_money_spent: 1.5,
+      })
+      render(<ChatHeader />)
+
+      await user.click(screen.getByLabelText('Usage details'))
+
+      expect(await screen.findByText('Money spent:')).toBeInTheDocument()
+      expect(screen.getByText('$1.5000')).toBeInTheDocument()
+      expect(screen.queryByText(/approx/)).not.toBeInTheDocument()
+    })
+
+    it('marks a pending figure as awaiting final cost', async () => {
+      mockChatsStore.getMetrics.mockResolvedValueOnce({
+        total_input_tokens: 10,
+        total_output_tokens: 20,
+        total_money_spent: 1.5,
+        money_spent_pending: true,
+      })
+      render(<ChatHeader />)
+
+      await user.click(screen.getByLabelText('Usage details'))
+
+      expect(await screen.findByText('$1.5000 (awaiting final cost)')).toBeInTheDocument()
+      expect(screen.queryByText(/final cost unavailable/)).not.toBeInTheDocument()
+    })
+
+    it('marks an unavailable figure as final cost unavailable, distinct from pending', async () => {
+      mockChatsStore.getMetrics.mockResolvedValueOnce({
+        total_input_tokens: 10,
+        total_output_tokens: 20,
+        total_money_spent: 1.5,
+        money_spent_unavailable: true,
+      })
+      render(<ChatHeader />)
+
+      await user.click(screen.getByLabelText('Usage details'))
+
+      expect(await screen.findByText('$1.5000 (final cost unavailable)')).toBeInTheDocument()
+      expect(screen.queryByText(/awaiting final cost/)).not.toBeInTheDocument()
+    })
+  })
 })

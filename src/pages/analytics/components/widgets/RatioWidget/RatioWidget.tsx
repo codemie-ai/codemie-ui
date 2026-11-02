@@ -28,7 +28,7 @@ import InfoIcon from '@/assets/icons/info.svg?react'
 import Tooltip from '@/components/Tooltip/Tooltip'
 import { useRatioWidgetData } from '@/hooks/useRatioWidgetData'
 import { type AnalyticsQueryParams, Metric, OverviewMetricType } from '@/types/analytics'
-import { formatMetricValue } from '@/utils/analyticsFormatters'
+import { formatQualifiedMetricValue } from '@/utils/analyticsFormatters'
 
 import AnalyticsWidget from '../../AnalyticsWidget'
 
@@ -149,7 +149,7 @@ const RatioWidget: FC<RatioWidgetProps> = ({
                 {/* Value column */}
                 <div className="ml-auto text-right">
                   <span className="text-sm text-text-primary font-semibold whitespace-nowrap">
-                    {formatMetricValue(metric.value, metric.format)}
+                    {formatQualifiedMetricValue(metric)}
                   </span>
                 </div>
               </div>

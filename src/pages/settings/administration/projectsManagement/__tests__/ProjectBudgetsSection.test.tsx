@@ -199,3 +199,54 @@ describe('ProjectBudgetsSection zero member limit warning', () => {
     expect(screen.queryByText(/\$0\.00 limit/)).not.toBeInTheDocument()
   })
 })
+
+describe('ProjectBudgetsSection spend qualification', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    listProjectBudgets.mockResolvedValue([platformBudget()])
+    listProjectBudgetGroups.mockResolvedValue([])
+  })
+
+  it('qualifies a partial category spend', async () => {
+    render(
+      <ProjectBudgetsSection
+        projectName="p1"
+        access="view"
+        spendingRows={[
+          {
+            ...unassignedPremiumRow,
+            budget_id: 'p1-platform',
+            budget_category: 'platform',
+            is_assigned: true,
+            current_spending: 0.1,
+            spend_partial: true,
+            spend_missing_amount: 1.5,
+          },
+        ]}
+      />
+    )
+
+    expect(await screen.findByText('$0.10 (at least; $1.50 unattributed)')).toBeInTheDocument()
+  })
+
+  it('qualifies the project spend and shows no retired lifetime figure', async () => {
+    render(
+      <ProjectBudgetsSection
+        projectName="p1"
+        access="view"
+        spending={{
+          current_spending: 4,
+          budget_reset_at: null,
+          time_until_reset: null,
+          budget_limit: null,
+          total: null,
+          spend_partial: true,
+          spend_missing_amount: 1.5,
+        }}
+      />
+    )
+
+    expect(await screen.findByText('$4.00 (at least; $1.50 unattributed)')).toBeInTheDocument()
+    expect(screen.queryByText(/lifetime spend/i)).not.toBeInTheDocument()
+  })
+})

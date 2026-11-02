@@ -15,16 +15,64 @@
 
 import { FC } from 'react'
 
+import {
+  SPEND_QUALIFICATION_FIELDS,
+  formatSpendQualificationSuffix,
+  readSpendQualification,
+} from '@/utils/analyticsFormatters'
+import { formatSpend } from '@/utils/currency'
+
 import { METRIC_LABELS, CURRENCY_METRIC_KEYS } from './constants'
 
+type SummaryMetricValue = number | boolean | null
+
 interface LeaderboardSummaryMetricsProps {
-  summaryMetrics?: Record<string, number>
+  /**
+   * The raw `summary_metrics` object: counts, money figures that are `null` when nobody could price
+   * them, and the annotations that qualify each money figure - all in one flat map.
+   */
+  summaryMetrics?: Record<string, SummaryMetricValue>
 }
+
+/**
+ * `total_spend` -> `total_`, the prefix its `total_spend_unavailable`, `total_spend_partial` and
+ * `total_spend_missing_amount` companions carry. Each money figure is annotated under its own name
+ * because one entry reports two of them and an unprefixed annotation could not say which it meant.
+ */
+const spendAnnotationPrefix = (currencyKey: string): string => currencyKey.replace(/spend$/, '')
+
+/**
+ * The annotations arrive in the same flat map as the metrics. Iterated blindly they render as tiles
+ * of their own - "Total Spend Unavailable" with the value "true" - so they are filtered out here and
+ * shown where they belong: on the tile of the figure they qualify.
+ */
+const isSpendAnnotationKey = (key: string): boolean =>
+  CURRENCY_METRIC_KEYS.some((currencyKey) =>
+    SPEND_QUALIFICATION_FIELDS.some(
+      (field) => key === `${spendAnnotationPrefix(currencyKey)}${field}`
+    )
+  )
+
+/**
+ * One money tile's text: the figure, or the absent marker when the backend priced nothing, plus the
+ * annotation qualifying it. A measured `0` stays `$0.00` - `formatSpend` draws that line - so "spent
+ * nothing" never renders like "we don't know".
+ */
+const formatCurrencyMetric = (
+  key: string,
+  value: SummaryMetricValue,
+  summaryMetrics: Record<string, SummaryMetricValue>
+): string =>
+  `${formatSpend(typeof value === 'number' ? value : null)}${formatSpendQualificationSuffix(
+    readSpendQualification(summaryMetrics, spendAnnotationPrefix(key))
+  )}`
 
 const LeaderboardSummaryMetrics: FC<LeaderboardSummaryMetricsProps> = ({ summaryMetrics }) => {
   if (!summaryMetrics || Object.keys(summaryMetrics).length === 0) {
     return null
   }
+
+  const metricEntries = Object.entries(summaryMetrics).filter(([key]) => !isSpendAnnotationKey(key))
 
   return (
     <div>
@@ -32,10 +80,10 @@ const LeaderboardSummaryMetrics: FC<LeaderboardSummaryMetricsProps> = ({ summary
         Key Metrics
       </h4>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-        {Object.entries(summaryMetrics).map(([key, value]) => {
+        {metricEntries.map(([key, value]) => {
           const label = METRIC_LABELS[key] ?? key.replace(/_/g, ' ')
           const formattedValue = CURRENCY_METRIC_KEYS.includes(key)
-            ? `$${value.toFixed(2)}`
+            ? formatCurrencyMetric(key, value, summaryMetrics)
             : String(value)
 
           return (

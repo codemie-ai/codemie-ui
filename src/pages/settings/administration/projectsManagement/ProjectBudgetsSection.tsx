@@ -28,6 +28,7 @@ import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingPr
 import UnifiedProjectBudgetModal from '@/pages/settings/administration/components/UnifiedProjectBudgetModal'
 import BudgetSpendMetrics from '@/pages/settings/administration/projectsManagement/components/BudgetSpendMetrics'
 import { projectBudgetsStore } from '@/store/projectBudgets'
+import { SpendQualification } from '@/types/analytics'
 import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
 import { ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectBudgetGroup } from '@/types/entity/projectBudgetGroup'
@@ -37,6 +38,7 @@ import {
   ProjectSpendingWidgetRow,
 } from '@/types/entity/projectManagement'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import { formatSpendQualificationSuffix } from '@/utils/analyticsFormatters'
 import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 
@@ -57,6 +59,7 @@ interface BudgetCardData {
   maxBudget: number | null
   softBudget: number | null
   spent: number | null
+  spentQualification: SpendQualification
   usagePercentage: number | null
   remaining: number | null
   overrideCount: number
@@ -66,6 +69,7 @@ interface BudgetCardData {
   zeroLimitMemberCount: number
   /** Spend left behind by a budget that was later removed or redistributed. */
   unassignedSpend: number | null
+  unassignedSpendQualification: SpendQualification
 }
 
 const zeroLimitWarningMessage = (category: BudgetCategory, count: number): string =>
@@ -122,7 +126,10 @@ const BudgetDetailCard: FC<{ data: BudgetCardData; projectName: string }> = ({
           <div className="flex flex-1 flex-col gap-2 text-xs">
             <div>
               <span className="text-text-quaternary">Spend</span>
-              <span className="ml-2 text-text-primary">{formatCurrency(data.unassignedSpend)}</span>
+              <span className="ml-2 text-text-primary">
+                {formatCurrency(data.unassignedSpend)}
+                {formatSpendQualificationSuffix(data.unassignedSpendQualification)}
+              </span>
             </div>
             <div>
               <span className="text-text-quaternary">Budget</span>
@@ -155,6 +162,7 @@ const BudgetDetailCard: FC<{ data: BudgetCardData; projectName: string }> = ({
         max={data.maxBudget}
         soft={data.softBudget}
         remaining={data.remaining}
+        spendQualification={data.spentQualification}
       />
       <div className="mt-auto text-xs text-text-quaternary">
         <MemberAllocationSummary data={data} />
@@ -211,6 +219,7 @@ const renderSpendHardLimitCell = (row: BudgetCardData) => {
     <div className="whitespace-nowrap">
       <span className="font-semibold" style={spendColor ? { color: spendColor } : undefined}>
         {formatCurrency(row.spent)}
+        {formatSpendQualificationSuffix(row.spentQualification)}
       </span>
       <span className="text-text-primary"> / {formatCurrency(row.maxBudget)}</span>
     </div>
@@ -459,16 +468,19 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     const budget = budgets.find((item) => item.budget_category === category)
     const budgetId = scope?.budget_id ?? budget?.budget_id
     const maxBudget = scope?.max_budget ?? budget?.max_budget ?? null
-    const spent = spendingRows.find((row) => row.budget_id === budgetId)?.current_spending ?? null
-    const unassignedSpend =
-      spendingRows.find((row) => row.budget_category === category && !row.is_assigned)
-        ?.current_spending ?? null
+    const spentRow = spendingRows.find((row) => row.budget_id === budgetId)
+    const unassignedRow = spendingRows.find(
+      (row) => row.budget_category === category && !row.is_assigned
+    )
+    const spent = spentRow?.current_spending ?? null
+    const unassignedSpend = unassignedRow?.current_spending ?? null
     return {
       id: budgetId ?? category,
       category,
       maxBudget,
       softBudget: scope?.soft_budget ?? budget?.soft_budget ?? null,
       spent,
+      spentQualification: spentRow ?? {},
       usagePercentage: getSpendPercentage(spent, maxBudget),
       remaining: spent != null && maxBudget != null ? Math.max(maxBudget - spent, 0) : null,
       overrideCount:
@@ -479,6 +491,7 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
         scope?.allocated_member_budget_total ?? budget?.allocated_member_budget_total ?? null,
       zeroLimitMemberCount: scope?.zero_limit_member_count ?? budget?.zero_limit_member_count ?? 0,
       unassignedSpend,
+      unassignedSpendQualification: unassignedRow ?? {},
     }
   })
 
@@ -486,7 +499,6 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
     budgetGroup?.total_amount ??
     (budgets.length ? budgets.reduce((total, budget) => total + budget.max_budget, 0) : null)
   const projectSpend = spending?.current_spending ?? null
-  const lifetimeSpend = spending?.cumulative_spend ?? null
   const totalBudgetLabel = formatCurrency(totalBudget)
   const resetPeriod = formatResetPeriod(budgetGroup?.budget_duration ?? budgets[0]?.budget_duration)
   const nextReset = spending?.budget_reset_at ?? budgetGroup?.categories[0]?.budget_reset_at
@@ -537,12 +549,7 @@ const ProjectBudgetsSection: FC<ProjectBudgetsSectionProps> = ({
               <div className="text-xs text-text-quaternary">Project spend</div>
               <div className="mt-1 text-base font-semibold text-text-primary">
                 {formatCurrency(projectSpend)}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-text-quaternary">Lifetime spend</div>
-              <div className="mt-1 text-base font-semibold text-text-primary">
-                {formatCurrency(lifetimeSpend)}
+                {formatSpendQualificationSuffix(spending ?? {})}
               </div>
             </div>
             <div>
