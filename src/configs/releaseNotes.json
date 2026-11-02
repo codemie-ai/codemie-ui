@@ -1,5 +1,85 @@
 [
   {
+    "version": "2.64.0",
+    "date": "2026-11-02",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": []
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "Workflow editor controls",
+            "description": "Updated the workflow editor to show Task and Output Schema settings only for node types that support them.",
+            "issues": [
+              {
+                "key": "EPMCDME-15961",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15961"
+              }
+            ]
+          },
+          {
+            "title": "Authenticated tool execution context",
+            "description": "Downstream tool executions now receive the authenticated user context.",
+            "issues": [
+              {
+                "key": "EPMCDME-13260",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13260"
+              }
+            ]
+          },
+          {
+            "title": "CLI project-access validation",
+            "description": "Improved validation to ensure users removed from a project cannot continue accessing it through a CLI profile.",
+            "issues": [
+              {
+                "key": "EPMCDME-16276",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16276"
+              }
+            ]
+          },
+          {
+            "title": "Security maintenance",
+            "description": "Included security remediation updates.",
+            "issues": []
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Project-member budget limits",
+            "description": "Corrected personal budget spend and limit values for newly added members when member spend limits are enforced.",
+            "issues": [
+              {
+                "key": "EPMCDME-16145",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16145"
+              }
+            ]
+          },
+          {
+            "title": "Workflow YAML configuration layout",
+            "description": "Aligned the expanded YAML configuration interface in the workflow editor with the workflow execution view.",
+            "issues": [
+              {
+                "key": "EPMCDME-15809",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15809"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.63.0",
     "date": "2026-10-29",
     "sections": [
