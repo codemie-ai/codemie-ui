@@ -40,17 +40,25 @@ vi.mock('@/store/appInfo', () => ({
   appInfoStore: { appInfo: null },
 }))
 
+const mockPutPreferences = vi.hoisted(() => vi.fn())
+const mockPreferencesStore = vi.hoisted(() => ({
+  preferences: null as unknown,
+  putPreferences: vi.fn(),
+}))
+
 vi.mock('@/store/preferences', () => ({
-  preferencesStore: { preferences: null },
+  preferencesStore: mockPreferencesStore,
 }))
 
 vi.mock('@/store/user', () => ({
-  userStore: { user: null },
+  userStore: { user: { userId: 'user-1' } },
 }))
 
 describe('assistantsStore', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockPreferencesStore.preferences = null
+    mockPreferencesStore.putPreferences = mockPutPreferences
   })
 
   afterEach(() => {
@@ -179,15 +187,19 @@ describe('assistantsStore', () => {
       expect(result.nestedAssistants).toEqual(nested)
     })
 
-    it('defaults is_pinned and is_favorited when no preferences exist', async () => {
+    it('does not stamp pinned or favorited flags even when preferences list the assistant', async () => {
+      mockPreferencesStore.preferences = {
+        pinned_assistants: ['a-1'],
+        favorites: { assistants: ['a-1'], skills: [], workflows: [] },
+      }
       mockGet.mockResolvedValue({
         json: async () => ({ id: 'a-1', name: 'Root', nested_assistants: [] }),
       })
 
       const result = await assistantsStore.getAssistantBySlug('root-slug', false)
 
-      expect(result.is_pinned).toBe(false)
-      expect(result.is_favorited).toBe(false)
+      expect(result).not.toHaveProperty('is_pinned')
+      expect(result).not.toHaveProperty('is_favorited')
     })
   })
 
@@ -206,15 +218,19 @@ describe('assistantsStore', () => {
   })
 
   describe('normalizeAssistant', () => {
-    it('maps nested_assistants to nestedAssistants and defaults flags without preferences', () => {
+    it('maps nested_assistants to nestedAssistants without stamping preference flags', () => {
+      mockPreferencesStore.preferences = {
+        pinned_assistants: ['a-1'],
+        favorites: { assistants: ['a-1'], skills: [], workflows: [] },
+      }
       const nested = [{ id: 'sub-1', name: 'Sub Assistant' }]
       const raw = { id: 'a-1', name: 'Root', nested_assistants: nested } as unknown as Assistant
 
       const result = normalizeAssistant(raw)
 
       expect(result.nestedAssistants).toEqual(nested)
-      expect(result.is_pinned).toBe(false)
-      expect(result.is_favorited).toBe(false)
+      expect(result).not.toHaveProperty('is_pinned')
+      expect(result).not.toHaveProperty('is_favorited')
       // preserves the rest of the raw payload
       expect(result.id).toBe('a-1')
       expect(result.name).toBe('Root')
@@ -270,6 +286,22 @@ describe('assistantsStore', () => {
       expect(assistantsStore.assistantTemplates).toEqual([{ id: 'kept', name: 'Kept' }])
     })
 
+    it('does not stamp pinned or favorited flags on indexed assistants', async () => {
+      mockPreferencesStore.preferences = {
+        pinned_assistants: ['a-1'],
+        favorites: { assistants: ['a-1'], skills: [], workflows: [] },
+      }
+      mockGet.mockResolvedValue({
+        json: () =>
+          Promise.resolve({ data: [{ id: 'a-1', name: 'One' }], pagination: mockPagination }),
+      })
+
+      await assistantsStore.indexAssistants(ASSISTANT_INDEX_SCOPES.ALL)
+
+      expect(assistantsStore.assistants[0]).not.toHaveProperty('is_pinned')
+      expect(assistantsStore.assistants[0]).not.toHaveProperty('is_favorited')
+    })
+
     it('URL-encodes sort parameters in query string', async () => {
       mockGet.mockResolvedValue({
         json: () => Promise.resolve({ data: [], pagination: mockPagination }),
@@ -283,6 +315,34 @@ describe('assistantsStore', () => {
       const calledUrl = mockGet.mock.calls[0]?.[0] as string
       expect(calledUrl).toContain('sort_by=name%26hack%3Dtrue')
       expect(calledUrl).toContain('sort_order=asc%26foo%3Dbar')
+    })
+  })
+
+  describe('pinAssistant', () => {
+    it('PUTs the appended pinned list and tracks the assistant in pinnedAssistants', async () => {
+      mockPreferencesStore.preferences = { pinned_assistants: ['x', '', 'y'] }
+      assistantsStore.pinnedAssistants = []
+      assistantsStore.assistants = [{ id: 'a-1', name: 'One' }] as any
+
+      await assistantsStore.pinAssistant('a-1')
+
+      expect(mockPutPreferences).toHaveBeenCalledWith('user-1', {
+        pinned_assistants: ['x', 'y', 'a-1'],
+      })
+      expect(assistantsStore.pinnedAssistants.map((p) => p.id)).toEqual(['a-1'])
+      expect(assistantsStore.assistants[0]).not.toHaveProperty('is_pinned')
+    })
+
+    it('unpinAssistant PUTs the list without the id and drops it from pinnedAssistants', async () => {
+      mockPreferencesStore.preferences = { pinned_assistants: ['a-1', 'y'] }
+      assistantsStore.pinnedAssistants = [{ id: 'a-1', name: 'One' }] as any
+      assistantsStore.assistants = [{ id: 'a-1', name: 'One' }] as any
+
+      await assistantsStore.unpinAssistant('a-1')
+
+      expect(mockPutPreferences).toHaveBeenCalledWith('user-1', { pinned_assistants: ['y'] })
+      expect(assistantsStore.pinnedAssistants).toEqual([])
+      expect(assistantsStore.assistants[0]).not.toHaveProperty('is_pinned')
     })
   })
 

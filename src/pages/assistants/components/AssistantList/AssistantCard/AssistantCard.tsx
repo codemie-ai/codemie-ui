@@ -33,6 +33,7 @@ import UnpinAssistantConfirmPopup from '@/components/PinAssistantButton/UnpinAss
 import Tooltip from '@/components/Tooltip'
 import { AssistantType } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
+import { useIsAssistantFavorited, useIsAssistantPinned } from '@/hooks/useAssistantPreferenceFlags'
 import {
   useFavoritesEnabled,
   useMarketplaceApprovalGateEnabled,
@@ -82,6 +83,8 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   const router = useVueRouter()
   const [isFavoritesEnabled] = useFavoritesEnabled()
   const [isPinnedAssistantsEnabled] = usePinnedAssistantsEnabled()
+  const isPinned = useIsAssistantPinned(assistant.id)
+  const isFavorited = useIsAssistantFavorited(assistant.id)
   const { updateRecentAssistants } = useSnapshot(assistantsStore)
   const [showRemoveFavorite, setShowRemoveFavorite] = useState(false)
   const [showUnpinConfirm, setShowUnpinConfirm] = useState(false)
@@ -144,17 +147,15 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   )
 
   const handlePinToggle = async () => {
-    if (assistant.is_pinned) {
+    if (isPinned) {
       setShowUnpinConfirm(true)
     } else {
       await assistantsStore.pinAssistant(assistant.id)
-      favoritesStore.patchAssistantPinned(assistant.id, true)
     }
   }
 
   const handleUnpinConfirm = async () => {
     await assistantsStore.unpinAssistant(assistant.id)
-    favoritesStore.patchAssistantPinned(assistant.id, false)
     setShowUnpinConfirm(false)
   }
 
@@ -342,16 +343,13 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
               onKeyDown={(e) => e.stopPropagation()}
             >
               {isPinnedAssistantsEnabled && (
-                <PinAssistantButton
-                  isPinned={assistant.is_pinned ?? false}
-                  onToggle={handlePinToggle}
-                />
+                <PinAssistantButton isPinned={isPinned} onToggle={handlePinToggle} />
               )}
               {isFavoritesEnabled && (
                 <FavoriteButton
-                  isFavorited={assistant.is_favorited ?? false}
+                  isFavorited={isFavorited}
                   onToggle={() =>
-                    assistant.is_favorited
+                    isFavorited
                       ? setShowRemoveFavorite(true)
                       : favoritesStore.addFavorite('assistant', assistant.id)
                   }

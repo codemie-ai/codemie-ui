@@ -16,6 +16,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { vi, expect, beforeEach, describe, it } from 'vitest'
 
+import { assistantsStore } from '@/store/assistants'
+import { favoritesStore } from '@/store/favorites'
+import { preferencesStore } from '@/store/preferences'
 import { Assistant } from '@/types/entity/assistant'
 
 import AssistantCard from '../AssistantCard'
@@ -61,6 +64,8 @@ vi.mock('@/store/assistants', () => ({
   assistantsStore: {
     removeReaction: vi.fn(),
     reactToAssistant: vi.fn(),
+    pinAssistant: vi.fn(),
+    unpinAssistant: vi.fn(),
   },
 }))
 
@@ -80,15 +85,17 @@ vi.mock('@/store/chats', () => ({
 vi.mock('@/store/favorites', () => ({
   favoritesStore: {
     patchAssistantReaction: vi.fn(),
-    patchAssistantPinned: vi.fn(),
+    addFavorite: vi.fn(),
+    removeFavorite: vi.fn(),
   },
 }))
 
 const { mockMarketplaceFlag } = vi.hoisted(() => ({ mockMarketplaceFlag: { enabled: true } }))
+const featureFlags = vi.hoisted(() => ({ favorites: false, pinned: false }))
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
-  useFavoritesEnabled: () => [false],
-  usePinnedAssistantsEnabled: () => [false],
+  useFavoritesEnabled: () => [featureFlags.favorites],
+  usePinnedAssistantsEnabled: () => [featureFlags.pinned],
   useFeatureFlag: () => [false],
   useMarketplaceManagementEnabled: () => [mockMarketplaceFlag.enabled, true],
   useMarketplaceApprovalGateEnabled: () => [false, true],
@@ -131,6 +138,52 @@ describe('AssistantCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockMarketplaceFlag.enabled = true
+    featureFlags.favorites = false
+    featureFlags.pinned = false
+    preferencesStore.preferences = null
+  })
+
+  describe('pinned and favorited state', () => {
+    beforeEach(() => {
+      featureFlags.favorites = true
+      featureFlags.pinned = true
+    })
+
+    it('renders unpinned and unfavorited while preferences are null', () => {
+      renderCard()
+
+      expect(screen.getByRole('button', { name: 'Pin assistant' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add to favorites' })).toBeInTheDocument()
+    })
+
+    it('renders pinned and favorited from preferences, not from assistant fields', () => {
+      preferencesStore.preferences = {
+        user_id: 'user-123',
+        pinned_assistants: ['', mockAssistant.id],
+        favorites: { assistants: [mockAssistant.id], workflows: [], skills: [] },
+      }
+
+      renderCard()
+
+      expect(screen.getByRole('button', { name: 'Unpin assistant' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeInTheDocument()
+    })
+
+    it('pins the assistant when an unpinned pin button is clicked', () => {
+      renderCard()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Pin assistant' }))
+
+      expect(assistantsStore.pinAssistant).toHaveBeenCalledWith(mockAssistant.id)
+    })
+
+    it('adds the assistant to favorites when an unfavorited star is clicked', () => {
+      renderCard()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Add to favorites' }))
+
+      expect(favoritesStore.addFavorite).toHaveBeenCalledWith('assistant', mockAssistant.id)
+    })
   })
 
   it('renders assistant card with correct information', () => {

@@ -26,6 +26,7 @@ import RemoveFavoriteConfirmPopup from '@/components/FavoriteButton/RemoveFavori
 import PinAssistantButton from '@/components/PinAssistantButton/PinAssistantButton'
 import UnpinAssistantConfirmPopup from '@/components/PinAssistantButton/UnpinAssistantConfirmPopup'
 import { AssistantType, AssistantReaction } from '@/constants/assistants'
+import { useIsAssistantFavorited, useIsAssistantPinned } from '@/hooks/useAssistantPreferenceFlags'
 import { useFavoritesEnabled, usePinnedAssistantsEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { assistantsStore } from '@/store'
@@ -57,8 +58,8 @@ const AssistantDetailsActions = ({
   const [isPinnedAssistantsEnabled] = usePinnedAssistantsEnabled()
   const [reaction, setReaction] = useState<AssistantReaction | null>(null)
   const [showRemoveFavorite, setShowRemoveFavorite] = useState(false)
-  const [isPinned, setIsPinned] = useState(assistant.is_pinned ?? false)
-  const [isFavorited, setIsFavorited] = useState(assistant.is_favorited ?? false)
+  const isPinned = useIsAssistantPinned(assistant.id)
+  const isFavorited = useIsAssistantFavorited(assistant.id)
   const [showUnpinConfirm, setShowUnpinConfirm] = useState(false)
   const isReactionsVisible = !isTemplate && assistant?.is_global
 
@@ -173,8 +174,8 @@ const AssistantDetailsActions = ({
                     if (isPinned) {
                       setShowUnpinConfirm(true)
                     } else {
-                      assistantsStore.pinAssistant(assistant.id)
-                      setIsPinned(true)
+                      // The API layer already surfaces the error; the button keeps reflecting saved preferences
+                      assistantsStore.pinAssistant(assistant.id).catch(() => undefined)
                     }
                   }}
                 />
@@ -185,8 +186,7 @@ const AssistantDetailsActions = ({
                   onToggle={() =>
                     isFavorited
                       ? setShowRemoveFavorite(true)
-                      : (favoritesStore.addFavorite('assistant', assistant.id, assistant.name),
-                        setIsFavorited(true))
+                      : favoritesStore.addFavorite('assistant', assistant.id, assistant.name)
                   }
                 />
               )}
@@ -207,7 +207,6 @@ const AssistantDetailsActions = ({
           onCancel={() => setShowUnpinConfirm(false)}
           onConfirm={() => {
             assistantsStore.unpinAssistant(assistant.id)
-            setIsPinned(false)
             setShowUnpinConfirm(false)
           }}
         />
@@ -219,7 +218,6 @@ const AssistantDetailsActions = ({
           onCancel={() => setShowRemoveFavorite(false)}
           onConfirm={() => {
             favoritesStore.removeFavorite('assistant', assistant.id)
-            setIsFavorited(false)
             setShowRemoveFavorite(false)
           }}
         />

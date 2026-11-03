@@ -36,9 +36,8 @@ const setFavoritedInStore = (resourceType: ResourceType, resourceId: string, val
   const updater = <T extends { id: string; is_favorited?: boolean }>(arr: T[]): T[] =>
     arr.map((item) => (item.id === resourceId ? { ...item, is_favorited: value } : item))
 
-  if (resourceType === 'assistant') assistantsStore.assistants = updater(assistantsStore.assistants)
-  else if (resourceType === 'skill') skillsStore.skills = updater(skillsStore.skills)
-  else workflowsStore.workflows = updater(workflowsStore.workflows)
+  if (resourceType === 'skill') skillsStore.skills = updater(skillsStore.skills)
+  else if (resourceType === 'workflow') workflowsStore.workflows = updater(workflowsStore.workflows)
 }
 
 const EMPTY_FAVORITES: UserPreferences['favorites'] = {
@@ -95,7 +94,6 @@ interface FavoritesStoreType {
     page?: number,
     perPage?: number
   ) => Promise<void>
-  patchAssistantPinned: (assistantId: string, isPinned: boolean) => void
   patchAssistantReaction: (
     assistantId: string,
     isLiked: boolean,
@@ -126,12 +124,6 @@ export const favoritesStore = proxy<FavoritesStoreType>({
   workflowsPagination: { page: 0, perPage: 12, totalPages: 0, totalCount: 0 },
   loading: false,
   error: null,
-
-  patchAssistantPinned(assistantId, isPinned) {
-    favoritesStore.assistants = favoritesStore.assistants.map((a) =>
-      a.id === assistantId ? { ...a, is_pinned: isPinned } : a
-    )
-  },
 
   patchAssistantReaction(assistantId, isLiked, isDisliked, result) {
     favoritesStore.assistants = favoritesStore.assistants.map((a) =>
@@ -190,11 +182,7 @@ export const favoritesStore = proxy<FavoritesStoreType>({
       const query = buildQuery(filters, page, perPage)
       const res = await api.get(`v1/preferences/${userId}/favorites/assistants?${query}`)
       const data = await res.json()
-      const pinnedIds = preferencesStore.preferences?.pinned_assistants ?? []
-      favoritesStore.assistants = (data.data ?? data).map((a: FavoriteItem) => ({
-        ...a,
-        is_pinned: pinnedIds.includes(a.id),
-      }))
+      favoritesStore.assistants = data.data ?? data
       favoritesStore.assistantsPagination = {
         page: data.page ?? page,
         perPage: data.per_page ?? perPage,

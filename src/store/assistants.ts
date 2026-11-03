@@ -211,14 +211,9 @@ interface AssistantsStoreType {
 export const MAX_RECENT_ASSISTANTS = 3
 
 export function normalizeAssistant(raw: Assistant): Assistant {
-  const pinnedIds = preferencesStore.preferences?.pinned_assistants ?? []
-  const favoriteIds = new Set(preferencesStore.preferences?.favorites?.assistants ?? [])
-
   return {
     ...raw,
     nestedAssistants: raw.nested_assistants,
-    is_pinned: pinnedIds.includes(raw.id),
-    is_favorited: favoriteIds.has(raw.id),
   }
 }
 
@@ -302,16 +297,10 @@ export const assistantsStore = proxy<AssistantsStoreType>({
         if (saveFilters) {
           setFilters(`${FILTER_ENTITY.ASSISTANTS}.${scope}`, filters)
         }
-        const pinnedIds = preferencesStore.preferences?.pinned_assistants ?? []
-        const favoriteAssistantIds = new Set(
-          preferencesStore.preferences?.favorites?.assistants ?? []
-        )
         assistantsStore.assistants = assistantsStore.assistants.map((assistant) => {
           return {
             ...assistant,
             is_global: scope === ASSISTANT_INDEX_SCOPES.MARKETPLACE ? true : assistant.is_global,
-            is_pinned: pinnedIds.includes(assistant.id),
-            is_favorited: favoriteAssistantIds.has(assistant.id),
           }
         })
         assistantsStore.updateAssistantsWithLikedStatus().catch((error) => {
@@ -1127,9 +1116,6 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       pinned_assistants: [...current, id],
     })
     const found = assistantsStore.assistants.find((a) => a.id === id)
-    assistantsStore.assistants = assistantsStore.assistants.map((a) =>
-      a.id === id ? { ...a, is_pinned: true } : a
-    )
     if (found && !assistantsStore.pinnedAssistants.find((p) => p.id === id)) {
       assistantsStore.pinnedAssistants = [
         ...assistantsStore.pinnedAssistants,
@@ -1149,8 +1135,5 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       pinned_assistants: current.filter((x) => x !== id),
     })
     assistantsStore.pinnedAssistants = assistantsStore.pinnedAssistants.filter((p) => p.id !== id)
-    assistantsStore.assistants = assistantsStore.assistants.map((a) =>
-      a.id === id ? { ...a, is_pinned: false } : a
-    )
   },
 })

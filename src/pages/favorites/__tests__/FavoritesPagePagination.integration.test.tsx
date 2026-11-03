@@ -13,9 +13,10 @@
 // limitations under the License.
 //
 
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, beforeEach } from 'vitest'
 
+import { preferencesStore } from '@/store/preferences'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 
 const createAssistantFixture = (overrides: Record<string, unknown> = {}) => ({
@@ -34,8 +35,6 @@ const createAssistantFixture = (overrides: Record<string, unknown> = {}) => ({
   guardrail_assignments: [],
   is_liked: false,
   is_disliked: false,
-  is_favorited: true,
-  is_pinned: false,
   unique_likes_count: 0,
   unique_dislikes_count: 0,
   user_abilities: ['read', 'write'],
@@ -207,5 +206,36 @@ describe('FavoritesPage - Pagination (narrowed: no pagination UI in production)'
       expect.stringContaining('/favorites/workflows?page=0&per_page=12'),
       expect.anything()
     )
+  })
+})
+
+describe('FavoritesPage - assistant pinned state derived from preferences', () => {
+  beforeEach(() => {
+    preferencesStore.preferences = null
+    mockAPI('GET', 'v1/config', [{ id: 'features:pinnedAssistants', settings: { enabled: true } }])
+  })
+
+  it('shows a favorite assistant as pinned once preferences arrive after the list', async () => {
+    mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+      data: [createAssistantFixture({ id: 'assistant-1', name: 'Assistant 1' })],
+      page: 0,
+      per_page: 12,
+      pages: 1,
+      total: 1,
+    })
+
+    renderPage('/favorites/assistants')
+
+    expect(await screen.findByRole('button', { name: 'Pin assistant' })).toBeInTheDocument()
+
+    act(() => {
+      preferencesStore.preferences = {
+        user_id: 'test-user-id',
+        pinned_assistants: ['assistant-1'],
+        favorites: { assistants: ['assistant-1'], workflows: [], skills: [] },
+      }
+    })
+
+    expect(await screen.findByRole('button', { name: 'Unpin assistant' })).toBeInTheDocument()
   })
 })

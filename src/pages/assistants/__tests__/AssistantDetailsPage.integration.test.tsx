@@ -13,13 +13,14 @@
 // limitations under the License.
 //
 
-import { screen, waitFor, fireEvent, within } from '@testing-library/react'
+import { act, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { findRouteObject, mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { history } from '@/hooks/appLevel/useHistoryStack'
 import { router as hashRouter, routes } from '@/router'
+import { preferencesStore } from '@/store/preferences'
 import { userSettingsStore } from '@/store/userSettings'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 
@@ -45,6 +46,7 @@ describe('AssistantDetailsPage - Integration', () => {
   const user = userEvent.setup()
 
   beforeEach(() => {
+    preferencesStore.preferences = null
     mockRouterState.push.mockClear()
     mockRouterState.replace.mockClear()
     mockRouterState.back.mockClear()
@@ -84,8 +86,6 @@ describe('AssistantDetailsPage - Integration', () => {
     prompt_variables: [],
     is_liked: false,
     is_disliked: false,
-    is_favorited: false,
-    is_pinned: false,
     unique_likes_count: 0,
     unique_dislikes_count: 0,
     user_abilities: ['read', 'write'],
@@ -810,6 +810,60 @@ describe('AssistantDetailsPage - Integration', () => {
       })
     })
 
+    it('shows pinned and favorited when preferences load after the details actions mounted', async () => {
+      mockAPI('GET', 'v1/config', [
+        { id: 'features:pinnedAssistants', settings: { enabled: true } },
+        { id: 'features:favorites', settings: { enabled: true } },
+      ])
+      mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture())
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/asst-123')
+
+      expect(await screen.findByRole('button', { name: 'Pin assistant' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add to favorites' })).toBeInTheDocument()
+
+      act(() => {
+        preferencesStore.preferences = {
+          user_id: 'test-user-id',
+          pinned_assistants: ['asst-123'],
+          favorites: { assistants: ['asst-123'], workflows: [], skills: [] },
+        }
+      })
+
+      expect(await screen.findByRole('button', { name: 'Unpin assistant' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeInTheDocument()
+    })
+
+    it('does not show pinned when the pin request fails', async () => {
+      mockAPI('GET', 'v1/config', [
+        { id: 'features:pinnedAssistants', settings: { enabled: true } },
+      ])
+      mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture())
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+      mockAPI('GET', 'v1/user', {
+        user_id: 'test-user-id',
+        name: 'Test User',
+        username: 'testuser',
+        applications: [],
+      })
+      mockAPI('PUT', 'v1/preferences/test-user-id', { error: { message: 'boom' } }, 500)
+
+      renderPage('/assistants/asst-123')
+
+      await user.click(await screen.findByRole('button', { name: 'Pin assistant' }))
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('v1/preferences/test-user-id'),
+          expect.objectContaining({ method: 'PUT' })
+        )
+      })
+
+      expect(screen.getByRole('button', { name: 'Pin assistant' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Unpin assistant' })).not.toBeInTheDocument()
+    })
+
     it('shows unpin confirmation dialog when Unpin assistant button clicked', async () => {
       mockAPI('GET', 'v1/config', [
         { id: 'features:pinnedAssistants', settings: { enabled: true } },
@@ -892,6 +946,41 @@ describe('AssistantDetailsPage - Integration', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Pin assistant' })).toBeInTheDocument()
       })
+    })
+
+    it('keeps the assistant favorited when the confirmed remove request fails', async () => {
+      mockAPI('GET', 'v1/config', [{ id: 'features:favorites', settings: { enabled: true } }])
+      mockAPI('GET', 'v1/user', {
+        user_id: 'test-user-id',
+        name: 'Test User',
+        username: 'testuser',
+        applications: [],
+      })
+      mockAPI('GET', 'v1/preferences/test-user-id', {
+        user_id: 'test-user-id',
+        pinned_assistants: [],
+        favorites: { assistants: ['asst-123'], workflows: [], skills: [] },
+      })
+      mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture())
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+      mockAPI('PUT', 'v1/preferences/test-user-id', { error: { message: 'boom' } }, 500)
+
+      renderPage('/assistants/asst-123')
+
+      await user.click(await screen.findByRole('button', { name: 'Remove from favorites' }))
+      await user.click(await screen.findByRole('button', { name: 'Remove' }))
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('v1/preferences/test-user-id'),
+          expect.objectContaining({ method: 'PUT' })
+        )
+      })
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+
+      expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeInTheDocument()
     })
   })
 

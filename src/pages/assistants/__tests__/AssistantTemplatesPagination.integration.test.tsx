@@ -53,8 +53,6 @@ describe('AssistantTemplates - Pagination', () => {
     guardrail_assignments: [],
     is_liked: false,
     is_disliked: false,
-    is_favorited: false,
-    is_pinned: false,
     unique_likes_count: 0,
     unique_dislikes_count: 0,
     user_abilities: ['read'],

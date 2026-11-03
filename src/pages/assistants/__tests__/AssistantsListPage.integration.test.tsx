@@ -13,12 +13,13 @@
 // limitations under the License.
 //
 
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { MARKETPLACE_STATUS } from '@/constants/assistants'
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
+import { preferencesStore } from '@/store/preferences'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { selectMultiSelectOptions } from '@/test-utils/component-interactions'
 import { renderPage, mockAPI } from '@/test-utils/integration'
@@ -27,6 +28,7 @@ describe('AssistantsListPage - Integration', () => {
   const user = userEvent.setup()
 
   beforeEach(() => {
+    preferencesStore.preferences = null
     mockRouterState.push.mockClear()
     mockRouterState.replace.mockClear()
   })
@@ -47,8 +49,6 @@ describe('AssistantsListPage - Integration', () => {
     guardrail_assignments: [],
     is_liked: false,
     is_disliked: false,
-    is_favorited: false,
-    is_pinned: false,
     unique_likes_count: 0,
     unique_dislikes_count: 0,
     user_abilities: ['read', 'write'],
@@ -274,7 +274,6 @@ describe('AssistantsListPage - Integration', () => {
           createAssistantFixture({
             id: 'fav-assistant-1',
             name: 'Favorite Assistant',
-            is_favorited: true,
           }),
         ],
         page: 0,
@@ -760,7 +759,11 @@ describe('AssistantsListPage - Integration', () => {
         username: 'testuser',
         applications: [],
       })
-      mockAPI('PUT', 'v1/preferences/test-user-id', { success: true })
+      mockAPI('PUT', 'v1/preferences/test-user-id', {
+        user_id: 'test-user-id',
+        pinned_assistants: ['assistant-1'],
+        favorites: { assistants: [], workflows: [], skills: [] },
+      })
 
       renderPage('/assistants')
 
@@ -801,7 +804,11 @@ describe('AssistantsListPage - Integration', () => {
         username: 'testuser',
         applications: [],
       })
-      mockAPI('PUT', 'v1/preferences/test-user-id', { success: true })
+      mockAPI('PUT', 'v1/preferences/test-user-id', {
+        user_id: 'test-user-id',
+        pinned_assistants: [],
+        favorites: { assistants: ['assistant-1'], workflows: [], skills: [] },
+      })
 
       renderPage('/assistants')
 
@@ -822,6 +829,161 @@ describe('AssistantsListPage - Integration', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeInTheDocument()
       })
+    })
+  })
+
+  describe('Pinned and favorited state derived from preferences', () => {
+    const bothFlags = [
+      { id: 'features:pinnedAssistants', settings: { enabled: true } },
+      { id: 'features:favorites', settings: { enabled: true } },
+    ]
+    const preferencesWithAssistant = {
+      user_id: 'test-user-id',
+      pinned_assistants: ['assistant-1'],
+      favorites: { assistants: ['assistant-1'], workflows: [], skills: [] },
+    }
+    const mockUser = () =>
+      mockAPI('GET', 'v1/user', {
+        user_id: 'test-user-id',
+        name: 'Test User',
+        username: 'testuser',
+        applications: [],
+      })
+    const countAssistantListCalls = () =>
+      (global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
+        ([url, init]) => String(url).includes('v1/assistants') && (init?.method ?? 'GET') === 'GET'
+      ).length
+
+    it('flips pin and star when preferences arrive after the list, without refetching the list', async () => {
+      mockAPI('GET', 'v1/config', bothFlags)
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture()],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      expect(await screen.findByRole('button', { name: 'Pin assistant' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add to favorites' })).toBeInTheDocument()
+      const listCallsBefore = countAssistantListCalls()
+
+      act(() => {
+        preferencesStore.preferences = preferencesWithAssistant
+      })
+
+      expect(await screen.findByRole('button', { name: 'Unpin assistant' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeInTheDocument()
+      expect(countAssistantListCalls()).toBe(listCallsBefore)
+    })
+
+    it('shows pinned and favorited on first render when preferences are set before the list', async () => {
+      preferencesStore.preferences = preferencesWithAssistant
+      mockAPI('GET', 'v1/config', bothFlags)
+      mockUser()
+      mockAPI('GET', 'v1/preferences/test-user-id', preferencesWithAssistant)
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture()],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants')
+
+      expect(await screen.findByRole('button', { name: 'Unpin assistant' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Pin assistant' })).not.toBeInTheDocument()
+    })
+
+    it('PUTs the appended pinned list and shows the card pinned', async () => {
+      mockAPI('GET', 'v1/config', bothFlags)
+      mockUser()
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture()],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+      mockAPI('PUT', 'v1/preferences/test-user-id', {
+        user_id: 'test-user-id',
+        pinned_assistants: ['assistant-1'],
+        favorites: { assistants: [], workflows: [], skills: [] },
+      })
+
+      renderPage('/assistants')
+
+      await user.click(await screen.findByRole('button', { name: 'Pin assistant' }))
+
+      expect(await screen.findByRole('button', { name: 'Unpin assistant' })).toBeInTheDocument()
+      const putCall = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.find(
+        ([url, init]) =>
+          String(url).includes('v1/preferences/test-user-id') && init?.method === 'PUT'
+      )
+      expect(JSON.parse(putCall![1].body)).toEqual({ pinned_assistants: ['assistant-1'] })
+    })
+
+    it('favorites then unfavorites, PUTting the matching favorites list each time', async () => {
+      mockAPI('GET', 'v1/config', bothFlags)
+      mockUser()
+      mockAPI('GET', 'v1/assistants', {
+        data: [createAssistantFixture()],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+      mockAPI('PUT', 'v1/preferences/test-user-id', {
+        user_id: 'test-user-id',
+        pinned_assistants: [],
+        favorites: { assistants: ['assistant-1'], workflows: [], skills: [] },
+      })
+
+      renderPage('/assistants')
+
+      await user.click(await screen.findByRole('button', { name: 'Add to favorites' }))
+      await user.click(await screen.findByRole('button', { name: 'Remove from favorites' }))
+
+      mockAPI('PUT', 'v1/preferences/test-user-id', {
+        user_id: 'test-user-id',
+        pinned_assistants: [],
+        favorites: { assistants: [], workflows: [], skills: [] },
+      })
+      await user.click(await screen.findByRole('button', { name: 'Remove' }))
+
+      expect(await screen.findByRole('button', { name: 'Add to favorites' })).toBeInTheDocument()
+      const putBodies = (global.fetch as ReturnType<typeof vi.fn>).mock.calls
+        .filter(
+          ([url, init]) =>
+            String(url).includes('v1/preferences/test-user-id') && init?.method === 'PUT'
+        )
+        .map(([, init]) => JSON.parse(init.body))
+      expect(putBodies).toEqual([
+        { favorites: { assistants: ['assistant-1'], workflows: [], skills: [] } },
+        { favorites: { assistants: [], workflows: [], skills: [] } },
+      ])
+    })
+
+    it('shows a Favorites tab item pinned after preferences arrive', async () => {
+      mockAPI('GET', 'v1/config', bothFlags)
+      mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+        data: [createAssistantFixture()],
+        page: 0,
+        per_page: 12,
+        pages: 1,
+        total: 1,
+      })
+      mockUser()
+      mockAPI('GET', 'v1/user/reactions', { items: [] })
+
+      renderPage('/assistants/favorites')
+
+      expect(await screen.findByText('Test Assistant')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Pin assistant' })).toBeInTheDocument()
+      })
+
+      act(() => {
+        preferencesStore.preferences = preferencesWithAssistant
+      })
+
+      expect(await screen.findByRole('button', { name: 'Unpin assistant' })).toBeInTheDocument()
     })
   })
 
@@ -980,7 +1142,6 @@ describe('AssistantsListPage - Integration', () => {
           createAssistantFixture({
             id: 'fav-assistant-1',
             name: 'Favorite Assistant',
-            is_favorited: true,
           }),
         ],
         page: 0,

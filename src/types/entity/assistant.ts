@@ -160,8 +160,6 @@ export interface Assistant {
 
   // Skills
   skills?: Skill[]
-  is_favorited?: boolean
-  is_pinned?: boolean
   clone_count?: number
 
   // Built-in subagents
