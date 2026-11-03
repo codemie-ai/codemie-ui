@@ -126,6 +126,7 @@ export interface Thought {
   aborted?: boolean
   parent_id?: string
   content?: string
+  date?: string
   routing?: RoutingInfo | null
   truncated?: boolean
 }

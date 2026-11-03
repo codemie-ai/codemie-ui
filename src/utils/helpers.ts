@@ -163,6 +163,17 @@ export const copyToClipboard = (message: string, notification?: string): void =>
   }
 }
 
+export const copyTextToClipboard = async (text: string): Promise<boolean> => {
+  if (!navigator.clipboard) return false
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch (err) {
+    console.error(err)
+    return false
+  }
+}
+
 interface CreatedBy {
   name?: string
   username?: string

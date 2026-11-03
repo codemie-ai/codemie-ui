@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-19T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 6,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "New pure formatter module (callHistoryExport), WorkflowStateCallHistory UI component gained download/copy actions, and a shared clipboard helper in utils/helpers." },
+    { "dimension": "technical_risk", "reason": "Existing downloadCodeAsFile reused; clipboard failure and empty-history paths handled with toasts. Edge-case tests added alongside. No security-sensitive surface." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

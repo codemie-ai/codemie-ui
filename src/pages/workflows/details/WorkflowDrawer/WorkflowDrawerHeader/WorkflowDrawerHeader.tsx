@@ -21,6 +21,7 @@ import Popup from '@/components/Popup'
 import WorkflowExecutionStateControls from '@/pages/workflows/details/states/WorkflowExecutionStateControls'
 import { WorkflowExecutionState } from '@/types/entity'
 
+import CallHistoryActions from './CallHistoryActions'
 import WorkflowExecutionTransitionsPopup from './WorkflowExecutionTransitionsPopup'
 import WorkflowStateCallHistory from './WorkflowStateCallHistory'
 import useExecutionsContext from '../../hooks/useExecutionsContext'
@@ -67,7 +68,12 @@ const WorkflowDrawerHeader = ({ state, showActions }: WorkflowDrawerHeaderProps)
             onHide={closePopup}
             visible={activePopup === 'call-history'}
             className="max-w-6xl w-full h-full"
-            header={`Calls history for ${state.name}`}
+            headerContent={
+              <div className="flex items-center justify-between gap-4 grow">
+                <h4 className="text-base font-semibold mb-0">{`Calls history for ${state.name}`}</h4>
+                <CallHistoryActions state={state} />
+              </div>
+            }
           >
             <WorkflowStateCallHistory workflowId={workflowId} state={state} />
           </Popup>

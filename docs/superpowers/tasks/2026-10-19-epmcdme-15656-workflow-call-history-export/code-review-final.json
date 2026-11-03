@@ -1,0 +1,13 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case lens ran (blind, verification-gap not in compact profile); no spec supplied so acceptance was not audited, hence low confidence. 6 candidates verified against source and dismissed as noise (export mirrors UI which also skips missing thoughts; negative duration, filename, navigator and double-click cases are below the blocking floor); 0 deferred.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for this profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for this profile." }
+  ],
+  "findings": []
+}

@@ -1,0 +1,91 @@
+{
+ "schema": 1,
+ "branch": "EPMCDME-15656_workflow-call-history-export",
+ "head": "50959690103c1076c8e694d3f93d6fad27596915",
+ "runner": "npm",
+ "started_at": "2026-10-19T13:39:04Z",
+ "completed_at": "2026-10-19T14:10:00Z",
+ "status": "PASSED",
+ "drift_detected": false,
+ "gates": [
+  {
+   "id": "lint",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 47000,
+   "command": "npm run lint",
+   "exit_code": 0
+  },
+  {
+   "id": "typecheck",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 23000,
+   "command": "npm run typecheck",
+   "exit_code": 0
+  },
+  {
+   "id": "unit",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 630000,
+   "command": "npm run test:unit:slnt",
+   "exit_code": 0,
+   "notes": "Test Files 699 passed (699)"
+  },
+  {
+   "id": "integration",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 198000,
+   "command": "npm run test:integration:slnt",
+   "exit_code": 0,
+   "notes": "Test Files 49 passed (49)"
+  },
+  {
+   "id": "license-headers",
+   "source": "hook",
+   "status": "PASS",
+   "duration_ms": 10000,
+   "command": "npm run license-headers:check",
+   "exit_code": 0
+  },
+  {
+   "id": "secrets",
+   "source": "hook",
+   "status": "PASS",
+   "duration_ms": 181000,
+   "command": "npm run secrets:check",
+   "exit_code": 0,
+   "notes": "no leaks found"
+  },
+  {
+   "id": "sonar-local",
+   "source": "hook",
+   "status": "SKIPPED",
+   "duration_ms": 1000,
+   "command": "npm run sonar-local",
+   "exit_code": 0,
+   "notes": "[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set. Set SONAR_TOKEN to run locally."
+  },
+  {
+   "id": "license-check",
+   "source": "guide",
+   "status": "N/A",
+   "duration_ms": 0,
+   "command": "npm run license-check",
+   "exit_code": null,
+   "notes": "No dependency changed"
+  },
+  {
+   "id": "test-harness",
+   "source": "guide",
+   "status": "N/A",
+   "duration_ms": 0,
+   "command": "npm run test-harness",
+   "exit_code": null,
+   "notes": "Needs running stack and ~/.codemie/test-harness.json; still owed before MR"
+  }
+ ],
+ "failures": {}
+}
