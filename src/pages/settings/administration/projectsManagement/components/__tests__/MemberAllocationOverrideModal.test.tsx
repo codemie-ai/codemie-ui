@@ -47,6 +47,13 @@ const baseProps = {
 }
 
 describe('MemberAllocationOverrideModal', () => {
+  it('offers Cancel and Save Override but no Reset budget usage', () => {
+    render(<MemberAllocationOverrideModal {...baseProps} />)
+    expect(screen.queryByRole('button', { name: /Reset budget usage/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Save Override/ })).toBeInTheDocument()
+  })
+
   it('shows user display name in header instead of user id', () => {
     render(<MemberAllocationOverrideModal {...baseProps} />)
     expect(screen.getByText('Budget Override — John Doe')).toBeInTheDocument()

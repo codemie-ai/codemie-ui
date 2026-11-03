@@ -42,26 +42,10 @@ vi.mock('../BulkBudgetOverrideModal', () => ({
         >
           submit-override
         </button>
-        {onResetUsage && (
-          <button type="button" onClick={() => onResetUsage()}>
-            open-reset
-          </button>
-        )}
+        {onResetUsage && <span>reset-prop-passed</span>}
       </div>
     ) : null,
 }))
-
-vi.mock(
-  '@/pages/settings/administration/usersManagement/components/bulkPopups/BulkResetBudgetsPopup',
-  () => ({
-    default: ({ isOpen, onSave }: any) =>
-      isOpen ? (
-        <button type="button" onClick={() => onSave()}>
-          save-reset
-        </button>
-      ) : null,
-  })
-)
 
 vi.mock('../ChangeProjectRolePopup', () => ({
   default: ({ isOpen, onSave }: any) =>
@@ -94,7 +78,6 @@ const renderBulk = (overrides: Record<string, unknown> = {}) => {
     canManageProject: true,
     isProjectAdmin: true,
     canManageBudgets: true,
-    canResetBudgets: true,
     onClearSelection: vi.fn(),
     refresh: vi.fn(),
     onSuccess: vi.fn(),
@@ -147,18 +130,6 @@ describe('ProjectMembersBulkActions — budgets refresh', () => {
     expect(props.onBudgetsChanged).toHaveBeenCalledTimes(1)
   })
 
-  it('refreshes budgets after the bulk reset popup saves', async () => {
-    const props = renderBulk()
-
-    chooseAction('Override budgets')
-    fireEvent.click(screen.getByText('open-reset'))
-    fireEvent.click(screen.getByText('save-reset'))
-
-    await waitFor(() => expect(props.onClearSelection).toHaveBeenCalledTimes(1))
-    expect(props.onBudgetsChanged).toHaveBeenCalledTimes(1)
-    expect(props.refresh).toHaveBeenCalledTimes(1)
-  })
-
   it('still closes the popup and clears selection when the budgets refetch rejects', async () => {
     const onBudgetsChanged = vi.fn().mockRejectedValue(new Error('refetch failed'))
     const props = renderBulk({ onBudgetsChanged })
@@ -195,23 +166,15 @@ describe('ProjectMembersBulkActions — budgets refresh', () => {
   })
 })
 
-describe('ProjectMembersBulkActions — reset restriction', () => {
+describe('ProjectMembersBulkActions — no reset usage', () => {
   afterEach(cleanup)
 
-  it('does not offer bulk Reset usage when canResetBudgets is false', () => {
-    renderBulk({ canResetBudgets: false })
+  it('does not pass onResetUsage to the bulk override modal', () => {
+    renderBulk()
 
     chooseAction('Override budgets')
 
     expect(screen.getByText('submit-override')).toBeInTheDocument()
-    expect(screen.queryByText('open-reset')).not.toBeInTheDocument()
-  })
-
-  it('offers bulk Reset usage when canResetBudgets is true', () => {
-    renderBulk({ canResetBudgets: true })
-
-    chooseAction('Override budgets')
-
-    expect(screen.getByText('open-reset')).toBeInTheDocument()
+    expect(screen.queryByText('reset-prop-passed')).not.toBeInTheDocument()
   })
 })

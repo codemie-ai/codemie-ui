@@ -43,7 +43,6 @@ interface BulkBudgetOverrideModalProps {
   > | null
   onHide: () => void
   onSubmit: (updates: BulkBudgetOverrideUpdate[]) => Promise<void>
-  onResetUsage?: (category?: BudgetCategory) => void
 }
 
 interface PendingCategoryValues {
@@ -151,7 +150,6 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
   budgetAllocationLookup,
   onHide,
   onSubmit,
-  onResetUsage,
 }) => {
   const [pending, setPending] = useState<PendingValues>(emptyPendingValues)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -366,19 +364,7 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
       bodyClassName="max-h-[70vh] overflow-y-auto"
       withBorderBottom={false}
       footerContent={
-        <div className="flex w-full items-center justify-between gap-3">
-          {onResetUsage ? (
-            <Button
-              size={ButtonSize.SMALL}
-              variant={ButtonType.SECONDARY}
-              onClick={() => onResetUsage()}
-              disabled={isSubmitting}
-            >
-              Reset budget usage for {users.length} users
-            </Button>
-          ) : (
-            <span />
-          )}
+        <div className="flex w-full items-center justify-end gap-3">
           <div className="flex gap-3">
             <Button
               size={ButtonSize.SMALL}

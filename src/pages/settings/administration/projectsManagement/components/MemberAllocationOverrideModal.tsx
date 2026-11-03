@@ -42,7 +42,6 @@ interface MemberAllocationOverrideModalProps {
   dismissLabel?: string
   onHide: () => void
   onSubmit: (updates: MemberAllocationOverrideUpdate[]) => Promise<void>
-  onResetUsage?: (userId: string) => Promise<void>
 }
 
 type LimitField = 'max' | 'soft'
@@ -72,7 +71,6 @@ const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
   dismissLabel = 'Cancel',
   onHide,
   onSubmit,
-  onResetUsage,
 }) => {
   const [draft, setDraft] = useState<Draft>(emptyDraft)
   const [initialDraft, setInitialDraft] = useState<Draft>(emptyDraft)
@@ -283,19 +281,7 @@ const MemberAllocationOverrideModal: FC<MemberAllocationOverrideModalProps> = ({
       onHide={onHide}
       header={`Budget Override — ${userName || userId || ''}`}
       footerContent={
-        <div className="flex w-full items-center justify-between gap-3">
-          {onResetUsage ? (
-            <Button
-              size={ButtonSize.SMALL}
-              variant={ButtonType.SECONDARY}
-              onClick={() => onResetUsage(userId || '')}
-              disabled={isSubmitting}
-            >
-              Reset budget usage
-            </Button>
-          ) : (
-            <span />
-          )}
+        <div className="flex w-full items-center justify-end gap-3">
           <div className="flex gap-3">
             <Button
               size={ButtonSize.SMALL}

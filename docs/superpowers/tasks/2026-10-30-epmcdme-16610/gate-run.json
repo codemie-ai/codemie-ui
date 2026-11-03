@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16610_remove-reset-budget",
+  "head": "ccf90a9edefb9988b180fae182f4b985681894dd",
+  "runner": "npm",
+  "started_at": "2026-10-30T12:55:02Z",
+  "completed_at": "2026-10-30T13:12:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 92000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 74000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency added/removed/moved"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 23000,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 366000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 799 passed (799)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 121000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 55 passed (55)"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs stack up and ~/.codemie/test-harness.json; not run locally; owed before MR"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Needs Sonar infrastructure; not run; CI will settle"
+    }
+  ],
+  "failures": {}
+}

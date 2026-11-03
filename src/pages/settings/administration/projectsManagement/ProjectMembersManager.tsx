@@ -47,7 +47,6 @@ import AddUserModal, {
   AddUserFormData,
 } from '@/pages/settings/administration/components/AddUserModal'
 import ProjectMembersBulkActions from '@/pages/settings/administration/components/projectsManagement/ProjectMembersBulkActions'
-import ResetBudgetPopup from '@/pages/settings/administration/usersManagement/components/popups/ResetBudgetPopup'
 import UserAvatar from '@/pages/settings/administration/usersManagement/components/UserAvatar'
 import { analyticsStore } from '@/store/analytics'
 import { projectBudgetsStore } from '@/store/projectBudgets'
@@ -277,7 +276,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     category: BudgetCategory | null
   } | null>(null)
   const [modelOverrideUsers, setModelOverrideUsers] = useState<UserListItem[]>([])
-  const [resetBudgetUser, setResetBudgetUser] = useState<UserListItem | null>(null)
   const [spendingByUserId, setSpendingByUserId] = useState<
     Record<string, ProjectMemberSpendingRow>
   >({})
@@ -314,7 +312,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
 
   const showBudgets = !!budgets?.length
   const canManageBudgets = showBudgets && (!!currentUser?.isMaintainer || canManageProject)
-  const canResetBudgets = canManageBudgets && !!currentUser?.isMaintainer
 
   const budgetAllocationLookup = useMemo(() => {
     if (!budgets?.length) return null
@@ -904,7 +901,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
               canManageProject={canManageProject}
               isProjectAdmin={isProjectAdmin}
               canManageBudgets={canManageBudgets}
-              canResetBudgets={canResetBudgets}
               onClearSelection={clearSelection}
               refresh={refreshFromFirstPage}
               onSuccess={onMembersChanged}
@@ -1021,27 +1017,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           initialCategory={overrideContext?.category ?? null}
           onHide={() => setOverrideContext(null)}
           onSubmit={handleOverrideMember}
-          onResetUsage={
-            canResetBudgets
-              ? async () => {
-                  const user = users.find((item) => item.id === overrideContext?.userId)
-                  setOverrideContext(null)
-                  setResetBudgetUser(user ?? null)
-                }
-              : undefined
-          }
         />
       )}
-
-      <ResetBudgetPopup
-        isOpen={!!resetBudgetUser}
-        user={resetBudgetUser}
-        onClose={() => setResetBudgetUser(null)}
-        onSave={() => {
-          setResetBudgetUser(null)
-          refreshFromFirstPage()
-        }}
-      />
 
       <ProjectMemberModelOverrideModal
         isOpen={modelOverrideUsers.length > 0}

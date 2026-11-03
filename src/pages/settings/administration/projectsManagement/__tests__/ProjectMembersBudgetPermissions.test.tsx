@@ -192,13 +192,13 @@ describe('ProjectMembersManager — budget permissions', () => {
       expect(screen.queryByRole('button', { name: /Reset budget usage/ })).not.toBeInTheDocument()
     })
 
-    it('is offered to a maintainer', async () => {
+    it('is absent for a maintainer', async () => {
       userStore.user = MAINTAINER as never
       render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
 
       await openRowOverrideModal()
 
-      expect(screen.getByRole('button', { name: /Reset budget usage/ })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Reset budget usage/ })).not.toBeInTheDocument()
     })
   })
   describe('row and bulk Override budgets share one permission', () => {
@@ -243,29 +243,23 @@ describe('ProjectMembersManager — budget permissions', () => {
     })
   })
 
-  describe('Reset usage in the bulk Override budgets modal', () => {
+  describe('Bulk Override budgets modal', () => {
     const openBulkModal = async () => {
       await openBulkMenu()
       fireEvent.click(await screen.findByRole('menuitem', { name: 'Override budgets' }))
       await screen.findByTestId('bulk-override-modal')
     }
 
-    it('is absent for a project admin who is not a maintainer', async () => {
-      userStore.user = PROJECT_ADMIN as never
+    it.each([
+      ['a project admin', PROJECT_ADMIN],
+      ['a maintainer', MAINTAINER],
+    ])('is not offered to %s', async (_label, user) => {
+      userStore.user = user as never
       render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
 
       await openBulkModal()
 
       expect(screen.queryByText('Reset budget usage (bulk)')).not.toBeInTheDocument()
-    })
-
-    it('is offered to a maintainer', async () => {
-      userStore.user = MAINTAINER as never
-      render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
-
-      await openBulkModal()
-
-      expect(screen.getByText('Reset budget usage (bulk)')).toBeInTheDocument()
     })
 
     it('asks the parent to reload project budgets after a bulk override', async () => {

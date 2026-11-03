@@ -21,7 +21,6 @@ import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import NavigationMore from '@/components/NavigationMore'
 import BulkActions from '@/components/Table/BulkActions'
-import BulkResetBudgetsPopup from '@/pages/settings/administration/usersManagement/components/bulkPopups/BulkResetBudgetsPopup'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { BudgetCategory } from '@/types/entity/budget'
 import { ProjectBudget, ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
@@ -32,7 +31,7 @@ import BulkBudgetOverrideModal from './BulkBudgetOverrideModal'
 import ChangeProjectRolePopup from './ChangeProjectRolePopup'
 import UnassignFromProjectConfirmationPopup from './UnassignFromProjectConfirmationPopup'
 
-type ActivePopup = 'changeRole' | 'unassign' | 'overrideBudgets' | 'resetBudgets'
+type ActivePopup = 'changeRole' | 'unassign' | 'overrideBudgets'
 
 interface ProjectMembersBulkActionsProps {
   projectName: string
@@ -41,7 +40,6 @@ interface ProjectMembersBulkActionsProps {
   canManageProject: boolean
   isProjectAdmin: boolean
   canManageBudgets: boolean
-  canResetBudgets: boolean
   onClearSelection: () => void
   refresh: () => void
   onSuccess?: () => void
@@ -62,7 +60,6 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
   canManageProject,
   isProjectAdmin,
   canManageBudgets,
-  canResetBudgets,
   onClearSelection,
   refresh,
   onSuccess,
@@ -73,15 +70,10 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
   budgetAllocationLookup,
 }) => {
   const [activePopup, setActivePopup] = useState<ActivePopup | null>(null)
-  const [resetCategories, setResetCategories] = useState<BudgetCategory[]>([])
 
   const validateBulkAction = useCallback(
     (action: ActivePopup): boolean => {
-      if (
-        !canManageProject ||
-        (action === 'overrideBudgets' && !canManageBudgets) ||
-        (action === 'resetBudgets' && !canResetBudgets)
-      ) {
+      if (!canManageProject || (action === 'overrideBudgets' && !canManageBudgets)) {
         toaster.error('You do not have permission to perform this action')
         return false
       }
@@ -96,14 +88,7 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
       }
       return true
     },
-    [
-      canManageProject,
-      canManageBudgets,
-      canResetBudgets,
-      isProjectAdmin,
-      currentUserId,
-      selectedUsers,
-    ]
+    [canManageProject, canManageBudgets, isProjectAdmin, currentUserId, selectedUsers]
   )
 
   const openPopup = useCallback(
@@ -122,7 +107,6 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
         onClearSelection()
         onSuccess?.()
       }
-      setResetCategories([])
       setActivePopup(null)
     },
     [refresh, onClearSelection, onSuccess]
@@ -247,24 +231,6 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
             }
             await finishBudgetAction()
           }}
-          onResetUsage={
-            canResetBudgets
-              ? (category) => {
-                  setResetCategories(category ? [category] : [])
-                  setActivePopup('resetBudgets')
-                }
-              : undefined
-          }
-        />
-      )}
-
-      {canResetBudgets && (
-        <BulkResetBudgetsPopup
-          selectedUsers={selectedUsers}
-          categories={resetCategories}
-          isOpen={activePopup === 'resetBudgets'}
-          onClose={() => closePopup()}
-          onSave={finishBudgetAction}
         />
       )}
     </>
