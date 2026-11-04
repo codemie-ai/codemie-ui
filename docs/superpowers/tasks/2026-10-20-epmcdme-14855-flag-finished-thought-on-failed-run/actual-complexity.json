@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-20T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single store (chatGeneration) failure-path handling plus its terminal-chunk test file; no layer boundary crossed." },
+    { "dimension": "technical_risk", "reason": "Extends an existing failure-path pattern in the store with existing test templates; no new security or performance surface." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

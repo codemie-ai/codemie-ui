@@ -1,0 +1,45 @@
+{
+  "decision": "request-changes",
+  "rationale": "1 blocking defect (CR-001, major): the new flagThoughtError helper (FE2) only scans top-level thoughts for an in-progress entry and mislabels an unrelated top-level thought when the real in-progress thought is nested under thought.children. 2 findings deferred as genuinely pre-existing, untouched by this diff (git diff HEAD~2 confirms): the non-stream Response dispatch path never classifies success/execution_error, and _handleGenerationStreamError's unguarded errorObj.name access can crash on a falsy rejection via the same pre-existing api.stream() catch. 2 edge-case candidates dismissed as false positives against the task's own explicit matrix: tool_errors is deliberately excluded from the last x success x execution_error matrix, and success===null-resolving-to-success is the explicit, AC4-tested intended behavior. Both applicable lenses (edge-case, acceptance) ran and parsed cleanly; blind/verification-gap are n/a under the balanced profile. Acceptance: no-spec is false, all 18 story-AC/spec criteria pass, no business-review findings. Standards: commit-format pass, security pass, code-quality na (no project guide present, not a gap); no blocking_findings, no coverage_gap.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1: inProgress reset on any stream-read failure, including a network/HTTP drop before the terminal chunk", "status": "pass", "notes": "new _dispatchResponse (chatGeneration.ts ~508-529) wraps dispatch in try/catch -> _handleRequestError -> finalizeFailedRequest; covered by chatGeneration.dispatchFailure.test.ts tests 1-2" },
+    { "kind": "story-ac", "item": "AC2: terminal chunk classified by last x success x execution_error per the matrix", "status": "pass", "notes": "_classifyTerminalChunk (chatGeneration.ts ~552-561): error unless (success !== false && execution_error === '')" },
+    { "kind": "story-ac", "item": "AC3: timeout chunks (last + success===false, no execution_error) classify as error and finalize", "status": "pass", "notes": "covered by terminalChunk.test.ts 'falls back to the default error message when success:false carries no text'" },
+    { "kind": "story-ac", "item": "AC4: last + success==null (hedged/A2A) finalizes as success, not error", "status": "pass", "notes": "covered by terminalChunk.test.ts 'treats a terminal chunk without a success flag and without an execution_error as success'" },
+    { "kind": "story-ac", "item": "AC5: AIToolsAgent shape (success==null, execution_error set) classifies as error", "status": "pass", "notes": "covered by terminalChunk.test.ts 'surfaces an error when an execution_error is present even though success is unset'" },
+    { "kind": "story-ac", "item": "AC6: terminal chunk with empty generated closes on last alone, not a stream error", "status": "pass", "notes": "covered by terminalChunk.test.ts 'still finalizes a successful terminal chunk that generated no text'" },
+    { "kind": "story-ac", "item": "AC7: error text priority agent_error.message -> generated -> DEFAULT_ERROR_MESSAGE; no code-to-text map; no raw error_details rendered", "status": "pass", "notes": "_classifyTerminalChunk errorText line; covered by terminalChunk.test.ts agent_error-priority and no-text-fallback tests" },
+    { "kind": "story-ac", "item": "AC8: error outcome produces toaster.error and, where a thought exists, sets Thought.error surviving finalization", "status": "pass", "notes": "surfaceTerminalChunkError + flagThoughtError (chatGeneration.ts ~247-264) run in the drain loop before _finishThoughts; only clears in_progress via markThoughtDone. Covered by terminalChunk.test.ts." },
+    { "kind": "story-ac", "item": "AC9: success/execution_error added to the snake_case StreamChunk only", "status": "pass", "notes": "conversation.ts:331-339 adds success/execution_error/agent_error/tool_errors/error_details to snake_case StreamChunk; camelCase copy and utils/stream.ts untouched; narrowed via cast at call site" },
+    { "kind": "story-ac", "item": "AC10: chat request unchanged - no include_tool_errors, no new request field, no new query param", "status": "pass", "notes": "diff touches only chatGeneration.ts, conversation.ts and two new test files; ChatRequest/ChatRequestInput not in diff" },
+    { "kind": "story-ac", "item": "AC11: abort behavior unchanged on every path; streamDrain.test.ts:185-199 still passes", "status": "pass", "notes": "_handleGenerationStream (incl. its :1425 rethrow) untouched by the diff; new _dispatchResponse explicitly rethrows ABORT_ERROR; covered by dispatchFailure.test.ts abort tests 3-4" },
+    { "kind": "spec", "item": "FE3 dispatch branch gets its own narrow try/catch, not an extension of the existing api.stream try/catch (:1170-1220)", "status": "pass", "notes": "new _dispatchResponse method wraps only the reader-dispatch if/else; original try/catch around api.stream left untouched" },
+    { "kind": "spec", "item": "FE3 fix does not move into _handleGenerationStream; its rethrow stays pinned", "status": "pass", "notes": "no changes to _handleGenerationStream in the diff" },
+    { "kind": "spec", "item": "_classifyTerminalChunk is a new private helper, dual-declared in ChatGenerationStoreType and the proxy literal, called from _handleChunk's terminal branch", "status": "pass", "notes": "interface entry chatGeneration.ts:454, literal entry ~552-561, invoked via surfaceTerminalChunkError inside the last-chunk block ~1547" },
+    { "kind": "spec", "item": "StreamChunk type stays inert on the runtime path; streamChunkToObject/utils/stream.ts not retyped; chunk narrowed only locally at point of use", "status": "pass", "notes": "utils/stream.ts and streamChunkToObject not in diff; _handleChunk casts 'chunk as StreamChunk' only when calling surfaceTerminalChunkError" },
+    { "kind": "spec", "item": "No ChatMessage.error field or error render branch in ChatAiMessage.tsx; no presentation-layer change; no component tests", "status": "pass", "notes": "ChatMessage interface (conversation.ts:153-188) and ChatAiMessage.tsx not touched; no component test files added" },
+    { "kind": "spec", "item": "No hardcoded execution_error code-to-message mapping", "status": "pass", "notes": "_classifyTerminalChunk/errorText logic contains no code->text table" },
+    { "kind": "spec", "item": "Test-first, store unit tests only, modelled on chatGeneration.streamDrain.test.ts conventions", "status": "pass", "notes": "both new test files reuse the module-level vi.mock('@/utils/api') shape, createHistoryItem factory, fake {read,cancel} reader, per-test dynamic import" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "Both commit subjects match ^EPMCDME-\\d+: Capital sentence$ with no trailing period: the FE2 and FE3 commits in range." },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide present in the repo at .ai-run/guides/standards/code-quality.md, and no ArtifactRef was passed for it" },
+    { "kind": "security", "status": "pass", "notes": "No security-patterns.md checklist item touched (no new HTML/nav/cross-window/config sinks). New error text routes through toaster.error(), an existing DOMPurify-sanitized sink." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/chatGeneration.ts",
+      "line": 249,
+      "title": "Wrong thought flagged when nested in-progress",
+      "problem": "flagThoughtError (new in this diff) only searches top-level historyItem.thoughts for an in-progress entry via [...thoughts].reverse().find(t => t.in_progress); it never recurses into thought.children, even though Thought.children is a live nesting mechanism (a child thought is pushed onto existingParentThought.children at chatGeneration.ts:1614-1615, and Thought.children is itself typed as Thought[] with its own in_progress field, per src/types/entity/conversation.ts:106-116).",
+      "impact": "When a terminal chunk reports an error and the actual in-progress thought is nested under a parent's children (not a top-level entry), the top-level find() returns nothing and the code falls back to thoughts[thoughts.length - 1]: an unrelated, already-finished top-level thought is marked errored instead of the real in-progress one, and the genuinely failing nested thought is left unflagged. This is a correctness regression in code newly introduced by FE2/AC8 (the whole flagThoughtError/surfaceTerminalChunkError pair did not exist before this diff, confirmed via git diff HEAD~2).",
+      "recommendation": "Recurse into thought.children when searching for the in-progress thought, mirroring the recursive pattern already used by markThoughtDone (chatGeneration.ts:242-245) and _findThought, so a nested in-progress thought is located before falling back to the last top-level thought."
+    }
+  ]
+}

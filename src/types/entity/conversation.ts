@@ -357,6 +357,15 @@ export interface StreamChunk {
   generated?: string
   debug?: any
   a2ui?: A2uiEnvelope
+  // Outcome fields carried by the terminal (`last`) chunk. The backend signals a failed
+  // generation through `success: false` and/or a non-empty `execution_error` code, so the
+  // terminal chunk alone decides whether the turn ended in an error.
+  success?: boolean | null
+  execution_error?: string | null
+  agent_error?: { message?: string } | null
+  tool_errors?: unknown[] | null
+  // Diagnostics only (tracebacks) — typed so the shape is known, never rendered.
+  error_details?: unknown
 }
 
 export interface StreamChunkParseResult {

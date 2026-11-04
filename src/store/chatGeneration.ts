@@ -28,7 +28,13 @@ import {
   ToolCallAction,
 } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
-import { Conversation, ChatMessage, ChatListItem, Thought } from '@/types/entity/conversation'
+import {
+  Conversation,
+  ChatMessage,
+  ChatListItem,
+  StreamChunk,
+  Thought,
+} from '@/types/entity/conversation'
 import {
   MCPAuthGateServer,
   MCPAuthInitiateResponse,
@@ -194,6 +200,9 @@ interface ChatGenerationStoreType {
     historyItem: ChatMessage,
     value: string
   ) => Promise<{ finalChunk: any; incompleteChunk: string | null }>
+  _classifyTerminalChunk: (
+    chunk: StreamChunk
+  ) => { isError: false; errorText: null } | { isError: true; errorText: string }
   _handleThought: (historyItem: ChatMessage, thought: Partial<Thought>) => void
   _findThought: (thoughts: Thought[], targetId: string) => Thought | null
   _handleGenerationStreamError: (errorObj: any) => string
@@ -212,6 +221,13 @@ interface ChatGenerationStoreType {
   ) => { endpoint: string; requestData?: any; method?: string }
   _handleRequestError: (historyItem: ChatMessage, error: any, startTime: Date) => void
   _removeOptimisticTurn: (historyItem: ChatMessage) => void
+  _dispatchResponse: (
+    reader: ReadableStreamDefaultReader | Response,
+    historyItem: ChatMessage,
+    chat: Conversation,
+    startTime: Date
+  ) => Promise<void>
+  _finalizeUnusableResponse: (historyItem: ChatMessage, startTime: Date) => void
   _handleNonStreamResponse: (
     reader: Response,
     historyItem: ChatMessage,
@@ -256,6 +272,34 @@ const getPromptRows = (message: ChatMessage | null): MCPAuthGateServer[] =>
 const markThoughtDone = (thought: Thought): void => {
   thought.in_progress = false
   thought.children?.forEach(markThoughtDone)
+}
+
+// Mirrors markThoughtDone's recursion into thought.children so nested in-progress thoughts
+// (pushed onto a parent's children, not appended at the top level) are found, not missed.
+const collectInProgressThoughts = (thoughts: Thought[]): Thought[] =>
+  thoughts.flatMap((thought) => [
+    ...(thought.in_progress ? [thought] : []),
+    ...collectInProgressThoughts(thought.children ?? []),
+  ])
+
+// Mark every thought still live when the run failed (parallel sub-agents included) as errored
+// so a failed generation stops looking like it is still running. finishThoughts() only clears
+// `in_progress`, so this flag survives it. Finished thoughts are never guessed at: the backend
+// flags the failing thought itself (error=true on the thought chunk, merged by _handleThought).
+const flagThoughtError = (historyItem: ChatMessage, errorText: string): void => {
+  collectInProgressThoughts(historyItem.thoughts ?? []).forEach((thought) => {
+    thought.error = errorText
+  })
+}
+
+// Surface a terminal chunk that reports a failed generation. Kept out of _handleChunk so the
+// chunk loop stays within its cognitive-complexity budget.
+const surfaceTerminalChunkError = (historyItem: ChatMessage, chunk: StreamChunk): void => {
+  const { isError, errorText } = chatGenerationStore._classifyTerminalChunk(chunk)
+  if (!isError) return
+
+  toaster.error(errorText)
+  flagThoughtError(historyItem, errorText)
 }
 
 const dropInProgressThoughts = (historyItem: ChatMessage): void => {
@@ -1487,10 +1531,39 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       return
     }
 
-    if (reader instanceof Response) {
-      await chatGenerationStore._handleNonStreamResponse(reader, historyItem, chat, startTime)
-    } else {
-      await chatGenerationStore._handleStreamResponse(reader, historyItem, chat, startTime)
+    await chatGenerationStore._dispatchResponse(reader, historyItem, chat, startTime)
+  },
+
+  /** Route the api.stream result to its response handler and guarantee that a failure there
+   *  still reaches the failure path - otherwise `inProgress` stays true and the message spins
+   *  forever (EPMCDME-14855).
+   *
+   *  Deliberately its own try/catch instead of extending the one around api.stream in
+   *  _sendRequest: that catch runs the MCP/OAuth/GitLab/Jira/Confluence gate parsers, which only
+   *  make sense for a dispatch-time rejection - routing response-handling errors through them
+   *  would change their semantics. */
+  async _dispatchResponse(reader, historyItem, chat, startTime) {
+    try {
+      if (reader instanceof Response) {
+        await chatGenerationStore._handleNonStreamResponse(reader, historyItem, chat, startTime)
+      } else {
+        await chatGenerationStore._handleStreamResponse(reader, historyItem, chat, startTime)
+      }
+    } catch (error: any) {
+      // Aborts are already finalized by _handleGenerationAbort - keep their semantics exactly.
+      if (error?.name === ABORT_ERROR) throw error
+
+      // The turn was already finalized, so the response is delivered and what failed is
+      // post-processing (workflow refresh, rename polling). Do not overwrite it with an error.
+      // Rests on `inProgress === false` meaning "a response was delivered". Both handlers flip it
+      // only after the response is read, so any finalization moved ahead of delivery turns this
+      // guard into silent error swallowing.
+      if (!historyItem.inProgress) {
+        console.error(error)
+        return
+      }
+
+      chatGenerationStore._handleRequestError(historyItem, error, startTime)
     }
   },
 
@@ -1552,6 +1625,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     if (historyItem.a2uiAction) {
       chatGenerationStore._removeOptimisticTurn(historyItem)
       toaster.error(errorText)
+      // _removeOptimisticTurn is a no-op when the user switched chats, so the turn could
+      // otherwise stay `inProgress` forever.
+      finalizeFailedRequest(historyItem, startTime)
       return
     }
     historyItem.response = errorText
@@ -1577,7 +1653,12 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   async _handleNonStreamResponse(reader, historyItem, chat, startTime) {
-    if (!reader.ok) return
+    // An unusable response (HTTP error or no generated text) must still finalize the turn,
+    // otherwise `inProgress` stays true and the message spins forever (EPMCDME-14855).
+    if (!reader.ok) {
+      chatGenerationStore._finalizeUnusableResponse(historyItem, startTime)
+      return
+    }
 
     const endTime = new Date()
 
@@ -1591,12 +1672,22 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         historyItem.inProgress = false
         historyItem.stream = null
         chatGenerationStore._finishThoughts(historyItem)
+      } else {
+        chatGenerationStore._finalizeUnusableResponse(historyItem, startTime)
       }
     } catch (error) {
       console.error('Failed to parse response JSON:', error)
+      // inProgress is only cleared once a response is read, so swallowing this would leave the
+      // message spinning. Let _dispatchResponse route it to the failure path (EPMCDME-14855).
+      throw error
     }
 
     if (chat.isWorkflow) chatsStore.getChat(chat.id)
+  },
+
+  _finalizeUnusableResponse(historyItem, startTime) {
+    historyItem.response = DEFAULT_ERROR_MESSAGE
+    finalizeFailedRequest(historyItem, startTime)
   },
 
   async _handleStreamResponse(reader, historyItem, chat, startTime) {
@@ -1690,16 +1781,16 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         // a drain-phase error (e.g. connection drop or user abort while waiting for `done`)
         // must not discard an already-successful generation.
         if (state.receivedFinalChunk) {
-          console.error(error.name)
+          console.error(error?.name ?? error)
           break
         }
 
         // Request was aborted by user (before final chunk received)
-        if (error.name === ABORT_ERROR) {
+        if (error?.name === ABORT_ERROR) {
           return chatGenerationStore._handleGenerationAbort(historyItem, reader, isWorkflow)
         }
 
-        console.error(error.name)
+        console.error(error?.name ?? error)
         throw error
       }
     }
@@ -1778,6 +1869,12 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         const capturedStreamText = (streamRef?.stream ?? '') + (streamRef?.streamBuffer ?? '')
         historyItem.stream?.finish()
         historyItem.inProgress = false
+
+        // A terminal chunk can report a failed generation (`success: false` and/or an
+        // `execution_error` code) while still looking like a normal completion. Surface it
+        // here — termination itself stays keyed on `last` alone.
+        surfaceTerminalChunkError(historyItem, chunk as StreamChunk)
+
         return {
           finalChunk: capturedStreamText ? { ...chunk, capturedStreamText } : chunk,
           incompleteChunk: null,
@@ -1786,6 +1883,22 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
 
     return { finalChunk: null, incompleteChunk }
+  },
+
+  /** Classify the terminal chunk by the backend's `success` × `execution_error` outcome matrix.
+   *  A missing `success` is not a failure (hedged/A2A responses omit it); an `execution_error`
+   *  code is a failure on its own (AIToolsAgent reports it without flipping `success`).
+   *  The message shown is the backend's short `agent_error.message`, else the generic default.
+   *  `generated` is never used as error text: after partial output it holds the model's own answer. */
+  _classifyTerminalChunk(chunk) {
+    const executionError = chunk.execution_error ?? ''
+    if (chunk.success !== false && executionError === '') {
+      return { isError: false, errorText: null }
+    }
+    return {
+      isError: true,
+      errorText: chunk.agent_error?.message || DEFAULT_ERROR_MESSAGE,
+    }
   },
 
   _handleThought(historyItem: ChatMessage, thought: Partial<Thought>): void {
@@ -1852,7 +1965,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   _handleGenerationStreamError(errorObj: any): string {
-    if (errorObj.name === ABORT_ERROR) return EMPTY_MESSAGE
+    if (errorObj?.name === ABORT_ERROR) return EMPTY_MESSAGE
 
     try {
       const { message, details, help } = errorObj.error ?? errorObj

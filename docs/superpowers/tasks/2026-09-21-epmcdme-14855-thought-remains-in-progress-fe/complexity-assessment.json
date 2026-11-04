@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "task": "Classify the terminal stream chunk by the backend last x success x execution_error matrix and surface its error text (FE2), and route _sendRequest's out-of-try dispatch branch through the existing failure path so historyItem.inProgress is always reset (FE3).",
+  "generated": "2026-09-21T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk": { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 2, "label": "S" }
+  },
+  "total": 17,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The wire contract is frozen and unambiguous (matrix and error-text priority given verbatim in the briefing), but how the error is surfaced is undecided: ChatMessage (src/types/entity/conversation.ts:153-188) has no error field and ChatAiMessage renders error text through <Markdown> identically to a successful answer, so the 'show it as an error' criterion has no existing message-level mechanism — either a new ChatMessage field plus a render branch, or reuse of toaster/StatusBadge. That is an open design decision with rework risk, which is L territory."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "No repo precedent for terminal-chunk outcome classification (success, execution_error, agent_error appear nowhere in the store or its tests), and correctness rests entirely on an external briefing matrix that cannot be re-verified from this repository. Four terminal shapes must coexist (success:true; success:false + execution_error; timeout success:false with no execution_error; success == null) plus a legitimately empty generated — enumerated variant cases with no existing parameterized edge-case or boundary-table test template in src/store/__tests__, which is the additive test-template bump (base M -> L). Streaming/drain semantics are the mechanism being changed, but the drain-order decisions are already documented in code (CR-001) and one existing test (chatGeneration.streamDrain.test.ts:185-199) pins the current rethrow and constrains FE3 to the _sendRequest dispatch branch rather than _handleGenerationStream — that constraint is known, not an unknown, so the streaming red flag is folded into the base M rather than double-counted to XL. Rollback is trivial (store-only, no schema, no flag)."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Two components in the store (_handleChunk terminal branch at 1498-1507 and the _sendRequest dispatch branch at 1222-1226) plus the snake_case StreamChunk type at src/types/entity/conversation.ts:327-334, with a possible third in the presentation layer if the error affordance lands there. Blast radius is near zero (StreamChunk has one in-file referencer; finalizeFailedRequest has 6 callers, all in-file) and the store patterns — dual declaration in ChatGenerationStoreType, chatGenerationStore-qualified self-calls, the single finalizeFailedRequest failure funnel — are established and imitable."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Roughly 2-3 modified (src/store/chatGeneration.ts, src/types/entity/conversation.ts, possibly ChatAiMessage.tsx) plus 1-2 new test files across src/store, src/types/entity and src/store/__tests__. Calibration note: bundled M anchor epmcdme-10203 scores this dimension M at 6 files / 3 directories, slightly above this task's 4-5 files; M is retained because the directory count and new-test-file count exceed S's 'one directory, 0-1 new', but S would also be defensible and would leave the band unchanged (16, still M)."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: acceptance criteria enumerate four terminal-chunk shapes plus an empty-generated case, and no existing test template in src/store/__tests__ covers that defensive edge-case pattern (no test references success, execution_error, agent_error, tool_errors or error_details).",
+    "Streaming red flag considered and folded into the base Technical Risk score rather than applied as a second bump: the stream/drain semantics are pre-existing and their subtleties are already documented in code comments and pinned by chatGeneration.streamDrain.test.ts:185-199, so they are a known constraint on where FE3 may be fixed, not a novel real-time requirement."
+  ],
+  "split_recommendation": null
+}

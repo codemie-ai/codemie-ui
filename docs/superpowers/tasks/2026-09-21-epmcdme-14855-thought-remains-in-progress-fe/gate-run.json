@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14855_CodeMie-thought-remains-in-progress",
+  "head": "f55b9125a799fa3688fb3a413b2146af6d5ba0b5",
+  "runner": "npm",
+  "started_at": "2026-09-21T12:54:51Z",
+  "completed_at": "2026-09-21T13:00:30Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "npm-ci",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9000,
+      "command": "npm ci",
+      "exit_code": 0,
+      "notes": "Reinstall required by AGENTS.md before trusting any gate. Ran against the current (dirty) working-tree package.json/package-lock.json, which carry pre-existing, unrelated uncommitted changes (adds @playwright/test devDependency; vite.config.ts proxy target change is unrelated and not installed via npm ci). Install completed normally: 1250 packages added, no lock/manifest mismatch, no different behavior observed versus a clean install — flagged here per task instructions, not treated as a failure."
+    },
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 10000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 4000,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "No dependency added/removed in the committed diff (origin/main...HEAD only touches src/store and src/types); ran anyway since the dirty working tree adds @playwright/test. Summary table printed, no disallowed licence."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks image pulled and ran; output line was the real 'no leaks found', not the ambiguous non-zero-exit case described in security/verification.md."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 60000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 573 passed (573); Tests 5838 passed (5838)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 33000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 47 passed (47); Tests 541 passed | 1 skipped (542) — the 1 skip is a single in-file test skip, not a suite import failure."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Husky pre-commit runs this; not in the main quality-gates.md gate list. Checked 2117 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 without analysis, so not counted as PASS per the self-skipping-gates rule. Export SONAR_TOKEN and rerun to get a real local SAST result; the MR pipeline's own 'sonar' task is the only check this repo relies on for real SAST coverage today. Real Sonar analysis for this diff was not performed locally or (per .ai-run/guides/security/verification.md) verifiable from this checkout."
+    }
+  ],
+  "failures": {}
+}

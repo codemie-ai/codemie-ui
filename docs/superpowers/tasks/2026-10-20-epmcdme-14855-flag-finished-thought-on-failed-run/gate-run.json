@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14855_CodeMie-thought-remains-in-progress",
+  "head": "1eb5c88285218d3903e40813f5e4c921d67327ef",
+  "runner": "npm",
+  "started_at": "2026-10-20T11:43:53.242Z",
+  "completed_at": "2026-10-20T11:55:33.242Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 32174,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16476,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 267454,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "Test Files 6 failed | 707 passed (713); Tests 11 failed | 7209 passed | 1 skipped. All 11 are locale-format assertions (e.g. expected 1 234,50 to be 1,234.50), environmental on Windows; none touch changed files (src/store/chatGeneration.ts). 4 are known (currency, analyticsFormatters x2, WorkflowExecutionInfoPopup); 7 additional with same cause: ProjectBudgetsSection x1, ProjectMembersSpending x4, SkillInstructions x2 - not confirmed in WSL."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 130703,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 50 passed (50); Tests 564 passed | 1 skipped"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 14165,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "no leaks found"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1308,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "0 missing of 2368"
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency changes"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Pre-commit hook; needs local Sonar infrastructure, not run. CI/hook will settle it."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs stack up and ~/.codemie/test-harness.json; unverified, owed before MR"
+    }
+  ],
+  "failures": {
+    "unit": "Provide detailed step-by-step instructions for the assistant:\n\n1. **Step 1**: First action to take\n2. **Step 2**: Next action\n3. **Step 3**: Final steps\n\n## Examples\n```\n// examples or sample interactions\n```\n\n## Best Practices\n- Key point 1\n- Key point 2\n- Key point 3\n\n## Additional Notes\nAny other important information or edge cases to consider.\n\"\u001b[39m\n          \u001b[33mrows\u001b[39m=\u001b[32m\"15\"\u001b[39m\n        \u001b[36m/>\u001b[39m\n      \u001b[36m</div>\u001b[39m\n    \u001b[36m</div>\u001b[39m\n  \u001b[36m</div>\u001b[39m\n\u001b[36m</body>\u001b[39m\n ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19\n ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38\n ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17\n ❯ getByText node_modules/@testing-library/dom/dist/query-helpers.js:95:19\n ❯ src/pages/skills/components/__tests__/SkillInstructions.test.tsx:31:19\n     29|   it('renders character counter with a different maxContentLength', ()…\n     30|     render(<SkillInstructions maxContentLength={45000} value=\"\" onChan…\n     31|     expect(screen.getByText(/45,000/)).toBeTruthy()\n       |                   ^\n     32|   })\n     33| })\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/22]⎯\n\n\n Test Files  6 failed | 707 passed (713)\n      Tests  11 failed | 7209 passed | 1 skipped (7221)\n   Start at  14:48:21\n   Duration  262.96s (environment 34%, tests 30%, import 16%, setup 14%, transform 5%, worker 1%)\n\nEnvironment  |unit| jsdom was created 713 times · 238.06s total, 34% of tracked time\n             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)\n             learn more: https://vitest.dev/guide/improving-performance#test-environments\n\n"
+  }
+}
