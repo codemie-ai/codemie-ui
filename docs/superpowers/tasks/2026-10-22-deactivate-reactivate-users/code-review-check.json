@@ -1,0 +1,42 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted check at HEAD f622a0b8 (diff signature verified): both prior blocking code findings are resolved in UsersManagementPage.tsx, with regression tests added; no new findings, as this round does not look for them. business_review and standards_review carried forward from the final round; brief written to code-review-brief.md.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "5 subjects in range all match EPMCDME-XXXX: Capital sentence, non-zero ticket ID, no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide passed and .ai-run/guides/standards/code-quality.md is absent from the repo; absent standard, not a gap" },
+    { "kind": "security", "status": "pass", "notes": "checked changed non-test files against security-patterns.md: no HTML sinks, untrusted navigation, postMessage, config secrets or suppressions introduced; error logging does not include credentials" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/UsersManagementPage.tsx",
+      "line": 252,
+      "title": "No in-flight guard on status confirm",
+      "problem": "confirmStatusChange awaits deactivateUser/reactivateUser while the modal stays open and the confirm button stays enabled; setPendingStatusChange(null) runs only in finally. A quick double click sends duplicate DELETE/POST requests.",
+      "impact": "The second request fails and shows a spurious error toast after a successful change; duplicate side effects possible.",
+      "recommendation": "Add an isStatusChanging state; return early if set, set it before the await and clear it in finally; pass it as loading/disabled to the confirmation modal."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/UsersManagementPage.tsx",
+      "line": 263,
+      "title": "Refresh may leave empty page after status change",
+      "problem": "After a successful status change refresh() reloads the current page with the active filters. With a status filter active, changing the only row on the last page leaves an empty table although earlier pages still match.",
+      "impact": "User sees an empty list and must navigate back manually. Reachability of the empty-last-page case is plausible but not exercised in code reviewed.",
+      "recommendation": "If the current page held one row and page > 0, load the previous page; otherwise refresh()."
+    }
+  ],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "isStatusChangingRef early return plus isStatusChanging state set before await and cleared in finally; ConfirmationModal confirmDisabled wired; Cancel ignored in flight; double-click test added" },
+    { "id": "CR-002", "status": "resolved", "notes": "with is_active filter set, users.length===1 and page>0, loads page-1 instead of refresh(); All filter keeps refresh(); tests cover both branches" }
+  ]
+}

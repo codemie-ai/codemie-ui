@@ -20,16 +20,28 @@ import {
   PlatformRole,
   UsersManagementFilters,
 } from '@/pages/settings/administration/usersManagement/constants'
-import { FILTER_ENTITY, getFilters, setFilters } from '@/utils/filters'
+import { FILTER_ENTITY, FilterKeys, getFilters, setFilters } from '@/utils/filters'
 import { cleanObject } from '@/utils/helpers'
+
+export const USERS_FILTER_KEYS: FilterKeys = {
+  simple: ['search', 'platform_role'],
+  boolean: ['is_active'],
+  multiple: ['projects', 'budgets'],
+}
 
 const VALID_PLATFORM_ROLES: PlatformRole[] = ['user', 'platform_admin', 'admin']
 
 export const useUsersManagementFilters = () => {
   const getSavedFilters = useCallback(() => {
-    const saved = getFilters<UsersManagementFilters>(FILTER_ENTITY.USERS_MANAGEMENT)
+    const saved = getFilters<UsersManagementFilters>(
+      FILTER_ENTITY.USERS_MANAGEMENT,
+      USERS_FILTER_KEYS
+    )
     if (saved.platform_role != null && !VALID_PLATFORM_ROLES.includes(saved.platform_role)) {
       saved.platform_role = null
+    }
+    if (saved.is_active != null && typeof saved.is_active !== 'boolean') {
+      saved.is_active = null
     }
     return saved
   }, [])

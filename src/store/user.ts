@@ -87,6 +87,8 @@ interface UserStoreType {
   }) => Promise<GetUsersResponse>
   getUserById: (userId: string) => Promise<UserListItem>
   createUser: (payload: UserCreatePayload) => Promise<UserListItem>
+  deactivateUser: (userId: string) => Promise<{ message: string }>
+  reactivateUser: (userId: string) => Promise<UserListItem>
   updateUser: (userId: string, data: UserUpdatePayload) => Promise<void>
   getUserBudgets: (userId: string) => Promise<BudgetAssignment[]>
   updateUserBudgets: (userId: string, assignments: BudgetAssignment[]) => Promise<void>
@@ -265,6 +267,7 @@ export const userStore = proxy<UserStoreType>({
     const params = new URLSearchParams()
     params.append('search', query)
     params.append('per_page', String(perPage))
+    params.append('filters', JSON.stringify({ is_active: true }))
 
     return api
       .get(`v1/admin/users?${params.toString()}`, { skipErrorHandling: true })
@@ -482,6 +485,18 @@ export const userStore = proxy<UserStoreType>({
       })
   },
 
+  deactivateUser(userId) {
+    return api
+      .delete(`v1/admin/users/${userId}`, undefined, { skipErrorHandling: true })
+      .then((response) => response.json())
+  },
+
+  reactivateUser(userId) {
+    return api
+      .post(`v1/admin/users/${userId}/reactivate`, undefined, { skipErrorHandling: true })
+      .then((response) => response.json())
+  },
+
   updateUser(userId, data) {
     return api
       .put(`v1/admin/users/${userId}`, data, { skipErrorHandling: true })
@@ -627,8 +642,8 @@ export const userStore = proxy<UserStoreType>({
       )
       await response.json()
       toaster.info(`Updated role for ${userIds.length} user(s) successfully`)
-    } catch (error) {
-      toaster.error('Failed to update user roles')
+    } catch (error: any) {
+      toaster.error(error?.parsedError?.message || 'Failed to update user roles')
       throw error
     }
   },
@@ -649,8 +664,8 @@ export const userStore = proxy<UserStoreType>({
       )
       await response.json()
       toaster.info(`Assigned ${userIds.length} user(s) to project successfully`)
-    } catch (error) {
-      toaster.error('Failed to assign users to project')
+    } catch (error: any) {
+      toaster.error(error?.parsedError?.message || 'Failed to assign users to project')
       throw error
     }
   },
@@ -675,8 +690,8 @@ export const userStore = proxy<UserStoreType>({
       )
       if (response.status !== 204) await response.json()
       toaster.info(`Updated budgets for ${userIds.length} user(s) successfully`)
-    } catch (error) {
-      toaster.error('Failed to update budgets for users')
+    } catch (error: any) {
+      toaster.error(error?.parsedError?.message || 'Failed to update budgets for users')
       throw error
     }
   },

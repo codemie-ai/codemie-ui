@@ -16,15 +16,19 @@
 import { FC, useMemo, useCallback, useEffect, useRef, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
+import CheckSvg from '@/assets/icons/check.svg?react'
+import CrossSvg from '@/assets/icons/cross.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import RefreshSvg from '@/assets/icons/refresh.svg?react'
 import Button from '@/components/Button'
+import ConfirmationModal from '@/components/ConfirmationModal'
 import DetailsBadges, { BadgeItem } from '@/components/details/DetailsBadges'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Spinner from '@/components/Spinner'
+import StatusBadge, { StatusEnum } from '@/components/StatusBadge/StatusBadge'
 import Table from '@/components/Table'
-import { ButtonSize, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
+import { ButtonSize, ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import { PROJECTS_MANAGEMENT_DETAIL } from '@/constants/routes'
 import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import { useRouter } from '@/hooks/useRouter'
@@ -39,6 +43,7 @@ import { BudgetAssignment } from '@/types/entity/budget'
 import { ProjectRoleBE } from '@/types/entity/project'
 import { UserListItem } from '@/types/entity/user'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import toaster from '@/utils/toaster'
 
 import BudgetAssignmentsModal from './components/BudgetAssignmentsModal'
 import CreateUserPopup from './usersManagement/components/popups/CreateUserPopup'
@@ -67,6 +72,8 @@ const AssignBudgetsIcon = () => (
   </svg>
 )
 
+type UserStatusAction = 'deactivate' | 'reactivate'
+
 const BASE_COLUMN_DEFINITIONS: ColumnDefinition[] = [
   { key: 'select', type: DefinitionTypes.Selection, headClassNames: '!w-[4%]' },
   { ...createCustomColumn('name', 'Name', '14%'), headerNoWrap: false },
@@ -91,6 +98,11 @@ const UsersManagementPage: FC = () => {
   const isLocalAuth = appInfoStore.getIdpProvider() === 'local'
   const canViewBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer || isAuditor)
   const canManageBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer)
+  const canManageUserStatus = isAdmin || isMaintainer
+  // Same rank rule as the backend: only a maintainer changes a maintainer's status
+  const canChangeStatusOf = (target: UserListItem) =>
+    canManageUserStatus && (!target.is_maintainer || isMaintainer)
+  const currentUserId = currentUser?.userId
   const canCreateUser = (isAdmin || isMaintainer) && isLocalAuth
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false)
   const effectiveFilters = useMemo(
@@ -163,6 +175,16 @@ const UsersManagementPage: FC = () => {
   const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false)
   const [budgetUser, setBudgetUser] = useState<UserListItem | null>(null)
   const [resetBudgetUser, setResetBudgetUser] = useState<UserListItem | null>(null)
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    user: UserListItem
+    action: UserStatusAction
+  } | null>(null)
+  const [isStatusChanging, setIsStatusChanging] = useState(false)
+  const isStatusChangingRef = useRef(false)
+  // Keeps the modal text stable while it animates closed after the pending change is cleared
+  const lastStatusChangeRef = useRef(pendingStatusChange)
+  if (pendingStatusChange) lastStatusChangeRef.current = pendingStatusChange
+  const shownStatusChange = pendingStatusChange ?? lastStatusChangeRef.current
   const [expandedRowIds, setExpandedRowIds] = useState<string[]>([])
 
   const handleOpenDetailsPopup = useCallback((user: UserListItem) => {
@@ -236,6 +258,46 @@ const UsersManagementPage: FC = () => {
     [budgetUser, canManageBudgets, refresh]
   )
 
+  const confirmStatusChange = useCallback(async () => {
+    if (!pendingStatusChange || isStatusChangingRef.current) return
+    const { user, action } = pendingStatusChange
+
+    isStatusChangingRef.current = true
+    setIsStatusChanging(true)
+    try {
+      if (action === 'deactivate') {
+        await userStore.deactivateUser(user.id)
+      } else {
+        await userStore.reactivateUser(user.id)
+      }
+      toaster.info(`User ${action === 'deactivate' ? 'deactivated' : 'reactivated'} successfully`)
+      const hasStatusFilter = effectiveFilters.is_active != null
+      if (hasStatusFilter && users.length === 1 && pagination.page > 0) {
+        clearSpendingCache()
+        clearSelection()
+        loadUsers(pagination.page - 1, pagination.perPage, effectiveFilters)
+      } else {
+        refresh()
+      }
+    } catch (error: any) {
+      console.error(`Failed to ${action} user:`, error)
+      toaster.error(error?.parsedError?.message || `Failed to ${action} user`)
+    } finally {
+      isStatusChangingRef.current = false
+      setIsStatusChanging(false)
+      setPendingStatusChange(null)
+    }
+  }, [
+    pendingStatusChange,
+    refresh,
+    users.length,
+    pagination.page,
+    pagination.perPage,
+    effectiveFilters,
+    loadUsers,
+    clearSelection,
+  ])
+
   const refreshFromFirstPage = useCallback(() => {
     clearSpendingCache()
     loadUsers(0, pagination.perPage, effectiveFilters)
@@ -262,6 +324,9 @@ const UsersManagementPage: FC = () => {
           className="min-w-0 max-w-full text-xs font-medium break-words"
         >
           {item.name || item.username || '-'}
+          {item.is_active === false && (
+            <StatusBadge status={StatusEnum.Warning} text="Deactivated" className="mt-1" />
+          )}
         </div>
       ),
 
@@ -372,12 +437,38 @@ const UsersManagementPage: FC = () => {
                     },
                   ]
                 : []),
+              ...(canChangeStatusOf(item) && item.is_active === false
+                ? [
+                    {
+                      title: 'Reactivate user',
+                      icon: <CheckSvg />,
+                      onClick: () => setPendingStatusChange({ user: item, action: 'reactivate' }),
+                    },
+                  ]
+                : []),
+              ...(canChangeStatusOf(item) && item.is_active !== false && item.id !== currentUserId
+                ? [
+                    {
+                      title: 'Deactivate user',
+                      icon: <CrossSvg />,
+                      onClick: () => setPendingStatusChange({ user: item, action: 'deactivate' }),
+                    },
+                  ]
+                : []),
             ]}
           />
         )
       },
     }),
-    [canManageBudgets, handleOpenDetailsPopup, handleOpenBudgetModal, setResetBudgetUser]
+    [
+      canManageBudgets,
+      canManageUserStatus,
+      isMaintainer,
+      currentUserId,
+      handleOpenDetailsPopup,
+      handleOpenBudgetModal,
+      setResetBudgetUser,
+    ]
   )
 
   const effectiveColumnDefinitions = useMemo(() => {
@@ -466,6 +557,30 @@ const UsersManagementPage: FC = () => {
               refreshFromFirstPage()
             }}
           />
+
+          {canManageUserStatus && (
+            <ConfirmationModal
+              visible={!!pendingStatusChange}
+              onCancel={() => {
+                if (!isStatusChangingRef.current) setPendingStatusChange(null)
+              }}
+              onConfirm={confirmStatusChange}
+              confirmDisabled={isStatusChanging}
+              header={
+                shownStatusChange?.action === 'deactivate' ? 'Deactivate user?' : 'Reactivate user?'
+              }
+              message={`Are you sure you want to ${shownStatusChange?.action} ${
+                shownStatusChange?.user.name ||
+                shownStatusChange?.user.username ||
+                shownStatusChange?.user.email
+              }?`}
+              confirmText={shownStatusChange?.action === 'deactivate' ? 'Deactivate' : 'Reactivate'}
+              confirmButtonType={
+                shownStatusChange?.action === 'deactivate' ? ButtonType.DELETE : ButtonType.PRIMARY
+              }
+              hideIcon
+            />
+          )}
 
           {canManageBudgets && (
             <BudgetAssignmentsModal

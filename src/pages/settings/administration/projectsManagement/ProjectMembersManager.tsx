@@ -38,6 +38,7 @@ import Select from '@/components/form/Select'
 import NavigationMore, { NavigationMenuItem } from '@/components/NavigationMore'
 import Pagination from '@/components/Pagination'
 import Spinner from '@/components/Spinner'
+import StatusBadge, { StatusEnum } from '@/components/StatusBadge/StatusBadge'
 import Table from '@/components/Table'
 import { ButtonSize, ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import { useTableSelection } from '@/hooks/useTableSelection'
@@ -720,6 +721,9 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             <span className="text-xs text-text-primary whitespace-nowrap overflow-hidden text-ellipsis">
               {user.email}
             </span>
+            {user.is_active === false && (
+              <StatusBadge status={StatusEnum.Warning} text="Deactivated" className="mt-1" />
+            )}
           </div>
         </div>
       ),
@@ -728,7 +732,11 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       role: (user: UserListItem) => {
         const currentRole = getUserRole(user)
         const isCurrentUser = currentUser?.userId === user.id
-        const isDisabled = isPersonal || !canManageProject || (isProjectAdmin && isCurrentUser)
+        const isDisabled =
+          isPersonal ||
+          !canManageProject ||
+          (isProjectAdmin && isCurrentUser) ||
+          user.is_active === false
 
         return (
           <div onClick={(e) => e.stopPropagation()}>

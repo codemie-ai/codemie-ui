@@ -40,6 +40,15 @@ const PLATFORM_ROLE_OPTIONS: FilterOption[] = [
   { label: 'Auditor', value: 'auditor' },
 ]
 
+const STATUS_OPTIONS: FilterOption[] = [
+  { label: 'All', value: 'all' },
+  { label: 'Active', value: 'true' },
+  { label: 'Deactivated', value: 'false' },
+]
+
+const statusToSelectValue = (isActive: boolean | null | undefined) =>
+  isActive == null ? 'all' : String(isActive)
+
 interface UsersManagementFiltersProps {
   onFilterChange: (filters: IUsersManagementFilters) => void
   filters: IUsersManagementFilters
@@ -86,6 +95,13 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
 
   const handlePlatformRoleChange = (e: any) => {
     const newFilters = { ...localFilters, platform_role: e.value === 'all' ? null : e.value }
+    setLocalFilters(newFilters)
+    onFilterChange(newFilters)
+  }
+
+  const handleStatusChange = (e: any) => {
+    const is_active = e.value === 'all' ? null : e.value === 'true'
+    const newFilters = { ...localFilters, is_active }
     setLocalFilters(newFilters)
     onFilterChange(newFilters)
   }
@@ -141,6 +157,16 @@ const UsersManagementFilters: FC<UsersManagementFiltersProps> = ({
           options={PLATFORM_ROLE_OPTIONS}
           value={localFilters.platform_role ?? 'all'}
           onChange={handlePlatformRoleChange}
+        />
+      </div>
+
+      <div className="w-36 max-lg:w-auto">
+        <Select
+          label="Status"
+          placeholder="Status"
+          options={STATUS_OPTIONS}
+          value={statusToSelectValue(localFilters.is_active)}
+          onChange={handleStatusChange}
         />
       </div>
 

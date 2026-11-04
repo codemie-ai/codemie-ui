@@ -559,4 +559,51 @@ describe('userStore', () => {
       await expect(userStore.setDefaultProject('user-1', 'proj-a')).rejects.toThrow('boom')
     })
   })
+
+  describe('deactivateUser / reactivateUser / searchUsers (EPMCDME-13928)', () => {
+    it('deactivateUser calls DELETE with skipErrorHandling and returns the body', async () => {
+      const { userStore } = await import('@/store/user')
+      mockDelete.mockResolvedValue({ json: async () => ({ message: 'ok' }) })
+
+      const result = await userStore.deactivateUser('u1')
+
+      expect(mockDelete).toHaveBeenCalledWith('v1/admin/users/u1', undefined, {
+        skipErrorHandling: true,
+      })
+      expect(result).toEqual({ message: 'ok' })
+    })
+
+    it('reactivateUser calls POST reactivate with skipErrorHandling and returns the user', async () => {
+      const { userStore } = await import('@/store/user')
+      mockPost.mockResolvedValue({ json: async () => ({ id: 'u1', is_active: true }) })
+
+      const result = await userStore.reactivateUser('u1')
+
+      expect(mockPost).toHaveBeenCalledWith('v1/admin/users/u1/reactivate', undefined, {
+        skipErrorHandling: true,
+      })
+      expect(result).toEqual({ id: 'u1', is_active: true })
+    })
+
+    it('deactivateUser and reactivateUser propagate rejection', async () => {
+      const { userStore } = await import('@/store/user')
+      mockDelete.mockRejectedValue(new Error('d-fail'))
+      mockPost.mockRejectedValue(new Error('r-fail'))
+
+      await expect(userStore.deactivateUser('u1')).rejects.toThrow('d-fail')
+      await expect(userStore.reactivateUser('u1')).rejects.toThrow('r-fail')
+    })
+
+    it('searchUsers restricts results to active users', async () => {
+      const { userStore } = await import('@/store/user')
+      mockGet.mockResolvedValue({ json: async () => ({ data: [] }) })
+
+      await userStore.searchUsers('ali', 10)
+
+      const params = new URLSearchParams((mockGet.mock.calls[0][0] as string).split('?')[1])
+      expect(params.get('search')).toBe('ali')
+      expect(params.get('per_page')).toBe('10')
+      expect(JSON.parse(params.get('filters') ?? '{}')).toEqual({ is_active: true })
+    })
+  })
 })

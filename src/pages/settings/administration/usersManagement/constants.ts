@@ -20,6 +20,7 @@ export interface UsersManagementFilters {
   projects: string[]
   budgets: string[]
   platform_role?: PlatformRole | null
+  is_active: boolean | null
 }
 
 export const FILTER_INITIAL_STATE: UsersManagementFilters = {
@@ -27,6 +28,7 @@ export const FILTER_INITIAL_STATE: UsersManagementFilters = {
   projects: [],
   budgets: [],
   platform_role: null,
+  is_active: null,
 }
 
 export const MAX_DISPLAYED_PROJECTS = 3
