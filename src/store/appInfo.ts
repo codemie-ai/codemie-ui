@@ -56,6 +56,7 @@ const NAVIGATION_EXPANDED_KEY = 'codemie-navigation-expanded'
 const SIDEBAR_EXPANDED_KEY = 'codemie-sidebar-expanded'
 const DATASOURCE_PER_PAGE_KEY = 'codemie-datasource-per-page'
 const DISABLE_RELEASE_POPUP_KEY = 'disable-release-popup'
+const STT_MODEL_KEY = 'codemie-stt-model'
 
 const getStoredNavigationExpanded = () => localStorage.getItem(NAVIGATION_EXPANDED_KEY) === 'true'
 const getStoredSidebarExpanded = () =>
@@ -86,6 +87,9 @@ export interface AppInfoStoreType {
   projectLlmModels: Record<string, ModelOption[]>
   imageGenerationModels: ModelOption[]
   embeddingModels: ModelOption[]
+  sttModels: ModelOption[]
+  sttModelsLoaded: boolean
+  selectedSttModel: string
   speechConfig: SpeechConfig
   navigationExpanded: boolean
   sidebarExpanded: boolean
@@ -111,6 +115,8 @@ export interface AppInfoStoreType {
   invalidateProjectLLMModels: (projectName?: string) => void
   getImageGenerationModels: () => Promise<ModelOption[]>
   getEmbeddingsModels: () => Promise<ModelOption[]>
+  getAudioModels: () => Promise<ModelOption[]>
+  setSelectedSttModel: (name: string) => void
   findLLMLabel: (value: string) => string
   findEmbeddingLabel: (value: string) => string
   toggleQuickActions: () => void
@@ -169,6 +175,31 @@ const mapLlmModel = (model: any): ModelOption => ({
   defaultForCategories: model.default_for_categories,
   cost: model.cost ? { input: model.cost.input, output: model.cost.output } : undefined,
 })
+
+let sttModelsRequest: Promise<ModelOption[]> | null = null
+
+const fetchAudioModels = async (): Promise<ModelOption[]> => {
+  try {
+    const response = await api.get('v1/audio_transcription_models', { skipErrorHandling: true })
+    const data = await response.json()
+    appInfoStore.sttModels = data.map((model: any) => ({
+      value: model.base_name,
+      label: model.label ?? model.base_name,
+      isDefault: false,
+    }))
+    appInfoStore.sttModelsLoaded = true
+    const isSelectedAvailable = appInfoStore.sttModels.some(
+      (m) => m.value === appInfoStore.selectedSttModel
+    )
+    if (!isSelectedAvailable && appInfoStore.sttModels.length) {
+      appInfoStore.setSelectedSttModel(appInfoStore.sttModels[0].value)
+    }
+    return appInfoStore.sttModels
+  } catch (error) {
+    console.error('Failed to fetch audio models:', error)
+    return []
+  }
+}
 
 export const appInfoStore = proxy<AppInfoStoreType>({
   configs: [],
@@ -237,6 +268,9 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   projectLlmModels: {},
   imageGenerationModels: [],
   embeddingModels: [],
+  sttModels: [],
+  sttModelsLoaded: false,
+  selectedSttModel: localStorage.getItem(STT_MODEL_KEY) ?? '',
   speechConfig: {},
   toolFieldDefaults: {},
   toolFieldPlaceholders: {},
@@ -439,6 +473,19 @@ export const appInfoStore = proxy<AppInfoStoreType>({
       console.error('Failed to fetch embedding models:', error)
       return []
     }
+  },
+
+  async getAudioModels() {
+    if (appInfoStore.sttModelsLoaded) return appInfoStore.sttModels
+    sttModelsRequest ??= fetchAudioModels().finally(() => {
+      sttModelsRequest = null
+    })
+    return sttModelsRequest
+  },
+
+  setSelectedSttModel(name: string) {
+    appInfoStore.selectedSttModel = name
+    localStorage.setItem(STT_MODEL_KEY, name)
   },
 
   findLLMLabel(value: string) {

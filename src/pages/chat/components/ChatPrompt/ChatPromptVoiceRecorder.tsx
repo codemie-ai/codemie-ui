@@ -14,28 +14,45 @@
 //
 
 /* eslint-disable no-alert */
+import { OverlayPanel } from 'primereact/overlaypanel'
 import { FC, MouseEvent, useEffect, useRef, useState } from 'react'
 
+import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
 import RecordSvg from '@/assets/icons/record.svg?react'
 import StopSvg from '@/assets/icons/stop.svg?react'
 import { chatsStore } from '@/store/chats'
+import { ModelOption } from '@/types/entity/configuration'
+import { cn } from '@/utils/utils'
 
 const MICROPHONE_TIMEOUT = 10000
 
 interface ChatPromptVoiceRecorderProps {
   onTextReady: (text: string) => void
+  conversationId?: string
+  sttModels?: ModelOption[]
+  selectedModel?: string
+  onModelChange?: (name: string) => void
 }
 
-const ChatPromptVoiceRecorder: FC<ChatPromptVoiceRecorderProps> = ({ onTextReady }) => {
+const ChatPromptVoiceRecorder: FC<ChatPromptVoiceRecorderProps> = ({
+  onTextReady,
+  conversationId,
+  sttModels,
+  selectedModel,
+  onModelChange,
+}) => {
   const audioChunks = useRef<Blob[]>([])
   const recorder = useRef<MediaRecorder | null>(null)
   const timeoutId = useRef<number | null>(null)
+  const panelRef = useRef<OverlayPanel>(null)
 
   const [isUserSpeaking, setIsUserSpeaking] = useState(false)
 
+  const showModelPicker = (sttModels?.length ?? 0) >= 2
+
   const processSpeech = async (blob: Blob) => {
     try {
-      const response = await chatsStore.recognizeSpeech(blob)
+      const response = await chatsStore.recognizeSpeech(blob, selectedModel, conversationId)
 
       if (response?.message) onTextReady(response.message)
       else console.warn('No message received from speech recognition')
@@ -103,6 +120,16 @@ const ChatPromptVoiceRecorder: FC<ChatPromptVoiceRecorderProps> = ({ onTextReady
     }
   }
 
+  const handleCaretClick = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    panelRef.current?.toggle(e)
+  }
+
+  const handleModelSelect = (modelName: string) => {
+    onModelChange?.(modelName)
+    panelRef.current?.hide()
+  }
+
   useEffect(() => {
     return () => {
       if (timeoutId.current) {
@@ -114,7 +141,7 @@ const ChatPromptVoiceRecorder: FC<ChatPromptVoiceRecorderProps> = ({ onTextReady
     }
   }, [])
 
-  return (
+  const micButton = (
     <button
       type="button"
       aria-label={isUserSpeaking ? 'Stop listening' : 'Use voice'}
@@ -133,6 +160,51 @@ const ChatPromptVoiceRecorder: FC<ChatPromptVoiceRecorderProps> = ({ onTextReady
         />
       )}
     </button>
+  )
+
+  if (!showModelPicker) {
+    return micButton
+  }
+
+  return (
+    <div className="flex items-center">
+      {micButton}
+      <button
+        type="button"
+        aria-label="Select STT model"
+        onClick={handleCaretClick}
+        data-tooltip-id="react-tooltip"
+        data-tooltip-content={`STT model: ${selectedModel}`}
+        className="flex items-center justify-center w-[18px] h-[30px] focus:outline-none text-text-quaternary hover:text-text-primary transition-colors"
+      >
+        <ChevronDownSvg aria-hidden="true" className="w-3 h-3" />
+      </button>
+
+      <OverlayPanel
+        ref={panelRef}
+        className="bg-surface-base-secondary rounded-lg border border-border-structural shadow-xl p-0 overflow-hidden"
+      >
+        <div className="flex flex-col min-w-40 max-w-64 py-1">
+          {sttModels!.map((model) => (
+            <button
+              key={model.value}
+              type="button"
+              onClick={() => handleModelSelect(model.value)}
+              title={model.label}
+              className={cn(
+                'w-full px-3 py-2 text-sm text-left truncate transition-colors',
+                'hover:bg-surface-elevated cursor-pointer',
+                model.value === selectedModel
+                  ? 'text-action-primary-solid font-medium'
+                  : 'text-text-primary'
+              )}
+            >
+              {model.label}
+            </button>
+          ))}
+        </div>
+      </OverlayPanel>
+    </div>
   )
 }
 

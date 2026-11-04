@@ -256,7 +256,11 @@ export interface ChatsStoreType {
 
   // Additional features
   getMetrics(chatId: string): Promise<ChatMetrics>
-  recognizeSpeech(audioBlob: Blob): Promise<{ message?: string }>
+  recognizeSpeech(
+    audioBlob: Blob,
+    modelName?: string,
+    conversationId?: string
+  ): Promise<{ message?: string }>
 
   // Feedback methods
   submitFeedback(
@@ -956,9 +960,11 @@ export const chatsStore = proxy<ChatsStoreType>({
     return response
   },
 
-  recognizeSpeech: (audioBlob) => {
+  recognizeSpeech: (audioBlob, modelName, conversationId) => {
     const body = new FormData()
     body.append('file', audioBlob)
+    if (modelName) body.append('model', modelName)
+    if (conversationId) body.append('conversation_id', conversationId)
 
     return api
       .postMultipart('v1/speech-recognition', body)

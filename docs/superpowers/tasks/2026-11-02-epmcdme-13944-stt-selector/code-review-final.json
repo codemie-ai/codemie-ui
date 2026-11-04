@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance did not run (no spec), so confidence is low and decision_needed was unavailable; one major finding survives: the new audio-models fetch can toast errors to every chat user. 7 lens candidates dismissed as noise or already handled (e.g. OverlayPanel unmount cleanup, dedupe/storage/stale-closure edge cases below the emission floor); 0 deferred.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "1 commit subject in range matches the documented EPMCDME-XXXX: Capital sentence format" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide: .ai-run/guides/standards/code-quality.md does not exist in the repo; absent standard, not adjudicated" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checked against the 4 changed source files: no HTML sinks, redirects or postMessage added; no concrete security issue found" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/appInfo.ts",
+      "line": 454,
+      "title": "Audio models fetch toasts errors on every prompt mount",
+      "problem": "getAudioModels calls api.get('v1/audio_transcription_models') without skipErrorHandling, and ChatPrompt invokes it in a mount effect for all users (not only those with stt_support). api.ts calls handleError (a toaster.error) on any non-OK response unless skipErrorHandling is set. An empty result is also never cached (early return only when sttModels.length is truthy), so users with no audio models trigger a new request on every ChatPrompt mount.",
+      "impact": "Any 403/404/5xx from the endpoint (older backend, users without STT access) surfaces an error toast on each chat open for users who never use voice input. The fetch is a background capability probe, so this is user-visible noise on the main chat screen.",
+      "recommendation": "Pass { skipErrorHandling: true } to api.get in getAudioModels (the catch already logs and returns []). Optionally track an in-flight promise / fetched flag so empty results and concurrent mounts do not refetch."
+    }
+  ]
+}

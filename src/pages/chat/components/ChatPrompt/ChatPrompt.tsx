@@ -39,6 +39,7 @@ import { useFilePaste } from '@/pages/chat/hooks/useFilePaste'
 import { usePremiumModelTip } from '@/pages/chat/hooks/usePremiumModelTip'
 import { useToolPermissions } from '@/pages/chat/hooks/useToolPermissions'
 import { assistantsStore, userStore } from '@/store'
+import { appInfoStore } from '@/store/appInfo'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
 import toaster from '@/utils/toaster'
@@ -122,6 +123,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   const { currentChat } = useSnapshot(chatsStore)
   const { userData, user } = useSnapshot(userStore)
   const { defaultAssistant } = useSnapshot(assistantsStore)
+  const { sttModels, selectedSttModel } = useSnapshot(appInfoStore)
   const { selectedSkills, isSharedPage, dynamicToolsConfig, canAttachFiles } = useChatContext()
   const { initial, saveDraft, clearDraft } = useChatPromptDraft(currentChat?.id, user?.userId)
 
@@ -250,7 +252,12 @@ const ChatPrompt: FC<ChatPromptProps> = ({
       editorRef.current?.focus()
   }
 
-  const isVoiceRecorderVisible = !!userData?.stt_support && !isPromptDisabled && !isInterrupted
+  const hasSttSupport = !!userData?.stt_support || sttModels.length > 0
+  const isVoiceRecorderVisible = hasSttSupport && !isPromptDisabled && !isInterrupted
+
+  useEffect(() => {
+    appInfoStore.getAudioModels()
+  }, [])
 
   useEffect(() => {
     editorRef.current?.focus()
@@ -367,6 +374,10 @@ const ChatPrompt: FC<ChatPromptProps> = ({
                 {isVoiceRecorderVisible && (
                   <ChatPromptVoiceRecorder
                     onTextReady={(text) => setPrompt({ message: text, messageRaw: text })}
+                    conversationId={currentChat?.id}
+                    sttModels={sttModels}
+                    selectedModel={selectedSttModel}
+                    onModelChange={appInfoStore.setSelectedSttModel}
                   />
                 )}
 

@@ -41,7 +41,11 @@ const { mockChatsStore, mockAppInfoStore, mockChatGenerationStore } = vi.hoisted
   mockAppInfoStore: {
     llmModels: [] as ModelOption[],
     llmRouters: [] as LLMRouterOption[],
+    sttModels: [] as ModelOption[],
+    selectedSttModel: '',
     getLLMModels: vi.fn(),
+    getAudioModels: vi.fn(),
+    setSelectedSttModel: vi.fn(),
   },
   mockChatGenerationStore: {
     stopChatGeneration: vi.fn(),

@@ -15,11 +15,17 @@
 
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import ChatPromptVoiceRecorder from '../ChatPromptVoiceRecorder'
 
 vi.mock('@/store/chats', () => ({ chatsStore: { recognizeSpeech: vi.fn() } }))
+vi.mock('primereact/overlaypanel', () => ({
+  OverlayPanel: vi.fn(({ children }: { children?: React.ReactNode }) => (
+    <div data-testid="overlay-panel">{children}</div>
+  )),
+}))
 
 const mockGetUserMedia = vi.fn()
 Object.defineProperty(global.navigator, 'mediaDevices', {
@@ -51,5 +57,59 @@ describe('ChatPromptVoiceRecorder', () => {
     fireEvent.click(button)
 
     expect(await screen.findByRole('button', { name: 'Stop listening' })).toBeInTheDocument()
+  })
+
+  const TWO_MODELS = [
+    { value: 'whisper', label: 'whisper', isDefault: false },
+    { value: 'whisper-azure', label: 'whisper-azure', isDefault: false },
+  ]
+
+  it('renders without a model picker when fewer than 2 STT models are configured', () => {
+    render(
+      <ChatPromptVoiceRecorder
+        onTextReady={vi.fn()}
+        sttModels={[{ value: 'whisper', label: 'whisper', isDefault: false }]}
+        selectedModel="whisper"
+        onModelChange={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: /select stt model/i })).not.toBeInTheDocument()
+  })
+
+  it('renders a model picker caret when 2 or more STT models are configured', () => {
+    render(
+      <ChatPromptVoiceRecorder
+        onTextReady={vi.fn()}
+        sttModels={TWO_MODELS}
+        selectedModel="whisper"
+        onModelChange={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /select stt model/i })).toBeInTheDocument()
+  })
+
+  it('calls onModelChange with the chosen model when a picker entry is clicked', () => {
+    const onModelChange = vi.fn()
+    render(
+      <ChatPromptVoiceRecorder
+        onTextReady={vi.fn()}
+        sttModels={TWO_MODELS}
+        selectedModel="whisper"
+        onModelChange={onModelChange}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /select stt model/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'whisper-azure' }))
+
+    expect(onModelChange).toHaveBeenCalledWith('whisper-azure')
+  })
+
+  it('renders without a caret when no sttModels prop is given (backward compat)', () => {
+    render(<ChatPromptVoiceRecorder onTextReady={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: /select stt model/i })).not.toBeInTheDocument()
   })
 })

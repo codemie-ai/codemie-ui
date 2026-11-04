@@ -16,11 +16,17 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
+
 import ChatPrompt from '../ChatPrompt'
 
 vi.hoisted(() => vi.resetModules())
 
 const mockEditorFocus = vi.hoisted(() => vi.fn())
+const mockUserStore = vi.hoisted(() => ({
+  userData: { stt_support: false },
+  user: { userId: 'user-1' },
+}))
 
 const { mockChatGenerationStore, mockChatsStore, mockUseChatPromptDraft } = vi.hoisted(() => ({
   mockChatGenerationStore: {
@@ -55,7 +61,7 @@ vi.mock('@/store/chats', () => ({ chatsStore: mockChatsStore }))
 vi.mock('@/store/chatGeneration', () => ({ chatGenerationStore: mockChatGenerationStore }))
 vi.mock('@/store', () => ({
   assistantsStore: { defaultAssistant: { id: 'assistant-1' } },
-  userStore: { userData: { stt_support: false }, user: { userId: 'user-1' } },
+  userStore: mockUserStore,
 }))
 
 vi.mock('../../../hooks/useChatPromptDraft', () => ({
@@ -93,13 +99,69 @@ vi.mock('../ChatPromptFileUpload', () => ({ default: () => null }))
 vi.mock('../ChatPromptLlmSelector', () => ({ default: () => null }))
 vi.mock('../ChatPromptSkillsButton', () => ({ default: () => null }))
 vi.mock('../ChatPromptStarters', () => ({ default: () => null }))
-vi.mock('../ChatPromptVoiceRecorder', () => ({ default: () => null }))
+vi.mock('../ChatPromptVoiceRecorder', () => ({
+  default: () => <div data-testid="voice-recorder" />,
+}))
 vi.mock('../DynamicToolsSettings', () => ({ default: () => null }))
 vi.mock('../../ChatControls', () => ({ default: () => null }))
 vi.mock('@/assets/icons/stop.svg?react', () => ({ default: () => null }))
 vi.mock('@/assets/icons/play.svg?react', () => ({ default: () => null }))
 
 describe('ChatPrompt', () => {
+  describe('voice recorder visibility', () => {
+    beforeEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+      vi.spyOn(appInfoStore, 'getAudioModels').mockResolvedValue([])
+    })
+
+    afterEach(() => {
+      mockUserStore.userData.stt_support = false
+      appInfoStore.sttModels = []
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [[{ inProgress: true }]],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+      vi.restoreAllMocks()
+    })
+
+    it('is hidden when stt_support is false and the API returns no audio models', () => {
+      render(<ChatPrompt />)
+
+      expect(screen.queryByTestId('voice-recorder')).not.toBeInTheDocument()
+    })
+
+    it('is shown when stt_support is true even without audio models', () => {
+      mockUserStore.userData.stt_support = true
+
+      render(<ChatPrompt />)
+
+      expect(screen.getByTestId('voice-recorder')).toBeInTheDocument()
+    })
+
+    it('is shown when the API returns audio models even if stt_support is false', () => {
+      appInfoStore.sttModels = [{ value: 'whisper', label: 'Whisper', isDefault: false }]
+
+      render(<ChatPrompt />)
+
+      expect(screen.getByTestId('voice-recorder')).toBeInTheDocument()
+    })
+
+    it('loads the audio models on mount regardless of stt_support', () => {
+      render(<ChatPrompt />)
+
+      expect(appInfoStore.getAudioModels).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('handleStopGeneration', () => {
     it('calls stopChatGeneration on the live chatGenerationStore proxy (not snapshot) when stop button is clicked', () => {
       render(<ChatPrompt />)
@@ -253,7 +315,7 @@ describe('ChatPrompt', () => {
       expect(mockEditorFocus).toHaveBeenCalledOnce()
     })
   })
-        
+
   describe('tool call pending state', () => {
     beforeEach(() => {
       mockChatsStore.currentChat = {

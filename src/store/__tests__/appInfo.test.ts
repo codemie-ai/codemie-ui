@@ -629,3 +629,125 @@ describe('appInfoStore.getLLMModels deployment aliases', () => {
     }
   )
 })
+
+describe('appInfoStore.getAudioModels', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    appInfoStore.sttModels = []
+    appInfoStore.sttModelsLoaded = false
+    appInfoStore.selectedSttModel = ''
+    localStorage.removeItem('codemie-stt-model')
+  })
+
+  it('maps base_name and label from the API and defaults the selection to the first model', async () => {
+    mockGet.mockResolvedValue(
+      okResponse([{ base_name: 'whisper', label: 'Whisper' }, { base_name: 'whisper-azure' }])
+    )
+
+    const models = await appInfoStore.getAudioModels()
+
+    expect(models).toEqual([
+      { value: 'whisper', label: 'Whisper', isDefault: false },
+      { value: 'whisper-azure', label: 'whisper-azure', isDefault: false },
+    ])
+    expect(appInfoStore.selectedSttModel).toBe('whisper')
+  })
+
+  it('replaces a stored selection that the API no longer returns', async () => {
+    appInfoStore.setSelectedSttModel('removed-model')
+    mockGet.mockResolvedValue(okResponse([{ base_name: 'whisper', label: 'Whisper' }]))
+
+    await appInfoStore.getAudioModels()
+
+    expect(appInfoStore.selectedSttModel).toBe('whisper')
+  })
+
+  it('requests the models without the global error toast', async () => {
+    mockGet.mockResolvedValue(okResponse([{ base_name: 'whisper', label: 'Whisper' }]))
+
+    await appInfoStore.getAudioModels()
+
+    expect(mockGet).toHaveBeenCalledWith('v1/audio_transcription_models', {
+      skipErrorHandling: true,
+    })
+  })
+
+  it('does not refetch when the API returned no models', async () => {
+    mockGet.mockResolvedValue(okResponse([]))
+    await appInfoStore.getAudioModels()
+    mockGet.mockClear()
+
+    await appInfoStore.getAudioModels()
+
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  it('shares one request between concurrent calls', async () => {
+    mockGet.mockResolvedValue(okResponse([{ base_name: 'whisper', label: 'Whisper' }]))
+
+    await Promise.all([appInfoStore.getAudioModels(), appInfoStore.getAudioModels()])
+
+    expect(mockGet).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns an empty list and retries on the next call when the request fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockGet.mockRejectedValueOnce(new Error('boom'))
+
+    expect(await appInfoStore.getAudioModels()).toEqual([])
+    expect(appInfoStore.sttModelsLoaded).toBe(false)
+
+    mockGet.mockResolvedValue(okResponse([{ base_name: 'whisper', label: 'Whisper' }]))
+    await appInfoStore.getAudioModels()
+
+    expect(mockGet).toHaveBeenCalledTimes(2)
+    expect(appInfoStore.sttModels).toHaveLength(1)
+    consoleError.mockRestore()
+  })
+
+  it('does not refetch once models are already loaded', async () => {
+    mockGet.mockResolvedValue(okResponse([{ base_name: 'whisper', label: 'Whisper' }]))
+    await appInfoStore.getAudioModels()
+    mockGet.mockClear()
+
+    await appInfoStore.getAudioModels()
+
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  it('leaves an already selected model untouched', async () => {
+    appInfoStore.setSelectedSttModel('whisper-azure')
+    mockGet.mockResolvedValue(
+      okResponse([
+        { base_name: 'whisper', label: 'Whisper' },
+        { base_name: 'whisper-azure', label: 'Whisper Azure' },
+      ])
+    )
+
+    await appInfoStore.getAudioModels()
+
+    expect(appInfoStore.selectedSttModel).toBe('whisper-azure')
+  })
+})
+
+describe('appInfoStore.setSelectedSttModel', () => {
+  afterEach(() => {
+    localStorage.removeItem('codemie-stt-model')
+  })
+
+  it('persists the choice to localStorage', () => {
+    appInfoStore.setSelectedSttModel('whisper-azure')
+
+    expect(appInfoStore.selectedSttModel).toBe('whisper-azure')
+    expect(localStorage.getItem('codemie-stt-model')).toBe('whisper-azure')
+  })
+
+  it('works when passed around as a bare callback', () => {
+    const { setSelectedSttModel } = appInfoStore
+
+    setSelectedSttModel('whisper')
+
+    expect(appInfoStore.selectedSttModel).toBe('whisper')
+    expect(localStorage.getItem('codemie-stt-model')).toBe('whisper')
+  })
+})
