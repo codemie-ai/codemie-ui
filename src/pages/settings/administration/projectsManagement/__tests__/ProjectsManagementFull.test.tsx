@@ -18,6 +18,8 @@ import { MemoryRouter } from 'react-router'
 import { useSnapshot } from 'valtio'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 
@@ -158,6 +160,7 @@ beforeEach(() => {
     }
     return {}
   })
+  vi.mocked(useFeatureFlag).mockImplementation(() => [false, true])
   resolveMock.mockClear()
 })
 
@@ -206,12 +209,30 @@ describe('ProjectsManagementFull — resource counter links', () => {
   })
 
   it('data sources badge links to data-sources with project filter', () => {
+    vi.mocked(useFeatureFlag).mockImplementation((name) => [
+      name === FEATURE_FLAGS.DATASOURCES,
+      true,
+    ])
     render(
       <MemoryRouter>
         <ProjectsManagementFull />
       </MemoryRouter>
     )
     expectBadgeHref(/data sources/i, 'data-sources')
+  })
+
+  it('hides the data sources badge but keeps other badges and the project row when features:datasources is off', () => {
+    render(
+      <MemoryRouter>
+        <ProjectsManagementFull />
+      </MemoryRouter>
+    )
+    expect(screen.queryByRole('link', { name: /data sources/i })).toBeNull()
+    expect(screen.getByRole('link', { name: /assistants/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /workflows/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /integrations/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /skills/i })).toBeInTheDocument()
+    expect(screen.getByTestId('row-my-project')).toBeInTheDocument()
   })
 })
 

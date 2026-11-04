@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-10-20T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk": { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "The implementation change is localized to the ProjectResourceCounters UI component, with a focused project-management regression test; no other component boundary is evidenced."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The test file expresses concrete resource-counter expectations, including project-filtered links and hiding the data-source badge when its feature flag is off."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

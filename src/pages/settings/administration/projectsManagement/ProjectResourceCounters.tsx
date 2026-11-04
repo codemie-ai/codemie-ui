@@ -20,6 +20,8 @@ import DataSourceSvg from '@/assets/icons/datasource.svg?react'
 import IntegrationSvg from '@/assets/icons/integration.svg?react'
 import SkillsSvg from '@/assets/icons/lightning.svg?react'
 import WorkflowSvg from '@/assets/icons/workflow.svg?react'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { Project } from '@/types/entity/project'
 
@@ -40,6 +42,7 @@ interface ProjectResourceCountersProps {
 const ProjectResourceCounters: FC<ProjectResourceCountersProps> = ({ project }) => {
   const router = useVueRouter()
   const c = project.counters
+  const [isDataSourcesEnabled] = useFeatureFlag(FEATURE_FLAGS.DATASOURCES)
 
   const buildTo = (routeName: string) => {
     const { path, searchParamsString } = router.resolve({
@@ -69,12 +72,14 @@ const ProjectResourceCounters: FC<ProjectResourceCountersProps> = ({ project }) 
         tooltip={TOOLTIPS.INTEGRATIONS}
         to={buildTo('integrations')}
       />
-      <ResourceCounterBadge
-        icon={DataSourceSvg}
-        count={c?.datasources_count}
-        tooltip={TOOLTIPS.DATA_SOURCES}
-        to={buildTo('data-sources')}
-      />
+      {isDataSourcesEnabled && (
+        <ResourceCounterBadge
+          icon={DataSourceSvg}
+          count={c?.datasources_count}
+          tooltip={TOOLTIPS.DATA_SOURCES}
+          to={buildTo('data-sources')}
+        />
+      )}
       <ResourceCounterBadge
         icon={SkillsSvg}
         count={c?.skills_count}

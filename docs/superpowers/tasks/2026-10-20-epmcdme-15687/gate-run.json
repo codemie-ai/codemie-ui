@@ -1,0 +1,11 @@
+{"schema":1,"branch":"EPMCDME-15687_oss-hide-data-source-icon-from-project-management","head":"757a2612cdc08fb45388c8bfb8d2458ab35514e9","runner":"npm","started_at":"2026-10-20T12:15:00Z","completed_at":"2026-10-20T12:30:00Z","status":"PASSED","drift_detected":false,"gates":[
+{"id":"lint","source":"guide","status":"PASS","duration_ms":44000,"command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":31000,"command":"npm run typecheck","exit_code":0},
+{"id":"license-check","source":"guide","status":"SKIPPED","duration_ms":0,"command":"npm run license-check","exit_code":null,"notes":"Skip if: no dependency added/removed/moved"},
+{"id":"secrets","source":"guide","status":"PASS","duration_ms":10000,"command":"npm run secrets:check","exit_code":0,"notes":"output: no leaks found"},
+{"id":"unit","source":"guide","status":"PASS","duration_ms":201000,"command":"npm run test:unit:slnt","exit_code":0,"notes":"711 files, 7197 passed, 1 skipped"},
+{"id":"integration","source":"guide","status":"PASS","duration_ms":107000,"command":"npm run test:integration:slnt","exit_code":0,"notes":"50 files, 564 passed, 1 skipped"},
+{"id":"test-harness","source":"guide","status":"N/A","duration_ms":0,"command":"npm run test-harness","exit_code":null,"notes":"Needs running stack and ~/.codemie/test-harness.json; unverified, owed before MR"},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":5000,"command":"npm run license-headers:check","exit_code":0},
+{"id":"sonar-local","source":"hook","status":"N/A","duration_ms":0,"command":"npm run sonar-local","exit_code":null,"notes":"Requires local SonarQube infrastructure; owed to hook/CI"}],
+"failures":{}}

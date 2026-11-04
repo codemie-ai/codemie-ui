@@ -1,0 +1,2 @@
+{"ts":"2026-10-20T12:00:16Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved 1-task plan","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-20T12:18:05Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved; review fanned out from main agent (edge-case + triage), approve/low, 0 findings, no spec","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
