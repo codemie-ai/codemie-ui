@@ -107,7 +107,21 @@ vi.mock('@/components/form/Input', () => ({
 }))
 
 vi.mock('@/components/form/Switch', () => ({
-  default: ({ id, label, value, disabled, onChange }: any) => (
+  default: ({
+    id,
+    label,
+    hint,
+    value,
+    disabled,
+    onChange,
+  }: {
+    id: string
+    label: string
+    hint?: string
+    value?: boolean
+    disabled?: boolean
+    onChange?: (event: { target: { checked: boolean } }) => void
+  }) => (
     <div data-testid={`switch-${id}`}>
       {label}
       <input
@@ -116,8 +130,9 @@ vi.mock('@/components/form/Switch', () => ({
         data-testid={`switch-input-${id}`}
         checked={!!value}
         disabled={disabled}
-        onChange={onChange}
+        onChange={(event) => onChange?.({ target: { checked: event.target.checked } })}
       />
+      {hint ? <span data-testid={`switch-${id}-hint`}>{hint}</span> : null}
     </div>
   ),
 }))
@@ -725,5 +740,36 @@ describe('ProjectModal — CLI analytics payload (EPMCDME-16025)', () => {
 
     const payload = await submittedPayload(onSubmit)
     expect(payload.cli_analytics_enabled).toBeUndefined()
+  })
+})
+
+describe('ProjectModal — enforce member spend limits hint (EPMCDME-15634)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    userStoreMock.user.isMaintainer = true
+  })
+
+  afterEach(() => {
+    userStoreMock.user.isMaintainer = false
+  })
+
+  it('states that individual overrides are always enforced and drops the "no individual cap" wording', () => {
+    renderModal({
+      project: {
+        id: 'proj-1',
+        name: 'existing-project',
+        display_name: 'Existing Project',
+        description: 'desc',
+        project_type: 'shared',
+        user_count: 2,
+        admin_count: 1,
+      } as any,
+    })
+
+    const hint = screen.getByTestId('switch-enforce_member_spend_limits-hint').textContent ?? ''
+
+    expect(hint).toMatch(/individual override/i)
+    expect(hint).toMatch(/always enforced/i)
+    expect(hint).not.toMatch(/no individual cap/i)
   })
 })

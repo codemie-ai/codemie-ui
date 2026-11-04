@@ -304,7 +304,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
               <Switch
                 id="enforce_member_spend_limits"
                 label="Enforce member spend limits"
-                hint="Disabled: track each member's spend against the project budget (no individual cap enforced). Enabled: enforce each member's configured allocation limit."
+                hint="Disabled: members draw from the shared project budget, unless a member has an individual override, which is always enforced. Enabled: enforce each member's configured allocation limit."
                 value={value}
                 onBlur={onBlur}
                 ref={ref}
