@@ -1,5 +1,124 @@
 [
   {
+    "version": "2.65.0",
+    "date": "2026-11-04",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Unified speech-to-text model deployment",
+            "description": "Introduce a unified approach for adding and deploying new speech-to-text models.",
+            "issues": [
+              {
+                "key": "EPMCDME-13944",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13944"
+              }
+            ]
+          },
+          {
+            "title": "Workflow call-history export and copy",
+            "description": "Export workflow call history and copy it directly to the clipboard from the Workflow tab.",
+            "issues": [
+              {
+                "key": "EPMCDME-15656",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15656"
+              }
+            ]
+          },
+          {
+            "title": "User activation management",
+            "description": "Allow Platform Admins to deactivate and reactivate users from User Management.",
+            "issues": [
+              {
+                "key": "EPMCDME-13928",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13928"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "LiteLLM cost tracking",
+            "description": "Track LiteLLM spend across environments and use LiteLLM as the source for LLM-call costs.",
+            "issues": [
+              {
+                "key": "EPMCDME-16761",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16761"
+              },
+              {
+                "key": "EPMCDME-13429",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13429"
+              }
+            ]
+          },
+          {
+            "title": "Budget override controls",
+            "description": "Remove the “Reset budget usage” action from the per-member Budget Override dialog.",
+            "issues": [
+              {
+                "key": "EPMCDME-16610",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16610"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Presentation-skill subagents",
+            "description": "Ensure Sonnet 5.5 and Gemini Argon use subagents enabled by the epam-pptx skill.",
+            "issues": [
+              {
+                "key": "EPMCDME-16411",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16411"
+              }
+            ]
+          },
+          {
+            "title": "Pinned assistants",
+            "description": "Preserve an assistant’s pinned state after refreshing the assistants list.",
+            "issues": [
+              {
+                "key": "EPMCDME-16031",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16031"
+              }
+            ]
+          },
+          {
+            "title": "Agent output-limit feedback",
+            "description": "Prevent CodeMie thought indicators from remaining in progress when an agent reaches its output-token limit.",
+            "issues": [
+              {
+                "key": "EPMCDME-14855",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14855"
+              }
+            ]
+          },
+          {
+            "title": "Security hardening",
+            "description": "Improved handling of error responses to reduce exposure of technical details.",
+            "issues": []
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.64.0",
     "date": "2026-11-02",
     "sections": [
