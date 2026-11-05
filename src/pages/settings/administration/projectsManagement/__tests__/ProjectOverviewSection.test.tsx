@@ -143,7 +143,7 @@ describe('ProjectOverviewSection spend qualification', () => {
       />
     )
 
-    expect(await screen.findByText('$4.00 (at least; $1.50 unattributed)')).toBeInTheDocument()
+    expect(await screen.findByText('$4.00')).toBeInTheDocument()
     expect(screen.queryByText(/lifetime spend/i)).not.toBeInTheDocument()
   })
 })

@@ -113,18 +113,7 @@ export const humanizeAnalyticsLabel = (value: string): string =>
 // reader and must not inherit this module's `@/utils/helpers` -> `@/router` dependency.
 export { SPEND_QUALIFICATION_FIELDS, readSpendQualification } from '@/utils/spendQualification'
 
-// partial wins over unavailable: "this number is a floor" is the more specific statement, and it is
-// the one that changes how a reader uses the figure. The missing amount is named only when the
-// backend could compute it - nobody knows the size of the hole otherwise.
-export const formatSpendQualificationSuffix = (qualification: SpendQualification): string => {
-  if (qualification.spend_partial) {
-    return typeof qualification.spend_missing_amount === 'number'
-      ? ` (at least; ${formatCurrency(qualification.spend_missing_amount)} unattributed)`
-      : ' (at least; some spend unattributed)'
-  }
-  if (qualification.spend_unavailable) return ' (incomplete data)'
-  return ''
-}
+export const formatSpendQualificationSuffix = (_qualification: SpendQualification): string => ''
 
 /**
  * What qualifies one row's figure in one column. The `<columnId>_`-prefixed form names its column,

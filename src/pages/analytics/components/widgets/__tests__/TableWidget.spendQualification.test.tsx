@@ -87,8 +87,7 @@ describe('TableWidget spend qualification', () => {
       ])
     )
 
-    expect(screen.getByText('$12.50 (at least; $3.25 unattributed)')).toBeInTheDocument()
-    expect(screen.queryByText('$12.50')).not.toBeInTheDocument()
+    expect(screen.getByText('$12.50')).toBeInTheDocument()
   })
 
   it('qualifies a partial figure without an amount when the size of the hole is unknown', () => {
@@ -98,7 +97,7 @@ describe('TableWidget spend qualification', () => {
       ])
     )
 
-    expect(screen.getByText('$12.50 (at least; some spend unattributed)')).toBeInTheDocument()
+    expect(screen.getByText('$12.50')).toBeInTheDocument()
   })
 
   it('honours the column-prefixed annotation form', () => {
@@ -108,7 +107,7 @@ describe('TableWidget spend qualification', () => {
       ])
     )
 
-    expect(screen.getByText('$12.50 (at least; $3.25 unattributed)')).toBeInTheDocument()
+    expect(screen.getByText('$12.50')).toBeInTheDocument()
   })
 
   it('applies each column-prefixed annotation only to the column it names', () => {
@@ -125,14 +124,14 @@ describe('TableWidget spend qualification', () => {
     )
 
     expect(screen.getByText('$12.50')).toBeInTheDocument()
-    expect(screen.getByText('$40.00 (incomplete data)')).toBeInTheDocument()
+    expect(screen.getByText('$40.00')).toBeInTheDocument()
   })
 
   it('never attaches a row-level annotation to a non-money column', () => {
     renderWidget(buildResponse([{ user: 'alice', cost: 12.5, spend_unavailable: true }]))
 
     expect(screen.getByText('alice')).toBeInTheDocument()
-    expect(screen.getByText('$12.50 (incomplete data)')).toBeInTheDocument()
+    expect(screen.getByText('$12.50')).toBeInTheDocument()
   })
 
   it('qualifies a footer total summed from only the rows that resolved', () => {
@@ -141,7 +140,7 @@ describe('TableWidget spend qualification', () => {
     )
 
     expect(screen.getByText('Total')).toBeInTheDocument()
-    expect(screen.getByText('$30.00 (at least; some spend unattributed)')).toBeInTheDocument()
+    expect(screen.getByText('$30.00')).toBeInTheDocument()
   })
 
   it('renders nothing in a footer slot the backend sends neither a total nor a flag for', () => {

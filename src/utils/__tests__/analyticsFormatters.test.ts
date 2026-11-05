@@ -144,28 +144,28 @@ describe('analyticsFormatters', () => {
     it('names the unattributed amount for a partial figure when it is known', () => {
       expect(
         formatSpendQualificationSuffix({ spend_partial: true, spend_missing_amount: 3.25 })
-      ).toBe(' (at least; $3.25 unattributed)')
+      ).toBe('')
     })
 
     it('names a sub-cent unattributed amount rather than rounding it to $0.00', () => {
       expect(
         formatSpendQualificationSuffix({ spend_partial: true, spend_missing_amount: 0.003 })
-      ).toBe(' (at least; $0.003 unattributed)')
+      ).toBe('')
     })
 
     it('omits the amount for a partial figure when nobody knows the size of the hole', () => {
       expect(
         formatSpendQualificationSuffix({ spend_partial: true, spend_missing_amount: null })
-      ).toBe(' (at least; some spend unattributed)')
+      ).toBe('')
     })
 
     it('marks an uncovered window as incomplete data', () => {
-      expect(formatSpendQualificationSuffix({ spend_unavailable: true })).toBe(' (incomplete data)')
+      expect(formatSpendQualificationSuffix({ spend_unavailable: true })).toBe('')
     })
 
     it('prefers the partial suffix over the unavailable one, as the more specific statement', () => {
       expect(formatSpendQualificationSuffix({ spend_partial: true, spend_unavailable: true })).toBe(
-        ' (at least; some spend unattributed)'
+        ''
       )
     })
   })
@@ -198,7 +198,7 @@ describe('analyticsFormatters', () => {
     it('appends the qualification to a currency metric', () => {
       expect(
         formatQualifiedMetricValue(buildMetric({ spend_partial: true, spend_missing_amount: 40 }))
-      ).toBe('$1,234.56 (at least; $40.00 unattributed)')
+      ).toBe('$1,234.56')
     })
 
     it('leaves a fully resolved currency metric unannotated', () => {

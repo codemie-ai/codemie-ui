@@ -110,9 +110,7 @@ describe('UserProjectSpendingTable', () => {
 
     render(<UserProjectSpendingTable userEmail="jane@epam.com" />)
 
-    expect(
-      await screen.findByText('$120.50 (at least; $3.50 unattributed) / $500.00')
-    ).toBeInTheDocument()
+    expect(await screen.findByText('$120.50 / $500.00')).toBeInTheDocument()
     expect(screen.getByText('$40.00 / -')).toBeInTheDocument()
     expect(screen.getByText('$0.00 / -')).toBeInTheDocument()
   })

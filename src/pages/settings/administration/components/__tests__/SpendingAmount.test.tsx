@@ -87,9 +87,7 @@ describe('SpendingAmount', () => {
         qualification={{ spend_partial: true, spend_missing_amount: 12.25 }}
       />
     )
-    expect(
-      screen.getByText('$120.50 (at least; $12.25 unattributed) / $500.00')
-    ).toBeInTheDocument()
+    expect(screen.getByText('$120.50 / $500.00')).toBeInTheDocument()
   })
 
   it('still qualifies a partial figure when the unattributed amount is unknown', () => {
@@ -100,9 +98,7 @@ describe('SpendingAmount', () => {
         qualification={{ spend_partial: true, spend_missing_amount: null }}
       />
     )
-    expect(
-      screen.getByText('$120.50 (at least; some spend unattributed) / $500.00')
-    ).toBeInTheDocument()
+    expect(screen.getByText('$120.50 / $500.00')).toBeInTheDocument()
   })
 
   it('attaches the suffix to the spend half, never after the limit', () => {
@@ -114,14 +110,12 @@ describe('SpendingAmount', () => {
       />
     )
     // The doubt belongs to the spend: a limit is budget policy and is never partial.
-    expect(
-      screen.getByText(/\(at least; \$12\.25 unattributed\) \/ \$500\.00$/)
-    ).toBeInTheDocument()
+    expect(screen.getByText(/\$120\.50 \/ \$500\.00$/)).toBeInTheDocument()
   })
 
   it('marks a figure short of coverage as incomplete', () => {
     render(<SpendingAmount spend={120.5} limit={500} qualification={{ spend_unavailable: true }} />)
-    expect(screen.getByText('$120.50 (incomplete data) / $500.00')).toBeInTheDocument()
+    expect(screen.getByText('$120.50 / $500.00')).toBeInTheDocument()
   })
 
   it('renders a measured zero as $0.00 even when qualified', () => {
@@ -132,9 +126,7 @@ describe('SpendingAmount', () => {
         qualification={{ spend_partial: true, spend_missing_amount: null }}
       />
     )
-    expect(
-      screen.getByText('$0.00 (at least; some spend unattributed) / $500.00')
-    ).toBeInTheDocument()
+    expect(screen.getByText('$0.00 / $500.00')).toBeInTheDocument()
   })
 
   it('keeps the threshold color on a partial figure', () => {
@@ -147,6 +139,6 @@ describe('SpendingAmount', () => {
         qualification={{ spend_partial: true, spend_missing_amount: null }}
       />
     )
-    expect(screen.getByText(/^\$480\.00 \(at least/)).toHaveStyle({ color: 'rgb(1, 2, 3)' })
+    expect(screen.getByText(/^\$480\.00/)).toHaveStyle({ color: 'rgb(1, 2, 3)' })
   })
 })

@@ -1,0 +1,61 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; 0 findings"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; 0 findings"
+    }
+  ],
+  "reviewed_head": "39e6e8bce68ddeac42d18574790401fe7244435b",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case lens ran; acceptance skipped (no spec audit), so confidence is low. All 4 edge-case candidates dismissed: blanked suffix and missing chart cue are the intended temporary behavior, and test weakening/no new tests follow the user's decision. 0 deferred.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards not expected for this review profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards not expected for this review profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards not expected for this review profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case lens ran; acceptance skipped (no spec audit), so confidence is low. All 4 edge-case candidates dismissed: blanked suffix and missing chart cue are the intended temporary behavior, and test weakening/no new tests follow the user's decision. 0 deferred.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

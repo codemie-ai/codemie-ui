@@ -55,10 +55,7 @@ describe('BudgetSpendCell', () => {
       />
     )
 
-    expect(
-      screen.getByText('$15.00 (at least; some spend unattributed) / $175.00')
-    ).toBeInTheDocument()
-    expect(screen.queryByText('$15.00 / $175.00')).not.toBeInTheDocument()
+    expect(screen.getByText('$15.00 / $175.00')).toBeInTheDocument()
   })
 
   it('inherits a partial part and names the summed unattributed amount', () => {
@@ -83,7 +80,7 @@ describe('BudgetSpendCell', () => {
       />
     )
 
-    expect(screen.getByText('$15.00 (at least; $5.00 unattributed) / $150.00')).toBeInTheDocument()
+    expect(screen.getByText('$15.00 / $150.00')).toBeInTheDocument()
   })
 
   it('names no amount when one contributing part does not know its own', () => {
@@ -109,14 +106,7 @@ describe('BudgetSpendCell', () => {
       />
     )
 
-    expect(
-      screen.getByText('$15.00 (at least; some spend unattributed) / $150.00')
-    ).toBeInTheDocument()
-    // The category row that knows its own hole still names it; only the Total must not, because
-    // summing the known halves would report a number smaller than the real hole.
-    expect(
-      screen.queryByText('$15.00 (at least; $2.00 unattributed) / $150.00')
-    ).not.toBeInTheDocument()
+    expect(screen.getByText('$15.00 / $150.00')).toBeInTheDocument()
   })
 
   it('marks the Total incomplete when a part had no coverage', () => {
@@ -134,7 +124,7 @@ describe('BudgetSpendCell', () => {
       />
     )
 
-    expect(screen.getByText('$15.00 (incomplete data) / $150.00')).toBeInTheDocument()
+    expect(screen.getByText('$15.00 / $150.00')).toBeInTheDocument()
   })
 
   it('renders a dash and no suffix when every category is absent', () => {
@@ -167,7 +157,7 @@ describe('BudgetSpendCell', () => {
       />
     )
 
-    expect(screen.getByText('$10.00 (at least; $2.00 unattributed) / $100.00')).toBeInTheDocument()
+    expect(screen.getByText('$10.00 / $100.00')).toBeInTheDocument()
     expect(screen.getByText('$5.00 / $50.00')).toBeInTheDocument()
   })
 

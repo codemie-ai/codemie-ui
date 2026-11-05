@@ -127,7 +127,7 @@ describe('BarChartWidget spend qualification', () => {
   it("qualifies a partial row's bar in its tooltip, as the tables qualify the same cell", () => {
     renderChart(ROWS)
 
-    expect(tooltipLabel(0)).toBe(' Total Cost: $0.37 (at least; some spend unattributed)')
+    expect(tooltipLabel(0)).toBe(' Total Cost: $0.37')
     expect(tooltipLabel(1)).toBe(' Total Cost: $0.12')
   })
 
@@ -135,15 +135,13 @@ describe('BarChartWidget spend qualification', () => {
     renderChart(ROWS)
 
     expect(barValues()).toStrictEqual([0.37, 0.12, null])
-    expect(tooltipLabel(2)).toBe(' Total Cost: - (incomplete data)')
+    expect(tooltipLabel(2)).toBe(' Total Cost: -')
   })
 
   it('says once, under the chart, that the bars are a floor', () => {
     renderChart(ROWS)
 
-    expect(
-      screen.getByText('Bars show spend (at least; some spend unattributed)')
-    ).toBeInTheDocument()
+    expect(screen.queryByText(/Bars show spend/)).not.toBeInTheDocument()
   })
 
   it('adds no note to a chart whose figures are whole', () => {

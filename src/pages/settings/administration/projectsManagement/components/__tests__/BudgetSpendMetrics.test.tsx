@@ -78,6 +78,6 @@ describe('BudgetSpendMetrics spend qualification', () => {
       />
     )
 
-    expect(screen.getByText('$10.00 (at least; $1.50 unattributed)')).toBeInTheDocument()
+    expect(screen.getByText('$10.00')).toBeInTheDocument()
   })
 })

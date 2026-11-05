@@ -53,7 +53,7 @@ const MetricCard: FC<MetricCardProps> = ({
       {valueOverride || (
         <p className={cn(valueClassName, valueColorClassName)}>
           {formatMetricValue(metric.value, metric.format)}
-          {/* Its own smaller line: at the figure's size, "(at least; some spend unattributed)" does not fit a
+          {/* Its own smaller line: at the figure's size, the qualification suffix does not fit a
               narrow card. `-mr-3` hands it the card's right padding (`p-3`), so a word wider than the content
               box but not the card stays whole, and `break-words` splits only a word wider than that - one
               that would otherwise draw onto the next card. */}

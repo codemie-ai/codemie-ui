@@ -167,7 +167,7 @@ describe('ProjectMembersManager — merged Spending column', () => {
     render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
 
     await waitFor(() => {
-      expect(screen.getByText('$120.50 (at least; $4.00 unattributed)')).toBeInTheDocument()
+      expect(screen.getByText('$120.50')).toBeInTheDocument()
       expect(screen.getByText('$0.00')).toBeInTheDocument()
     })
   })

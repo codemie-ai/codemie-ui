@@ -226,7 +226,7 @@ describe('ProjectBudgetsSection spend qualification', () => {
       />
     )
 
-    expect(await screen.findByText('$0.10 (at least; $1.50 unattributed)')).toBeInTheDocument()
+    expect(await screen.findByText('$0.10')).toBeInTheDocument()
   })
 
   it('qualifies the project spend and shows no retired lifetime figure', async () => {
@@ -246,7 +246,7 @@ describe('ProjectBudgetsSection spend qualification', () => {
       />
     )
 
-    expect(await screen.findByText('$4.00 (at least; $1.50 unattributed)')).toBeInTheDocument()
+    expect(await screen.findByText('$4.00')).toBeInTheDocument()
     expect(screen.queryByText(/lifetime spend/i)).not.toBeInTheDocument()
   })
 })

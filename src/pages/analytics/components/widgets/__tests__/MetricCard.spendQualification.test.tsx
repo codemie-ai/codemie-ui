@@ -44,19 +44,19 @@ describe('MetricCard spend qualification', () => {
   it('marks a partial figure as a floor, naming the unattributed amount', () => {
     render(<MetricCard metric={buildMetric({ spend_partial: true, spend_missing_amount: 40 })} />)
 
-    expect(cardValue()).toBe('$1,234.56 (at least; $40.00 unattributed)')
+    expect(cardValue()).toBe('$1,234.56')
   })
 
   it('marks a partial figure whose hole nobody could size', () => {
     render(<MetricCard metric={buildMetric({ spend_partial: true, spend_missing_amount: null })} />)
 
-    expect(cardValue()).toBe('$1,234.56 (at least; some spend unattributed)')
+    expect(cardValue()).toBe('$1,234.56')
   })
 
   it('marks a figure the backend could not fully cover', () => {
     render(<MetricCard metric={buildMetric({ spend_unavailable: true })} />)
 
-    expect(cardValue()).toBe('$1,234.56 (incomplete data)')
+    expect(cardValue()).toBe('$1,234.56')
   })
 
   it('renders an absent figure as the marker, never as a zero', () => {
@@ -96,34 +96,11 @@ describe('MetricCard spend qualification', () => {
     expect(cardValue('CLI Sessions')).toBe('12')
   })
 
-  // jsdom computes no layout, so these lock the classes the wrapping relies on, not the wrapping itself.
-  it('sets the qualification on its own line, splitting a word only when it is wider than the card', () => {
+  it('renders no qualification line while the suffix is switched off', () => {
     render(<MetricCard metric={buildMetric({ spend_partial: true, spend_missing_amount: null })} />)
 
-    const qualification = screen.getByText('(at least; some spend unattributed)')
-    const card = qualification.closest('.rounded-md')
-    expect(qualification).toHaveClass('block')
-    // Its own last-resort break: `break-normal` let a word wider than the card draw onto the next one.
-    expect(qualification).toHaveClass('break-words')
-    expect(qualification).not.toHaveClass('break-normal')
-    // `word-break` inherits: a `break-all` figure would split even the words that fit.
-    expect(qualification).not.toHaveClass('break-all')
-    expect(qualification.parentElement).not.toHaveClass('break-all')
-    // The line reaches the card's right border, so a word wider than the content box but not the card
-    // stays whole: the negative margin cancels exactly the card's padding.
-    expect(qualification).toHaveClass('-mr-3')
-    expect(card).toHaveClass('p-3')
-  })
-
-  it('keeps its own wrapping rule when a caller restyles the figure', () => {
-    render(
-      <MetricCard
-        metric={buildMetric({ spend_unavailable: true })}
-        valueClassName="text-2xl font-semibold"
-      />
-    )
-
-    expect(screen.getByText('(incomplete data)')).toHaveClass('break-words')
+    expect(screen.queryByText(/unattributed/)).not.toBeInTheDocument()
+    expect(cardValue()).toBe('$1,234.56')
   })
 
   it('leaves a value override untouched', () => {

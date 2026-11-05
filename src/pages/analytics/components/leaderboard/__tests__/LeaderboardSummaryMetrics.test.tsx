@@ -75,7 +75,7 @@ describe('LeaderboardSummaryMetrics', () => {
       />
     )
 
-    expect(tileValue('Total Spend')).toBe('$1,234.50 (at least; $12.50 unattributed)')
+    expect(tileValue('Total Spend')).toBe('$1,234.50')
     // The annotation qualifies one figure only; the other must not inherit it.
     expect(tileValue('CLI Spend')).toBe('$4.25')
   })
@@ -87,7 +87,7 @@ describe('LeaderboardSummaryMetrics', () => {
       />
     )
 
-    expect(tileValue('CLI Spend')).toBe('$4.25 (incomplete data)')
+    expect(tileValue('CLI Spend')).toBe('$4.25')
   })
 
   it('does not render the annotation keys as metric tiles of their own', () => {

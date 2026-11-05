@@ -178,7 +178,7 @@ describe('StackedBarChartWidget spend qualification', () => {
       partialRow('2026-08-24T03:00:00Z', 0.026),
     ])
 
-    expect(screen.getByText('Bars show spend (at least; $0.03 unattributed)')).toBeInTheDocument()
+    expect(screen.queryByText(/Bars show spend/)).not.toBeInTheDocument()
     // The window's residue rides on every cell; a tooltip repeating it would claim it per bar.
     expect(tooltipLabel(0, 0)).toBe(' Assistants: $0.0200')
   })
@@ -189,9 +189,7 @@ describe('StackedBarChartWidget spend qualification', () => {
       partialRow('2026-08-24T03:00:00Z', 0.5),
     ])
 
-    expect(
-      screen.getByText('Bars show spend (at least; some spend unattributed)')
-    ).toBeInTheDocument()
+    expect(screen.queryByText(/Bars show spend/)).not.toBeInTheDocument()
   })
 
   it('adds no note to a chart whose figures are whole', async () => {
