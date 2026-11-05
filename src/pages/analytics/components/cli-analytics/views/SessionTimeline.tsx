@@ -77,7 +77,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDuration
   )
 
   if (dispatches.length === 0) {
-    return <p className="text-text-secondary text-sm">No dispatches recorded for this session.</p>
+    return <p className="text-text-secondary text-h4">No dispatches recorded for this session.</p>
   }
   const durationSafe = sessionDurationMs > 0 ? sessionDurationMs : 1
   const hasSubDispatches = sortedDispatches.some((d) => d.kind !== 'session')
@@ -102,9 +102,9 @@ const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDuration
       {/* Gantt list */}
       <div className="flex-1 flex flex-col gap-1">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-text-primary">Timeline</span>
+          <span className="text-h4 font-medium text-text-primary">Timeline</span>
           {hasSubDispatches && (
-            <span className="text-xs text-text-secondary">click a step for details</span>
+            <span className="text-h5 text-text-secondary">click a step for details</span>
           )}
         </div>
         {sortedDispatches.map((dispatch, index) => {
@@ -144,7 +144,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDuration
               )}
               onClick={() => handleRowClick(index)}
             >
-              <span className="text-xs text-text-primary truncate">{dispatch.label}</span>
+              <span className="text-h5 text-text-primary truncate">{dispatch.label}</span>
               <div className="relative h-4 rounded overflow-hidden bg-surface-base-secondary">
                 <div
                   className={cn('absolute h-full rounded', isSession && 'bg-success-primary')}
@@ -155,7 +155,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDuration
                   }
                 />
               </div>
-              <span className="text-xs text-text-secondary text-right tabular-nums">
+              <span className="text-h5 text-text-secondary text-right tabular-nums">
                 {formatDuration(dispatch.duration_ms)}
               </span>
             </button>
@@ -195,7 +195,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDuration
                   style={!isSession ? { backgroundColor: dotColor } : undefined}
                 />
                 <span
-                  className="text-text-primary font-medium text-xs truncate"
+                  className="text-text-primary font-medium text-h5 truncate"
                   title={dispatch.label}
                 >
                   {dispatch.label}
@@ -203,35 +203,35 @@ const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDuration
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                  <p className="text-h5 font-semibold uppercase tracking-wide text-text-secondary">
                     Cost
                   </p>
-                  <p className="text-sm font-semibold text-text-primary tabular-nums">
+                  <p className="text-h3 font-semibold text-text-primary tabular-nums">
                     {costLabel}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                  <p className="text-h5 font-semibold uppercase tracking-wide text-text-secondary">
                     Tokens
                   </p>
-                  <p className="text-sm font-semibold text-text-primary tabular-nums">
+                  <p className="text-h3 font-semibold text-text-primary tabular-nums">
                     {totalTokens}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                  <p className="text-h5 font-semibold uppercase tracking-wide text-text-secondary">
                     Duration
                   </p>
-                  <p className="text-sm font-semibold text-text-primary tabular-nums">
+                  <p className="text-h3 font-semibold text-text-primary tabular-nums">
                     {formatDuration(dispatch.duration_ms)}
                   </p>
                 </div>
                 {!isSession && (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+                    <p className="text-h5 font-semibold uppercase tracking-wide text-text-secondary">
                       Started
                     </p>
-                    <p className="text-sm font-semibold text-text-primary tabular-nums">
+                    <p className="text-h3 font-semibold text-text-primary tabular-nums">
                       {formatDuration(dispatch.start_offset_ms)} into session
                     </p>
                   </div>
@@ -239,37 +239,37 @@ const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDuration
               </div>
               {hasBreakdown && (
                 <div className="border-t border-border-specific-panel-outline pt-2 flex flex-col gap-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-text-secondary mb-1">
+                  <p className="text-h5 font-semibold uppercase tracking-wide text-text-secondary mb-1">
                     Token Breakdown
                   </p>
                   {dispatch.input_tokens != null && (
                     <div className="flex justify-between">
-                      <span className="text-xs text-text-secondary">Input</span>
-                      <span className="text-xs text-text-primary tabular-nums">
+                      <span className="text-h5 text-text-secondary">Input</span>
+                      <span className="text-h5 text-text-primary tabular-nums">
                         {formatTokens(dispatch.input_tokens)}
                       </span>
                     </div>
                   )}
                   {dispatch.output_tokens != null && (
                     <div className="flex justify-between">
-                      <span className="text-xs text-text-secondary">Output</span>
-                      <span className="text-xs text-text-primary tabular-nums">
+                      <span className="text-h5 text-text-secondary">Output</span>
+                      <span className="text-h5 text-text-primary tabular-nums">
                         {formatTokens(dispatch.output_tokens)}
                       </span>
                     </div>
                   )}
                   {(dispatch.cache_read_tokens ?? 0) > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-xs text-text-secondary">Cache read</span>
-                      <span className="text-xs text-text-primary tabular-nums">
+                      <span className="text-h5 text-text-secondary">Cache read</span>
+                      <span className="text-h5 text-text-primary tabular-nums">
                         {formatTokens(dispatch.cache_read_tokens!)}
                       </span>
                     </div>
                   )}
                   {(dispatch.cache_creation_tokens ?? 0) > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-xs text-text-secondary">Cache write</span>
-                      <span className="text-xs text-text-primary tabular-nums">
+                      <span className="text-h5 text-text-secondary">Cache write</span>
+                      <span className="text-h5 text-text-primary tabular-nums">
                         {formatTokens(dispatch.cache_creation_tokens!)}
                       </span>
                     </div>

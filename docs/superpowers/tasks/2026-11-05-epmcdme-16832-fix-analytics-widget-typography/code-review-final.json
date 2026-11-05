@@ -1,0 +1,45 @@
+{
+  "decision": "request-changes",
+  "rationale": "Blind, edge-case, and acceptance lenses all ran. One confirmed major defect: MetricCard.tsx's metric.description paragraph dropped its explicit leading-5 (20px) in favor of text-h5's bundled 16px line-height while keeping line-clamp-3, shrinking the 3-line clamp box from 60px to 48px and increasing truncation risk against the 'no text clipping/truncation' AC (CR-001). One design judgment call needs explicit sign-off: MetricCard.tsx's metric value dropped the responsive 'sm:text-xl' step-up for a flat text-h3, flagged independently by both the edge-case and acceptance lenses as flattening value prominence on sm+ viewports against the 'consistent font styling' / 'visual hierarchy at viewport sizes' ACs (CR-002); this matches a decision already made in plan.md but two independent lenses re-surfacing it means it should be confirmed rather than silently accepted. Dismissed after direct verification: blind lens's 'possible missing cn import' (cn was already imported in MetricCard.tsx before this diff) and 'BarChartWidget/MetricCard label leading-4 dropped' (text-h5's bundled 16px line-height exactly matches the dropped leading-4, no change). Deferred to the plan's existing Final Verification manual check (not blocking this gate): edge-case lens's SessionTimeline.tsx w-52 detail panel value crowding risk (text-sm->text-h3) — plan.md Review Focus and Task 5 Step 10 already call for this exact manual check before MR. 2 blind-lens concerns (no mapping-table visibility, no visual-verification evidence) dismissed as artifacts of the lens's intentional isolation (no repo/plan access) — the mapping exists in plan.md's semantic tier table and manual visual verification is scheduled in Final Verification.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "Typography follows the application's design system", "status": "pass", "notes": "Arbitrary/legacy sizes (text-lg, text-sm, text-xs, text-base, text-[11px]) replaced with text-h3/h4/h5 tokens across all 6 files."},
+    {"kind": "story-ac", "item": "Widget headings, labels, and metric values have consistent font styling", "status": "partial", "notes": "Labels/headings consistently snapped to tokens. MetricCard.tsx:37 drops the responsive text-lg/sm:text-xl pair for a flat text-h3, so the primary metric value no longer scales up on sm+ screens (CR-002)."},
+    {"kind": "story-ac", "item": "Text remains readable without unnecessary zooming", "status": "pass", "notes": "All token sizes are >=12px and match or exceed prior sizes in every case."},
+    {"kind": "story-ac", "item": "Spacing and alignment consistent across widgets", "status": "na", "notes": "Diff only changes font-size/line-height classes, not spacing/alignment utilities."},
+    {"kind": "story-ac", "item": "Widgets maintain proper visual hierarchy at supported viewport sizes", "status": "partial", "notes": "Label/value hierarchy holds (h5 vs h3), but MetricCard.tsx:37's dropped sm:text-xl step-up flattens the value's intended size growth on wider viewports (CR-002)."},
+    {"kind": "story-ac", "item": "No text clipping, overlapping, or unintended truncation occurs", "status": "partial", "notes": "MetricCard.tsx:68's description line-clamp-3 box shrinks from 60px (leading-5) to 48px (text-h5's bundled line-height), increasing truncation risk (CR-001)."},
+    {"kind": "spec", "item": "Scope limited to SessionModal, AnalyticsWidget, MetricCard, SessionBody, SessionTimeline, BarChartWidget only", "status": "pass", "notes": "Diff touches exactly these six files and no others."},
+    {"kind": "spec", "item": "Use cn() utility for conditional class merging (styling-guide.md rule 4)", "status": "pass", "notes": "MetricCard.tsx converts two template-literal classNames to cn() calls."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "All 6 commits follow 'EPMCDME-16832: Capital sentence' per git-workflow.md."},
+    {"kind": "code-quality", "status": "pass", "notes": "No arbitrary Tailwind values remain in the diff; cn() used per styling-guide.md."},
+    {"kind": "security", "status": "na", "notes": "Pure className changes, no user input, no data handling, no security-sensitive surface touched."}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/widgets/MetricCard.tsx",
+      "line": 68,
+      "title": "Metric description line-clamp-3 box shrinks, raising truncation risk",
+      "problem": "The description paragraph changed from `text-[11px] leading-5 line-clamp-3` to `text-h5 line-clamp-3`, dropping the explicit `leading-5` (20px). text-h5 bundles lineHeight: 16px (tailwind.config.ts:529), so the 3-line clamp box shrinks from 60px to 48px.",
+      "impact": "Longer metric descriptions that previously fit within 3 lines at 60px may now get cut off within the smaller 48px box, directly threatening the AC 'No text clipping, overlapping, or unintended truncation occurs.'",
+      "recommendation": "Keep the original line-height alongside the new token, e.g. `cn('mt-1 text-h5 leading-5 line-clamp-3', mutedTextClassName)`, so only the font-size changes and the clamp box height is preserved."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/pages/analytics/components/widgets/MetricCard.tsx",
+      "line": 37,
+      "title": "Metric value loses its sm+ responsive size step-up",
+      "problem": "valueClassName's default changed from `text-lg sm:text-xl ...` (18px mobile, 20px on sm+) to a flat `text-h3` (16px at every breakpoint), removing the responsive growth.",
+      "impact": "On sm+ viewports the primary metric value no longer stands out relative to its label the way it did before; both the edge-case and acceptance lenses independently flagged this against the 'consistent font styling' and 'visual hierarchy at viewport sizes' ACs. plan.md Task 3 Step 2 already made this call (snap to one token, no new responsive variant), but two independent review lenses re-surfacing it means it should be confirmed by the user rather than silently kept.",
+      "recommendation": "Either confirm the flat text-h3 is acceptable (matches the plan's 'snap to nearest token, no new tokens' strategy), or restore a size step via an existing token pair the user is willing to approve."
+    }
+  ]
+}

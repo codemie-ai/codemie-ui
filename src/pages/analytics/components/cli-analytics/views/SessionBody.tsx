@@ -246,7 +246,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
             />
           </div>
         ) : (
-          <p className="text-text-quaternary text-sm">
+          <p className="text-text-quaternary text-h4">
             Per-turn data not available for this session.
           </p>
         )}

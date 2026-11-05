@@ -1,0 +1,68 @@
+{
+  "task": "Replace hardcoded typography classes with design-system tokens across analytics widget components",
+  "generated": "2026-11-05T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 3,
+      "label": "M",
+      "affected": "AnalyticsWidget, SessionBody, SessionModal, SessionTimeline, BarChartWidget, MetricCard",
+      "layers": "UI (presentation/typography)"
+    },
+    "requirements_clarity": {
+      "score": 2,
+      "label": "S",
+      "status": "Clear",
+      "gaps": null
+    },
+    "technical_risk": {
+      "score": 2,
+      "label": "S",
+      "risk_factors": "Visual regression risk if a replacement token renders at a different size/line-height than the original hardcoded class, across six widgets",
+      "mitigation": "Used existing established design-system typography tokens (text-h3/h4/h5) consistently with existing conventions already used elsewhere in the same files; a follow-up commit (CR-001) restored one explicit leading-5 after review, showing the mechanical swap was checked against rendered output"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M",
+      "modified_files": 6,
+      "modified_file_list": [
+        "src/pages/analytics/components/AnalyticsWidget.tsx",
+        "src/pages/analytics/components/cli-analytics/views/SessionBody.tsx",
+        "src/pages/analytics/components/cli-analytics/views/SessionModal.tsx",
+        "src/pages/analytics/components/cli-analytics/views/SessionTimeline.tsx",
+        "src/pages/analytics/components/widgets/BarChartWidget.tsx",
+        "src/pages/analytics/components/widgets/MetricCard.tsx"
+      ],
+      "new_files": 0,
+      "new_file_list": [],
+      "affected_dirs": [
+        "src/pages/analytics/components",
+        "src/pages/analytics/components/widgets",
+        "src/pages/analytics/components/cli-analytics/views"
+      ]
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS",
+      "new_packages": [],
+      "version_changes": []
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS",
+      "layers_changed": ["UI"],
+      "schema_migration": false,
+      "cross_system": false
+    }
+  },
+  "total": 12,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 6,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Six distinct presentational components touched (AnalyticsWidget, SessionBody, SessionModal, SessionTimeline, BarChartWidget, MetricCard), but all within the same UI/typography concern and no layer crossing — coordination was needed to keep the token mapping consistent across files" },
+    { "dimension": "file_change_estimate", "reason": "6 files modified, 0 new files, 36 insertions / 33 deletions — purely class-level edits spanning three subdirectories of the analytics components tree" }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

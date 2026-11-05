@@ -52,8 +52,8 @@ const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
       isFullWidth
       headerContent={
         <div className="flex flex-col gap-0.5 min-w-0">
-          <span className="text-base font-semibold text-text-primary truncate">{title}</span>
-          {subtitle && <span className="text-xs text-text-secondary truncate">{subtitle}</span>}
+          <span className="text-h3 font-semibold text-text-primary truncate">{title}</span>
+          {subtitle && <span className="text-h5 text-text-secondary truncate">{subtitle}</span>}
         </div>
       }
     >
