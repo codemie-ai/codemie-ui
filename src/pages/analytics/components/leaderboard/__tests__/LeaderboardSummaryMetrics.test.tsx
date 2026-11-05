@@ -16,7 +16,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 
-import { ABSENT_VALUE_MARKER } from '@/utils/analyticsFormatters'
+import { ABSENT_VALUE_MARKER } from '@/constants'
 
 import LeaderboardSummaryMetrics from '../LeaderboardSummaryMetrics'
 

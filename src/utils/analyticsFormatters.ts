@@ -13,8 +13,9 @@
 // limitations under the License.
 //
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import { Metric, MetricFormat, SpendQualification } from '@/types/analytics'
-import { formatCurrency, formatMoneySpentSuffix } from '@/utils/currency'
+import { formatCurrency, formatMoneySpent } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 import { readSpendQualification } from '@/utils/spendQualification'
 
@@ -25,12 +26,6 @@ export const formatTokens = (n: number): string => {
   if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`
   return String(n || 0)
 }
-
-/**
- * The one marker every analytics surface uses for "no figure exists", so `-` always means the same
- * thing wherever it appears.
- */
-export const ABSENT_VALUE_MARKER = '-'
 
 // A chart cell is either a measured amount or null for "not measured"; null must never become 0.
 export const toSeriesPoint = (cell: unknown): number | null =>
@@ -45,20 +40,15 @@ interface RecordMoneySpent {
 
 /**
  * One record's money spent with its pending/unavailable qualifier. Four decimals because a single
- * record's cost is routinely smaller than a cent. A zero flagged pending or unavailable is the
- * placeholder written before any cost settled (the backend's `SettledMoney` rule), so it renders
- * the absent marker exactly like a figure nobody priced; an unflagged zero really cost nothing.
+ * record's cost is routinely smaller than a cent. A record flagged pending or unavailable never
+ * shows its amount - it renders the absent marker plus the qualifier, whether the amount is null,
+ * zero or non-zero. An unflagged zero really cost nothing and renders `$0.0000`.
  */
-export const formatRecordMoneySpent = (usage: RecordMoneySpent | null | undefined): string => {
-  const moneySpent = usage?.money_spent
-  const pending = usage?.money_spent_pending
-  const unavailable = usage?.money_spent_unavailable
-  const suffix = formatMoneySpentSuffix({ pending, unavailable })
-  const isPlaceholderZero = moneySpent === 0 && (pending || unavailable)
-
-  if (moneySpent == null || isPlaceholderZero) return `${ABSENT_VALUE_MARKER}${suffix}`
-  return `$${moneySpent.toFixed(4)}${suffix}`
-}
+export const formatRecordMoneySpent = (usage: RecordMoneySpent | null | undefined): string =>
+  formatMoneySpent(usage?.money_spent, {
+    pending: usage?.money_spent_pending,
+    unavailable: usage?.money_spent_unavailable,
+  })
 
 export const formatMetricValue = (
   value: string | number | boolean | null | undefined,

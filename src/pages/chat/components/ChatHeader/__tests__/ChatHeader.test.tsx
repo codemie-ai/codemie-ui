@@ -17,6 +17,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import { Conversation } from '@/types/entity/conversation'
 
 import ChatHeader from '../ChatHeader'
@@ -417,7 +418,10 @@ describe('ChatHeader', () => {
 
       await user.click(screen.getByLabelText('Usage details'))
 
-      expect(await screen.findByText('$1.5000 (awaiting final cost)')).toBeInTheDocument()
+      expect(
+        await screen.findByText(`${ABSENT_VALUE_MARKER} (awaiting final cost)`)
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/1\.5000/)).not.toBeInTheDocument()
       expect(screen.queryByText(/final cost unavailable/)).not.toBeInTheDocument()
     })
 
@@ -432,7 +436,10 @@ describe('ChatHeader', () => {
 
       await user.click(screen.getByLabelText('Usage details'))
 
-      expect(await screen.findByText('$1.5000 (final cost unavailable)')).toBeInTheDocument()
+      expect(
+        await screen.findByText(`${ABSENT_VALUE_MARKER} (final cost unavailable)`)
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/1\.5000/)).not.toBeInTheDocument()
       expect(screen.queryByText(/awaiting final cost/)).not.toBeInTheDocument()
     })
   })

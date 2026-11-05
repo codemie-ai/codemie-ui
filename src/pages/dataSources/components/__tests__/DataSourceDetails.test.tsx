@@ -16,10 +16,10 @@
 import { fireEvent, render } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import { dataSourceStore } from '@/store/dataSources'
 import { userStore } from '@/store/user'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
-import { ABSENT_VALUE_MARKER } from '@/utils/analyticsFormatters'
 
 import DataSourceDetails from '../DataSourceDetails'
 
@@ -222,7 +222,8 @@ describe('DataSourceDetails — money spent state markers', () => {
       },
     }
     const { getByText, queryByText } = render(<DataSourceDetails dataSource={pendingDataSource} />)
-    expect(getByText('$0.5000 (awaiting final cost)')).toBeInTheDocument()
+    expect(getByText(`${ABSENT_VALUE_MARKER} (awaiting final cost)`)).toBeInTheDocument()
+    expect(queryByText(/0\.5000/)).not.toBeInTheDocument()
     expect(queryByText(/final cost unavailable/)).not.toBeInTheDocument()
   })
 
@@ -239,7 +240,8 @@ describe('DataSourceDetails — money spent state markers', () => {
     const { getByText, queryByText } = render(
       <DataSourceDetails dataSource={unavailableDataSource} />
     )
-    expect(getByText('$0.5000 (final cost unavailable)')).toBeInTheDocument()
+    expect(getByText(`${ABSENT_VALUE_MARKER} (final cost unavailable)`)).toBeInTheDocument()
+    expect(queryByText(/0\.5000/)).not.toBeInTheDocument()
     expect(queryByText(/awaiting final cost/)).not.toBeInTheDocument()
   })
 

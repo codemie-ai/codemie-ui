@@ -45,7 +45,7 @@ export interface SchedulerRunMetrics {
   inputTokens: number | null
   outputTokens: number | null
   // null is "no figure", never $0. Mutually exclusive flags: pending -> a final cost is coming;
-  // unavailable -> none will arrive, and a non-null cost is only the settled subtotal.
+  // unavailable -> none will arrive. A flagged record renders the absent marker, not the cost.
   cost: number | null
   moneySpentPending?: boolean | null
   moneySpentUnavailable?: boolean | null

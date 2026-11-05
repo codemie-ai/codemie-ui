@@ -32,8 +32,8 @@ import {
   SchedulerRunStatus,
   schedulerRunsStore,
 } from '@/store/schedulerRuns'
-import { ABSENT_VALUE_MARKER, formatMetricValue } from '@/utils/analyticsFormatters'
-import { formatMoneySpentSuffix } from '@/utils/currency'
+import { formatMetricValue } from '@/utils/analyticsFormatters'
+import { formatMoneySpent } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 
 const RUN_STATUS_MAP: Record<SchedulerRunStatus, (typeof StatusEnum)[keyof typeof StatusEnum]> = {
@@ -54,16 +54,13 @@ const formatDuration = (ms: number | null): string => {
   return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`
 }
 
-// Four decimals: one run's spend is routinely sub-cent. A cost nobody recorded renders as absent,
-// never as $0, qualified with the chat header's pending/unavailable wording.
-const formatRunCost = (metrics: SchedulerRunMetrics): string => {
-  const figure = metrics.cost == null ? ABSENT_VALUE_MARKER : `$${metrics.cost.toFixed(4)}`
-  const suffix = formatMoneySpentSuffix({
+// Four decimals: one run's spend is routinely sub-cent. A cost nobody recorded, or one flagged
+// pending/unavailable, renders as absent with the chat header's qualifier wording - never as $0.
+const formatRunCost = (metrics: SchedulerRunMetrics): string =>
+  formatMoneySpent(metrics.cost, {
     pending: metrics.moneySpentPending,
     unavailable: metrics.moneySpentUnavailable,
   })
-  return `${figure}${suffix}`
-}
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-text-quaternary">

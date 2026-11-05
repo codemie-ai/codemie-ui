@@ -166,5 +166,16 @@ describe('SchedulerRunDetailsPage', () => {
 
       expect(await findValueOf('Cost')).toBe('- (awaiting final cost)')
     })
+
+    it('hides a non-null cost while it is pending', async () => {
+      const pendingRun = {
+        ...baseRun,
+        metrics: { ...baseRun.metrics, cost: 0.25, moneySpentPending: true },
+      }
+      mockAPI('GET', 'v1/scheduler-runs/run-123', pendingRun)
+      renderPage('/schedulers/sched-1/runs/run-123')
+
+      expect(await findValueOf('Cost')).toBe('- (awaiting final cost)')
+    })
   })
 })

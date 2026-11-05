@@ -16,8 +16,9 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import { ColumnType, Metric, MetricFormat } from '@/types/analytics'
-import { ABSENT_VALUE_MARKER, formatSpendQualificationSuffix } from '@/utils/analyticsFormatters'
+import { formatSpendQualificationSuffix } from '@/utils/analyticsFormatters'
 
 import MetricCard from '../MetricCard'
 

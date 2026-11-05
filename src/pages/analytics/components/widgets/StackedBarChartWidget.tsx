@@ -27,10 +27,10 @@ import { FC, useEffect, useState, useMemo, ReactNode } from 'react'
 import { Bar } from 'react-chartjs-2'
 import { useSnapshot } from 'valtio'
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import { analyticsStore } from '@/store/analytics'
 import type { TabularMetricType, TabularResponse, AnalyticsQueryParams } from '@/types/analytics'
 import {
-  ABSENT_VALUE_MARKER,
   formatChartSpendQualificationSuffix,
   readSpendQualification,
   toSeriesPoint,

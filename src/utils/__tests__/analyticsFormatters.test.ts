@@ -15,9 +15,9 @@
 
 import { describe, expect, it } from 'vitest'
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import { ColumnType, Metric, MetricFormat } from '@/types/analytics'
 import {
-  ABSENT_VALUE_MARKER,
   SPEND_QUALIFICATION_FIELDS,
   formatMetricValue,
   formatQualifiedMetricValue,

@@ -269,7 +269,7 @@ export interface ChatMetrics {
   total_money_spent: number
   total_classifier_cost_usd?: number
   // Mutually exclusive: pending -> a final cost is coming; unavailable -> none will arrive
-  // for this record, and total_money_spent is only the settled subtotal.
+  // for this record. A flagged record renders the absent marker, not total_money_spent.
   money_spent_pending?: boolean
   money_spent_unavailable?: boolean
 }

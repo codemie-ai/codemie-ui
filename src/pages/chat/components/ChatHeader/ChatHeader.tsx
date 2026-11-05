@@ -30,7 +30,7 @@ import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { appInfoStore } from '@/store/appInfo'
 import { chatsStore } from '@/store/chats'
 import { ChatMetrics } from '@/types/entity/conversation'
-import { formatMoneySpentSuffix } from '@/utils/currency'
+import { formatMoneySpent } from '@/utils/currency'
 import { cn } from '@/utils/utils'
 
 import ChatHeaderBrowseFilesButton from './ChatHeaderBrowseFilesButton'
@@ -166,22 +166,17 @@ const ChatHeader: FC = () => {
                   subtitle="Chat totals, auto-updated"
                   data={() => getMetrics(currentChat.id)}
                   render={(data) => {
-                    const moneySpentSuffix = formatMoneySpentSuffix({
-                      pending: data.money_spent_pending,
-                      unavailable: data.money_spent_unavailable,
-                    })
                     const rows: Record<string, string | number> = {
                       'Input tokens used': data.total_input_tokens ?? 0,
                       'Output tokens used': data.total_output_tokens ?? 0,
                       // Dropped the "(approx)" hedge: this figure is now LiteLLM's own recorded
                       // cost, not a locally re-priced estimate.
-                      // An absent total renders as absent, never as `$0`: the backend now omits
-                      // the field entirely when no message in the conversation has a settled cost,
-                      // and `?? '0'` turned that "nobody knows yet" into a measured "it was free".
-                      'Money spent':
-                        data.total_money_spent == null
-                          ? `-${moneySpentSuffix}`
-                          : `$${data.total_money_spent.toFixed(4)}${moneySpentSuffix}`,
+                      // An absent or flagged total renders as absent, never as `$0` - see
+                      // `formatMoneySpent`.
+                      'Money spent': formatMoneySpent(data.total_money_spent, {
+                        pending: data.money_spent_pending,
+                        unavailable: data.money_spent_unavailable,
+                      }),
                     }
                     const classifierCost = data.total_classifier_cost_usd
                     if (classifierCost) {

@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
+
 const ONE_CENT = 0.01
 
 /**
@@ -30,15 +32,16 @@ export const formatCurrency = (value: number): string =>
 
 /**
  * Formats a possibly-absent spend value.
- * `null`/`undefined` mean "no data" and render as `-`; `0` is real spend and renders as `$0.00`.
+ * `null`/`undefined` mean "no data" and render as `ABSENT_VALUE_MARKER`; `0` is real spend and
+ * renders as `$0.00`.
  */
 export const formatSpend = (value: number | null | undefined): string =>
-  value == null ? '-' : formatCurrency(value)
+  value == null ? ABSENT_VALUE_MARKER : formatCurrency(value)
 
 // Mutually exclusive: pending -> a final cost is coming; unavailable -> none will arrive for
-// this record, and the figure is only the settled subtotal. Rendering the wrong one
-// promises a human a figure that will never arrive.
-export const formatMoneySpentSuffix = ({
+// this record. Either way the amount is not shown (see `formatMoneySpent`). Rendering the wrong
+// one promises a human a figure that will never arrive.
+const formatMoneySpentSuffix = ({
   pending,
   unavailable,
 }: {
@@ -48,6 +51,17 @@ export const formatMoneySpentSuffix = ({
   if (pending) return ' (awaiting final cost)'
   if (unavailable) return ' (final cost unavailable)'
   return ''
+}
+
+/** Flagged (pending/unavailable) money never shows an amount; an absent amount is not zero. */
+export const formatMoneySpent = (
+  amount: number | null | undefined,
+  flags: { pending?: boolean | null; unavailable?: boolean | null }
+): string => {
+  const suffix = formatMoneySpentSuffix(flags)
+  return amount == null || flags.pending || flags.unavailable
+    ? `${ABSENT_VALUE_MARKER}${suffix}`
+    : `$${amount.toFixed(4)}`
 }
 
 /**

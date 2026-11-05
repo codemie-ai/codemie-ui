@@ -16,9 +16,9 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import { ColumnType, MetricFormat, TabularMetricType } from '@/types/analytics'
 import type { TabularResponse } from '@/types/analytics'
-import { ABSENT_VALUE_MARKER } from '@/utils/analyticsFormatters'
 
 import TableWidget from '../TableWidget'
 

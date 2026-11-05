@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16900_hide-money-spent-when-pending",
+  "head": "1749de0f6a3403472568edff712e73cca136cc2f",
+  "runner": "npm",
+  "started_at": "2026-11-05T13:20:41Z",
+  "completed_at": "2026-11-05T13:29:36Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 35000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 26000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2000,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Ran although no dependency changed in diff; guide permits skip."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 266000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 831 passed (831); Tests 8467 passed | 1 skipped"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 128000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 57 passed (57); Tests 651 passed | 1 skipped"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 33000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: no leaks found (working tree only)"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2599 files, 0 missing license headers"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Operates on staged files only; nothing staged for this run. Covered by full lint gate."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Needs SonarQube server/connected-mode; not run locally. CI/pre-commit will run it."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs the stack up; not run by this subagent. Still owed for MR compliance (Test harness section)."
+    }
+  ],
+  "failures": {}
+}

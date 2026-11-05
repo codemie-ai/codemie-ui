@@ -17,9 +17,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import { WORKFLOW_STATUSES } from '@/constants/workflows'
 import { ExtendedWorkflowExecution } from '@/types/entity/workflow'
-import { ABSENT_VALUE_MARKER } from '@/utils/analyticsFormatters'
 
 import WorkflowExecutionInfoPopup from '../WorkflowExecutionInfoPopup'
 
@@ -272,7 +272,8 @@ describe('WorkflowExecutionInfoPopup', () => {
 
     render(<WorkflowExecutionInfoPopup {...defaultProps} execution={pendingExecution} />)
 
-    expect(screen.getByText('$1.2345 (awaiting final cost)')).toBeInTheDocument()
+    expect(screen.getByText(`${ABSENT_VALUE_MARKER} (awaiting final cost)`)).toBeInTheDocument()
+    expect(screen.queryByText(/1\.2345/)).not.toBeInTheDocument()
     expect(screen.queryByText(/final cost unavailable/)).not.toBeInTheDocument()
   })
 
@@ -289,7 +290,8 @@ describe('WorkflowExecutionInfoPopup', () => {
 
     render(<WorkflowExecutionInfoPopup {...defaultProps} execution={unavailableExecution} />)
 
-    expect(screen.getByText('$1.2345 (final cost unavailable)')).toBeInTheDocument()
+    expect(screen.getByText(`${ABSENT_VALUE_MARKER} (final cost unavailable)`)).toBeInTheDocument()
+    expect(screen.queryByText(/1\.2345/)).not.toBeInTheDocument()
     expect(screen.queryByText(/awaiting final cost/)).not.toBeInTheDocument()
   })
 })

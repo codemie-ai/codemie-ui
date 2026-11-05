@@ -29,6 +29,7 @@ import InfoIcon from '@/assets/icons/info.svg?react'
 import DetailsBadge from '@/components/details/DetailsBadge'
 import Spinner from '@/components/Spinner'
 import Tooltip from '@/components/Tooltip/Tooltip'
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import {
   getStatusColor,
   getStatusColorWithOpacity,
@@ -45,7 +46,6 @@ import {
   TabularResponse,
 } from '@/types/analytics'
 import {
-  ABSENT_VALUE_MARKER,
   formatMetricValue,
   formatSpendQualificationSuffix,
   readSpendQualification,

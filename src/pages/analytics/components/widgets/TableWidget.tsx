@@ -18,13 +18,13 @@ import { useSnapshot } from 'valtio'
 
 import Pagination from '@/components/Pagination'
 import Table from '@/components/Table'
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import { analyticsStore } from '@/store/analytics'
 import type { AnalyticsPaginatedRequestParams, TabularResponse } from '@/types/analytics'
 import { TabularMetricType, ColumnType, MetricFormat } from '@/types/analytics'
 import type { ColumnDefinition, SortState } from '@/types/table'
 import { DefinitionTypes } from '@/types/table'
 import {
-  ABSENT_VALUE_MARKER,
   formatMetricValue,
   formatSpendQualificationSuffix,
   readCellSpendQualification,

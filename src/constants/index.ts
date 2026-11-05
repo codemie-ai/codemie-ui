@@ -158,6 +158,12 @@ export const CATEGORIES = 'categories'
 // Sensitive value masking
 export const SENSITIVE_VALUE_MASK = '********'
 
+/**
+ * The one marker every analytics surface uses for "no figure exists", so `-` always means the same
+ * thing wherever it appears.
+ */
+export const ABSENT_VALUE_MARKER = '-'
+
 export const HTTP_STATUS = {
   UNAUTHORIZED: 401,
 } as const
