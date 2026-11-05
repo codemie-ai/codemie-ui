@@ -1,0 +1,3 @@
+{"event":"lifecycle_emission","intent":"artifact_published","artifact_kind":"plan","status":"skipped"}
+{"event":"decision.recorded","gate_id":"code-review.final","mode":"hitl","decision":"approve","source":"hitl","escalated":false}
+{"event":"lifecycle_emission","intent":"record_complexity_score","assessment_mode":"actual","status":"skipped"}

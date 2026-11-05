@@ -20,7 +20,7 @@ export const useIsTruncated = (ref) => {
 
   useEffect(() => {
     const element = ref.current
-    if (!element) return
+    if (!element) return () => {}
 
     const checkTruncation = () => {
       let truncated = false
@@ -35,9 +35,14 @@ export const useIsTruncated = (ref) => {
     })
     resizeObserver.observe(element)
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       checkTruncation()
     }, 0)
+
+    return () => {
+      resizeObserver.disconnect()
+      clearTimeout(timer)
+    }
   }, [ref])
 
   return isTruncated

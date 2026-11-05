@@ -247,6 +247,7 @@ const Popup: React.FC<PopupProps> = ({
             !hideClose ? 'gap-4' : ''
           } ${withBorder ? 'border-b border-border-structural' : 'border-none'}`,
         },
+        headerTitle: { className: 'flex-1 min-w-0' },
         headerIcons: { className: cn('self-auto', hideClose && 'hidden') },
         mask: { className: '!z-50' },
         content: { className: 'border-none p-0 text-sm', tabIndex: -1 },

@@ -1,0 +1,41 @@
+{
+  "decision": "approve",
+  "rationale": "Three review lenses (blind, edge-case, acceptance) ran against the implementation diff. The edge-case lens found a critical functional bug — useIsTruncated's effect (deps: [ref], a stable object) only ever runs once, on SessionModal's very first mount, before the session loads and before the subtitle span exists; it then never re-attaches once the span mounts with real content, so the tooltip would never activate in production despite the mocked unit test passing. I reproduced this with a regression test that does not mock useIsTruncated and simulates the real loading->loaded transition (confirmed RED against the original code), then fixed it by extracting a SessionSubtitle subcomponent that mounts only once subtitle content exists, so the hook's ref attaches fresh with real content already present (matching the working Card.tsx/WorkflowCard.tsx pattern). Also addressed: tooltip target class was a hardcoded, non-instance-scoped string (now includes traceId, matching the Card.tsx/WorkflowCard.tsx convention); added a short-header regression test and a close-button-visibility-with-long-header test for the shared Popup.tsx pt.headerTitle change, since that change has a ~15+ consumer blast radius and lacked a 'normal case unaffected' check. All fixes are test-first (RED confirmed, then GREEN) and committed. Remaining minor items (exact-truncation-boundary test for the pre-existing useIsTruncated hook; the Tooltip component mounting unconditionally while data-pr-tooltip is empty) are deferred: the boundary case pre-dates this diff and is a property of a hook already used in 30+ places, and the unconditional Tooltip mount matches the codebase's existing Card.tsx precedent, not a new risk introduced here.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "criterion": "Subtitle stays inside the modal and does not reach the close button",
+      "status": "pass",
+      "notes": "Popup.tsx's pt.headerTitle: { className: 'flex-1 min-w-0' } lets the PrimeReact-generated .p-dialog-title wrapper shrink; headerIcons keeps self-auto. Covered by Popup.test.tsx's header-title-wrapper test and the new close-button-visibility-with-long-header test."
+    },
+    {
+      "criterion": "Long value is cut off with an ellipsis, full text on hover",
+      "status": "pass",
+      "notes": "truncate gives the ellipsis. The hover tooltip now genuinely activates: fixed the useIsTruncated wiring bug (see rationale) and proved it with an unmocked regression test (SessionModal.truncation.test.tsx) that simulates the real async loading transition."
+    }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit message format (EPMCDME-XXXX: Capital sentence)",
+      "status": "pass",
+      "notes": "All 5 commits on the branch match the documented format."
+    },
+    {
+      "standard": "modal-patterns.md — never import PrimeReact Dialog directly, stay within Popup's slot props",
+      "status": "pass",
+      "notes": "Only Popup.tsx's existing pt pass-through object was extended; SessionModal.tsx only consumes headerContent."
+    },
+    {
+      "standard": "styling-guide.md — Tailwind-only, semantic tokens, no arbitrary values",
+      "status": "pass",
+      "notes": "flex-1, min-w-0, text-xs, text-text-secondary, truncate are all standard/semantic utility classes."
+    },
+    {
+      "standard": "security-patterns.md — HTML sinks / untrusted navigation",
+      "status": "na",
+      "notes": "No dangerouslySetInnerHTML, innerHTML, or navigation/redirect code touched by this diff."
+    }
+  ],
+  "findings": []
+}

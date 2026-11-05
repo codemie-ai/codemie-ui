@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
-import { type FC } from 'react'
+import { useRef, type FC } from 'react'
 
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
+import Tooltip from '@/components/Tooltip'
+import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { truncateInput } from '@/utils/helpers'
 
 import SessionBody from './SessionBody'
@@ -27,10 +29,81 @@ interface SessionModalProps {
   onHide: () => void
 }
 
+// Caps the title's displayed text and tooltip at a generous but bounded length — matching the
+// convention Card.tsx uses for its own free-form tooltip text — since session prompts are
+// user-typed and can be arbitrarily long (e.g. pasted logs), and an unbounded tooltip could grow
+// taller than the viewport.
+const MAX_TITLE_LENGTH = 1000
+
+interface SessionTitleProps {
+  traceId: string
+  title: string
+}
+
+// Keyed by `title` in the parent, so the whole component remounts whenever the displayed text
+// changes (e.g. the 'Session' loading placeholder swapping for the real prompt once the session
+// loads). useIsTruncated only measures once on mount and re-measures on a ResizeObserver
+// callback; ResizeObserver fires on the element's own box-size change, not on scrollWidth growing
+// from new text while the box itself (constrained by flex-1) stays the same width — so without a
+// remount, a later text swap would never be re-measured and the tooltip could permanently miss a
+// truncated title.
+const SessionTitle: FC<SessionTitleProps> = ({ traceId, title }) => {
+  const titleRef = useRef<HTMLSpanElement>(null)
+  const isTitleTruncated = useIsTruncated(titleRef)
+  const tooltipTarget = `tooltip-target-session-title-${traceId}`
+
+  return (
+    <>
+      <Tooltip target={'.' + tooltipTarget} position="bottom" showDelay={100} />
+      <span
+        ref={titleRef}
+        data-pr-tooltip={isTitleTruncated ? title : ''}
+        data-pr-position="bottom"
+        className={`text-h3 font-semibold text-text-primary truncate ${tooltipTarget}`}
+      >
+        {title}
+      </span>
+    </>
+  )
+}
+
+interface SessionSubtitleProps {
+  traceId: string
+  subtitle: string
+}
+
+// A dedicated component so useIsTruncated's ref attaches on this component's own first mount —
+// i.e. once the subtitle already has real content. SessionModal's subtitle is only known after
+// the session loads asynchronously, so calling the hook directly in SessionModal would attach
+// the ref while the span doesn't exist yet (subtitle is still ''), and useIsTruncated's effect
+// (deps: [ref], a stable object) never gets another chance to run once the span does mount.
+// Also keyed by `subtitle` in the parent — if the subtitle text itself changes while this stays
+// mounted (e.g. the session data refetches for the same trace), the same stale-measurement gap
+// described on SessionTitle applies here too; the remount forces a fresh measurement.
+const SessionSubtitle: FC<SessionSubtitleProps> = ({ traceId, subtitle }) => {
+  const subtitleRef = useRef<HTMLSpanElement>(null)
+  const isSubtitleTruncated = useIsTruncated(subtitleRef)
+  const tooltipTarget = `tooltip-target-session-subtitle-${traceId}`
+
+  return (
+    <>
+      <Tooltip target={'.' + tooltipTarget} position="bottom" showDelay={100} />
+      <span
+        ref={subtitleRef}
+        data-pr-tooltip={isSubtitleTruncated ? subtitle : ''}
+        data-pr-position="bottom"
+        className={`text-h5 text-text-secondary truncate ${tooltipTarget}`}
+      >
+        {subtitle}
+      </span>
+    </>
+  )
+}
+
 const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
   const { session, loading, error } = useCliAnalyticsSession(traceId)
 
-  const title = truncateInput(session?.prompt, 80, 'Session')
+  const title = truncateInput(session?.prompt, MAX_TITLE_LENGTH, 'Session')
   const subtitle = [
     session?.harness_name,
     session?.model_name,
@@ -52,8 +125,8 @@ const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
       isFullWidth
       headerContent={
         <div className="flex flex-col gap-0.5 min-w-0">
-          <span className="text-h3 font-semibold text-text-primary truncate">{title}</span>
-          {subtitle && <span className="text-h5 text-text-secondary truncate">{subtitle}</span>}
+          <SessionTitle key={title} traceId={traceId} title={title} />
+          {subtitle && <SessionSubtitle key={subtitle} traceId={traceId} subtitle={subtitle} />}
         </div>
       }
     >

@@ -113,6 +113,39 @@ describe('Popup', () => {
     expect(screen.queryByText('Test Popup')).not.toBeInTheDocument()
   })
 
+  it('constrains the generated header-title wrapper so long header content can shrink/truncate', () => {
+    renderPopup({ headerContent: <div data-testid="long-header">long header content</div> })
+    const titleWrapper = screen.getByTestId('long-header').closest('.p-dialog-title')
+    expect(titleWrapper).toHaveClass('flex-1', 'min-w-0')
+  })
+
+  it('keeps the title wrapper shrinkable and the close button unaffected when headerContent is very long', () => {
+    renderPopup({
+      headerContent: (
+        <div data-testid="long-header">
+          {'a very long header content string that would otherwise overflow the dialog '.repeat(10)}
+        </div>
+      ),
+    })
+
+    // jsdom performs no layout, so this cannot assert the close button stays pixel-visible past
+    // an overflowing header; it asserts the actual CSS mechanism the fix relies on instead — the
+    // title wrapper can shrink (flex-1 min-w-0) while the close button stays present, enabled,
+    // and not hidden, regardless of header length.
+    const titleWrapper = screen.getByTestId('long-header').closest('.p-dialog-title')
+    expect(titleWrapper).toHaveClass('flex-1', 'min-w-0')
+
+    const closeButton = screen.getByRole('button', { name: 'Close' })
+    expect(closeButton).toBeEnabled()
+    expect(closeButton.closest('.p-dialog-header-icons')).not.toHaveClass('hidden')
+  })
+
+  it('still renders a short default header and the close button unobscured', () => {
+    renderPopup()
+    expect(screen.getByText('Test Popup')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeVisible()
+  })
+
   it('renders custom footer content instead of the default buttons', () => {
     const customFooter = <div data-testid="custom-footer">Custom Footer Action</div>
     renderPopup({ footerContent: customFooter })
