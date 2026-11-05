@@ -1,0 +1,19 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case and acceptance lenses ran (blind/verification-gap n/a under compact profile; standards not expected). 0 blocking; 0 deferred; 4 edge candidates and 2 acceptance 'partial' rows dismissed after reading format.ts and SessionsView.tsx: observed-only and lower-bound labels are intentional non-complete labelling, and a rate without tool_calls_success is deliberately omitted (CR-003 fix). Lens line refs (283-314) did not match the 156-line working-tree format.ts, so grading used the current file.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "null turns/agent_count/skill_count show dash, served 0 shows 0 (list and detail)", "status": "pass", "notes": "describeSessionCount; tests cover null and 0" },
+    { "kind": "spec", "item": "tool_calls_total > tool_call_count shows 'N observed of M total' and success labelled observed-only", "status": "pass", "notes": "Lens said partial; rate intentionally omitted when tool_calls_success is null, per CR-003 fix" },
+    { "kind": "spec", "item": "provisional/none labelled provisional/unavailable, not complete", "status": "pass", "notes": "Lens said partial; null-total branch shows 'Observed only', never presented as complete" },
+    { "kind": "spec", "item": "Users, Repositories, Overview unchanged", "status": "pass", "notes": "No diff in those views" },
+    { "kind": "spec", "item": "Tests SessionModal.test.tsx, useCliAnalyticsSession.test.ts updated", "status": "na", "notes": "Paths listed as minimal; SessionBody.activity.test.tsx covers detail" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for this profile" },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for this profile" },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for this profile" }
+  ],
+  "findings": []
+}

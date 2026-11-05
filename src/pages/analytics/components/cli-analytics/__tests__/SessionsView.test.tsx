@@ -119,6 +119,32 @@ describe('SessionsView', () => {
     ])
   })
 
+  it.each([
+    [null, 'none', undefined, '—'],
+    [0, 'final', ['turns'], '0'],
+    [4, 'final', ['turns'], '4'],
+    [4, 'provisional', ['turns'], '4+'],
+    [4, undefined, undefined, '4+'],
+  ] as const)('turns %s / %s renders %s', (turns, state, metrics, text) => {
+    vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+      displayRows: [
+        { ...MOCK_ROW, turns, summary_state: state, summary_metrics: metrics as never },
+      ],
+      loading: false,
+      error: null,
+      page: 1,
+      totalPages: 1,
+      perPage: 20,
+      setPage: vi.fn(),
+      search: '',
+      setSearch: vi.fn(),
+    })
+
+    render(<SessionsView filters={MOCK_FILTERS} />)
+
+    expect(screen.getAllByRole('cell').some((c) => c.textContent === text)).toBe(true)
+  })
+
   it('renders a search input with correct placeholder', () => {
     render(<SessionsView filters={MOCK_FILTERS} />)
 

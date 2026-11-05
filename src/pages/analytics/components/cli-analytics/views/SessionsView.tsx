@@ -29,7 +29,7 @@ import { formatDateTime } from '@/utils/helpers'
 
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
-import { formatLines, linesTitle } from '../format'
+import { describeSessionCount, formatLines, linesTitle } from '../format'
 import { useCliAnalyticsFrameworks } from '../hooks/useCliAnalyticsFrameworks'
 import { useCliAnalyticsSessions } from '../hooks/useCliAnalyticsSessions'
 import { useSessionModal } from '../hooks/useSessionModal'
@@ -70,9 +70,16 @@ const DeliveryFrameworkCell: FC<{ row: SessionRow }> = ({ row }) => (
   </div>
 )
 
-const TurnsCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="text-right">{(row.turns ?? 0).toLocaleString()}</div>
-)
+const TurnsCell: FC<{ row: SessionRow }> = ({ row }) => {
+  const { value, note } = describeSessionCount(row.turns, row, 'turns')
+  const partial = note && row.turns != null
+  return (
+    <div className="text-right" title={note}>
+      {value}
+      {partial ? '+' : ''}
+    </div>
+  )
+}
 
 const NetLinesCell: FC<{ row: SessionRow }> = ({ row }) => (
   <div className="text-right" title={linesTitle(row.net_lines)}>

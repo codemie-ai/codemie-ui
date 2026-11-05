@@ -37,7 +37,12 @@ import SessionTimeline from './SessionTimeline'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import BarChartWidget from '../../widgets/BarChartWidget'
 import MetricCard from '../../widgets/MetricCard'
-import { formatDuration } from '../format'
+import {
+  describeSessionCount,
+  describeSessionToolCalls,
+  formatDuration,
+  type SessionCount,
+} from '../format'
 
 ChartJS.register(
   CategoryScale,
@@ -90,6 +95,9 @@ function m(id: string, label: string, value: string, description?: string): Metr
   return { id, label, type: ColumnType.STRING, value, description }
 }
 
+const countMetric = (id: string, label: string, c: SessionCount): Metric =>
+  m(id, label, c.value, c.note)
+
 interface SessionBodyProps {
   session: SessionDetail
 }
@@ -100,11 +108,6 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
     (session.output_tokens ?? 0) +
     (session.cache_read_tokens ?? 0) +
     (session.cache_creation_tokens ?? 0)
-
-  const toolCallsOkLabel: string | undefined =
-    session.tool_calls_success != null && (session.tool_call_count ?? 0) > 0
-      ? `${session.tool_success_rate ?? 0}% ok`
-      : undefined
 
   const costMetrics: Metric[] = [
     m('cost_usd', 'Cost', formatCliAnalyticsCost(session.cost_usd), 'API-equivalent'),
@@ -134,15 +137,10 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
   ]
 
   const activityMetrics: Metric[] = [
-    m('turns', 'Turns', (session.turns ?? 0).toLocaleString()),
-    m(
-      'tool_calls',
-      'Tool calls',
-      (session.tool_call_count ?? 0).toLocaleString(),
-      toolCallsOkLabel
-    ),
-    m('agents', 'Agents', session.agent_count != null ? String(session.agent_count) : '—'),
-    m('skills', 'Skills', session.skill_count != null ? String(session.skill_count) : '—'),
+    countMetric('turns', 'Turns', describeSessionCount(session.turns, session, 'turns')),
+    countMetric('tool_calls', 'Tool calls', describeSessionToolCalls(session)),
+    countMetric('agents', 'Agents', describeSessionCount(session.agent_count, session, 'agents')),
+    countMetric('skills', 'Skills', describeSessionCount(session.skill_count, session, 'skills')),
   ]
 
   const growthData = useMemo(() => {
@@ -206,7 +204,12 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
         <AnalyticsWidget title="Activity" expandable={false}>
           <div className="grid grid-cols-2 gap-3">
             {activityMetrics.map((metric) => (
-              <MetricCard key={metric.id} metric={metric} />
+              // qualifiers ("Provisional · 1 observed of 3 total · 100% ok") need more than the default 3 lines
+              <MetricCard
+                key={metric.id}
+                metric={metric}
+                mutedTextClassName="text-text-quaternary line-clamp-5"
+              />
             ))}
           </div>
         </AnalyticsWidget>

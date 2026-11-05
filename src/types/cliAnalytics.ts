@@ -43,6 +43,9 @@ export interface UserRow {
   daily_activity?: DailyActivityBucket[]
 }
 
+export type SessionSummaryState = 'none' | 'provisional' | 'final'
+export type SessionSummaryMetric = 'agents' | 'skills' | 'tool_calls' | 'turns'
+
 export interface SessionRow {
   trace_id: string
   developer_name: string
@@ -53,10 +56,16 @@ export interface SessionRow {
   input_tokens: number
   output_tokens: number
   cost_usd: number
+  // Observed in telemetry (not the session total); see tool_calls_total.
   tool_call_count: number
+  tool_calls_total?: number | null
   branch: string | null
   prompt?: string
-  turns?: number
+  // null = unknown (not reported); 0 is a real zero.
+  turns?: number | null
+  // Absent on older backends: treated as unknown, never as final.
+  summary_state?: SessionSummaryState
+  summary_metrics?: SessionSummaryMetric[]
   cache_read_tokens?: number
   cache_creation_tokens?: number
   ctx_per_call?: number
@@ -92,11 +101,11 @@ export interface SessionDetail extends SessionRow {
   events: SessionEvent[]
   harness_name: string
   active_ms?: number
-  agent_count?: number
-  skill_count?: number
+  agent_count?: number | null
+  skill_count?: number | null
   cache_read_cost_usd?: number
   tool_calls_success?: number
-  tool_success_rate?: number
+  tool_success_rate?: number | null
   tools?: ToolWithSuccessRow[]
   dispatches?: DispatchRow[]
 }
