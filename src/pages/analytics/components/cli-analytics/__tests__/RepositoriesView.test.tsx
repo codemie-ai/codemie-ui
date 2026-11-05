@@ -344,4 +344,38 @@ describe('RepositoriesView', () => {
     expect(screen.getByText('75.00%')).toBeInTheDocument()
     expect(screen.queryByText('50.00%')).not.toBeInTheDocument()
   })
+
+  describe('net lines', () => {
+    const TITLE = 'Not reported - no line data was received'
+    const withNet = (repoNet: number | null, branchNet: number | null): RepositoryRow[] => [
+      {
+        ...MOCK_ROWS[0],
+        net_lines: repoNet,
+        branches: [{ ...MOCK_ROWS[0].branches![0], net_lines: branchNet }],
+      },
+    ]
+
+    it('renders the marker with a title for null repo and branch net lines', async () => {
+      const user = userEvent.setup()
+      vi.mocked(useCliAnalyticsRepositories).mockReturnValue({
+        ...EMPTY_HOOK_RESULT,
+        rows: withNet(null, null),
+      })
+      render(<RepositoriesView filters={MOCK_FILTERS} />)
+      await user.click(screen.getAllByText('▶')[0])
+      expect(screen.getAllByTitle(TITLE)).toHaveLength(2)
+    })
+
+    it('renders 0 without title and groups thousands', async () => {
+      const user = userEvent.setup()
+      vi.mocked(useCliAnalyticsRepositories).mockReturnValue({
+        ...EMPTY_HOOK_RESULT,
+        rows: withNet(0, 1234),
+      })
+      render(<RepositoriesView filters={MOCK_FILTERS} />)
+      await user.click(screen.getAllByText('▶')[0])
+      expect(screen.queryAllByTitle(TITLE)).toHaveLength(0)
+      expect(screen.getByText((1234).toLocaleString())).toBeInTheDocument()
+    })
+  })
 })

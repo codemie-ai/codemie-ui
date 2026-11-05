@@ -39,7 +39,7 @@ export interface UserRow {
   user_id?: string | null
   tool_success_rate?: number
   top_model?: string | null
-  net_lines?: number
+  net_lines?: number | null
   daily_activity?: DailyActivityBucket[]
 }
 
@@ -60,7 +60,7 @@ export interface SessionRow {
   cache_read_tokens?: number
   cache_creation_tokens?: number
   ctx_per_call?: number
-  net_lines?: number
+  net_lines?: number | null
   bloat_pct?: number
   delivery_framework?: string
 }
@@ -109,7 +109,7 @@ export interface OverviewKPIs {
   total_tool_calls: number
   tool_call_success_rate: number
   total_files_changed: number
-  net_lines: number
+  net_lines: number | null
   dead_sessions: number
   total_input_tokens: number
   total_output_tokens: number
@@ -123,7 +123,7 @@ export interface OverviewKPIs {
 
 export interface DailyBucket {
   day: string
-  net_lines: number
+  net_lines: number | null
 }
 
 export interface ModelBreakdownItem {
@@ -143,9 +143,9 @@ export interface RepositoryBranchRow {
   turns: number
   cost_usd: number
   files_changed: number
-  lines_added: number
-  lines_removed: number
-  net_lines: number
+  lines_added: number | null
+  lines_removed: number | null
+  net_lines: number | null
   tool_calls: number
   tool_calls_success: number
   tool_success_rate: number
@@ -157,9 +157,9 @@ export interface RepositoryRow {
   turns: number
   cost_usd: number
   files_changed: number
-  lines_added: number
-  lines_removed: number
-  net_lines: number
+  lines_added: number | null
+  lines_removed: number | null
+  net_lines: number | null
   tool_calls: number
   tool_calls_success: number
   tool_success_rate: number
@@ -257,7 +257,7 @@ export interface CliAnalyticsCodeChangesKPIs {
   files_changed: number
   files_written: number
   files_edited: number
-  net_lines: number
+  net_lines: number | null
 }
 
 export interface CliAnalyticsEfficiencyData {

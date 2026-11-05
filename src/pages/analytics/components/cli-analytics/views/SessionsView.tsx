@@ -29,6 +29,7 @@ import { formatDateTime } from '@/utils/helpers'
 
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
+import { formatLines, linesTitle } from '../format'
 import { useCliAnalyticsFrameworks } from '../hooks/useCliAnalyticsFrameworks'
 import { useCliAnalyticsSessions } from '../hooks/useCliAnalyticsSessions'
 import { useSessionModal } from '../hooks/useSessionModal'
@@ -74,7 +75,9 @@ const TurnsCell: FC<{ row: SessionRow }> = ({ row }) => (
 )
 
 const NetLinesCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="text-right">{(row.net_lines ?? 0).toLocaleString()}</div>
+  <div className="text-right" title={linesTitle(row.net_lines)}>
+    {formatLines(row.net_lines)}
+  </div>
 )
 
 const InputTokensCell: FC<{ row: SessionRow }> = ({ row }) => (

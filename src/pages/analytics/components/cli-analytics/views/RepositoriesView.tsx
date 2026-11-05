@@ -26,7 +26,7 @@ import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { formatCliAnalyticsCost } from '@/utils/currency'
 
 import AnalyticsWidget from '../../AnalyticsWidget'
-import { buildRepoMetrics } from '../format'
+import { buildRepoMetrics, formatLines, linesTitle } from '../format'
 import ExtendedSessionsModal from './ExtendedSessionsModal'
 import { useCliAnalyticsRepositories } from '../hooks/useCliAnalyticsRepositories'
 
@@ -229,8 +229,11 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
                                 <td className="text-text-primary px-4 py-2 text-right bg-surface-base-secondary border-b border-border-structural tabular-nums">
                                   {repo.files_changed}
                                 </td>
-                                <td className="text-text-primary px-4 py-2 text-right bg-surface-base-secondary border-b border-border-structural tabular-nums">
-                                  {repo.net_lines}
+                                <td
+                                  className="text-text-primary px-4 py-2 text-right bg-surface-base-secondary border-b border-border-structural tabular-nums"
+                                  title={linesTitle(repo.net_lines)}
+                                >
+                                  {formatLines(repo.net_lines)}
                                 </td>
                                 <td className="text-text-primary px-4 py-2 text-right bg-surface-base-secondary border-b border-border-structural tabular-nums">
                                   {formatMetricValue(
@@ -270,8 +273,11 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
                                     <td className="text-text-primary px-4 py-2 text-right bg-surface-base-tertiary border-b border-border-structural tabular-nums">
                                       {b.files_changed}
                                     </td>
-                                    <td className="text-text-primary px-4 py-2 text-right bg-surface-base-tertiary border-b border-border-structural tabular-nums">
-                                      {b.net_lines}
+                                    <td
+                                      className="text-text-primary px-4 py-2 text-right bg-surface-base-tertiary border-b border-border-structural tabular-nums"
+                                      title={linesTitle(b.net_lines)}
+                                    >
+                                      {formatLines(b.net_lines)}
                                     </td>
                                     <td className="text-text-primary px-4 py-2 text-right bg-surface-base-tertiary border-b border-border-structural tabular-nums">
                                       {formatMetricValue(

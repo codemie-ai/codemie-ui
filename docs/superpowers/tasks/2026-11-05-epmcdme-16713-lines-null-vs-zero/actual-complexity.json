@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 15,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "15 files per diffstat (XL by file count), but 7 are test files and 6 are small view edits applying one shared helper (formatLines/linesTitle in format.ts) in a single directory tree." },
+    { "dimension": "component_scope", "reason": "Six CLI analytics views plus shared format.ts and the cliAnalytics type, all within the UI layer using one repeated pattern." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

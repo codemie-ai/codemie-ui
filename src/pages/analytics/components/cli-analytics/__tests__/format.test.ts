@@ -15,7 +15,17 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { buildRepoMetrics, formatDuration, formatToolSuccess, truncateModelName } from '../format'
+import { ABSENT_VALUE_MARKER } from '@/constants'
+
+import {
+  buildRepoMetrics,
+  formatDuration,
+  formatLines,
+  formatToolSuccess,
+  linesTitle,
+  LINES_NOT_REPORTED_TITLE,
+  truncateModelName,
+} from '../format'
 
 describe('formatDuration', () => {
   it('returns em-dash for null', () => {
@@ -89,5 +99,37 @@ describe('formatToolSuccess', () => {
 
   it('treats a missing rate with calls present as 0.00%', () => {
     expect(formatToolSuccess(undefined, 5)).toBe('0.00%')
+  })
+})
+
+describe('formatLines / linesTitle', () => {
+  it('returns the marker for null and undefined', () => {
+    expect(formatLines(null)).toBe(ABSENT_VALUE_MARKER)
+    expect(formatLines(undefined)).toBe(ABSENT_VALUE_MARKER)
+  })
+  it('returns 0 for a real zero', () => {
+    expect(formatLines(0)).toBe('0')
+  })
+  it('groups thousands', () => {
+    expect(formatLines(1234)).toBe((1234).toLocaleString())
+  })
+  it('sets the title only when not reported', () => {
+    expect(linesTitle(null)).toBe(LINES_NOT_REPORTED_TITLE)
+    expect(linesTitle(undefined)).toBe(LINES_NOT_REPORTED_TITLE)
+    expect(linesTitle(0)).toBeUndefined()
+    expect(linesTitle(1234)).toBeUndefined()
+  })
+})
+
+describe('buildRepoMetrics null lines', () => {
+  it('keeps null net_lines as null', () => {
+    const m = buildRepoMetrics({
+      session_count: 1,
+      cost_usd: 1,
+      files_changed: 1,
+      net_lines: null,
+      tool_success_rate: 1,
+    })
+    expect(m.find((x) => x.id === 'net_lines')?.value).toBeNull()
   })
 })

@@ -43,6 +43,18 @@ interface OverviewViewProps {
   repositories?: string[]
 }
 
+function describeNetLines(netLines: number | null | undefined): string {
+  if (netLines == null) return 'net lines not reported'
+  const sign = netLines >= 0 ? '+' : ''
+  return `net ${sign}${netLines} lines`
+}
+
+// No calls means no denominator; a real 0% still shows as a percentage.
+function describeToolCallSuccess(totalCalls: number, successRate: number): string {
+  if (totalCalls > 0) return `${successRate.toFixed(1)}% success`
+  return '—'
+}
+
 function buildHeadlineMetrics(kpis: OverviewKPIs): Metric[] {
   return [
     {
@@ -70,7 +82,7 @@ function buildHeadlineMetrics(kpis: OverviewKPIs): Metric[] {
       label: 'Files Touched',
       type: ColumnType.INTEGER,
       value: kpis.total_files_changed,
-      description: `net ${kpis.net_lines >= 0 ? '+' : ''}${kpis.net_lines} lines`,
+      description: describeNetLines(kpis.net_lines),
     },
     {
       id: 'total_tool_calls',
@@ -78,8 +90,7 @@ function buildHeadlineMetrics(kpis: OverviewKPIs): Metric[] {
       type: ColumnType.INTEGER,
       value: kpis.total_tool_calls,
       // No calls means no denominator; a real 0% still shows as a percentage.
-      description:
-        kpis.total_tool_calls > 0 ? `${kpis.tool_call_success_rate.toFixed(1)}% success` : '—',
+      description: describeToolCallSuccess(kpis.total_tool_calls, kpis.tool_call_success_rate),
     },
     {
       id: 'total_cost_usd',

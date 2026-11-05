@@ -177,7 +177,9 @@ const BASE_KPIS = {
 }
 
 // mockReturnValue, not ...Once: a second hook call would fall back to the module default.
-function renderWithKpis(overrides: Partial<typeof BASE_KPIS>) {
+function renderWithKpis(overrides: {
+  [K in keyof typeof BASE_KPIS]?: (typeof BASE_KPIS)[K] | null
+}) {
   vi.mocked(useCliAnalyticsOverview).mockReturnValue({
     kpis: { ...BASE_KPIS, ...overrides },
     dailyBuckets: [{ day: '2026-07-01', net_lines: 18 }],
@@ -360,5 +362,22 @@ describe('OverviewView', () => {
     expect(screen.queryByText('stale/repo-b')).not.toBeInTheDocument()
 
     cliAnalyticsStore.repositories = null
+  })
+
+  it('says net lines not reported when net_lines is null', () => {
+    renderWithKpis({ net_lines: null })
+    expect(screen.getByTestId('metric-desc-total_files_changed')).toHaveTextContent(
+      'net lines not reported'
+    )
+  })
+
+  it('shows net +0 lines for a real zero', () => {
+    renderWithKpis({ net_lines: 0 })
+    expect(screen.getByTestId('metric-desc-total_files_changed')).toHaveTextContent('net +0 lines')
+  })
+
+  it('shows net +5 lines for a positive value', () => {
+    renderWithKpis({ net_lines: 5 })
+    expect(screen.getByTestId('metric-desc-total_files_changed')).toHaveTextContent('net +5 lines')
   })
 })

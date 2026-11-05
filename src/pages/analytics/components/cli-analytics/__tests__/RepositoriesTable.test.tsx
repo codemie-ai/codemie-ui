@@ -39,6 +39,11 @@ vi.mock('@/components/Table', () => ({
           onClick={() => onSelectRow?.([r])}
         >
           {customRenderColumns?.repository ? customRenderColumns.repository(r) : r.repository}
+          <span data-testid={`added-${r.repository}`}>{customRenderColumns?.lines_added?.(r)}</span>
+          <span data-testid={`removed-${r.repository}`}>
+            {customRenderColumns?.lines_removed?.(r)}
+          </span>
+          <span data-testid={`net-${r.repository}`}>{customRenderColumns?.net_lines?.(r)}</span>
         </button>
       ))}
     </div>
@@ -133,5 +138,40 @@ describe('RepositoriesTable', () => {
     const nullRepoRow: RepositoryRow = { ...MOCK_ROW, repository: null }
     render(<RepositoriesTable {...DEFAULT_PROPS} rows={[nullRepoRow]} />)
     expect(screen.getByText('Unattributed')).toBeInTheDocument()
+  })
+
+  describe('line counts', () => {
+    const TITLE = 'Not reported - no line data was received'
+
+    it('renders the marker with a title for null lines', () => {
+      const row = {
+        ...MOCK_ROW,
+        repository: 'n',
+        lines_added: null,
+        lines_removed: null,
+        net_lines: null,
+      }
+      render(<RepositoriesTable {...DEFAULT_PROPS} rows={[row]} />)
+      for (const id of ['added-n', 'removed-n', 'net-n']) {
+        const cell = screen.getByTestId(id).firstElementChild as HTMLElement
+        expect(cell).toHaveTextContent('-')
+        expect(cell).toHaveAttribute('title', TITLE)
+      }
+    })
+
+    it('renders 0 without a title and groups thousands', () => {
+      const row = {
+        ...MOCK_ROW,
+        repository: 'z',
+        lines_added: 0,
+        lines_removed: 1234,
+        net_lines: 0,
+      }
+      render(<RepositoriesTable {...DEFAULT_PROPS} rows={[row]} />)
+      const added = screen.getByTestId('added-z').firstElementChild as HTMLElement
+      expect(added).toHaveTextContent('0')
+      expect(added).not.toHaveAttribute('title')
+      expect(screen.getByTestId('removed-z')).toHaveTextContent((1234).toLocaleString())
+    })
   })
 })

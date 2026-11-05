@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Render null lines_added/lines_removed/net_lines as an absent marker instead of crashing or showing 0 across CLI Analytics views, keeping real zeros.",
+  "generated": "2026-11-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 16,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "About 7 view/format source files plus cliAnalytics types, a new formatLines helper and its test, and null-case tests across roughly 6 view test files, spread over types, cli-analytics views and tests directories." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S to M: acceptance criteria enumerate null/undefined/0/number edge cases and no existing null-case test template exists (all current fixtures are non-null).",
+    "Requirements Clarity set at M: task statements diverge from code (no session-detail lines view, no client-side sort or CSV export, tooltips absent, glyph '–' vs existing '-' in formatMetricValue/ABSENT_VALUE_MARKER); design decision on reusing the existing absent mechanism is open."
+  ],
+  "split_recommendation": null
+}

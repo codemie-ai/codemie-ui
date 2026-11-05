@@ -98,9 +98,14 @@ vi.mock('../../AnalyticsWidget', () => ({
 }))
 
 vi.mock('../../widgets/MetricCard', () => ({
-  default: ({ metric }: { metric: { id: string; label: string; description?: string } }) => (
+  default: ({
+    metric,
+  }: {
+    metric: { id: string; label: string; value?: unknown; description?: string }
+  }) => (
     <div data-testid={`metric-${metric.id}`}>
       <span>{metric.label}</span>
+      <span data-testid={`metric-${metric.id}-value`}>{String(metric.value)}</span>
       {metric.description && (
         <span data-testid={`metric-${metric.id}-description`}>{metric.description}</span>
       )}
@@ -326,5 +331,22 @@ describe('EfficiencyView', () => {
 
     expect(screen.getByText('5')).toBeInTheDocument()
     expect(screen.queryByText('1,000')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    [null, 'null'],
+    [0, '0'],
+    [1200, '1200'],
+  ])('passes net_lines %s through as the metric value', (net, expected) => {
+    vi.mocked(useCliAnalyticsEfficiency).mockReturnValueOnce({
+      kpis: null,
+      deadSessions: null,
+      sessionDepth: [],
+      codeChanges: { files_changed: 1, files_written: 1, files_edited: 0, net_lines: net },
+      loading: false,
+      error: null,
+    })
+    render(<EfficiencyView filters={MOCK_FILTERS} />)
+    expect(screen.getByTestId('metric-net_lines-value')).toHaveTextContent(expected)
   })
 })

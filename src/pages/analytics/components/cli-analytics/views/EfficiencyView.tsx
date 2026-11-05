@@ -148,7 +148,7 @@ function buildCodeChangesMetrics(codeChanges: CliAnalyticsCodeChangesKPIs | null
       id: 'net_lines',
       label: 'Net Lines',
       type: ColumnType.INTEGER,
-      value: codeChanges?.net_lines ?? 0,
+      value: codeChanges ? codeChanges.net_lines : 0,
       description: 'added − removed',
     },
   ]

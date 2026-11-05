@@ -78,3 +78,13 @@ export function buildRepoMetrics(row: RepoMetricsSource): Metric[] {
     },
   ]
 }
+
+export const LINES_NOT_REPORTED_TITLE = 'Not reported - no line data was received'
+
+export function formatLines(value: number | null | undefined): string {
+  return formatMetricValue(value)
+}
+
+export function linesTitle(value: number | null | undefined): string | undefined {
+  return value == null ? LINES_NOT_REPORTED_TITLE : undefined
+}

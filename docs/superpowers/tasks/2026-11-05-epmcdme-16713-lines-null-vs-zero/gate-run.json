@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16713_lines-null-vs-zero",
+  "head": "27a11341359f294dbac0f47cf52d8f9eff0b0dc8",
+  "runner": "npm",
+  "started_at": "2026-11-05T10:23:10Z",
+  "completed_at": "2026-11-05T10:57:49Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 135069, "command": "npm run lint", "exit_code": 0},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 80327, "command": "npm run typecheck", "exit_code": 0},
+    {"id": "license-check", "source": "guide", "status": "N/A", "command": "npm run license-check", "notes": "Skip if: no dependency added, removed, or moved; diff touches no manifest."},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 44433, "command": "npm run secrets:check", "exit_code": 0, "notes": "Output: 'no leaks found' (scanned working tree, 41.34 MB)."},
+    {"id": "unit", "source": "guide", "status": "PASS", "duration_ms": 830022, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "Test Files 831 passed (831); Tests 8487 passed | 1 skipped"},
+    {"id": "integration", "source": "guide", "status": "PASS", "duration_ms": 328422, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "Test Files 57 passed (57); Tests 650 passed | 1 skipped"},
+    {"id": "test-harness", "source": "guide", "status": "N/A", "command": "npm run test-harness", "notes": "Needs the running stack and ~/.codemie/test-harness.json; not reachable from this runner. Unverified, still owed before the MR."},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 2990, "command": "npm run license-headers:check", "exit_code": 0, "notes": "Checked 2599 files, 0 missing license headers"},
+    {"id": "lint-staged", "source": "hook", "status": "N/A", "command": "npx lint-staged", "notes": "Operates on staged files only; nothing staged. Lint gate covers the whole tree."},
+    {"id": "sonar-local", "source": "hook", "status": "N/A", "command": "npm run sonar-local", "notes": "Requires a local SonarQube instance/infrastructure; not run. Still owed; CI will settle it."}
+  ],
+  "failures": {}
+}

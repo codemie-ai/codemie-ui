@@ -23,6 +23,7 @@ import type { RepositoryRow } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
 
 import AnalyticsWidget from '../../AnalyticsWidget'
+import { formatLines, linesTitle } from '../format'
 
 const RepositoryCell: FC<{ row: RepositoryRow }> = ({ row }) => (
   <div className="truncate max-w-xs" title={row.repository ?? UNATTRIBUTED_LABEL}>
@@ -39,15 +40,21 @@ const FilesChangedCell: FC<{ row: RepositoryRow }> = ({ row }) => (
 )
 
 const LinesAddedCell: FC<{ row: RepositoryRow }> = ({ row }) => (
-  <div className="text-right">{row.lines_added.toLocaleString()}</div>
+  <div className="text-right" title={linesTitle(row.lines_added)}>
+    {formatLines(row.lines_added)}
+  </div>
 )
 
 const LinesRemovedCell: FC<{ row: RepositoryRow }> = ({ row }) => (
-  <div className="text-right">{row.lines_removed.toLocaleString()}</div>
+  <div className="text-right" title={linesTitle(row.lines_removed)}>
+    {formatLines(row.lines_removed)}
+  </div>
 )
 
 const NetLinesCell: FC<{ row: RepositoryRow }> = ({ row }) => (
-  <div className="text-right">{row.net_lines.toLocaleString()}</div>
+  <div className="text-right" title={linesTitle(row.net_lines)}>
+    {formatLines(row.net_lines)}
+  </div>
 )
 
 const REPOSITORY_CELL_RENDERERS = {

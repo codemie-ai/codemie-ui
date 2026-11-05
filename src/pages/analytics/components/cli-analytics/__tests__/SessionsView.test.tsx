@@ -251,4 +251,37 @@ describe('SessionsView', () => {
 
     expect(screen.queryByText(/analytics plugin was not active/i)).not.toBeInTheDocument()
   })
+
+  describe('net lines', () => {
+    const renderRow = (net_lines: number | null) => {
+      vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+        displayRows: [{ ...MOCK_ROW, net_lines }],
+        loading: false,
+        error: null,
+        page: 1,
+        totalPages: 1,
+        perPage: 20,
+        setPage: vi.fn(),
+        search: '',
+        setSearch: vi.fn(),
+      })
+      return render(<SessionsView filters={MOCK_FILTERS} />)
+    }
+    const TITLE = 'Not reported - no line data was received'
+
+    it('renders the marker with a title for null', () => {
+      renderRow(null)
+      expect(screen.getByTitle(TITLE)).toHaveTextContent('-')
+    })
+
+    it('renders 0 without a title', () => {
+      renderRow(0)
+      expect(screen.queryByTitle(TITLE)).not.toBeInTheDocument()
+    })
+
+    it('renders a positive number grouped', () => {
+      renderRow(1234)
+      expect(screen.getByText((1234).toLocaleString())).toBeInTheDocument()
+    })
+  })
 })

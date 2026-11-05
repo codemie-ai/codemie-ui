@@ -54,6 +54,7 @@ vi.mock('@/components/Table', () => ({
           <button data-testid="user-row" onClick={() => onSelectRow?.([item])}>
             {item.developer_name}
           </button>
+          <span data-testid="cell-net-lines">{customRenderColumns?.net_lines?.(item)}</span>
           <span data-testid="cell-tool-success">
             {customRenderColumns?.tool_success_rate?.(item)}
           </span>
@@ -78,6 +79,9 @@ vi.mock('../views/ExtendedSessionsModal', () => ({
         <span data-testid="modal-title">{target.title}</span>
         <span data-testid="modal-tool-success">
           {String(target.metrics?.find((m: Metric) => m.id === 'tool_success_rate')?.value)}
+        </span>
+        <span data-testid="modal-net-lines">
+          {String(target.metrics?.find((m: Metric) => m.id === 'net_lines')?.value)}
         </span>
         <button data-testid="modal-close" onClick={onHide}>
           ×
@@ -168,5 +172,22 @@ describe('UsersView', () => {
   it('keeps a real 0% in the table when every tool call failed', () => {
     renderWithRow({ tool_calls: 12, tool_success_rate: 0 })
     expect(screen.getByTestId('cell-tool-success')).toHaveTextContent('0.00%')
+  })
+
+  it('shows the marker with a title for null net lines in the table and modal', async () => {
+    const user = userEvent.setup()
+    renderWithRow({ net_lines: null })
+    const cell = screen.getByTestId('cell-net-lines').firstElementChild as HTMLElement
+    expect(cell).toHaveTextContent('-')
+    expect(cell).toHaveAttribute('title', 'Not reported - no line data was received')
+    await user.click(screen.getByRole('button', { name: 'Alice' }))
+    expect(screen.getByTestId('modal-net-lines')).toHaveTextContent('null')
+  })
+
+  it('shows 0 without a title for zero net lines', () => {
+    renderWithRow({ net_lines: 0 })
+    const cell = screen.getByTestId('cell-net-lines').firstElementChild as HTMLElement
+    expect(cell).toHaveTextContent('0')
+    expect(cell).not.toHaveAttribute('title')
   })
 })

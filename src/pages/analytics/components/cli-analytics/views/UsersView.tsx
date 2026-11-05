@@ -36,7 +36,7 @@ import ExtendedSessionsModal from './ExtendedSessionsModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
 import DonutChartWidget from '../../widgets/DonutChartWidget'
-import { formatDuration, formatToolSuccess } from '../format'
+import { formatDuration, formatLines, formatToolSuccess, linesTitle } from '../format'
 import { useCliAnalyticsUsers } from '../hooks/useCliAnalyticsUsers'
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
@@ -57,7 +57,7 @@ function buildUserMetrics(row: UserRow): Metric[] {
       value: row.cost_usd ?? 0,
     },
     { id: 'turns', label: 'Turns', type: ColumnType.INTEGER, value: row.turns ?? 0 },
-    { id: 'net_lines', label: 'Net Lines', type: ColumnType.INTEGER, value: row.net_lines ?? 0 },
+    { id: 'net_lines', label: 'Net Lines', type: ColumnType.INTEGER, value: row.net_lines ?? null },
     {
       // Pre-formatted, so no format: MetricFormat.PERCENTAGE renders '—' as NaN%.
       id: 'tool_success_rate',
@@ -100,7 +100,9 @@ const ToolSuccessRateCell: FC<{ row: UserRow }> = ({ row }) => (
 )
 
 const NetLinesCell: FC<{ row: UserRow }> = ({ row }) => (
-  <div className="text-right">{(row.net_lines ?? 0).toLocaleString()}</div>
+  <div className="text-right" title={linesTitle(row.net_lines)}>
+    {formatLines(row.net_lines)}
+  </div>
 )
 
 const TopModelCell: FC<{ row: UserRow }> = ({ row }) => <div>{row.top_model || '—'}</div>

@@ -1,0 +1,146 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved clean balanced review, 0 findings"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved clean balanced review, 0 findings"
+    }
+  ],
+  "reviewed_head": "27a11341359f294dbac0f47cf52d8f9eff0b0dc8",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "All lenses required by the balanced profile ran and every candidate was checked against source; 4 edge-case candidates dismissed (BarChartWidget already maps null via toSeriesPoint, table columns are not sortable, EfficiencyView 0 fallback is spec-sanctioned for absent codeChanges, NaN backend value is outside the number | null contract). No deferred items; AC5 tsc/lint is pending Stage 7.",
+  "confidence": "high",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1 Tables/views render marker for null and 0 for zero; numbers unchanged",
+      "status": "pass",
+      "notes": "formatLines/linesTitle used across touched cells; view tests cover it"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2 Overview KPI description handles null, zero and non-zero net lines",
+      "status": "pass",
+      "notes": "OverviewView.tsx:73-77; tests cover null, 0, 5"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3 Overview daily chart no bar for null day; Efficiency and metric cards show marker for null",
+      "status": "pass",
+      "notes": "BarChartWidget maps via toSeriesPoint; MetricCard uses formatMetricValue"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4 No ?? 0 or || 0 remains on these fields",
+      "status": "pass",
+      "notes": "Only the spec-sanctioned absent-codeChanges fallback remains"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC5 tsc and lint pass with number | null types",
+      "status": "pending-stage-7",
+      "notes": "Execution evidence owned by Stage 7"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC6 Tests for formatLines and one null/0/number case per changed view",
+      "status": "pass",
+      "notes": "format and view tests added"
+    },
+    {
+      "kind": "spec",
+      "item": "Null/undefined renders ABSENT_VALUE_MARKER, real 0 renders 0",
+      "status": "pass",
+      "notes": "formatLines delegates to formatMetricValue"
+    },
+    {
+      "kind": "spec",
+      "item": "Page loads with a no-lines session; no error boundary",
+      "status": "pass",
+      "notes": "null.toLocaleString() removed from RepositoriesTable"
+    },
+    {
+      "kind": "spec",
+      "item": "Types become number | null; usageAttribution.ts untouched",
+      "status": "pass",
+      "notes": "cliAnalytics.ts updated"
+    },
+    {
+      "kind": "spec",
+      "item": "formatLines helper in format.ts used by every lines cell",
+      "status": "pass",
+      "notes": "format.ts:82-90"
+    },
+    {
+      "kind": "spec",
+      "item": "Null cells carry title 'Not reported - no line data was received'",
+      "status": "pass",
+      "notes": "linesTitle only for null/undefined"
+    },
+    {
+      "kind": "spec",
+      "item": "UsersView, EfficiencyView, buildRepoMetrics pass null as Metric value",
+      "status": "pass",
+      "notes": "drop ?? 0 as specified"
+    },
+    {
+      "kind": "spec",
+      "item": "Overview daily chart passes null net_lines through; no widget change",
+      "status": "pass",
+      "notes": "BarChartWidget untouched"
+    },
+    {
+      "kind": "spec",
+      "item": "Test fixtures updated only as far as tsc requires",
+      "status": "pass",
+      "notes": "test-local widening only"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "1 subject in range matches the documented EPMCDME-XXXX: Capital sentence format, nonzero ID, no trailing period"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "guide .ai-run/guides/standards/code-quality.md is absent from the repo and no ref was passed; no standard to adjudicate against"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "changed files are cli-analytics display formatting, types and tests; no HTML sinks, redirects, cross-window messages, config or secrets touched per the changed-path list and security-patterns.md"
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "All lenses required by the balanced profile ran and every candidate was checked against source; 4 edge-case candidates dismissed (BarChartWidget already maps null via toSeriesPoint, table columns are not sortable, EfficiencyView 0 fallback is spec-sanctioned for absent codeChanges, NaN backend value is outside the number | null contract). No deferred items; AC5 tsc/lint is pending Stage 7.",
+    "confidence": "high",
+    "risk_flags": []
+  }
+}
