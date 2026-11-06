@@ -1,122 +1,44 @@
-# Git Workflow — codemie-ui
+# Git Workflow
+
+**Project**: CodeMie UI · **Stack**: TypeScript React · **Scope**: branch names, commit subjects, merge policy and their recovery steps; exact gate commands live in `.ai-run/guides/quality-gates.md`, the MR adapter in `.ai-run/guides/project.md`
 
 ## Branch Naming Convention
 
-**Pattern**: `EPMCDME-XXXX_short-description`
+- base branch: main
 
-| ✅ Valid | ❌ Invalid |
-|---|---|
-| `EPMCDME-12399_add-hint-text` | `feature/add-hint-text` (no ticket) |
-| `EPMCDME-9000_fix-auth-redirect` | `EPMCDME-0_fix-auth` (zero ID rejected by CI) |
-| `EPMCDME-11960_fix-budget-popup` | `epmcdme-1234_my-fix` (wrong case) |
-
-Create from `main`:
-
-```bash
-git checkout main && git pull
-git checkout -b EPMCDME-XXXX_short-description
-```
-
----
+### Rules
+- Branch: `EPMCDME-<n>-short-description` from `main`; `<type>/short-description` is allowed when there is no ticket.
 
 ## Commit Message Format
 
-**Pattern**: `EPMCDME-XXXX: Capital sentence`
-
-Enforced by Tekton CI — the pipeline blocks on violations. Full regex:
-
 ```
-^((EPMCDME)-(?!0+)\d+:\s[A-Z][a-z]*.*|Generate release notes for version \d+\.\d+\.\d+|Revert "(EPMCDME)-(?!0+)\d+:\s[A-Z][a-z]*.*")$
+EPMCDME-<n>: <Capitalized sentence>
 ```
 
-| ✅ Valid | ❌ Invalid |
-|---|---|
-| `EPMCDME-123: Fix authentication bug` | `EPMCDME-123: fix bug` (lowercase first word) |
-| `EPMCDME-9359: Fix DOM-Based XSS in filename handling` | `EPMCDME-0: Fix bug` (zero ID) |
-| `EPMCDME-11910: Make WIQL Query attribute optional` | `feat: add feature` (wrong format) |
-| `Generate release notes for version 2.28.0` | `EPMCDME-12399` (no colon + description) |
-
-**Rules:**
-- First word after colon must start with uppercase (`Fix`, `Add`, `Make`, `Update`, `Remove`, `Refactor`)
-- No period at end
-- Body is optional; separate from subject with a blank line
-
----
+### Rules
+- Commit subject: `EPMCDME-<non-zero>: <Capitalised sentence>`, or `Generate release notes for version X.Y.Z`, or `Revert "EPMCDME-<n>: ..."`. Recent history follows it; the CI check documented for it lives in the external `epm-cdme/codemie-gitlab-templates` include, and no commit-msg hook exists in `.husky/`.
 
 ## Merge Strategy
 
-**Squash merge** into `main`.
-
-- Each feature branch becomes one commit on `main`
-- The squash commit subject should follow the same `EPMCDME-XXXX: Capital sentence` format
-- Delete the feature branch after merge
-
-```bash
-# After MR approved and squash-merged via GitLab UI / glab CLI:
-git branch -d EPMCDME-XXXX_short-description
-```
-
----
+### Rules
+- Squash merge into `main` is the documented convention; history on `main` holds no merge commits. Evidence: recorded user decision
+- Review host: GitLab merge request against `main` on remote `origin` (gitbud `epm-cdme/codemie-ui`), opened with `glab`.
+- The MR description follows `.gitlab/merge_request_templates/Default.md`: it carries the full `npm run test-harness` log (suite `sanity-ui`) and asks a reviewer to post `/sanity`.
 
 ## Anti-Patterns
 
-| ❌ Avoid | ✅ Do instead |
-|---|---|
-| `git commit -m "fix stuff"` | `git commit -m 'EPMCDME-123: Fix authentication redirect loop'` |
-| Committing directly to `main` | Always branch from `main` with ticket prefix |
-| `git push --force` on shared branches | Rebase locally, push normally |
-| Mixing unrelated changes in one commit | One logical change per commit |
-| `git commit --no-verify` | Fix the pre-commit hook issue instead |
-| Using zero ID: `EPMCDME-0` | Use the real Jira ticket number |
+- Never commit with `--no-verify`. The pre-commit hook runs, stopping at the first failure: lint-staged (prettier, eslint --fix and a whole-project `tsc --noEmit` on staged JS/TS; license-header fix on staged src files), `license-headers:check`, `secrets:check`, `sonar-local` (runs `test:coverage`; exits 0 without `SONAR_TOKEN` or when the server is unreachable).
 
----
-
-## Pre-commit Hooks (Husky)
-
-Runs automatically on every `git commit` — see `.husky/pre-commit`:
-
-| Hook | Command | Blocks commit? |
+| Do not | Do instead | Why |
 |---|---|---|
-| Staged file formatting | `npx lint-staged` | Yes |
-| License headers | `npm run license-headers:check` | Yes |
-| Secret detection | `npm run secrets:check` | Yes |
-| Sonar local scan | `npm run sonar-local` | Yes |
-
-Fix hook failures before re-committing. Never skip with `--no-verify`.
-
----
-
-## Merge Request (MR) Workflow
-
-1. Push branch: `git push -u origin EPMCDME-XXXX_short-description`
-2. Run `npm run test-harness` locally and capture the full console output — the MR description **must** include this log (see "MR description" below). The gitbud compliance bot enforces it; the MR will not merge without the harness section.
-3. Open MR against `main` via GitLab UI or `glab mr create`.
-4. MR title format: `EPMCDME-XXXX: Capital sentence` (same as commit).
-5. Wait for CI pipeline to pass (Tekton).
-6. Resolve reviewer comments.
-7. Squash and merge.
-
-### MR description
-
-Follow [.gitlab/merge_request_templates/Default.md](../../../.gitlab/merge_request_templates/Default.md) — it is the single source of truth and its comments carry the filling rules. Do not restate it here. With `glab`, pass the filled template via `--description`.
-
-What the compliance bot and reviewers rely on:
-
-- **`## Test harness`** — the heading and the fenced block with the pasted `npm run test-harness` summary are mandatory. Screenshots are not accepted there; unit tests do not substitute for the harness run.
-- **`## Verified locally`** — a short list of the checked scenarios on top and, in a collapsed `<details>` block, one subsection per scenario with **mandatory** screenshots of every user-visible state; how to run and record it: [local-verification.md](../testing/local-verification.md). Mark `N/A` with a reason only when the diff cannot alter UI.
-- **Ticket link** — `Closes EPMCDME-XXXX`.
-
-If `npm run test-harness` cannot run locally (missing `~/.codemie/test-harness.json`, stack not up, `ENV=local` prerequisites missing), fix the setup rather than skipping — the compliance bot checks the harness log, and every change requires a fresh run regardless of scope.
-
----
+| Cut a branch from another feature branch | `git switch -c EPMCDME-<n>-short-description main` | rebases and MR diffs stay against the integration branch |
+| Mix unrelated changes in one commit | one commit per logical change, each with the ticket key | revert and review stay scoped |
+| Force-push a shared branch with `--force` | `git push --force-with-lease` after a rebase, and only on your own branch | a teammate's commits survive |
 
 ## Troubleshooting
 
-| Issue | Solution |
+| Issue | Fix |
 |---|---|
-| CI rejects commit message | Check format: `EPMCDME-XXXX: Capital sentence`. No zero ID, no lowercase first word. |
-| Pre-commit hook fails on lint | Run `npm run lint:fix`, re-stage, re-commit |
-| Pre-commit hook fails on license headers | Run `npm run license-headers:fix`, re-stage |
-| Pre-commit hook fails on secrets | Remove the flagged secret, never commit credentials |
-| Push rejected on `main` | Branch from `main`, do not commit directly to it |
-| Merge conflict | `git fetch origin && git rebase origin/main` on feature branch |
+| Branch was cut from the wrong base | `git rebase --onto main <old-base> <branch>`, then `git push --force-with-lease` |
+| Subject lacks the ticket key | last commit: `git commit --amend`; older commits: `git rebase -i main` with `reword`; then `git push --force-with-lease` |
+| Rebase conflicts on `main` | resolve file by file, `git add`, `git rebase --continue`; `git rebase --abort` to restart; never resolve by taking one side wholesale |
