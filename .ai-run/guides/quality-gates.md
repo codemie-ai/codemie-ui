@@ -1,92 +1,73 @@
-# Quality Gates — codemie-ui
+# Quality Gates
 
-Run gates in this order (fastest to slowest). All must pass before opening an MR.
+Run order is fastest-to-slowest.
 
----
+## Full runs
 
-### Lint
-
-**Run**: `npm run lint`
-
-**Pass**: No output after the file list, exit code 0.
-
-**Fail**: Lines like `error  'foo' is defined but never used  no-unused-vars`. Exit code non-zero.
-
-**Auto-fix**: `npm run lint:fix` — fixes auto-fixable issues (unused imports, quote style, trailing commas). Not all errors are auto-fixable; review remaining errors manually.
-
-**Skip if**: Linting only non-`src/` files (e.g. pure config edits). Always run when touching `src/`.
+| Command | Covers | Source |
+|---|---|---|
+| `npm run check:pre-commit` | check:generated-types, typecheck, lint | package.json |
+| `npm run test:coverage` | unit tests with istanbul coverage, then integration tests | package.json |
+| `.husky/pre-commit` | lint-staged, license-headers:check, secrets:check, sonar-local | .husky/pre-commit |
+| `MR pipeline (external)` | pre-ci-guard waits for ci-pipeline and compliance-report on MRs targeting main; job bodies in epm-cdme/codemie-gitlab-templates | .gitlab-ci.yml |
 
 ---
 
-### Type-check
-
-**Run**: `npm run typecheck`
-
-**Pass**: Silent output, exit code 0.
-
-**Fail**: Lines like `src/store/assistants.ts:45:7 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.`
-
-**Auto-fix**: None — fix TypeScript errors manually. Common causes: missing type annotations, mismatched prop types, incorrect generic parameters.
-
-**Skip if**: Documentation-only changes (no `.ts`/`.tsx` files modified).
-
----
-
-### License check
+### license-check
 
 **Run**: `npm run license-check`
+**Side effects**: may download license-checker via npx
+**Pass**: exit 0 with summary
+**Fail**: non-zero exit naming the package and licence
 
-**Pass**: A licence summary table, exit code 0. Exits 0 on the current tree.
+### license-headers
 
-**Fail**: `license-checker` names the offending package and its licence. The allow list is inline in the script in `package.json` — a dependency whose licence falls outside it is not admissible, whatever its version.
+**Run**: `npm run license-headers:check`
+**Pass**: exit 0
+**Fail**: exit 1; 'Missing license header: <file>' lines
+**Auto-fix**: npm run license-headers:fix
 
-**Auto-fix**: None. Either the dependency is replaced or the allow list changes, and changing the allow list is a decision, not a fix.
+### lint
 
-**Skip if**: No dependency was added, removed, or moved. This gate is not in the pre-commit hook, so it only runs when you run it.
+**Run**: `npm run lint`
+**Pass**: exit 0
+**Fail**: non-zero exit with eslint error lines
+**Auto-fix**: npm run lint:fix
 
----
+### generated-types
 
-### Secret detection
+**Run**: `npm run check:generated-types`
+**Side effects**: rewrites src/types/generated/marketplaceManagement.ts
+**Pass**: exit 0 (no diff)
+**Fail**: git diff exits 1 when generated types drift
+**Auto-fix**: npm run generate:types
+
+### type-check
+
+**Run**: `npm run typecheck`
+**Pass**: exit 0, no output
+**Fail**: non-zero exit with TS error lines
+
+### secret-scan
 
 **Run**: `npm run secrets:check`
+**Side effects**: pulls the gitleaks image
+**Pass**: exit 0
+**Fail**: exit = gitleaks exit code; exit 1 when no container engine is found (after printing 'skipping') or the daemon is not running
 
-**Pass**: `no leaks found`, exit code 0.
-
-**Fail**: gitleaks prints the rule and the file for each finding.
-
-**Auto-fix**: None. A credential that reached a commit is compromised and must be rotated by a human — deleting the line is not the fix.
-
-**Skip if**: Never skip; it also runs automatically in the pre-commit hook and server-side as the MR pipeline's `gitleaks-scan` task.
-
-> **Read the output, not the exit code.** The script pulls the gitleaks image at run time (tag in `package.json`) and prints `Secrets detected! Please remove sensitive data before committing.` whenever the child exits non-zero — including when the image could not be pulled. It also scans the working tree only, never git history. Both traps: [`security/verification.md`](security/verification.md).
-
----
-
-### Unit Tests
+### test-unit
 
 **Run**: `npm run test:unit:slnt`
+**Pass**: exit 0
+**Fail**: non-zero exit; FAIL lines
 
-**Pass**: All test suites pass, summary shows `X passed`, exit code 0.
-
-**Fail**: `FAIL src/components/Foo/__tests__/Foo.test.tsx` with assertion errors or unresolved mocks.
-
-**Auto-fix**: None — fix the test or the component code. Run a single file with `npm run test:unit -- --reporter=verbose src/path/to/Foo.test.tsx`.
-
-**Skip if**: Changes are limited to files with no corresponding unit tests (e.g. pure config, assets). When in doubt, run anyway.
-
----
-
-### Integration Tests
+### test-integration
 
 **Run**: `npm run test:integration:slnt`
+**Pass**: exit 0
+**Fail**: non-zero exit; FAIL lines
 
-**Pass**: All integration suites pass, summary shows `X passed`, exit code 0.
-
-**Fail**: Suite error with component render or store interaction failure.
-
-**Auto-fix**: None — integration tests verify Component → Store → API flow. Fix the implementation or the test assertion.
-
-**Skip if**: Changes are purely in standalone utility functions with no component or store involvement. When in doubt, run anyway.
+> **Read the output, not the exit code.** The script pulls the gitleaks image at run time (tag: `GITLEAKS_IMAGE` in `scripts/validate-secrets.mjs`) and prints `Secrets detected! Please remove sensitive data before committing.` whenever the child exits non-zero — including when the image could not be pulled. It also scans the working tree only, never git history. Both traps: [`security/verification.md`](security/verification.md).
 
 ---
 
