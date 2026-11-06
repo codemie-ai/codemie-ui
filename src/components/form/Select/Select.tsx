@@ -15,7 +15,7 @@
 
 import { isNil } from 'lodash'
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown'
-import { forwardRef, ReactNode, Ref, useRef } from 'react'
+import { forwardRef, ReactNode, Ref, useId, useRef, useState } from 'react'
 
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
 import FieldAnnouncer from '@/components/form/FieldAnnouncer'
@@ -57,6 +57,16 @@ interface SelectProps<TValue extends string | number | null = string | number | 
   filterPlaceholder?: string
   /** The accessible name when there is no visible label. */
   ariaLabel?: string
+  /** Id of the element naming the control; used as `aria-labelledby` on the combobox. */
+  ariaLabelledBy?: string
+  /**
+   * Opt-in: expose a named combobox with `aria-expanded`/`aria-controls` (input stays
+   * readonly), hide the trigger button from assistive technology and announce the selected
+   * option through a polite live region.
+   */
+  a11yCombobox?: boolean
+  /** Opt-in: accessible name of the open listbox (default is PrimeReact's "Option List"). */
+  listboxLabel?: string
   /**
    * Selector hooks placed on the Dropdown control itself, not on a layout
    * wrapper around it. The marketplace filter testids used to sit on the
@@ -137,12 +147,22 @@ const Select = forwardRef(
       filterBy,
       filterPlaceholder,
       ariaLabel,
+      ariaLabelledBy,
+      a11yCombobox = false,
+      listboxLabel,
     }: SelectProps<TValue>,
     ref: Ref<Dropdown>
   ) => {
+    const listId = useId()
+    const [announcement, setAnnouncement] = useState('')
+
     const ResolvedOptionTemplate = itemTemplate ?? renderDefaultOptionTemplate
 
     const handleChange = (e: DropdownChangeEvent) => {
+      if (a11yCombobox) {
+        const selected = enhancedOptions.find((o) => o.value === e.value)
+        if (selected) setAnnouncement(`${selected.label} selected`)
+      }
       onChange?.(e)
       onChangeValue?.(extractValue(e.value) as TValue | null)
     }
@@ -190,7 +210,8 @@ const Select = forwardRef(
                 filter={filter}
                 filterBy={filterBy}
                 filterPlaceholder={filterPlaceholder}
-                ariaLabel={ariaLabel}
+                ariaLabel={a11yCombobox && ariaLabelledBy ? undefined : ariaLabel}
+                aria-labelledby={a11yCombobox ? ariaLabelledBy : undefined}
                 className={cn(
                   'h-8 gap-2 !px-2 text-sm flex text-text-primary justify-between items-center bg-surface-base-content border border-border-primary rounded-lg transition hover:border-border-secondary cursor-pointer',
                   !value && 'text-text-quaternary',
@@ -207,15 +228,24 @@ const Select = forwardRef(
                   item: {
                     className: cn('text-sm focus-visible:ring-0 !p-0 rounded-md cursor-pointer'),
                   },
-                  input: {
+                  input: (opts) => ({
                     className: cn(
                       'text-ellipsis overflow-hidden text-text-primary',
                       classNameValue
                     ),
                     'aria-invalid': ariaInvalid,
                     'aria-describedby': ariaDescribedBy,
+                    ...(a11yCombobox && {
+                      role: 'combobox',
+                      'aria-expanded': !!opts?.state?.overlayVisible,
+                      'aria-controls': opts?.state?.overlayVisible ? listId : undefined,
+                    }),
+                  }),
+                  trigger: {
+                    className: cn('text-text-primary', classNameValue),
+                    ...(a11yCombobox && { 'aria-hidden': true }),
                   },
-                  trigger: { className: cn('text-text-primary', classNameValue) },
+                  ...(a11yCombobox && { list: { id: listId, 'aria-label': listboxLabel } }),
                   footer: { className: 'order-1' },
                   clearIcon: { className: 'focus:outline-none' },
                 }}
@@ -225,6 +255,7 @@ const Select = forwardRef(
             </div>
           )}
         </FieldAnnouncer>
+        {a11yCombobox && <output className="sr-only">{announcement}</output>}
       </div>
     )
   }

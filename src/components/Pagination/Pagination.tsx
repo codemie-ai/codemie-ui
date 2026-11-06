@@ -53,6 +53,7 @@ const Pagination: React.FC<PaginationProps> = ({
   const isMobileLayout = useIsMobileLayout()
   const isContentGradientEnabled = appearance?.gradients ?? true
   const labelId = useId()
+  const perPageLabelId = useId()
   const [currentPerPage, setCurrentPerPage] = useState<number | undefined>(perPage)
   const [span, setSpan] = useState<number>(7)
 
@@ -215,8 +216,12 @@ const Pagination: React.FC<PaginationProps> = ({
 
       {perPage && (
         <div className={cn('flex items-center justify-center ml-auto flex-shrink-0')}>
-          <div className="text-text-quaternary text-h5 mr-3.5 flex-shrink-0 max-sm:sr-only">
-            Show:
+          <div
+            id={perPageLabelId}
+            className="text-text-quaternary text-h5 mr-3.5 flex-shrink-0 max-sm:sr-only"
+          >
+            <span>Show:</span>
+            <span className="sr-only"> items per page</span>
           </div>
           <Select
             id="per-page"
@@ -227,6 +232,9 @@ const Pagination: React.FC<PaginationProps> = ({
             className="!w-33 !border-border-tertiary"
             classNameValue="!text-text-accent"
             onChange={handlePerPageChange}
+            a11yCombobox
+            ariaLabelledBy={perPageLabelId}
+            listboxLabel="Items per page"
           />
         </div>
       )}

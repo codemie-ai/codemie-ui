@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { vi, expect, describe, it, beforeEach } from 'vitest'
 
 import Pagination from '../Pagination'
@@ -40,8 +40,7 @@ describe('Pagination', () => {
 
   it('renders perPage selector when perPage prop is provided', () => {
     render(<Pagination currentPage={0} totalPages={10} setPage={mockSetPage} perPage={9} />)
-    const perPageSelect = screen.getByRole('combobox')
-    fireEvent.click(perPageSelect)
+    fireEvent.click(document.querySelector('#per-page') as HTMLElement)
 
     expect(screen.getAllByText('Per Page')[0]).toBeInTheDocument()
     expect(screen.getByText(/12/i)).toBeInTheDocument()
@@ -53,8 +52,7 @@ describe('Pagination', () => {
   it('calls setPage with correct parameters when perPage is changed', () => {
     render(<Pagination currentPage={0} totalPages={10} setPage={mockSetPage} perPage={12} />)
 
-    const perPageSelect = screen.getByRole('combobox')
-    fireEvent.click(perPageSelect)
+    fireEvent.click(document.querySelector('#per-page') as HTMLElement)
 
     const option = screen.getByLabelText('24 items')
     fireEvent.click(option)
@@ -78,8 +76,7 @@ describe('Pagination', () => {
       />
     )
 
-    const perPageSelect = screen.getByRole('combobox')
-    fireEvent.click(perPageSelect)
+    fireEvent.click(document.querySelector('#per-page') as HTMLElement)
 
     expect(screen.getAllByLabelText('5 items')[0]).toBeInTheDocument()
     expect(screen.getByLabelText('10 items')).toBeInTheDocument()
@@ -113,7 +110,7 @@ describe('Pagination', () => {
 
     render(<Pagination currentPage={0} totalPages={10} setPage={mockSetPage} perPage={9} />)
 
-    const perPageSelect = screen.getByRole('combobox')
+    const perPageSelect = screen.getByRole('combobox', { name: /Show.*per page/i })
 
     expect(() => {
       fireEvent.change(perPageSelect, { target: { value: 'invalid' } })
@@ -136,5 +133,39 @@ describe('Pagination', () => {
     fireEvent.click(screen.getByText('30'))
 
     expect(mockSetPage).toHaveBeenCalledWith(29, undefined)
+  })
+
+  it('exposes the per page selector as a named combobox with a named listbox', () => {
+    render(<Pagination currentPage={0} totalPages={10} setPage={mockSetPage} perPage={24} />)
+
+    const combobox = screen.getByRole('combobox', { name: /Show.*per page/i })
+    expect(combobox).toHaveAttribute('aria-expanded', 'false')
+    expect(combobox).toHaveAttribute('readonly')
+    expect(screen.queryByRole('button', { name: 'Per Page' })).toBeNull()
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent('')
+
+    fireEvent.click(document.querySelector('#per-page') as HTMLElement)
+
+    const labelled = screen.getByRole('combobox', { name: /Show.*per page/i })
+    expect(labelled).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.queryByRole('listbox', { name: 'Option List', hidden: true })).toBeNull()
+    const listbox = screen.getByRole('listbox', { name: 'Items per page', hidden: true })
+    expect(labelled).toHaveAttribute('aria-controls', listbox.id)
+
+    const options = within(listbox).getAllByRole('option', { hidden: true })
+    expect(options).toHaveLength(4)
+    options.forEach((o) =>
+      expect(o).toHaveAttribute(
+        'aria-selected',
+        o.getAttribute('aria-label') === '24 items' ? 'true' : 'false'
+      )
+    )
+    expect(options[1]).toHaveAttribute('aria-posinset', '2')
+    expect(options[1]).toHaveAttribute('aria-setsize', '4')
+
+    const label = options[2].getAttribute('aria-label')
+    fireEvent.click(options[2])
+    expect(status).toHaveTextContent(`${label} selected`)
   })
 })

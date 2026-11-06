@@ -1,0 +1,2 @@
+{"ts":"2026-10-30T08:27:22Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved the 2-task plan (always-present live region, id kept on root)","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-30T08:51:09Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved; 0 findings, low confidence only from no-spec","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

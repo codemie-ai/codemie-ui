@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import Select from '../Select'
@@ -134,6 +134,90 @@ describe('Select', () => {
 
       expect(screen.getByText('Option A')).toBeInTheDocument()
       expect(screen.queryByTestId('custom-row')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('a11yCombobox', () => {
+    const renderLabelled = (extra = {}) =>
+      render(
+        <>
+          <span id="lbl">Show items</span>
+          <Select
+            id="sel"
+            name="sel"
+            value="a"
+            options={options}
+            onChange={noop}
+            a11yCombobox
+            ariaLabelledBy="lbl"
+            listboxLabel="Items per page"
+            {...extra}
+          />
+        </>
+      )
+
+    it('exposes a labelled combobox that stays readonly and has no aria-controls while closed', () => {
+      renderLabelled()
+
+      const combobox = screen.getByRole('combobox', { name: 'Show items' })
+      expect(combobox).toHaveAttribute('aria-expanded', 'false')
+      expect(combobox).toHaveAttribute('readonly')
+      expect(combobox).not.toHaveAttribute('aria-controls')
+    })
+
+    it('sets aria-expanded and aria-controls pointing at the named listbox when open', () => {
+      renderLabelled()
+
+      fireEvent.click(document.querySelector('#sel') as HTMLElement)
+
+      const combobox = screen.getByRole('combobox', { name: 'Show items' })
+      const listbox = screen.getByRole('listbox', { hidden: true, name: 'Items per page' })
+      expect(combobox).toHaveAttribute('aria-expanded', 'true')
+      expect(listbox.id).toBeTruthy()
+      expect(combobox).toHaveAttribute('aria-controls', listbox.id)
+    })
+
+    it('hides the trigger from assistive technology', () => {
+      renderLabelled()
+
+      const trigger = document.querySelector('.p-dropdown-trigger') as HTMLElement
+      expect(trigger).toHaveAttribute('aria-hidden', 'true')
+    })
+
+    it('fills a pre-existing live region only after a selection', () => {
+      renderLabelled()
+
+      const status = screen.getByRole('status')
+      expect(status).toHaveClass('sr-only')
+      expect(status).toHaveTextContent('')
+
+      fireEvent.click(document.querySelector('#sel') as HTMLElement)
+      const listbox = screen.getByRole('listbox', { hidden: true, name: 'Items per page' })
+      const optionEls = within(listbox).getAllByRole('option', { hidden: true })
+      fireEvent.click(optionEls[1])
+
+      expect(screen.getByRole('status')).toBe(status)
+      expect(status).toHaveTextContent('Option B selected')
+    })
+
+    it('prefers aria-labelledby over ariaLabel', () => {
+      renderLabelled({ ariaLabel: 'Pick' })
+
+      expect(screen.getByRole('combobox', { name: 'Show items' })).toBeInTheDocument()
+    })
+
+    it('keeps the default output when not opted in', () => {
+      render(<Select id="sel" name="sel" value="a" options={options} onChange={noop} />)
+
+      const input = document.querySelector('input[aria-haspopup="listbox"]') as HTMLInputElement
+      expect(input).toHaveAttribute('readonly')
+      expect(input).not.toHaveAttribute('aria-expanded')
+      expect(screen.queryByRole('status')).toBeNull()
+      expect(document.querySelector('.p-dropdown-trigger')).not.toHaveAttribute('aria-hidden')
+
+      fireEvent.click(document.querySelector('#sel') as HTMLElement)
+
+      expect(screen.getByRole('listbox', { hidden: true, name: 'Option List' })).toBeInTheDocument()
     })
   })
 })

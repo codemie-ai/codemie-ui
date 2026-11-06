@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-10-30T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Two components (Pagination and the shared form Select) changed; Select is a shared component used widely, with a new opt-in a11yCombobox flag and pt attrs passthrough to PrimeReact Dropdown." },
+    { "dimension": "technical_risk", "reason": "Accessibility attribute passthrough on a shared control, gated behind an opt-in flag to limit regression; new ARIA edge cases covered by added tests (about 172 insertions, mostly tests)." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: touches shared Select component"
+  ],
+  "split_recommendation": null
+}
