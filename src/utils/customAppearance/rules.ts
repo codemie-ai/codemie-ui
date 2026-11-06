@@ -21,11 +21,11 @@ import { DARK_THEME_KEY } from '@/constants'
 
 import {
   blendColors,
+  blendColorsHex,
   deriveAlternateOklchLightness,
   deriveContrastGray,
   deriveThemedOklchLightness,
   hexToRgbValue,
-  isDarkColor,
 } from './colorUtils'
 
 import type { AppearanceInputs, CssVar, CssVarOverrides, Rule } from './schema'
@@ -33,6 +33,10 @@ import type { AppearanceInputs, CssVar, CssVarOverrides, Rule } from './schema'
 // WCAG contrast ratios used in deriveContrastGray
 const SIDEBAR_TOGGLE_CONTRAST = 1.6
 const BORDER_CONTRAST = 1.5
+// Minimum WCAG contrast (AA, normal text) for the bottom-nav-label hover background
+// against its own blended text color. Target is above the 4.5 requirement to survive
+// sRGB channel rounding in deriveContrastGray.
+const MIN_LABEL_CONTRAST = 4.55
 
 // OKLCH lightness thresholds and shift amounts used in deriveAlternateOklchLightness
 const ACCENT_HOVER_L_THRESHOLD = 0.5
@@ -243,9 +247,14 @@ export const RULES: Rule[] = [
   },
   {
     apply: (inputs) => ({
-      '--colors-surface-specific-bottom-navigation-label': isDarkColor(inputs.navigationBackground)
-        ? '255 255 255'
-        : '0 0 0',
+      '--colors-surface-specific-bottom-navigation-label': deriveContrastGray(
+        blendColorsHex(
+          inputs.navigationTextColor,
+          inputs.navigationBackground,
+          BOTTOM_NAV_LABEL_ALPHA
+        ),
+        MIN_LABEL_CONTRAST
+      ),
     }),
   },
 

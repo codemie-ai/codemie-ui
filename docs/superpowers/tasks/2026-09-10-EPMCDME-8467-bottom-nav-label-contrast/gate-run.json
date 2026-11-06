@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "passed": true,
+  "blocked_gate": null,
+  "drift_detected": false,
+  "head": "9171600914e765a1cbdcb2a464c4e0b4efff8434",
+  "merge_base": "cdb1f3ab11c9dbfe710df5b9f9e8bbc3738bbdae",
+  "run_at": "2026-09-10",
+  "gates": [
+    {"id": "lint",             "status": "PASS", "notes": "0 errors, 1 pre-existing React version warning"},
+    {"id": "typecheck",        "status": "PASS"},
+    {"id": "license-check",   "status": "PASS"},
+    {"id": "secrets",          "status": "PASS", "notes": "no leaks found"},
+    {"id": "unit",             "status": "PASS", "notes": "5410/5410 tests, 520 files"},
+    {"id": "integration",      "status": "PASS", "notes": "507 passed, 1 skipped (pre-existing)"}
+  ]
+}

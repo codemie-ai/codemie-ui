@@ -1,0 +1,10 @@
+{
+  "findings": [
+    {
+      "id": "CR-001",
+      "status": "fixed",
+      "file": "src/utils/customAppearance/__tests__/rules.test.ts",
+      "description": "Added two test cases with saturated mid-luminance navigation backgrounds (#7c3aed violet, #1e40af dark-blue) verifying contrastRatio >= 4.5 for the bottom-navigation-label hover surface. No changes to rules.ts or colorUtils.ts."
+    }
+  ]
+}

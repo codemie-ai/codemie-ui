@@ -35,6 +35,23 @@ const lightnessOf = (rgbChannels: string): number => {
   return toOklch({ mode: 'rgb', r: r / 255, g: g / 255, b: b / 255 })?.l ?? 0
 }
 
+// WCAG relative luminance + contrast ratio, computed directly from "r g b" channel strings.
+const relativeLuminance = (rgbChannels: string): number => {
+  const channel = (c: number) => {
+    const s = c / 255
+
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  const [r, g, b] = rgbChannels.split(' ').map(Number).map(channel)
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+const contrastRatio = (a: string, b: string): number => {
+  const [l1, l2] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x)
+
+  return (l1 + 0.05) / (l2 + 0.05)
+}
+
 describe('rules', () => {
   describe('runRules (engine)', () => {
     it('is deterministic for identical inputs', () => {
@@ -159,14 +176,44 @@ describe('rules', () => {
   })
 
   describe('opacity.bottomNavigationLabelSurface', () => {
-    it('returns white channels on a dark navigation background', () => {
-      const result = runRules(inputs({ navigationBackground: '#000000' }))
-      expect(result['--colors-surface-specific-bottom-navigation-label']).toBe('255 255 255')
+    it('meets WCAG AA contrast (4.5:1) against the blended label text on a dark background', () => {
+      const result = runRules(
+        inputs({ navigationBackground: '#000000', navigationTextColor: '#A3A3A3' })
+      )
+      const text = result['--colors-text-specific-bottom-navigation-label'] as string
+      const surface = result['--colors-surface-specific-bottom-navigation-label'] as string
+
+      expect(contrastRatio(text, surface)).toBeGreaterThanOrEqual(4.5)
     })
 
-    it('returns black channels on a light navigation background', () => {
-      const result = runRules(inputs({ navigationBackground: '#ffffff' }))
-      expect(result['--colors-surface-specific-bottom-navigation-label']).toBe('0 0 0')
+    it('meets WCAG AA contrast (4.5:1) against the blended label text on a light background', () => {
+      const result = runRules(
+        inputs({ navigationBackground: '#ffffff', navigationTextColor: '#525252' })
+      )
+      const text = result['--colors-text-specific-bottom-navigation-label'] as string
+      const surface = result['--colors-surface-specific-bottom-navigation-label'] as string
+
+      expect(contrastRatio(text, surface)).toBeGreaterThanOrEqual(4.5)
+    })
+
+    it('meets WCAG AA contrast (4.5:1) against the blended label text on a saturated violet background', () => {
+      const result = runRules(
+        inputs({ navigationBackground: '#7c3aed', navigationTextColor: '#e5e7eb' })
+      )
+      const text = result['--colors-text-specific-bottom-navigation-label'] as string
+      const surface = result['--colors-surface-specific-bottom-navigation-label'] as string
+
+      expect(contrastRatio(text, surface)).toBeGreaterThanOrEqual(4.5)
+    })
+
+    it('meets WCAG AA contrast (4.5:1) against the blended label text on a saturated dark-blue background', () => {
+      const result = runRules(
+        inputs({ navigationBackground: '#1e40af', navigationTextColor: '#e5e7eb' })
+      )
+      const text = result['--colors-text-specific-bottom-navigation-label'] as string
+      const surface = result['--colors-surface-specific-bottom-navigation-label'] as string
+
+      expect(contrastRatio(text, surface)).toBeGreaterThanOrEqual(4.5)
     })
   })
 

@@ -43,6 +43,11 @@ export const blendColors = (fg: string, bg: string, alpha: number): string => {
   return toRgb255(rgb?.r ?? 0, rgb?.g ?? 0, rgb?.b ?? 0)
 }
 
+// Same alpha blend as blendColors, but returns a hex string for callers
+// (e.g. deriveContrastGray) that need to re-derive a color from the result.
+export const blendColorsHex = (fg: string, bg: string, alpha: number): string =>
+  formatHex(interpolate([bg, fg], 'rgb')(alpha)) ?? '#000000'
+
 // Darkens if L > threshold, lightens otherwise, by amount in oklch lightness.
 export const deriveAlternateOklchLightness = (
   hex: string,

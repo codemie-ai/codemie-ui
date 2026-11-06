@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-09-10T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 3,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Two source files modified (colorUtils.ts, rules.ts) plus one test file, all within the single customAppearance utility module. No layer boundary crossed."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Color math (WCAG luminance, sRGB blending) is non-trivial but follows the exact existing deriveContrastGray pattern already used for sidebar-toggle and border contrast. Fully reversible, no security or performance path."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

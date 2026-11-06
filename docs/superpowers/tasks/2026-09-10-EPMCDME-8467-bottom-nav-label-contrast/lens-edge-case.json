@@ -1,0 +1,52 @@
+[
+  {
+    "location": "src/utils/customAppearance/colorUtils.ts:49",
+    "trigger_condition": "interpolate returns undefined or NaN for an invalid/unsupported hex string",
+    "guard_snippet": "formatHex(interpolate([bg, fg], 'rgb')(alpha) ?? {mode:'rgb',r:0,g:0,b:0}) ?? '#000000'",
+    "potential_consequence": "blendColorsHex returns '#000000' silently; deriveContrastGray receives wrong background, yields wrong contrast gray"
+  },
+  {
+    "location": "src/utils/customAppearance/colorUtils.ts:94-110",
+    "trigger_condition": "contrastTarget <= 1.0 passed to deriveContrastGray (e.g. caller passes wrong constant)",
+    "guard_snippet": "if (contrastTarget <= 1) return '128 128 128'; // degenerate — no gray can satisfy ratio < 1",
+    "potential_consequence": "lTarget formula produces NaN or negative; channel clamps to 0, emitting '0 0 0' regardless of background"
+  },
+  {
+    "location": "src/utils/customAppearance/colorUtils.ts:97-100",
+    "trigger_condition": "navigationBackground is exactly at DARK_BG_LUMINANCE_THRESHOLD (lBg === 0.18)",
+    "guard_snippet": "lBg < DARK_BG_LUMINANCE_THRESHOLD uses strict-less; verify the boundary case produces valid contrast against #2e2e2e-ish backgrounds",
+    "potential_consequence": "Off-by-one at the luminance flip point may darken when lightening is needed, producing contrast below 4.5:1"
+  },
+  {
+    "location": "src/utils/customAppearance/rules.ts:249-258",
+    "trigger_condition": "navigationTextColor is identical to navigationBackground (zero-contrast text, blended color == background)",
+    "guard_snippet": "blendColorsHex with fg==bg always equals bg; deriveContrastGray still runs correctly — verify no special case needed",
+    "potential_consequence": "Surface var computed against background color directly; may produce unintended hover pill color when text is invisible"
+  },
+  {
+    "location": "src/utils/customAppearance/rules.ts:240-246 and 249-258",
+    "trigger_condition": "Two rules independently blend the same (navigationTextColor, navigationBackground, BOTTOM_NAV_LABEL_ALPHA) triple",
+    "guard_snippet": "Share a single blended intermediate variable (or a combined rule) so a future alpha change updates both atomically",
+    "potential_consequence": "Alpha changed in one blend but not the other makes text and surface derived from different effective colors, breaking contrast guarantee"
+  },
+  {
+    "location": "src/utils/customAppearance/__tests__/rules.test.ts:37-43 (contrastRatio helper)",
+    "trigger_condition": "rgbChannels string with fractional numbers (e.g. '254.7 0 0') passed to relativeLuminance — .map(Number) parses floats correctly but the channel formula was designed for 0-255 integers",
+    "guard_snippet": "const channel = (c: number) => { const s = c / 255; ... } — add assertion that input is 0-255 range or parse with Math.round",
+    "potential_consequence": "Non-integer channels silently produce a slightly wrong luminance; test may pass or fail inconsistently near the 4.5 boundary"
+  },
+  {
+    "location": "src/utils/customAppearance/__tests__/rules.test.ts:176-198",
+    "trigger_condition": "Tests only cover pure black and pure white navigationBackground; saturated mid-range backgrounds (e.g. #7c3aed) are untested",
+    "guard_snippet": "Add a third test case with a saturated mid-range background where the old isDarkColor heuristic and new contrast formula may diverge",
+    "potential_consequence": "Contrast failure on saturated backgrounds goes undetected; regression reachable by any custom theme with a colored nav background"
+  },
+  {
+    "location": "src/utils/customAppearance/colorUtils.ts:78-82 (isDarkColor)",
+    "trigger_condition": "isDarkColor removed from rules.ts imports but still exported and used by other callers",
+    "guard_snippet": "Verify no remaining call sites in rules.ts; the export itself is harmless but an orphaned import warning may indicate missed usage",
+    "potential_consequence": "If any sibling rule still indirectly relied on the same dark/light bifurcation, behavior silently changes",
+    "kind": "deletion",
+    "confidence": "low"
+  }
+]

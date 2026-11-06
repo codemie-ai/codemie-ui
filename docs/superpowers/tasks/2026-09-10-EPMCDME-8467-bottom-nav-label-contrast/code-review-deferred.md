@@ -1,0 +1,3 @@
+# Deferred from code review — 2026-09-10-EPMCDME-8467-bottom-nav-label-contrast (2026-09-10)
+
+- **Duplicate blend triple in bottom-nav label rules** — `src/utils/customAppearance/rules.ts:240-258` — Two separate rules independently compute `blendColors`/`blendColorsHex` with the identical `(navigationTextColor, navigationBackground, BOTTOM_NAV_LABEL_ALPHA)` triple. A future change that modifies the alpha in one rule but not the other would cause the text and surface vars to derive from different effective colors, silently breaking the contrast guarantee. Pre-existing: the rules engine uses a self-contained-rule architectural pattern introduced before this change; restructuring to share a blended intermediate belongs in a dedicated refactor, not this contrast-fix.
