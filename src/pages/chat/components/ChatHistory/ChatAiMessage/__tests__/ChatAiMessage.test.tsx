@@ -41,12 +41,13 @@ const { mockChatContext, mockChatsStore } = vi.hoisted(() => ({
 
 vi.mock('valtio', () => ({
   proxy: (obj: any) => obj,
-  useSnapshot: vi.fn(() => mockChatsStore),
+  useSnapshot: vi.fn((store: any) => store),
   subscribe: vi.fn(),
 }))
 
 vi.mock('@/store/chatGeneration', () => ({
   chatGenerationStore: {
+    toolCallChoices: {},
     editChatGeneration: vi.fn(),
     initiatePromptAuth: vi.fn(),
     continuePromptAuth: vi.fn(),
@@ -83,12 +84,25 @@ vi.mock('@/components/markdown/Markdown', () => ({
 }))
 
 vi.mock('@/components/Thought/Thought', () => ({
-  default: ({ thought, headerBadge }: { thought: ThoughtType; headerBadge?: ReactNode }) => (
-    <div data-testid="thought">
-      {thought.author_name}
-      {headerBadge}
-    </div>
-  ),
+  default: ({
+    thought,
+    headerBadge,
+    getView,
+  }: {
+    thought: ThoughtType
+    headerBadge?: ReactNode
+    getView?: (thought: ThoughtType) => { hidden?: boolean; footer?: ReactNode }
+  }) => {
+    const view = getView?.(thought)
+    if (view?.hidden) return null
+    return (
+      <div data-testid="thought">
+        {thought.author_name}
+        {headerBadge}
+        {view?.footer}
+      </div>
+    )
+  },
 }))
 
 vi.mock('../ChatAiMessageActions', () => ({

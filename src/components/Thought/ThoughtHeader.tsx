@@ -23,9 +23,15 @@ import StatusIndicator, { StatusEnum, StatusType } from '@/components/StatusIndi
 import { Thought, ThoughtAuthorType } from '@/types/entity/conversation'
 import { cn } from '@/utils/utils'
 
-type ThoughtStatusConfig = { status: StatusType; label: string }
+export type ThoughtStatus = { status: StatusType; label: string }
 
-const getThoughtStatus = (thought: Thought, isInProgress?: boolean): ThoughtStatusConfig => {
+// Neutral status for steps suspended behind a live pause; only ever applied through an override
+export const WAITING_THOUGHT_STATUS: ThoughtStatus = {
+  status: StatusEnum.NotStarted,
+  label: 'Waiting',
+}
+
+const getThoughtStatus = (thought: Thought, isInProgress?: boolean): ThoughtStatus => {
   if (isInProgress) return { status: StatusEnum.InProgress, label: 'In Progress' }
   if (thought.interrupted) return { status: StatusEnum.Pending, label: 'Interrupted' }
   if (thought.aborted) return { status: StatusEnum.Warning, label: 'Aborted' }
@@ -37,10 +43,16 @@ interface ThoughtStatusProps {
   thought: Thought
   isInProgress?: boolean
   isEmbedded?: boolean
+  override?: ThoughtStatus
 }
 
-const ThoughtStatus: FC<ThoughtStatusProps> = ({ thought, isInProgress, isEmbedded }) => {
-  const { status, label } = getThoughtStatus(thought, isInProgress)
+const ThoughtStatusView: FC<ThoughtStatusProps> = ({
+  thought,
+  isInProgress,
+  isEmbedded,
+  override,
+}) => {
+  const { status, label } = override ?? getThoughtStatus(thought, isInProgress)
   return (
     <>
       {!isEmbedded && (
@@ -62,6 +74,7 @@ interface ThoughtHeaderProps {
   setIsExpanded: (isExpanded: boolean) => void
   thought: Thought
   headerBadge?: ReactNode
+  status?: ThoughtStatus
 }
 
 const ThoughtHeader: FC<ThoughtHeaderProps> = ({
@@ -71,6 +84,7 @@ const ThoughtHeader: FC<ThoughtHeaderProps> = ({
   isEmbedded,
   setIsExpanded,
   headerBadge,
+  status,
 }) => {
   const AuthorIcon = thought.author_type === ThoughtAuthorType.Assistant ? AssistantSvg : ToolSvg
   const toolName = thought.author_name?.trim() ?? thought.tool_name?.trim() ?? 'Tool'
@@ -124,7 +138,12 @@ const ThoughtHeader: FC<ThoughtHeaderProps> = ({
       )}
 
       {headerBadge}
-      <ThoughtStatus thought={thought} isInProgress={isInProgress} isEmbedded={isEmbedded} />
+      <ThoughtStatusView
+        thought={thought}
+        isInProgress={isInProgress}
+        isEmbedded={isEmbedded}
+        override={status}
+      />
     </button>
   )
 }

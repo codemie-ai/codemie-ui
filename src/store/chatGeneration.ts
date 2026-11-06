@@ -25,7 +25,10 @@ import {
   ChatRequest,
   HistoryMessage,
   ChatGenerationOptions,
+  TOOL_CALL_DECISION_STATES,
   ToolCallAction,
+  ToolCallDecision,
+  ToolCallStepSnapshot,
 } from '@/types/chatGeneration'
 import { Assistant } from '@/types/entity/assistant'
 import {
@@ -40,7 +43,7 @@ import {
   MCPAuthInitiateResponse,
   MCPAuthRecoverableStatus,
 } from '@/types/entity/mcpAuth'
-import api, { ABORT_ERROR, DEFAULT_ERROR_MESSAGE } from '@/utils/api'
+import api, { ABORT_ERROR, DEFAULT_ERROR_MESSAGE, StreamOptions } from '@/utils/api'
 import { transformChatHistoryFEtoBE } from '@/utils/chatHelpers'
 import { DEFAULT_TOOLS_CONFIG, saveChatTools } from '@/utils/chatStorageUtils'
 import { ConfluenceConnectRequired, parseConfluenceConnectRequired } from '@/utils/confluenceAuth'
@@ -60,6 +63,7 @@ import {
 import { OAuthConnectAggregate, parseOAuthConnectRequired } from '@/utils/oauthConnectAggregate'
 import { openSignInWindow } from '@/utils/openSignInWindow'
 import Stream, { streamChunkToObject } from '@/utils/stream'
+import { canDecide, collectWaitingSteps, findThought } from '@/utils/thoughtTree'
 import toaster from '@/utils/toaster'
 import { watchSignInWindow } from '@/utils/watchSignInWindow'
 
@@ -94,6 +98,10 @@ interface StreamDrainState {
 
 interface ChatGenerationStoreType {
   chatAbortControllers: Record<string, AbortController>
+  /** Stop's in-flight `/abort` request per chat; a resume's abort row waits for it. */
+  abortRequests: Record<string, Promise<unknown>>
+  /** Local Allow/Deny choices per waiting step id, cleared on send and on Restore (spec rule 3). */
+  toolCallChoices: Record<string, ToolCallAction>
 
   createChatGeneration: (options: ChatGenerationOptions) => Promise<void>
 
@@ -109,7 +117,25 @@ interface ChatGenerationStoreType {
 
   stopChatGeneration: (chatId: string) => void
   reconnectChatStream: (chat: Conversation) => Promise<void>
-  resumeToolCall: (thoughtId: string, action: ToolCallAction) => Promise<void>
+  decideToolCall: (thoughtId: string, action: ToolCallAction) => Promise<void>
+  _sendToolCallDecisions: (
+    chat: Conversation,
+    historyIndex: number,
+    messageIndex: number
+  ) => Promise<void>
+  _settleResume: (
+    chat: Conversation,
+    historyItem: ChatMessage,
+    controller: AbortController,
+    undo: ToolCallStepSnapshot[],
+    outcome: ResumeOutcome
+  ) => Promise<void>
+  _refetchAfterResume: (
+    chat: Conversation,
+    historyItem: ChatMessage,
+    controller: AbortController,
+    undo: ToolCallStepSnapshot[]
+  ) => Promise<void>
   submitA2uiAction: (
     surfaceId: string,
     actionName: string,
@@ -203,6 +229,7 @@ interface ChatGenerationStoreType {
   _classifyTerminalChunk: (
     chunk: StreamChunk
   ) => { isError: false; errorText: null } | { isError: true; errorText: string }
+  _applyTrailingThoughts: (historyItem: ChatMessage, value: string, state: StreamDrainState) => void
   _handleThought: (historyItem: ChatMessage, thought: Partial<Thought>) => void
   _findThought: (thoughts: Thought[], targetId: string) => Thought | null
   _handleGenerationStreamError: (errorObj: any) => string
@@ -219,7 +246,12 @@ interface ChatGenerationStoreType {
     entityId: string,
     data: ChatRequest
   ) => { endpoint: string; requestData?: any; method?: string }
-  _handleRequestError: (historyItem: ChatMessage, error: any, startTime: Date) => void
+  _handleRequestError: (
+    historyItem: ChatMessage,
+    error: any,
+    startTime: Date,
+    resume?: ResumeErrorContext
+  ) => Promise<void>
   _removeOptimisticTurn: (historyItem: ChatMessage) => void
   _dispatchResponse: (
     reader: ReadableStreamDefaultReader | Response,
@@ -332,6 +364,13 @@ const freezeWorkflowProgress = (chat: Conversation): boolean => {
     }
   }
   return froze
+}
+
+// Applies only the thoughts of chunks streamed after the final one
+const applyThoughtChunks = (historyItem: ChatMessage, chunks: any[]): void => {
+  chunks.forEach((chunk) => {
+    if (chunk.thought) chatGenerationStore._handleThought(historyItem, chunk.thought)
+  })
 }
 
 const finishThoughts = (historyItem: ChatMessage): void => {
@@ -629,8 +668,154 @@ const buildPendingChatUpdates = (
   return updates
 }
 
+// Tool-call resume error policy before the response headers (spec rule 9). Rows are matched by
+// status and the backend's exact message (codemie tool_call_resume.py:62-68). Unlisted 4xx restore
+// the batch; 5xx and errors without a status refetch the conversation. After the 200 headers the
+// resume path has ended and ordinary stream handling applies.
+export const RESUME_FALLBACK_ERROR_MESSAGE =
+  'The tool call decision could not be applied. Please reload the conversation.'
+export const RESUME_REFETCH_FAILED_MESSAGE =
+  'Failed to reload the conversation. Please choose Allow or Deny again.'
+
+export type ResumeErrorAction = 'refetch' | 'restore'
+
+export const RESUME_ERROR_ACTIONS: {
+  status: number
+  message: string
+  action: ResumeErrorAction
+}[] = [
+  {
+    status: 404,
+    message: 'No pending tool call found for this conversation.',
+    action: 'refetch',
+  },
+  {
+    status: 409,
+    message:
+      'The decisions do not match the tool calls waiting for a decision. Please reload the conversation.',
+    action: 'refetch',
+  },
+  {
+    status: 409,
+    message: 'This tool call is waiting for another assistant of the conversation.',
+    action: 'restore',
+  },
+]
+
+export type ResumeOutcome = { kind: 'error'; error: any } | { kind: 'gate' }
+
+// A non-JSON error body (SyntaxError) counts as "no status": its status says nothing reliable.
+const getResumeErrorStatus = (error: any): number | undefined =>
+  !(error instanceof SyntaxError) && typeof error?.status === 'number' ? error.status : undefined
+
+export const matchResumeErrorAction = (error: any): ResumeErrorAction => {
+  const status = getResumeErrorStatus(error)
+  if (status === undefined || status >= 500) return 'refetch'
+  const message = error?.error?.message
+  const row = RESUME_ERROR_ACTIONS.find((r) => r.status === status && r.message === message)
+  return row?.action ?? 'restore'
+}
+
+// The backend message for a 4xx; the fallback for 5xx, no status or no message.
+const getResumeErrorToast = (error: any): string => {
+  const status = getResumeErrorStatus(error)
+  const message = error?.error?.message
+  if (status === undefined || status >= 500 || typeof message !== 'string' || !message) {
+    return RESUME_FALLBACK_ERROR_MESSAGE
+  }
+  return message
+}
+
+// Toast text (none for Stop or a gate, which show their own UI) and the action per outcome.
+const resolveResumeOutcome = (
+  outcome: ResumeOutcome
+): { toast: string | null; action: ResumeErrorAction } => {
+  if (outcome.kind === 'gate') return { toast: null, action: 'restore' }
+  // An abort before the headers (Stop) arrives here as an AbortError: Stop already toasted.
+  if (isAbortOutcome(outcome)) return { toast: null, action: 'refetch' }
+  return {
+    toast: getResumeErrorToast(outcome.error),
+    action: matchResumeErrorAction(outcome.error),
+  }
+}
+
+// Extra api.stream arguments: a resume turns off the generic "Failed to generate answer" toast.
+const resumeStreamArgs = (resume: ChatRequest['resume']): [StreamOptions] | [] =>
+  resume ? [{ errorToast: false }] : []
+
+const toResumeErrorContext = (
+  resume: ChatRequest['resume'],
+  chat: Conversation,
+  controller: AbortController
+): ResumeErrorContext | undefined => (resume ? { chat, controller, undo: resume.undo } : undefined)
+
+type ResumeErrorContext = {
+  chat: Conversation
+  controller: AbortController
+  undo: ToolCallStepSnapshot[]
+}
+
+// The auth-gate chain: applies today's gate UI when the error is a gate payload.
+const applyAuthGate = (historyItem: ChatMessage, error: any, startTime: Date): boolean => {
+  const promptRows = parseMCPAuthRequiredErrorPayload(error)
+
+  // MCP auth throws { error: 'authentication_required', servers: [...] }.
+  // Bypass _handleGenerationStreamError(), which expects message/details/help fields.
+  if (promptRows?.length) {
+    applyPromptRows(historyItem, promptRows, startTime)
+    return true
+  }
+
+  // Aggregate OAuth gate throws { error: 'oauth_connect_required', providers: [...] } — one or
+  // more of GitLab/Jira/Confluence at once. Handle before the single-provider cases below.
+  const oauthAggregate = parseOAuthConnectRequired(error)
+  if (oauthAggregate) {
+    applyOAuthConnectPrompts(historyItem, oauthAggregate, startTime)
+    return true
+  }
+
+  // GitLab connect-required throws { error: 'gitlab_auth_required', setting_id, integration_name }.
+  const gitlabPrompt = parseGitLabConnectRequired(error)
+  if (gitlabPrompt) {
+    applyGitlabAuthPrompt(historyItem, gitlabPrompt, startTime)
+    return true
+  }
+
+  // Jira connect-required throws { error: 'jira_auth_required', setting_id, integration_name }.
+  const jiraPrompt = parseJiraConnectRequired(error)
+  if (jiraPrompt) {
+    applyJiraAuthPrompt(historyItem, jiraPrompt, startTime)
+    return true
+  }
+
+  // Confluence connect-required throws { error: 'confluence_auth_required', setting_id, integration_name }.
+  const confluencePrompt = parseConfluenceConnectRequired(error)
+  if (confluencePrompt) {
+    applyConfluenceAuthPrompt(historyItem, confluencePrompt, startTime)
+    return true
+  }
+  return false
+}
+
+// Stop before the response headers, including during the pending-Stop wait.
+const isAbortOutcome = (outcome: ResumeOutcome): boolean =>
+  outcome.kind === 'error' && outcome.error?.name === ABORT_ERROR
+
+// Restore (spec rule 9): undo the on-send change on every step of the batch, clear the entry's
+// in-progress mark and every local choice, so each waiting step shows its buttons again.
+const restoreResumeSteps = (historyItem: ChatMessage, undo: ToolCallStepSnapshot[]): void => {
+  undo.forEach(({ thought_id, ...fields }) => {
+    const step = findThought(historyItem.thoughts, thought_id)
+    if (step) Object.assign(step, fields)
+  })
+  historyItem.inProgress = false
+  chatGenerationStore.toolCallChoices = {}
+}
+
 export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   chatAbortControllers: {},
+  abortRequests: {},
+  toolCallChoices: {},
 
   async createChatGeneration(options: ChatGenerationOptions): Promise<void> {
     const {
@@ -1059,9 +1244,17 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
     toaster.error(GENERATION_CANCELLED_MESSAGE)
 
-    api.post(`v1/conversations/${chatId}/abort`).catch((err) => {
-      console.error('Failed to abort generation on backend:', err)
-    })
+    const abortRequest = ref(api.post(`v1/conversations/${chatId}/abort`))
+    chatGenerationStore.abortRequests[chatId] = abortRequest
+    abortRequest
+      .catch((err) => {
+        console.error('Failed to abort generation on backend:', err)
+      })
+      .finally(() => {
+        if (chatGenerationStore.abortRequests[chatId] === abortRequest) {
+          delete chatGenerationStore.abortRequests[chatId]
+        }
+      })
   },
 
   async reconnectChatStream(chat: Conversation): Promise<void> {
@@ -1221,7 +1414,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     return chatGenerationStore._sendRequest(chat, lastHistoryIndex, lastMessageIndex, data)
   },
 
-  async resumeToolCall(thoughtId: string, action: ToolCallAction): Promise<void> {
+  // Records a local choice for a waiting step of the last entry; the click that leaves no
+  // undecided step sends the batch (spec rules 3-4).
+  async decideToolCall(thoughtId: string, action: ToolCallAction): Promise<void> {
     const chat = chatsStore.currentChat
     if (!chat) return Promise.resolve()
 
@@ -1230,17 +1425,50 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const lastMessageIndex = chat.history[lastHistoryIndex].length - 1
     const lastHistoryItem = chat.history[lastHistoryIndex][lastMessageIndex]
 
-    const targetThought = lastHistoryItem.thoughts?.find((t) => t.id === thoughtId && t.interrupted)
-    if (!targetThought) return Promise.resolve()
+    const waiting = collectWaitingSteps(lastHistoryItem.thoughts)
+    const { toolCallChoices } = chatGenerationStore
+    const isWaiting = waiting.some((step) => step.id === thoughtId)
+    if (!isWaiting || thoughtId in toolCallChoices || !canDecide(lastHistoryItem)) {
+      return Promise.resolve()
+    }
 
-    targetThought.interrupted = false
-    targetThought.in_progress = true
+    toolCallChoices[thoughtId] = action
+    if (!waiting.every((step) => step.id in toolCallChoices)) return Promise.resolve()
+    return chatGenerationStore._sendToolCallDecisions(chat, lastHistoryIndex, lastMessageIndex)
+  },
 
-    lastHistoryItem.inProgress = true
+  // Sends one batch for every waiting step of the entry. Synchronously, before any wait: the
+  // body and the undo are built from the waiting steps, the choices are cleared and the decided
+  // states are applied, so the steps stop being waiting and a second send cannot happen (rule 4).
+  async _sendToolCallDecisions(chat, historyIndex, messageIndex): Promise<void> {
+    const historyItem = chat.history[historyIndex][messageIndex]
+    const waiting = collectWaitingSteps(historyItem.thoughts)
+    const { toolCallChoices } = chatGenerationStore
+    if (!waiting.length || !waiting.every((step) => step.id in toolCallChoices)) {
+      return Promise.resolve()
+    }
+
+    const decisions: ToolCallDecision[] = waiting.map((step) => ({
+      thought_id: step.id,
+      action: toolCallChoices[step.id],
+    }))
+    const undo: ToolCallStepSnapshot[] = waiting.map((step) => ({
+      thought_id: step.id,
+      aborted: step.aborted ?? false,
+      interrupted: step.interrupted ?? false,
+      in_progress: step.in_progress,
+      message: step.message,
+    }))
+    waiting.forEach((step, index) => {
+      delete toolCallChoices[step.id]
+      Object.assign(step, TOOL_CALL_DECISION_STATES[decisions[index].action])
+    })
+    historyItem.inProgress = true
+    clearAuthPrompts(historyItem)
 
     const data: ChatRequest = {
       conversationId: chat.id,
-      toolCallAction: action,
+      resume: { decisions, undo },
       text: null,
       contentRaw: '',
       file_names: [],
@@ -1258,7 +1486,37 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       outputSchema: null,
     }
 
-    return chatGenerationStore._sendRequest(chat, lastHistoryIndex, lastMessageIndex, data)
+    return chatGenerationStore._sendRequest(chat, historyIndex, messageIndex, data)
+  },
+
+  async _settleResume(chat, historyItem, controller, undo, outcome) {
+    // The abort row refetches only after Stop's /abort settles, so the reload sees the stopped run.
+    if (isAbortOutcome(outcome)) {
+      await chatGenerationStore.abortRequests[chat.id]?.catch(() => undefined)
+    }
+    const { toast, action } = resolveResumeOutcome(outcome)
+    if (toast) toaster.error(toast)
+    if (action === 'restore') {
+      restoreResumeSteps(historyItem, undo)
+    } else {
+      await chatGenerationStore._refetchAfterResume(chat, historyItem, controller, undo)
+    }
+  },
+
+  async _refetchAfterResume(chat, historyItem, controller, undo) {
+    // setOpenChat keeps the local copy while a message is in progress or has an auth prompt.
+    historyItem.inProgress = false
+    clearAuthPrompts(historyItem)
+    if (chatGenerationStore.chatAbortControllers[chat.id] === controller) {
+      delete chatGenerationStore.chatAbortControllers[chat.id]
+    }
+    if (chatsStore.currentChat?.id !== chat.id) return
+    try {
+      await chatsStore.getChat(chat.id)
+    } catch {
+      toaster.error(RESUME_REFETCH_FAILED_MESSAGE)
+      restoreResumeSteps(historyItem, undo)
+    }
   },
 
   async abortWorkflowChat(chatId) {
@@ -1459,6 +1717,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   ): Promise<void> {
     const historyItem = chat.history[historyIndex][messageIndex]
     const entityId = historyItem.assistantId ?? (chat as any).assistantID
+    const { resume } = data
 
     const { endpoint, requestData, method } = chatGenerationStore._prepareRequestData(
       chat,
@@ -1468,6 +1727,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
 
     const abortController = ref(new AbortController())
     const startTime = new Date()
+    const resumeCtx = toResumeErrorContext(resume, chat, abortController)
+    // Saved before the gate chain: no resume outcome may overwrite the paused message's text.
+    const savedResponse = historyItem.response
 
     chatGenerationStore.chatAbortControllers[chat.id] = abortController
 
@@ -1480,7 +1742,21 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     let reader: ReadableStreamDefaultReader | Response
 
     try {
-      reader = await api.stream(endpoint, requestData, abortController, method ?? 'POST')
+      if (resume) {
+        // A resume waits for this chat's pending Stop `/abort` (spec rule 4). The abort handle is
+        // registered, so a Stop during the wait cancels the send through the abort row below.
+        await chatGenerationStore.abortRequests[chat.id]?.catch(() => undefined)
+        if (abortController.signal.aborted) {
+          throw Object.assign(new Error('Resume cancelled by Stop'), { name: ABORT_ERROR })
+        }
+      }
+      reader = await api.stream(
+        endpoint,
+        requestData,
+        abortController,
+        method ?? 'POST',
+        ...resumeStreamArgs(resume)
+      )
     } catch (error: any) {
       // pendingRename (set synchronously in _updateChatNameIfNeeded, before this
       // request ever started) is only ever cleared by the rename poll — which is
@@ -1489,48 +1765,26 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       // assistant-name placeholder forever instead of showing the optimistic name.
       chatGenerationStore._clearPendingRenameForFirstMessage(chat, historyIndex, messageIndex)
 
-      const promptRows = parseMCPAuthRequiredErrorPayload(error)
-
-      // MCP auth throws { error: 'authentication_required', servers: [...] }.
-      // Bypass _handleGenerationStreamError(), which expects message/details/help fields.
-      if (promptRows?.length) {
-        applyPromptRows(historyItem, promptRows, startTime)
+      if (applyAuthGate(historyItem, error, startTime)) {
+        if (resumeCtx) {
+          // A gate on resume shows today's gate UI but keeps the paused text and the buttons.
+          historyItem.response = savedResponse
+          await chatGenerationStore._settleResume(
+            chat,
+            historyItem,
+            abortController,
+            resumeCtx.undo,
+            { kind: 'gate' }
+          )
+        }
         return
       }
 
-      // Aggregate OAuth gate throws { error: 'oauth_connect_required', providers: [...] } — one or
-      // more of GitLab/Jira/Confluence at once. Handle before the single-provider cases below.
-      const oauthAggregate = parseOAuthConnectRequired(error)
-      if (oauthAggregate) {
-        applyOAuthConnectPrompts(historyItem, oauthAggregate, startTime)
-        return
-      }
-
-      // GitLab connect-required throws { error: 'gitlab_auth_required', setting_id, integration_name }.
-      const gitlabPrompt = parseGitLabConnectRequired(error)
-      if (gitlabPrompt) {
-        applyGitlabAuthPrompt(historyItem, gitlabPrompt, startTime)
-        return
-      }
-
-      // Jira connect-required throws { error: 'jira_auth_required', setting_id, integration_name }.
-      const jiraPrompt = parseJiraConnectRequired(error)
-      if (jiraPrompt) {
-        applyJiraAuthPrompt(historyItem, jiraPrompt, startTime)
-        return
-      }
-
-      // Confluence connect-required throws { error: 'confluence_auth_required', setting_id, integration_name }.
-      const confluencePrompt = parseConfluenceConnectRequired(error)
-      if (confluencePrompt) {
-        applyConfluenceAuthPrompt(historyItem, confluencePrompt, startTime)
-        return
-      }
-
-      chatGenerationStore._handleRequestError(historyItem, error, startTime)
+      await chatGenerationStore._handleRequestError(historyItem, error, startTime, resumeCtx)
       return
     }
 
+    // After the 200 headers the resume path has ended: the stream is an ordinary turn (rule 9).
     await chatGenerationStore._dispatchResponse(reader, historyItem, chat, startTime)
   },
 
@@ -1568,13 +1822,13 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   },
 
   _prepareRequestData(chat, entityId, data) {
-    if (data.toolCallAction) {
+    if (data.resume) {
       return {
         endpoint: `v1/assistants/${entityId}/model/tool-call/resume`,
         requestData: {
           conversation_id: data.conversationId,
-          action: data.toolCallAction,
           stream: true,
+          decisions: data.resume.decisions,
         },
       }
     }
@@ -1616,7 +1870,16 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     }
   },
 
-  _handleRequestError(historyItem, error, startTime) {
+  async _handleRequestError(historyItem, error, startTime, resume) {
+    // A tool-call resume never writes the error into the paused message (spec "Resume errors").
+    if (resume) {
+      const { chat, controller, undo } = resume
+      await chatGenerationStore._settleResume(chat, historyItem, controller, undo, {
+        kind: 'error',
+        error,
+      })
+      return
+    }
     const errorText = chatGenerationStore._handleGenerationStreamError(error)
     // A rejected A2UI submission has its own retry affordance — the surface
     // re-activates (or can be re-unlocked via Edit). Remove the optimistic chip turn
@@ -1696,6 +1959,9 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       reader,
       chat.isWorkflow
     )
+    // A stopped stream with no text (a pausing run made only of steps) would otherwise keep the
+    // stream set and Allow/Deny inactive: this ends the inactive window (spec rule 4).
+    if (response?.aborted) historyItem.stream = null
 
     const endTime = new Date()
     const serverDuration = extractServerDuration(response)
@@ -1775,6 +2041,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         // BackgroundTasks) reliably runs.
         if (!state.receivedFinalChunk) {
           await chatGenerationStore._processStreamChunk(historyItem, value, state)
+        } else {
+          chatGenerationStore._applyTrailingThoughts(historyItem, value, state)
         }
       } catch (error: any) {
         // If we already received the final chunk, state.response is complete —
@@ -1814,19 +2082,28 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     chatGenerationStore._clearWaitingNotification(historyItem, state.notificationTimeoutId!)
     state.notificationTimeoutId = chatGenerationStore._scheduleWaitingNotification(historyItem)
 
+    if (finalChunk) {
+      state.response = finalChunk
+      state.receivedFinalChunk = true
+      state.cachedValue = incompleteChunk ?? ''
+      return
+    }
+
     if (incompleteChunk) {
       state.cachedValue = incompleteChunk
       return
     }
 
-    if (finalChunk) {
-      state.response = finalChunk
-      state.receivedFinalChunk = true
-      state.cachedValue = ''
-      return
-    }
-
     state.cachedValue = ''
+  },
+
+  // A pause streams each waiting step as its own `last` chunk (spec rule 1), so the steps after
+  // the first one arrive past the final chunk. Only their thoughts are applied: the response and
+  // the streamed text stay those of the final chunk.
+  _applyTrailingThoughts(historyItem: ChatMessage, value: string, state: StreamDrainState): void {
+    const { chunkObjects, incompleteChunk } = streamChunkToObject(state.cachedValue + value)
+    state.cachedValue = incompleteChunk ?? ''
+    applyThoughtChunks(historyItem, chunkObjects)
   },
 
   _scheduleWaitingNotification(historyItem: ChatMessage): NodeJS.Timeout {
@@ -1849,7 +2126,7 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
   ): Promise<{ finalChunk: any; incompleteChunk: string | null }> {
     const { chunkObjects, incompleteChunk } = streamChunkToObject(value)
 
-    for (const chunk of chunkObjects) {
+    for (const [index, chunk] of chunkObjects.entries()) {
       if (chunk.a2ui) {
         // A2UI envelopes stream after the turn's text chunks (2-3 per surface);
         // accumulate them in arrival order for the renderer's replay.
@@ -1875,9 +2152,11 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
         // here — termination itself stays keyed on `last` alone.
         surfaceTerminalChunkError(historyItem, chunk as StreamChunk)
 
+        // Past the final chunk only the thoughts of further waiting steps apply (spec rule 1)
+        applyThoughtChunks(historyItem, chunkObjects.slice(index + 1))
         return {
           finalChunk: capturedStreamText ? { ...chunk, capturedStreamText } : chunk,
-          incompleteChunk: null,
+          incompleteChunk,
         }
       }
     }
@@ -1928,9 +2207,8 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       existingThought.routing = thought.routing ?? existingThought.routing
       existingThought.truncated = thought.truncated ?? existingThought.truncated
     } else {
-      let existingParentThought = historyItem.thoughts.find((item) => {
-        return item.id === thought.parent_id
-      })
+      let existingParentThought =
+        (thought.parent_id && findThought(historyItem.thoughts, thought.parent_id)) || undefined
 
       if (thought.parent_id === 'latest') {
         existingParentThought = historyItem.thoughts[historyItem.thoughts.length - 1]

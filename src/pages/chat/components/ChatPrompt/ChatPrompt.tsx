@@ -42,6 +42,7 @@ import { assistantsStore, userStore } from '@/store'
 import { appInfoStore } from '@/store/appInfo'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
+import { collectWaitingSteps } from '@/utils/thoughtTree'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
@@ -146,14 +147,14 @@ const ChatPrompt: FC<ChatPromptProps> = ({
   })
 
   const isInProgress = currentChat?.history.flat().some((m) => m.inProgress)
-  const isInterrupted = currentChat?.isInterrupted
+  // Interrupted mode (Continue, ChatControls, workflow resume) exists for workflow chats only;
+  // an assistant chat with interrupted thoughts keeps the normal prompt
+  const isInterrupted = !!currentChat?.isWorkflow && !!currentChat?.isInterrupted
   const onAddFiles = resolveFileHandler(canAttachFiles, fileUpload.addFiles)
+  // Blocked while any waiting step exists in the last entry (spec rule 8)
   const isToolCallPending =
     !currentChat?.isWorkflow &&
-    !!currentChat?.history
-      .at(-1)
-      ?.at(-1)
-      ?.thoughts?.some((t) => t.interrupted)
+    collectWaitingSteps(currentChat?.history.at(-1)?.at(-1)?.thoughts).length > 0
   const isPromptDisabled = !!isInProgress || isToolCallPending
 
   useEffect(() => {
@@ -280,7 +281,7 @@ const ChatPrompt: FC<ChatPromptProps> = ({
 
   return (
     <div className={cn('relative w-full z-20', resizable && 'h-full flex flex-col')}>
-      {currentChat?.isInterrupted && <ChatControls chatId={currentChat!.id} />}
+      {isInterrupted && <ChatControls chatId={currentChat!.id} />}
       <div
         className={cn(
           'w-full flex flex-col px-6 overflow-y-auto z-10',

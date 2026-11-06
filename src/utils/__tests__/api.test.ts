@@ -340,3 +340,69 @@ describe('makeRequest URL building', () => {
     expect(fetchedUrl()).toBe('/api/v1/x')
   })
 })
+
+describe('stream error handling', () => {
+  const failedResponse = (status: number, text: string) => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status,
+      body: {
+        getReader: () => ({ read: async () => ({ value: new TextEncoder().encode(text) }) }),
+      },
+      headers: { get: () => null },
+    })
+  }
+  let realApi: typeof api
+  beforeAll(async () => {
+    const actual = await vi.importActual<typeof import('@/utils/api')>('@/utils/api')
+    realApi = actual.default
+  })
+  const catchStream = async (...args: any[]) => {
+    return (realApi.stream as any)(...args).then(
+      () => undefined,
+      (e: any) => e
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('toasts and attaches status for a JSON error body by default', async () => {
+    failedResponse(409, JSON.stringify({ error: { message: 'boom' } }))
+    const thrown = await catchStream('v1/x', {})
+    expect(thrown).toMatchObject({ error: { message: 'boom' }, status: 409 })
+    expect(toaster.error).toHaveBeenCalledWith('Failed to generate answer')
+  })
+
+  it('does not toast for a JSON error body when errorToast is false', async () => {
+    failedResponse(409, JSON.stringify({ error: { message: 'boom' } }))
+    const thrown = await catchStream('v1/x', {}, null, 'POST', { errorToast: false })
+    expect(thrown.status).toBe(409)
+    expect(toaster.error).not.toHaveBeenCalled()
+  })
+
+  it('toasts and attaches status for a non-JSON error body by default', async () => {
+    failedResponse(502, '<html>bad gateway</html>')
+    const thrown = await catchStream('v1/x', {})
+    expect(thrown.status).toBe(502)
+    expect(toaster.error).toHaveBeenCalledWith('Failed to generate answer')
+  })
+
+  it('does not toast for a non-JSON error body when errorToast is false', async () => {
+    failedResponse(502, '<html>bad gateway</html>')
+    const thrown = await catchStream('v1/x', {}, null, 'POST', { errorToast: false })
+    expect(thrown.status).toBe(502)
+    expect(toaster.error).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['string', '"boom"', 'boom'],
+    ['number', '42', 42],
+    ['null', 'null', null],
+  ])('throws a primitive %s JSON error body unchanged', async (_kind, text, expected) => {
+    failedResponse(500, text)
+    const thrown = await catchStream('v1/x', {})
+    expect(thrown).toBe(expected)
+  })
+})

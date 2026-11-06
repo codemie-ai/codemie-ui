@@ -304,6 +304,7 @@ export interface ThoughtBackend {
   in_progress?: boolean
   error?: boolean
   interrupted?: boolean
+  parent_id?: string
   aborted?: boolean
   routing?: RoutingInfo | null
   truncated?: boolean

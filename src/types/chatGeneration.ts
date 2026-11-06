@@ -23,6 +23,37 @@ export enum ToolCallAction {
   DENY = 'deny',
 }
 
+/** One entry of the batch resume body: the waiting step and the user's choice for it. */
+export interface ToolCallDecision {
+  thought_id: string
+  action: ToolCallAction
+}
+
+/** Prior step fields captured at send; Restore writes them back (spec rule 9). */
+export interface ToolCallStepSnapshot {
+  thought_id: string
+  aborted: boolean
+  interrupted: boolean
+  in_progress: boolean
+  message: string
+}
+
+// Step states applied on send, mirroring codemie/src/codemie/core/tool_step_states.py:24-53
+// (`allowed` and `denied`). The stream's chunks then fill an allowed step.
+export const TOOL_CALL_DENIED_MESSAGE = 'Tool call was denied by the user.'
+export const TOOL_CALL_DECISION_STATES: Record<
+  ToolCallAction,
+  Pick<Thought, 'aborted' | 'interrupted' | 'in_progress' | 'message'>
+> = {
+  [ToolCallAction.ALLOW]: { aborted: false, interrupted: false, in_progress: true, message: '' },
+  [ToolCallAction.DENY]: {
+    aborted: true,
+    interrupted: false,
+    in_progress: false,
+    message: TOOL_CALL_DENIED_MESSAGE,
+  },
+}
+
 export interface StreamChunk {
   timeElapsed: number | null
   tokensUsed: number | null
@@ -86,7 +117,8 @@ export interface ChatRequest {
   resumeExecutionFileNames?: string[]
   executionId?: string
   workflowId?: string
-  toolCallAction?: ToolCallAction
+  /** Tool-call resume: the batch of decisions sent, and the prior step fields Restore writes back. */
+  resume?: { decisions: ToolCallDecision[]; undo: ToolCallStepSnapshot[] }
   /** A2UI catalog ids this client can render — injected into every assistant chat request. */
   a2uiSupportedCatalogs?: string[]
   /** Structured A2UI answer (action envelope + surface data model). */

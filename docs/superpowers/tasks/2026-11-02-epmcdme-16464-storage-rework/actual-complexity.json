@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "generated": "2026-11-03T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 22,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 25,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches Thought/ThoughtHeader components, ChatAiMessage and its thoughtView, ChatPrompt, the chatGeneration store (decide/resume/stream drain), shared utils thoughtTree and chatHelpers, and the conversation/chatGeneration types: 4+ components across UI, store and utility subsystems; base L, bumped for shared utilities." },
+    { "dimension": "technical_risk", "reason": "Reworks tool-call confirmation state on streamed messages (waiting steps applied after the final chunk, resume after decisions, poll of incomplete chats); established store/stream patterns exist but the batch decision model is new. Base M, bumped for streaming." },
+    { "dimension": "file_change_estimate", "reason": "25 files changed (about 9 source, 16 test/fixture files) across src/components, src/pages, src/store, src/types and src/utils; 1561 insertions and 930 deletions, a rework on top of cf3b591fe. 16+ maps to XXL." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: touches core shared utilities (chatHelpers, thoughtTree)",
+    "Technical Risk bumped from M to L: streaming requirements (stream drain, resume of a streamed generation)"
+  ],
+  "split_recommendation": null
+}

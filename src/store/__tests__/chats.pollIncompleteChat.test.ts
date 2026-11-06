@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { CHAT_POLL_INTERVAL_MS } from '@/constants/chats'
+import { pausedHistoryItemBackend } from '@/store/__tests__/fixtures/toolCallResume.fixtures'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import api from '@/utils/api'
 
@@ -139,6 +140,32 @@ describe('pollIncompleteChat and stopChatGeneration', () => {
     await chatsStore.getChat('chat-3')
     await vi.waitFor(() => expect(spyReconnect).toHaveBeenCalled())
 
+    expect(spyPoll).not.toHaveBeenCalled()
+  })
+
+  it('starts no reattach for a paused entry loaded with in_progress=false (AC15)', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      json: () =>
+        Promise.resolve({
+          id: 'chat-paused',
+          conversation_name: 'Paused',
+          is_workflow_conversation: false,
+          history: [
+            { historyIndex: 0, role: 'User', message: 'go', date: '2026-01-01T00:00:00.000Z' },
+            { ...pausedHistoryItemBackend, historyIndex: 0 },
+          ],
+        }),
+    } as any)
+    const spyPoll = vi.spyOn(chatsStore, 'pollIncompleteChat')
+    const spyReconnect = vi
+      .spyOn(chatGenerationStore, 'reconnectChatStream')
+      .mockResolvedValue(undefined)
+
+    const opened = await chatsStore.getChat('chat-paused')
+    await vi.runOnlyPendingTimersAsync()
+
+    expect(opened?.history.at(-1)?.[0].inProgress).toBe(false)
+    expect(spyReconnect).not.toHaveBeenCalled()
     expect(spyPoll).not.toHaveBeenCalled()
   })
 

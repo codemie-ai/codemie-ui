@@ -155,6 +155,53 @@ describe('chatGenerationStore._handleGenerationStream', () => {
     expect(historyItem.stream?.getStream()).not.toContain('stray')
   })
 
+  it('applies every waiting step of a pause, each streamed as its own last chunk (AC1)', async () => {
+    const waitingChunk = (id: string, parentId: string) =>
+      JSON.stringify({
+        thought: {
+          id,
+          parent_id: parentId,
+          author_name: 'Generic Jira Tool',
+          message: 'Tool call is waiting for user approval.',
+          in_progress: false,
+          interrupted: true,
+          children: [],
+        },
+        last: true,
+      })
+    const startChunk = (id: string, parentId: string | null) =>
+      JSON.stringify({
+        thought: { id, parent_id: parentId, author_name: 'Step', message: '', in_progress: true },
+        last: false,
+      })
+
+    const read = vi
+      .fn()
+      .mockResolvedValueOnce({
+        done: false,
+        value: startChunk('s1', null) + startChunk('s2', null) + startChunk('t1', 's1'),
+      })
+      .mockResolvedValueOnce({ done: false, value: startChunk('t2', 's2') })
+      // Both waiting steps end with `last: true`: the first in one read with the second
+      // (the second split across reads), the third in a read of its own
+      .mockResolvedValueOnce({
+        done: false,
+        value: waitingChunk('t1', 's1') + waitingChunk('t2', 's2').slice(0, 40),
+      })
+      .mockResolvedValueOnce({ done: false, value: waitingChunk('t2', 's2').slice(40) })
+      .mockResolvedValueOnce({ done: true, value: undefined })
+
+    const reader = { read, cancel: vi.fn() } as unknown as ReadableStreamDefaultReader
+    const historyItem = createHistoryItem()
+
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    await chatGenerationStore._handleGenerationStream(historyItem, reader, false)
+
+    const { collectWaitingSteps } = await import('@/utils/thoughtTree')
+    expect(collectWaitingSteps(historyItem.thoughts).map((step) => step.id)).toEqual(['t1', 't2'])
+    expect(historyItem.inProgress).toBe(false)
+  })
+
   it('CR-001: returns the already-completed response instead of throwing when the drain phase errors after the final chunk', async () => {
     const finalChunkValue = JSON.stringify({
       generated_chunk: 'world',

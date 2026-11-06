@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Add codemie-ui support for nested sub-assistant tool-call confirmation: nested waiting/decided steps at any depth, one-at-a-time decisions, thought_id on resume, reload restore, and 404/409 resume error handling without regressing single-assistant confirmation.",
+  "generated": "2026-10-29T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 5, "label": "XL" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 21,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Base L: types (conversation, chatGeneration), chat generation store (_handleThought, resumeToolCall, _prepareRequestData, error path), BE-to-FE transform (chatHelpers), and UI (ChatAiMessage, ChatPrompt). Bumped to XL because the shared Thought/ThoughtHeader renderer is also consumed by the workflow execution state drawer, so the change reaches two workflows." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is the existing top-level tool-call confirmation and the recursive _findThought lookup, but a decided state, sequenced one-at-a-time decisions in one paused message, and status-aware resume errors have no precedent; api.stream drops the HTTP status so the 404/409 table must be keyed by message text; five top-level-only assumptions and the _finishThoughts orphan side effect make single-assistant regression a real risk. Base L, bumped to XL because the AC enumerates a 404/409 error table and depth/batch/reload variants while no existing test template covers resume error paths or nested trees." },
+    { "dimension": "file_change_estimate", "reason": "About 8-9 modified source files (conversation.ts, types/chatGeneration.ts, store/chatGeneration.ts, chatHelpers.ts, ChatAiMessage.tsx, ChatPrompt.tsx, Thought.tsx, ThoughtHeader.tsx, possibly api.ts) plus updated and new tests (resumeToolCall, toolCallConfirmation, prepareRequestData, chatHelpers, a new ChatPrompt test) across 3+ directories." },
+    { "dimension": "affected_layers", "reason": "UI, Service (Valtio store) and API client/request contract; no persistence or infrastructure. Backend contract is consumed, not changed." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: touches the shared Thought renderer used by both chat and the workflow execution drawer (affects multiple workflows)",
+    "Technical Risk bumped from L to XL: acceptance criteria enumerate specific error rows (404/409 variants) and depth/batch/reload variants with no existing error-path or nested-tree test template"
+  ],
+  "split_recommendation": null
+}

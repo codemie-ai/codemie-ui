@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Rework the codemie-ui nested tool-call confirmation to the new backend contract: drop Thought.decision and pending_tool_call, collect Allow/Deny for every waiting step client-side, send one batch resume with local Allowed/Denied state on send, shrink the resume error table, drop the disabled-until-stream-ends rule, and update tests.",
+  "generated": "2026-11-02T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 20,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches the types (conversation, chatGeneration types), the chatGeneration store (resumeToolCall, _prepareRequestData, RESUME_ERROR_ACTIONS and five settle sites, _handleThought merge), two utils (thoughtTree, chatHelpers) and four components (thoughtView, ChatAiMessage, ThoughtHeader, ChatPrompt). All inside one subsystem, the chat confirmation path, so L rather than XL. ThoughtHeader.getThoughtStatus is shared with the workflow drawer, but the change only removes decision branches, so the shared-utility bump was not applied." },
+    { "dimension": "technical_risk", "reason": "The closest pattern is the current one-request-per-click resume path through _sendRequest, which stays in place. Nothing exists yet for 'decided locally but not sent' state outside Thought.decision, for undoing it on a restore-type error, or for scrolling to the next undecided step. The stream=null additions in _handleStreamResponse apply to every chat. The new error rows (404, two 409s, 422s) fit the existing resumeErrors test template, so the edge-case bump was not applied." },
+    { "dimension": "file_change_estimate", "reason": "About 9 source files plus about 9 test files and the toolCallResume fixture module must be reworked: the old contract is asserted in the decision field, the {action, thought_id} body, the one-at-a-time S5 chunk, the disabled-while-stream tests, 'Not run' and the old 409 texts. Roughly 19 modified and 1-2 new (a batch-pause fixture) across src/types, src/store, src/utils, src/components and src/pages. That is above the L example (8 files) but has no structural or foundation impact, so XL rather than XXL." },
+    { "dimension": "requirements_clarity", "reason": "The handoff, the backend spec and four user decisions settle the contract. Two questions are still open: where the local decided state lives (and how restore undoes it), and whether the all-chats stream=null additions stay now that rule 4 is dropped. Total 20 is at the M/L boundary; lean-higher does not apply (neither Technical Risk nor Component Scope is at XL), so it stays M. The calibration examples agree: below the L example (22), above the M example (15)." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

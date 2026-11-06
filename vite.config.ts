@@ -118,7 +118,11 @@ export default defineConfig(({ mode }) => {
             name: 'unit',
             environment: 'jsdom',
             include: ['**/__tests__/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
-            exclude: [...configDefaults.exclude, '**/__tests__/**/*.integration.test.*'],
+            exclude: [
+              ...configDefaults.exclude,
+              '.claude/**',
+              '**/__tests__/**/*.integration.test.*',
+            ],
             setupFiles: ['./src/setupTests', './src/setupTests.unit'],
             testTimeout: CI_COVERAGE_TEST_TIMEOUT_MS,
           },
@@ -132,6 +136,7 @@ export default defineConfig(({ mode }) => {
             name: 'integration',
             environment: './vitest-env-integration.ts',
             include: ['**/__tests__/**/*.integration.test.?(c|m)[jt]s?(x)'],
+            exclude: [...configDefaults.exclude, '.claude/**'],
             setupFiles: ['./src/setupTests', './src/setupTests.integration'],
             // asyncUtilTimeout stays 15 000 ms per wait.
             testTimeout: CI_COVERAGE_TEST_TIMEOUT_MS,

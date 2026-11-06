@@ -13,20 +13,9 @@
 // limitations under the License.
 //
 
-import {
-  FC,
-  Fragment,
-  useMemo,
-  useState,
-  useRef,
-  KeyboardEvent,
-  useLayoutEffect,
-  ReactNode,
-} from 'react'
+import { FC, useMemo, useState, useRef, KeyboardEvent, useLayoutEffect, ReactNode } from 'react'
 import { useSnapshot } from 'valtio'
 
-import CheckSvg from '@/assets/icons/check.svg?react'
-import CrossSvg from '@/assets/icons/cross.svg?react'
 import ProcessingCompleteSvg from '@/assets/icons/processing-status.svg?react'
 import Avatar from '@/components/Avatar/Avatar'
 import Button from '@/components/Button'
@@ -41,7 +30,6 @@ import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
-import { ToolCallAction } from '@/types/chatGeneration'
 import { ChatMessage } from '@/types/entity/conversation'
 import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
@@ -53,6 +41,7 @@ import ChatA2uiBlock from './ChatA2uiBlock'
 import ChatAiAuthPrompt, { ChatAuthPrompt } from './ChatAiAuthPrompt'
 import ChatAiMessageActions from './ChatAiMessageActions'
 import ThinkingLoader from './ThinkingLoader'
+import { createThoughtView } from './thoughtView'
 import { useChatContext } from '../../../hooks/useChatContext'
 import { ChatIndexes } from '../ChatHistory'
 import EditMessageModal from '../ChatUserMessage/EditMessageModal'
@@ -237,6 +226,21 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
     />
   ) : null
 
+  // decideToolCall decides only the last message of the last history item
+  const { toolCallChoices } = useSnapshot(chatGenerationStore)
+  const history = currentChat?.history ?? []
+  const isLastHistoryItem =
+    indexes.historyIndex === history.length - 1 &&
+    indexes.messageIndex === (history[indexes.historyIndex]?.length ?? 0) - 1
+  const canShowDecision = !currentChat?.isWorkflow && !isSharedPage && isLastHistoryItem
+  // Rebuilt every render on purpose: the message may be mutated in place (stream, on-send states)
+  const getThoughtView = createThoughtView({
+    message,
+    hideToolOutputs,
+    canShowDecision,
+    choices: toolCallChoices,
+  })
+
   const avatar = (
     <Avatar
       type={isMobileLayout ? AvatarType.SMALL : AvatarType.CHAT}
@@ -273,38 +277,12 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
 
         <div className="flex flex-col gap-2 mt-2">
           {message?.thoughts?.map((thought) => (
-            <Fragment key={thought.id}>
-              {(!hideToolOutputs || thought.interrupted) && (
-                <Thought
-                  thought={thought}
-                  headerBadge={<TruncationBadge truncated={thought.truncated} />}
-                />
-              )}
-              {thought.interrupted && !currentChat?.isWorkflow && !isSharedPage && (
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type={ButtonType.DELETE}
-                    size={ButtonSize.MEDIUM}
-                    onClick={() =>
-                      chatGenerationStore.resumeToolCall(thought.id, ToolCallAction.DENY)
-                    }
-                  >
-                    <CrossSvg className="w-4 h-4" />
-                    Deny
-                  </Button>
-                  <Button
-                    type={ButtonType.PRIMARY}
-                    size={ButtonSize.MEDIUM}
-                    onClick={() =>
-                      chatGenerationStore.resumeToolCall(thought.id, ToolCallAction.ALLOW)
-                    }
-                  >
-                    <CheckSvg className="w-4 h-4" />
-                    Allow
-                  </Button>
-                </div>
-              )}
-            </Fragment>
+            <Thought
+              key={thought.id}
+              thought={thought}
+              getView={getThoughtView}
+              headerBadge={<TruncationBadge truncated={thought.truncated} />}
+            />
           ))}
         </div>
 

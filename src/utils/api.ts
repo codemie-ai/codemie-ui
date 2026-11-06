@@ -29,6 +29,13 @@ import { getMode, getIsLocalAuth } from '@/utils/utils'
 export const ABORT_ERROR = 'AbortError'
 export const DEFAULT_ERROR_MESSAGE = 'Oops! Something went wrong'
 
+export interface StreamOptions {
+  errorToast?: boolean
+}
+
+export type StreamHttpError = Record<string, any> & { status: number }
+type JsonPrimitive = string | number | boolean | null
+
 /**
  * True for any run error payload the caller renders as an in-chat auth/connect gate — MCP
  * `authentication_required` or a provider OAuth connect-required (`gitlab_auth_required` /
@@ -203,12 +210,40 @@ class API {
     return this.fetchMultipart('PUT', url, body)
   }
 
+  private async buildStreamError(
+    response: Response,
+    errorToast: boolean
+  ): Promise<StreamHttpError | JsonPrimitive> {
+    const responseValue = await response.body!.getReader().read()
+    const rawResponse = new TextDecoder('utf-8').decode(responseValue.value)
+    let parsedResponse: unknown
+
+    try {
+      parsedResponse = JSON.parse(rawResponse)
+    } catch (error) {
+      if (errorToast) toaster.error('Failed to generate answer')
+      return Object.assign(error as Error, { status: response.status })
+    }
+
+    if (errorToast && !isAuthGatePayload(parsedResponse)) {
+      toaster.error('Failed to generate answer')
+    }
+
+    // A primitive JSON body cannot carry a field, so it is thrown unchanged
+    if (parsedResponse === null || typeof parsedResponse !== 'object') {
+      return parsedResponse as JsonPrimitive
+    }
+    return Object.assign(parsedResponse, { status: response.status })
+  }
+
   async stream(
     url: string,
     body: any,
     abortController: AbortController | null = null,
-    method: string = 'POST'
+    method: string = 'POST',
+    options: StreamOptions = {}
   ): Promise<ReadableStreamDefaultReader<string> | Response> {
+    const { errorToast = true } = options
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...this.authHeaders(),
@@ -228,22 +263,7 @@ class API {
 
     const response = await fetch(`${this.BASE_URL}/${url}`, requestOptions)
     if (!response.ok) {
-      const responseValue = await response.body!.getReader().read()
-      const rawResponse = new TextDecoder('utf-8').decode(responseValue.value)
-      let parsedResponse: unknown
-
-      try {
-        parsedResponse = JSON.parse(rawResponse)
-      } catch (error) {
-        toaster.error('Failed to generate answer')
-        throw error
-      }
-
-      if (!isAuthGatePayload(parsedResponse)) {
-        toaster.error('Failed to generate answer')
-      }
-
-      throw parsedResponse
+      throw await this.buildStreamError(response, errorToast)
     }
 
     const contentType = response.headers.get('Content-Type')

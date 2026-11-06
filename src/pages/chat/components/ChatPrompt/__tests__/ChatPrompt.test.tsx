@@ -33,6 +33,7 @@ const { mockChatGenerationStore, mockChatsStore, mockUseChatPromptDraft } = vi.h
     stopChatGeneration: vi.fn(),
     createChatGeneration: vi.fn(),
     resumeWorkflowExecution: vi.fn(),
+    toolCallChoices: {} as Record<string, string>,
   },
   mockChatsStore: {
     currentChat: {
@@ -103,7 +104,7 @@ vi.mock('../ChatPromptVoiceRecorder', () => ({
   default: () => <div data-testid="voice-recorder" />,
 }))
 vi.mock('../DynamicToolsSettings', () => ({ default: () => null }))
-vi.mock('../../ChatControls', () => ({ default: () => null }))
+vi.mock('../../ChatControls', () => ({ default: () => <div data-testid="chat-controls" /> }))
 vi.mock('@/assets/icons/stop.svg?react', () => ({ default: () => null }))
 vi.mock('@/assets/icons/play.svg?react', () => ({ default: () => null }))
 
@@ -354,6 +355,102 @@ describe('ChatPrompt', () => {
     it('hides the send button when the last thought is interrupted', () => {
       render(<ChatPrompt />)
       expect(screen.queryByRole('button', { name: /send/i })).not.toBeInTheDocument()
+    })
+
+    const nestedChat = (child: Record<string, unknown>) => ({
+      id: 'chat-1',
+      isInterrupted: false,
+      isWorkflow: false,
+      assistantIds: ['assistant-1'],
+      history: [
+        [
+          {
+            inProgress: false,
+            thoughts: [
+              {
+                id: 't-parent',
+                author_name: 'agent',
+                in_progress: false,
+                children: [{ id: 't-child', author_name: 'tool', ...child }],
+              },
+            ],
+          } as any,
+        ],
+      ],
+    })
+
+    it('hides the send button when a nested step is waiting', () => {
+      mockChatsStore.currentChat = nestedChat({ interrupted: true })
+      render(<ChatPrompt />)
+      expect(screen.queryByRole('button', { name: /send/i })).not.toBeInTheDocument()
+    })
+
+    it('keeps blocking while a waiting step has a local choice but no send yet', () => {
+      mockChatsStore.currentChat = nestedChat({ interrupted: true })
+      mockChatGenerationStore.toolCallChoices = { 't-child': 'allow' }
+      render(<ChatPrompt />)
+      expect(screen.queryByRole('button', { name: /send/i })).not.toBeInTheDocument()
+      mockChatGenerationStore.toolCallChoices = {}
+    })
+
+    it('does not block when the nested step was aborted', () => {
+      mockChatsStore.currentChat = nestedChat({
+        interrupted: false,
+        aborted: true,
+        message: 'Tool call was denied by the user.',
+      })
+      render(<ChatPrompt />)
+      expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument()
+    })
+  })
+
+  describe('interrupted prompt mode is workflow-only', () => {
+    const interruptedChat = (isWorkflow: boolean) => ({
+      id: 'chat-1',
+      history: [],
+      isInterrupted: true,
+      isWorkflow,
+      assistantIds: ['assistant-1'],
+    })
+
+    beforeEach(() => {
+      mockUseChatPromptDraft.initial = { message: 'draft text', messageRaw: '<p>draft text</p>' }
+      mockChatGenerationStore.createChatGeneration = vi.fn()
+      mockChatGenerationStore.resumeWorkflowExecution = vi.fn()
+    })
+
+    afterEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [[{ inProgress: true }]],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+      mockUseChatPromptDraft.initial = { message: '', messageRaw: '' }
+    })
+
+    it('keeps a normal prompt in an interrupted assistant chat and submits through the normal path', () => {
+      mockChatsStore.currentChat = interruptedChat(false)
+      render(<ChatPrompt />)
+
+      expect(screen.queryByRole('button', { name: /continue/i })).not.toBeInTheDocument()
+      expect(screen.queryByTestId('chat-controls')).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /send/i }))
+
+      expect(mockChatGenerationStore.resumeWorkflowExecution).not.toHaveBeenCalled()
+      expect(mockChatGenerationStore.createChatGeneration).toHaveBeenCalledOnce()
+    })
+
+    it('keeps Continue and ChatControls in an interrupted workflow chat', () => {
+      mockChatsStore.currentChat = interruptedChat(true)
+      render(<ChatPrompt />)
+
+      expect(screen.getByTestId('chat-controls')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+
+      expect(mockChatGenerationStore.resumeWorkflowExecution).toHaveBeenCalledOnce()
+      expect(mockChatGenerationStore.createChatGeneration).not.toHaveBeenCalled()
     })
   })
 })

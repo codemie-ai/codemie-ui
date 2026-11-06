@@ -19,14 +19,22 @@ import TextBlock from '@/components/markdown/TextBlock'
 import { Thought as ThoughtType } from '@/types/entity/conversation'
 import { cn } from '@/utils/utils'
 
-import ThoughtHeader from './ThoughtHeader'
+import ThoughtHeader, { ThoughtStatus } from './ThoughtHeader'
 import ThoughtMessage from './ThoughtMessage'
+
+export interface ThoughtView {
+  forceExpanded?: boolean
+  hidden?: boolean
+  footer?: ReactNode
+  status?: ThoughtStatus
+}
 
 interface ThoughtProps {
   thought: ThoughtType
   isEmbedded?: boolean
   defaultExpanded?: boolean
   headerBadge?: ReactNode
+  getView?: (thought: ThoughtType) => ThoughtView
 }
 
 export interface ThoughtRef {
@@ -35,7 +43,7 @@ export interface ThoughtRef {
 }
 
 const Thought = forwardRef<ThoughtRef, ThoughtProps>(
-  ({ thought, isEmbedded, defaultExpanded = false, headerBadge }, ref) => {
+  ({ thought, isEmbedded, defaultExpanded = false, headerBadge, getView }, ref) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded)
 
     useImperativeHandle(ref, () => ({
@@ -44,30 +52,35 @@ const Thought = forwardRef<ThoughtRef, ThoughtProps>(
     }))
 
     const isInProgress = thought.in_progress
+    const view = getView?.(thought)
+    const showContent = !!view?.forceExpanded || isExpanded || isInProgress
+
+    if (view?.hidden) return null
 
     return (
-      <div className="flex flex-col">
+      <div className="flex flex-col" data-thought-id={thought.id}>
         <ThoughtHeader
           thought={thought}
-          isExpanded={isExpanded}
+          isExpanded={isExpanded || !!view?.forceExpanded}
           isEmbedded={isEmbedded}
           isInProgress={isInProgress}
           setIsExpanded={setIsExpanded}
           headerBadge={headerBadge}
+          status={view?.status}
         />
 
-        {(isExpanded || isInProgress) && (
+        {showContent && (
           <div
             className={cn(
               'flex flex-col gap-4 p-4 border shadow-sm border-t-border-structural/50 border-border-structural bg-surface-base-primary rounded-b-lg',
-              (isExpanded || isInProgress) && 'border-t-0',
+              'border-t-0',
               isEmbedded && 'bg-surface-base-secondary'
             )}
           >
             {!!thought.children?.length && (
               <div className="flex flex-col gap-2">
                 {thought.children.map((thought) => (
-                  <Thought isEmbedded key={thought.id} thought={thought} />
+                  <Thought isEmbedded key={thought.id} thought={thought} getView={getView} />
                 ))}
               </div>
             )}
@@ -85,6 +98,8 @@ const Thought = forwardRef<ThoughtRef, ThoughtProps>(
               <div className="text-text-quaternary font-medium">Result:</div>
               <ThoughtMessage thought={thought} />
             </div>
+
+            {view?.footer}
           </div>
         )}
       </div>

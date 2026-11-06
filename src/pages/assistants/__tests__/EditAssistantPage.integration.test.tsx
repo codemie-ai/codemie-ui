@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { cleanup, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
@@ -243,8 +243,10 @@ describe('EditAssistantPage - Integration', () => {
       const user = userEvent.setup()
       const temperatureInput = await openEditForm({ temperature: 0.5 })
 
-      await user.clear(temperatureInput)
-      await user.type(temperatureInput, '0.3')
+      // Set the value in one synchronous change event: typing, and even pasting, into this
+      // validated, controlled field lost characters on slow CI runners ('0.3' arrived as '0')
+      fireEvent.change(temperatureInput, { target: { value: '0.3' } })
+      expect(temperatureInput).toHaveValue('0.3')
       await user.click(screen.getByRole('button', { name: 'Save' }))
 
       await waitFor(() => expect(putBodyOf()).toBeDefined())
@@ -284,7 +286,10 @@ describe('EditAssistantPage - Integration', () => {
       const user = userEvent.setup()
       await openEditForm({ tools_tokens_size_limit: undefined })
 
-      await user.type(screen.getByPlaceholderText('30000'), '1000')
+      const limitInput = screen.getByPlaceholderText('30000')
+      // Set in one change event for the same reason: typed '1000' arrived as '10' on slow CI
+      fireEvent.change(limitInput, { target: { value: '1000' } })
+      expect(limitInput).toHaveValue('1000')
       await user.click(screen.getByRole('button', { name: 'Save' }))
 
       await waitFor(() => expect(putBodyOf()).toBeDefined())
@@ -301,9 +306,14 @@ describe('EditAssistantPage - Integration', () => {
       expect(inputs.topP).toHaveValue('')
       expect(inputs.limit).toHaveValue('')
 
-      await user.type(inputs.temperature, '0.4')
-      await user.type(inputs.topP, '0.8')
-      await user.type(inputs.limit, '1000')
+      // Set each value in one change event: typing into these validated, controlled fields lost
+      // characters on slow CI runners ('1000' arrived as '10')
+      fireEvent.change(inputs.temperature, { target: { value: '0.4' } })
+      fireEvent.change(inputs.topP, { target: { value: '0.8' } })
+      fireEvent.change(inputs.limit, { target: { value: '1000' } })
+      expect(inputs.temperature).toHaveValue('0.4')
+      expect(inputs.topP).toHaveValue('0.8')
+      expect(inputs.limit).toHaveValue('1000')
       await user.click(screen.getByRole('button', { name: 'Save' }))
 
       await waitFor(() => expect(putBodies()).toHaveLength(1))

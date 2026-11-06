@@ -265,4 +265,63 @@ describe('Thought', () => {
 
     expect(screen.queryByTestId('custom-badge')).not.toBeInTheDocument()
   })
+
+  describe('getView', () => {
+    const parent = createMockThought({
+      id: 'parent',
+      author_name: 'Parent',
+      children: [createMockThought({ id: 'child', author_name: 'Child', message: 'child msg' })],
+    })
+
+    it('does not render children of a collapsed parent without getView', () => {
+      render(<Thought thought={parent} />)
+      expect(screen.queryByText('Child')).not.toBeInTheDocument()
+    })
+
+    it('renders the child of a collapsed parent when forceExpanded', () => {
+      render(<Thought thought={parent} getView={(t) => ({ forceExpanded: t.id === 'parent' })} />)
+      expect(screen.getByText('Child')).toBeInTheDocument()
+    })
+
+    it('lets the user collapse nothing while forced and follows the view on rerender', () => {
+      const { rerender } = render(
+        <Thought thought={parent} getView={() => ({ forceExpanded: true })} />
+      )
+      expect(screen.getByText('Child')).toBeInTheDocument()
+      rerender(<Thought thought={parent} getView={() => ({})} />)
+      expect(screen.queryByText('Child')).not.toBeInTheDocument()
+    })
+
+    it('omits a hidden child', () => {
+      render(
+        <Thought thought={parent} defaultExpanded getView={(t) => ({ hidden: t.id === 'child' })} />
+      )
+      expect(screen.getByText('Parent')).toBeInTheDocument()
+      expect(screen.queryByText('Child')).not.toBeInTheDocument()
+    })
+
+    it('renders the footer below the thought content', () => {
+      render(
+        <Thought
+          thought={parent}
+          defaultExpanded
+          getView={(t) => ({
+            forceExpanded: true,
+            footer: t.id === 'child' ? <div>child footer</div> : undefined,
+          })}
+        />
+      )
+      expect(screen.getByText('child footer')).toBeInTheDocument()
+    })
+
+    it('replaces the header status with the override', () => {
+      render(
+        <Thought
+          thought={createMockThought()}
+          getView={() => ({ status: { status: 'not_started', label: 'Waiting' } })}
+        />
+      )
+      expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('Waiting')
+    })
+  })
 })

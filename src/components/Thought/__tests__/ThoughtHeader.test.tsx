@@ -20,7 +20,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ChatBackend, Thought, ThoughtAuthorType } from '@/types/entity/conversation'
 import { transformChatBEtoFE } from '@/utils/chatHelpers'
 
-import ThoughtHeader from '../ThoughtHeader'
+import ThoughtHeader, { ThoughtStatus, WAITING_THOUGHT_STATUS } from '../ThoughtHeader'
 
 const createMockThought = (overrides?: Partial<Thought>): Thought => ({
   id: 'thought-1',
@@ -337,5 +337,40 @@ describe('ThoughtHeader', () => {
   it('does not render a badge when headerBadge is not provided', () => {
     render(<ThoughtHeader thought={createMockThought()} setIsExpanded={mockSetIsExpanded} />)
     expect(screen.queryByTestId('custom-badge')).not.toBeInTheDocument()
+  })
+
+  describe('step statuses', () => {
+    const renderStatus = (overrides: Partial<Thought>, status?: ThoughtStatus) =>
+      render(
+        <ThoughtHeader
+          thought={createMockThought(overrides)}
+          setIsExpanded={mockSetIsExpanded}
+          status={status}
+        />
+      )
+
+    it.each([
+      ['Denied', 'Tool call was denied by the user.'],
+      ['Cancelled', 'Tool call was cancelled without a decision.'],
+      [
+        'Unavailable',
+        'Tool call needs user confirmation, which is not available in this channel. The tool was not run.',
+      ],
+    ])('shows Aborted for a %s step', (_name, message) => {
+      renderStatus({ aborted: true, interrupted: false, message })
+      expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('Aborted')
+      expect(screen.queryByText(/Allowed|Denied|Not run/)).not.toBeInTheDocument()
+    })
+
+    it('keeps Interrupted for a waiting step', () => {
+      renderStatus({ interrupted: true })
+      expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('Interrupted')
+    })
+
+    it('replaces the computed status with the status override', () => {
+      renderStatus({}, WAITING_THOUGHT_STATUS)
+      expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('Waiting')
+      expect(screen.queryByText('Success')).not.toBeInTheDocument()
+    })
   })
 })

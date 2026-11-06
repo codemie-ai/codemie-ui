@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16464_nested-tool-confirmation",
+  "head": "0c39d71d00df958e843cd2478e70086c12a1d564",
+  "runner": "npm",
+  "started_at": "2026-10-29T15:03:08Z",
+  "completed_at": "2026-10-29T15:13:51Z",
+  "status": "BLOCKED",
+  "drift_detected": true,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 21506,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Ran after npm ci (exit 0). No findings after the eslint invocation."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 14747,
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "notes": "tsc --noEmit silent, exit 0."
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide Skip-if met: package.json and package-lock.json are not in the diff vs origin/main, so no dependency was added, removed or moved."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 4575,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output 'no leaks found' (gitleaks image ran). Working tree only, not history. Also a pre-commit hook command."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 143674,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  760 passed (760); Tests  7841 passed | 1 skipped (7842)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 85409,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  54 passed (54); Tests  611 passed | 1 skipped (612)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 285534,
+      "command": "npm run test-harness",
+      "exit_code": 1,
+      "notes": "'3 failed, 88 passed, 9 rerun in 281.56s'. The fresh dev server (restarted after npm ci) loaded and login worked. No Guided Tour dialog in the failure snapshots. (1) and (2) test_stop_generation_button_css_state_and_halt_flow and test_stop_button_visible_after_resend_first_message_in_multi_message_chat expect a 'Continue' button in [data-onboarding=chat-input] after Stop. The snapshot shows 'Send [disabled]'. Likely code cause: ChatPrompt.tsx (commit 25ba5009d) changed isInterrupted to '!!currentChat?.isWorkflow && !!currentChat?.isInterrupted', so assistant chats no longer get the Continue/ChatControls mode after Stop. The spec (rule 6) and plan (line 126) say to leave isInterrupted unchanged. (3) test_edit_assistant_tools_interactions: a 'FileSystem' tools-section locator was not visible. The assistant edit page is not in the diff; not reproduced on main. This is also the UI gate for the .tsx diff."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 433,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: '\u2192 No staged files found.' Its eslint/tsc/license-header steps are covered by lint, typecheck and license-headers. Its prettier --write step is not covered. To enable: stage the files and run it, or let it run at commit time."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 264,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "'Checked 2465 files, 0 missing license headers'. A pre-commit hook command missing from the guide's gate list (the guide lists it only as automatic)."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 153,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' To enable: export SONAR_TOKEN (the hook sources .env.local, which does not exist). CI Sonar analysis still owed."
+    },
+    {
+      "id": "ci-external-contexts",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(GitLab wait-ci-init: EXPECTED_CONTEXTS ci-pipeline, compliance-report)",
+      "exit_code": null,
+      "notes": "CI-only: .gitlab-ci.yml includes an external pre-ci-guard template and waits for the external 'ci-pipeline' and 'compliance-report' contexts. Cannot run locally. Still owed to CI: compliance-report checks the MR '## Test harness' section."
+    }
+  ],
+  "failures": {
+    "test-harness": "INFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n------------------------------ Captured log call -------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/assistants/df1aa351-b593-4d78-b9c1-bd0f9c773c85\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\nINFO     reportportal_logger:rp_guard.py:64 Test failed - Screenshot captured: test_edit_assistant_tools_interactions[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n------------------------------ Captured log call -------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/assistants/5b80e5ca-fc12-4e66-8609-3ab84492ec9a\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\nINFO     reportportal_logger:rp_guard.py:64 Test failed - Screenshot captured: test_edit_assistant_tools_interactions[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n------------------------------ Captured log call -------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed POST request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/assistants/df1aa351-b593-4d78-b9c1-bd0f9c773c85\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\nINFO     reportportal_logger:rp_guard.py:64 Test failed - Screenshot captured: test_edit_assistant_tools_interactions[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/assistants/5b80e5ca-fc12-4e66-8609-3ab84492ec9a\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\nINFO     reportportal_logger:rp_guard.py:64 Test failed - Screenshot captured: test_edit_assistant_tools_interactions[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed DELETE request to /v1/assistants/c3eedd14-b68a-4bcb-8389-396919054860\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\nINFO     reportportal_logger:rp_guard.py:64 Test failed - Screenshot captured: test_edit_assistant_tools_interactions[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n- generated xml file: /Users/yanaasadchaya/Projects/epam/codemie/codemie-ui/codemie-test-reports/junit.xml -\n=========================== short test summary info ============================\nFAILED tests/ui/chats/test_chat_functionality.py::test_stop_generation_button_css_state_and_halt_flow[chromium]\nFAILED tests/ui/chats/test_chat_functionality.py::test_stop_button_visible_after_resend_first_message_in_multi_message_chat[chromium]\nFAILED tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_tools_interactions[chromium]\n============== 3 failed, 88 passed, 9 rerun in 281.56s (0:04:41) ==============="
+  }
+}

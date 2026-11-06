@@ -26,6 +26,8 @@ import type {
   AssistantData,
   AssistantDataBackend,
   HistoryItemBackend,
+  Thought,
+  ThoughtBackend,
 } from '@/types/entity/conversation'
 
 export const transformChatBEtoFE = (chatBE: ChatBackend): Conversation => {
@@ -105,6 +107,27 @@ export const transformWorkflowExecutionHistoryBEtoFE = (
 const isActiveWorkflowTurn = (assistantItem: HistoryItemBackend): boolean =>
   assistantItem.executionStatus === WORKFLOW_STATUSES.RUNNING
 
+const normaliseThought = (t: ThoughtBackend, isAssistantInProgress: boolean): Thought => ({
+  id: t.id,
+  author_name: t.author_name,
+  tool_name: t.tool_name,
+  author_type: t.author_type ?? 'Tool',
+  message: t.message,
+  input_text: t.input_text,
+  children: t.children?.map((child) => normaliseThought(child, isAssistantInProgress)),
+  output_format: t.output_format,
+  in_progress: isAssistantInProgress ? t.in_progress ?? false : false,
+  error: t.error ?? false,
+  // Non-workflow (or finished) hydrate: backend in_progress:true means the stream was cut — treat as aborted
+  interrupted: t.interrupted ?? false,
+  parent_id: t.parent_id,
+  aborted: isAssistantInProgress
+    ? t.aborted ?? false
+    : (t.aborted ?? false) || (t.in_progress ?? false),
+  routing: t.routing ?? null,
+  truncated: t.truncated ?? false,
+})
+
 function groupAndTransformHistory(
   history: HistoryItemBackend[],
   {
@@ -169,25 +192,7 @@ function transformHistoryGroup(
       createdAt: userItem.date,
       fileNames: userItem.fileNames,
       thoughts: assistantItem.thoughts
-        ? assistantItem.thoughts.map((thought) => ({
-            id: thought.id,
-            author_name: thought.author_name,
-            tool_name: thought.tool_name,
-            author_type: thought.author_type ?? 'Tool',
-            message: thought.message,
-            input_text: thought.input_text,
-            children: thought.children,
-            output_format: thought.output_format,
-            in_progress: isAssistantInProgress ? thought.in_progress ?? false : false,
-            error: thought.error ?? false,
-            // Non-workflow (or finished) hydrate: backend in_progress:true means the stream was cut — treat as aborted
-            interrupted: thought.interrupted ?? false,
-            aborted: isAssistantInProgress
-              ? thought.aborted ?? false
-              : (thought.aborted ?? false) || (thought.in_progress ?? false),
-            routing: thought.routing ?? null,
-            truncated: thought.truncated ?? false,
-          }))
+        ? assistantItem.thoughts.map((thought) => normaliseThought(thought, isAssistantInProgress))
         : [],
       assistantId: assistantItem.assistantId,
       assistant: assistant

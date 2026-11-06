@@ -103,36 +103,22 @@ describe('chatGenerationStore._prepareRequestData resume branch', () => {
   })
 })
 
-describe('chatGenerationStore._prepareRequestData toolCallAction branch', () => {
-  it('routes to the tool-call resume endpoint when toolCallAction is set', () => {
+describe('chatGenerationStore._prepareRequestData tool-call resume branch', () => {
+  it('sends conversation_id, stream and the decisions batch, and nothing else', () => {
     const chat = { id: 'chat-1', isWorkflow: false, history: [] } as any
+    const decisions = [
+      { thought_id: 'thought-1', action: ToolCallAction.ALLOW },
+      { thought_id: 'nested-9', action: ToolCallAction.DENY },
+    ]
     const data = {
       conversationId: 'chat-1',
-      toolCallAction: ToolCallAction.ALLOW,
-      pendingToolCallId: 'call_abc',
+      resume: { decisions, undo: [{ thought_id: 'thought-1', interrupted: true }] },
     } as any
 
     const result = chatGenerationStore._prepareRequestData(chat, 'assistant-1', data)
 
     expect(result.endpoint).toBe('v1/assistants/assistant-1/model/tool-call/resume')
-    expect(result.requestData).toEqual({
-      conversation_id: 'chat-1',
-      action: 'allow',
-      stream: true,
-    })
-  })
-
-  it('routes deny action correctly', () => {
-    const chat = { id: 'chat-1', isWorkflow: false, history: [] } as any
-    const data = {
-      conversationId: 'chat-1',
-      toolCallAction: ToolCallAction.DENY,
-      pendingToolCallId: 'call_xyz',
-    } as any
-
-    const result = chatGenerationStore._prepareRequestData(chat, 'assistant-2', data)
-
-    expect(result.endpoint).toBe('v1/assistants/assistant-2/model/tool-call/resume')
-    expect(result.requestData).toMatchObject({ action: 'deny' })
+    expect(result.method).toBeUndefined()
+    expect(result.requestData).toEqual({ conversation_id: 'chat-1', stream: true, decisions })
   })
 })

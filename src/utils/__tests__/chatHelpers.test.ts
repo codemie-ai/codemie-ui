@@ -17,6 +17,7 @@ import { describe, it, expect, vi } from 'vitest'
 
 import { ROLE_ASSISTANT, ROLE_USER } from '@/constants'
 import { WORKFLOW_FINAL_STATUSES, WORKFLOW_STATUSES } from '@/constants/workflows'
+import { pausedHistoryItemBackend } from '@/store/__tests__/fixtures/toolCallResume.fixtures'
 import type { ChatBackend } from '@/types/entity/conversation'
 import {
   transformChatBEtoFE,
@@ -936,5 +937,83 @@ describe('resolveHideToolOutputs', () => {
   it('falls back to the stored value without a chat', () => {
     expect(resolveHideToolOutputs(true, null)).toBe(true)
     expect(resolveHideToolOutputs(false, undefined)).toBe(false)
+  })
+})
+
+describe('transformChatBEtoFE thought normalisation', () => {
+  const WAITING_MESSAGE = 'Tool call is waiting for user approval.'
+  const collectAll = (thoughts: any[] | undefined, out: any[] = []): any[] => {
+    thoughts?.forEach((t) => {
+      out.push(t)
+      collectAll(t.children, out)
+    })
+    return out
+  }
+  const pausedChat = (lastItem: object) =>
+    ({
+      id: 'c1',
+      conversation_name: 'Paused',
+      llm_model: 'gpt-4',
+      assistant_ids: ['a1'],
+      initial_assistant_id: 'a1',
+      assistant_data: [],
+      history: [
+        { historyIndex: 0, role: 'User', message: 'go', date: '2026-01-01' },
+        { ...lastItem, historyIndex: 0, role: 'Assistant' },
+      ],
+    } as any)
+
+  it('loads a paused entry as not in progress with its waiting steps intact and no decision (AC15)', () => {
+    const result = transformChatBEtoFE(pausedChat(pausedHistoryItemBackend))
+    const entry = result.history[0][0]
+    const steps = collectAll(entry.thoughts)
+    const waiting = steps.filter((t) => t.interrupted)
+
+    expect(entry.inProgress).toBe(false)
+    expect(waiting.map((t) => t.id)).toEqual([
+      pausedHistoryItemBackend.thoughts![1].children![0].id,
+      pausedHistoryItemBackend.thoughts![2].children![0].id,
+    ])
+    waiting.forEach((t) =>
+      expect(t).toMatchObject({
+        interrupted: true,
+        aborted: false,
+        in_progress: false,
+        message: WAITING_MESSAGE,
+      })
+    )
+    steps.forEach((t) => expect(t).not.toHaveProperty('decision'))
+  })
+
+  it('drops a stray decision field from a backend thought', () => {
+    const result = transformChatBEtoFE(
+      pausedChat({
+        message: '',
+        assistantId: 'a1',
+        date: '2026-01-01',
+        thoughts: [
+          {
+            id: 'delegate',
+            tool_name: 'delegate',
+            message: '',
+            children: [
+              {
+                id: 'stray',
+                parent_id: 'delegate',
+                tool_name: 'read',
+                message: 'ok',
+                decision: 'allow',
+              },
+            ],
+          },
+        ],
+      })
+    )
+    const [delegate] = result.history[0][0].thoughts!
+    const [stray] = delegate.children!
+
+    expect(stray).not.toHaveProperty('decision')
+    expect(stray.parent_id).toBe('delegate')
+    expect(Object.keys(stray).sort()).toEqual(Object.keys(delegate).sort())
   })
 })

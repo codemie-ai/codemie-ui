@@ -113,6 +113,7 @@ docs/superpowers/runs/*/**/mr-title.txt
 docs/superpowers/runs/*/**/mr-description.md
 # Shape rules: disposable machine state, whatever the Factory names it next
 docs/superpowers/tasks/*/**/*.local.*
+docs/superpowers/tasks/*/**/*.local/
 docs/superpowers/runs/*/**/*.local.*
 docs/superpowers/qa-tasks/*/**/*.local.*
 credentials.json

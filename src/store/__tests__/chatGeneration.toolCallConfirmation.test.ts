@@ -15,7 +15,23 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ChatMessage } from '@/types/entity/conversation'
+import type { ChatMessage, Thought } from '@/types/entity/conversation'
+
+import {
+  s1Chunks,
+  s1DelegationId,
+  s1WaitingId,
+  s5BatchPausedConversation,
+  s5FirstPendingId,
+  s5ResumeChunks,
+  s5S1ContainerId,
+  s5S2ContainerId,
+  s5SecondStepId,
+  s6O2Id,
+  s6PausedConversation,
+  s6SId,
+  s6WaitingId,
+} from './fixtures/toolCallResume.fixtures'
 
 const mockChatsStore = {
   currentChat: null,
@@ -147,5 +163,92 @@ describe('chatGenerationStore interrupted thought handling', () => {
     )
 
     expect(historyItem.thoughts![0].aborted).toBe(true)
+  })
+})
+
+describe('chatGenerationStore nested thought placement', () => {
+  const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v))
+  const send = async (historyItem: ChatMessage, thought: unknown, last = false) => {
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    await chatGenerationStore._handleChunk(historyItem, JSON.stringify({ thought, last }))
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatsStore.currentChat = null
+  })
+
+  it('nests an S1 waiting step under its delegation step', async () => {
+    const historyItem = makeHistoryItem()
+    await send(historyItem, clone(s1Chunks[0].thought))
+    await send(historyItem, clone(s1Chunks[1].thought))
+    await send(historyItem, clone(s1Chunks[2].thought), true)
+
+    expect(historyItem.thoughts).toHaveLength(1)
+    const [delegation] = historyItem.thoughts!
+    expect(delegation.id).toBe(s1DelegationId)
+    expect(delegation.children).toHaveLength(1)
+    expect(delegation.children![0].id).toBe(s1WaitingId)
+    expect(delegation.children![0].interrupted).toBe(true)
+  })
+
+  it('nests a depth-2 step under O2 -> S instead of the top level', async () => {
+    const historyItem = makeHistoryItem()
+    const [o2] = clone(s6PausedConversation.thoughts)
+    const s = o2.children![0]
+    const waiting = s.children![0]
+    await send(historyItem, { ...o2, children: [] })
+    await send(historyItem, { ...s, children: [] })
+    await send(historyItem, { ...waiting })
+
+    expect(historyItem.thoughts!.map((t) => t.id)).toEqual([s6O2Id])
+    const nestedS = historyItem.thoughts![0].children![0]
+    expect(nestedS.id).toBe(s6SId)
+    expect(nestedS.children!.map((t) => t.id)).toEqual([s6WaitingId])
+  })
+
+  it('ignores a decision field on a thought chunk', async () => {
+    const historyItem = makeHistoryItem()
+    await send(historyItem, { id: 't1', author_name: 'tool', interrupted: true })
+    await send(historyItem, { id: 't1', interrupted: true, decision: 'allow' })
+
+    expect(historyItem.thoughts![0]).not.toHaveProperty('decision')
+    expect(historyItem.thoughts![0].interrupted).toBe(true)
+  })
+
+  it('places both waiting steps of one batch under their parents', async () => {
+    const historyItem = makeHistoryItem()
+    const [, s1, s2] = clone(s5BatchPausedConversation.thoughts)
+    await send(historyItem, { ...s1, children: [] })
+    await send(historyItem, { ...s2, children: [] })
+    await send(historyItem, s1.children![0])
+    await send(historyItem, s2.children![0], true)
+
+    expect(historyItem.thoughts!.map((t) => t.id)).toEqual([s5S1ContainerId, s5S2ContainerId])
+    const [first, second] = historyItem.thoughts!.map((t) => t.children![0])
+    expect(first).toMatchObject({ id: s5FirstPendingId, interrupted: true })
+    expect(second).toMatchObject({ id: s5SecondStepId, interrupted: true })
+    expect(historyItem.inProgress).toBe(false)
+  })
+
+  it('fills the allowed step from the resume chunks and finishes on the terminal chunk (AC5)', async () => {
+    const historyItem = makeHistoryItem()
+    historyItem.thoughts = clone(s5BatchPausedConversation.thoughts) as Thought[]
+    const allowed = historyItem.thoughts[1].children![0]
+    expect(allowed.id).toBe(s5FirstPendingId)
+    Object.assign(allowed, { interrupted: false, in_progress: true, message: '' })
+
+    await send(historyItem, clone(s5ResumeChunks[0].thought))
+    await send(historyItem, clone(s5ResumeChunks[1].thought))
+    const { chatGenerationStore } = await import('@/store/chatGeneration')
+    await chatGenerationStore._handleChunk(historyItem, JSON.stringify(s5ResumeChunks[2]))
+
+    expect(allowed).toMatchObject({
+      interrupted: false,
+      in_progress: false,
+      message: 'Issue EPMCDME-1 created.',
+    })
+    expect(historyItem.thoughts.map((t) => t.id)).not.toContain(s5FirstPendingId)
+    expect(historyItem.inProgress).toBe(false)
   })
 })

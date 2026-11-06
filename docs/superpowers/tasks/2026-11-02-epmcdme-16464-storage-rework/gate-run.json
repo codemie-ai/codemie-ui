@@ -1,0 +1,112 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16464_nested-tool-confirmation",
+  "head": "f09c1e0a2155f3eba4928ac88508c185e61182e5",
+  "runner": "npm",
+  "started_at": "2026-11-03T10:50:53Z",
+  "completed_at": "2026-11-03T11:02:06Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19989,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "eslint: no findings after the file list. Diff touches src/, so Skip-if does not apply."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 15777,
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "notes": "tsc --noEmit silent. Diff touches .ts/.tsx, so Skip-if does not apply."
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1793,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Guide Skip-if would apply (package.json and package-lock.json unchanged against origin/main), but the caller asked for every gate to be run again, so it ran. Licence summary table printed (MIT: 1039 ... 0BSD: 1); no offending package named."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8423,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output read, not just the exit code: `scanned ~146491419 bytes (146.49 MB) in 7.88s` then `no leaks found`. Scans the working tree only, not history. Also enforced by the pre-commit hook and the MR pipeline gitleaks-scan task."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 148563,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "No reinstall: package-lock.json unchanged, and the caller said not to run npm ci (dev server on :5173 serves from node_modules). vitest: `Test Files  802 passed (802)`, `Tests  8262 passed | 1 skipped (8263)` (previous run: 8258 passed of 8259)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 82319,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "vitest: `Test Files  56 passed (56)`, `Tests  630 passed | 1 skipped (631)`."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 240932,
+      "command": "cd /Users/yanaasadchaya/Projects/epam/codemie/codemie-sdk-16464/test-harness && FRONTEND_URL=http://localhost:5173 uvx --reinstall --from . codemie-test-harness run sanity-ui -n 8",
+      "exit_code": 0,
+      "notes": "Diff touches UI globs, so this gate was required. The guide's Run field is `npm run test-harness` (the published package). That package still expects Continue after Stop and the toolkit name FileSystem; both are fixed in codemie-sdk MR !829. So the harness ran from the branch checkout codemie-sdk-16464/test-harness (branch EPMCDME-16464_stop-shows-send-in-assistant-chat @ 583166df), against the dev server already running on :5173 (not restarted) and the backend on :8080 (EPMCDME-16463_sub-assistant-tool-confirmation). No other browser session was using the stack. Summary: `91 passed, 2 rerun in 229.89s (0:03:49)`. The two reruns failed once and then passed on the automatic retry, and both are outside the tool-confirmation area: test_assistant_lifecycle.py::test_clone_existing_assistant and test_delete_integration.py::test_delete_integration_with_confirmation. Each was re-run alone once (`... run sanity-ui -n 1 --reruns 0 -- -k <name>`, without --reinstall): `1 passed in 19.37s` and `1 passed in 22.57s`. The first-attempt failure text is not kept in the -n 8 console log. The solo runs overwrote codemie-test-reports/junit.xml; the full-run console log is at /private/tmp/claude-501/-Users-yanaasadchaya-Projects-epam-codemie-codemie-ui/c018cd36-9618-4423-9da2-1bda05294f8f/scratchpad/ui.log. A published-package result for the MR `## Test harness` section is still owed until MR !829 is released."
+    },
+    {
+      "id": "format",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 887,
+      "command": "npx prettier --check $(git diff --name-only --diff-filter=d origin/main...HEAD -- '*.js' '*.jsx' '*.ts' '*.tsx' '*.cjs' '*.mjs' '*.json' '*.md' '*.html' '*.css' '*.scss')",
+      "exit_code": 0,
+      "notes": "Hook-sourced: .husky/pre-commit `npx lint-staged` runs `prettier --write`; here it was checked as `prettier --check` on the branch diff, with deleted files excluded. `All matched files use Prettier code style!`."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 280,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Hook-sourced (.husky/pre-commit). `Checked 2564 files, 0 missing license headers`."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 155,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Hook-sourced (.husky/pre-commit). Skipped itself with exit 0: `[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.` (.env.local was sourced as the hook does, and it does not set the token). Export SONAR_TOKEN to run it locally; until then only CI/Sonar can settle it."
+    },
+    {
+      "id": "ci-external-contexts",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(external: wait-ci-init expects contexts ci-pipeline, compliance-report)",
+      "exit_code": null,
+      "notes": ".gitlab-ci.yml defines no gate of its own. wait-ci-init only waits for the external status contexts `ci-pipeline` and `compliance-report`, which cannot be reached from this checkout. compliance-report checks the MR `## Test harness` section."
+    }
+  ],
+  "failures": {}
+}
