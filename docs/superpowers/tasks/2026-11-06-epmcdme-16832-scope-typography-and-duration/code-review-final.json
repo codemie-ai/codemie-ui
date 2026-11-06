@@ -1,0 +1,91 @@
+{
+  "decision": "request-changes",
+  "rationale": "All three lenses ran. Two items need a human decision: AC3 (readability) is only partially met because the agreed Summary baseline uses 11px/12px text that a diff cannot show is readable, and the new sessionTypography.ts adds arbitrary Tailwind values that the styling guide forbids (though they mirror the restored MetricCard classes). Deferred (4): pre-existing formatDuration(0) renders '—' so a first dispatch reads '— into session'; 999.5-999.99ms rounds to '1000ms'; 70px duration column could be tight for long strings like '10mo 3w 4d'; typography constants duplicate MetricCard classes. Dismissed (9): formatDuration style nits (variable named window, defensive Math.max, map with side effect), zero inner units shown by design, three-unit truncation by design, removal of the inner Timeline heading (the AnalyticsWidget title 'Timeline' remains), cn() to template string in MetricCard (restores the pre-MR code), and similar.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "Typography follows the design system / consistent font family, sizes, weights across analytics widgets",
+      "status": "pass",
+      "notes": "Shared AnalyticsWidget, MetricCard and BarChartWidget restored to pre-MR 2248 classes; MetricCard value is a single text-lg; Session Details tiles use constants that mirror MetricCard."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Consistent heading, label and value styling (clear hierarchy)",
+      "status": "pass",
+      "notes": "Title 18px, description 14px, label 11px uppercase, value 18px across MetricCard users and Session timeline tiles."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Readable text with appropriate contrast and spacing",
+      "status": "partial",
+      "notes": "Labels, captions and descriptions are 11px and timeline rows 12px (the agreed Summary baseline, chosen to avoid oversized numbers). The click-a-step hint now uses text-quaternary (lower contrast than the former text-secondary). Readability and contrast cannot be proven from the diff; needs a browser check."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Consistent spacing and alignment",
+      "status": "pass",
+      "notes": "Session metric grids share gap-3 / max-sm:gap-2; timeline label column is minmax(120px,180px)."
+    },
+    {
+      "kind": "story-ac",
+      "item": "Proper hierarchy at supported viewports; no clipping, overlap or truncation",
+      "status": "partial",
+      "notes": "Top row stacks below lg and the label column can shrink, but no browser or viewport verification is recorded; the fixed 70px duration column may be narrow for the longest new duration strings."
+    },
+    {
+      "kind": "spec",
+      "item": "Do not change views outside CLI Analytics typography (revert MR 2248 shared-component changes)",
+      "status": "pass",
+      "notes": "Shared components match pre-MR classes except the one agreed MetricCard value change (text-lg, no sm:text-xl), which also affects non-CLI MetricCard users such as Insights, Leaderboard and Schedulers."
+    },
+    {
+      "kind": "spec",
+      "item": "formatDuration shows d/h/m at 24h, w/d/h at 7d, mo/w/d at 30d for all CLI Analytics",
+      "status": "pass",
+      "notes": "Unit table with a three-unit window; boundary samples 24h, 1w, 1mo, 127h50m3s verified."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Both commit subjects match 'EPMCDME-16832: Capital sentence'; branch is EPMCDME-16832_scope-typography-to-session-details."
+    },
+    {
+      "kind": "code-quality",
+      "status": "partial",
+      "notes": "styling-guide.md forbids arbitrary Tailwind values. New sessionTypography.ts adds text-[11px] and tracking-[0.03em]. The same classes already exist in MetricCard (pre-MR), BarChartWidget caption was restored from pre-MR."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Class-name and formatting changes only; no HTML sinks, redirects, secrets or config."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/pages/analytics/components/cli-analytics/sessionTypography.ts",
+      "line": 21,
+      "title": "New arbitrary Tailwind values conflict with the styling guide",
+      "problem": "SESSION_STAT_LABEL_CLASS uses text-[11px] and tracking-[0.03em], which the styling guide bans, in a newly added file.",
+      "impact": "Adds new guide violations to the PR. Using only guide-compliant tokens (e.g. text-h5 at 12px) would change the visual size and break parity with the MetricCard labels the user asked to match.",
+      "recommendation": "Decide: keep exact parity with MetricCard (accept arbitrary values, same as the pre-MR MetricCard) or switch to a design token and accept a 1px size difference."
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/pages/analytics/components/cli-analytics/views/SessionTimeline.tsx",
+      "line": 105,
+      "title": "Readability AC is only partially met and unverified",
+      "problem": "The agreed baseline puts labels and captions at 11px and timeline rows at 12px, and the hint text colour moved from text-secondary to text-quaternary. AC3 (readable text, appropriate contrast) cannot be confirmed from the diff and no viewport check is recorded.",
+      "impact": "Small low-contrast text may still be judged hard to read by the ticket reviewer, while larger sizes were rejected by the user as too big.",
+      "recommendation": "Verify in the browser at desktop and narrow widths. If the hint looks faint, restore text-secondary; otherwise accept the baseline and note it in the MR."
+    }
+  ]
+}

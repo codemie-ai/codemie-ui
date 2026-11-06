@@ -184,9 +184,9 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
 
   return (
     <div className="flex flex-col gap-6 pb-6">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <AnalyticsWidget title="Cost & Time" expandable={false}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 max-sm:gap-2">
             {costMetrics.map((metric) => (
               <MetricCard key={metric.id} metric={metric} />
             ))}
@@ -194,7 +194,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
         </AnalyticsWidget>
 
         <AnalyticsWidget title="Token usage" expandable={false}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 max-sm:gap-2">
             {tokenMetrics.map((metric) => (
               <MetricCard key={metric.id} metric={metric} />
             ))}
@@ -202,7 +202,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
         </AnalyticsWidget>
 
         <AnalyticsWidget title="Activity" expandable={false}>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 max-sm:gap-2">
             {activityMetrics.map((metric) => (
               // qualifiers ("Provisional · 1 observed of 3 total · 100% ok") need more than the default 3 lines
               <MetricCard
@@ -249,7 +249,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
             />
           </div>
         ) : (
-          <p className="text-text-quaternary text-h4">
+          <p className="text-text-quaternary text-sm">
             Per-turn data not available for this session.
           </p>
         )}

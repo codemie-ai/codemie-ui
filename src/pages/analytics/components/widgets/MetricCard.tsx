@@ -34,7 +34,7 @@ const MetricCard: FC<MetricCardProps> = ({
   badge,
   // `break-words`, not `break-all`: a long unbroken number wraps instead of overflowing. The qualification
   // below sets its own rule.
-  valueClassName = 'text-h3 font-semibold tracking-tight text-text-primary break-words [font-variant-numeric:tabular-nums]',
+  valueClassName = 'text-lg font-semibold leading-snug tracking-tight text-text-primary break-words [font-variant-numeric:tabular-nums]',
   valueColorClassName,
   valueOverride,
 }) => {
@@ -44,10 +44,7 @@ const MetricCard: FC<MetricCardProps> = ({
       {/* Phones: the label keeps its own line and a period badge goes below it. */}
       <div className="mb-1 flex items-start justify-between gap-2 max-sm:flex-wrap max-sm:gap-1">
         <p
-          className={cn(
-            'min-w-0 text-h5 font-semibold uppercase tracking-[0.03em] line-clamp-2 max-sm:basis-full',
-            mutedTextClassName
-          )}
+          className={`min-w-0 text-[11px] font-semibold uppercase tracking-[0.03em] leading-4 line-clamp-2 max-sm:basis-full ${mutedTextClassName}`}
         >
           {metric.label}
         </p>
@@ -61,14 +58,14 @@ const MetricCard: FC<MetricCardProps> = ({
               box but not the card stays whole, and `break-words` splits only a word wider than that - one
               that would otherwise draw onto the next card. */}
           {qualification && (
-            <span className="-mr-3 block break-words text-h5 font-normal tracking-normal text-text-quaternary">
+            <span className="-mr-3 block break-words text-[11px] font-normal leading-4 tracking-normal text-text-quaternary">
               {qualification}
             </span>
           )}
         </p>
       )}
       {metric.description && (
-        <p className={cn('mt-1 text-h5 leading-5 line-clamp-3', mutedTextClassName)}>
+        <p className={`mt-1 text-[11px] leading-5 line-clamp-3 ${mutedTextClassName}`}>
           {metric.description}
         </p>
       )}

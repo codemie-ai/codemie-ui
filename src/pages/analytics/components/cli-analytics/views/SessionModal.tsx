@@ -59,7 +59,7 @@ const SessionTitle: FC<SessionTitleProps> = ({ traceId, title }) => {
         ref={titleRef}
         data-pr-tooltip={isTitleTruncated ? title : ''}
         data-pr-position="bottom"
-        className={`text-h3 font-semibold text-text-primary truncate ${tooltipTarget}`}
+        className={`text-base font-semibold text-text-primary truncate ${tooltipTarget}`}
       >
         {title}
       </span>
@@ -92,7 +92,7 @@ const SessionSubtitle: FC<SessionSubtitleProps> = ({ traceId, subtitle }) => {
         ref={subtitleRef}
         data-pr-tooltip={isSubtitleTruncated ? subtitle : ''}
         data-pr-position="bottom"
-        className={`text-h5 text-text-secondary truncate ${tooltipTarget}`}
+        className={`text-xs text-text-secondary truncate ${tooltipTarget}`}
       >
         {subtitle}
       </span>

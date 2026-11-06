@@ -24,18 +24,45 @@ type RepoMetricsSource = Pick<
   'session_count' | 'cost_usd' | 'files_changed' | 'net_lines' | 'tool_success_rate'
 >
 
+const SECONDS_PER_MINUTE = 60
+const SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE
+const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR
+const SECONDS_PER_WEEK = 7 * SECONDS_PER_DAY
+// A month has no fixed length; 30 days is the working approximation.
+const SECONDS_PER_MONTH = 30 * SECONDS_PER_DAY
+
+// Units from largest to smallest. A duration is shown with the three units starting at the largest
+// one it fills, so the figure stays short: "2mo 1w 3d", "1w 2d 3h", "1d 2h 3m", "1h 2m 3s".
+const DURATION_UNITS: { label: string; seconds: number }[] = [
+  { label: 'mo', seconds: SECONDS_PER_MONTH },
+  { label: 'w', seconds: SECONDS_PER_WEEK },
+  { label: 'd', seconds: SECONDS_PER_DAY },
+  { label: 'h', seconds: SECONDS_PER_HOUR },
+  { label: 'm', seconds: SECONDS_PER_MINUTE },
+  { label: 's', seconds: 1 },
+]
+const DURATION_UNITS_SHOWN = 3
+
 export function formatDuration(ms: number | null | undefined): string {
   if (ms == null || !Number.isFinite(ms) || ms <= 0) return '—'
   if (ms < 1000) return `${Math.round(ms)}ms`
-  const totalSeconds = Math.floor(ms / 1000)
-  const h = Math.floor(totalSeconds / 3600)
-  const m = Math.floor((totalSeconds % 3600) / 60)
-  const s = totalSeconds % 60
-  const parts: string[] = []
-  if (h > 0) parts.push(`${h}h`)
-  if (h > 0 || m > 0) parts.push(`${m}m`)
-  parts.push(`${s}s`)
-  return parts.join(' ')
+  let remaining = Math.floor(ms / 1000)
+
+  // Below one minute there is no larger unit to fill, so start at seconds.
+  const first = Math.max(
+    0,
+    DURATION_UNITS.findIndex((unit) => remaining >= unit.seconds)
+  )
+  // Seconds and minutes are the last units; keep the window inside the list ("5s", "1m 30s").
+  const window = DURATION_UNITS.slice(first, first + DURATION_UNITS_SHOWN)
+
+  return window
+    .map(({ label, seconds }) => {
+      const value = Math.floor(remaining / seconds)
+      remaining -= value * seconds
+      return `${value}${label}`
+    })
+    .join(' ')
 }
 
 // Branch on the counter, not the rate: 0 of 0 is "no data", 0 of 12 is a real 0%.

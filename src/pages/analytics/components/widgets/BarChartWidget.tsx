@@ -324,7 +324,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
           <Bar data={chartData} options={chartOptions} />
         </div>
         {chartQualification && (
-          <p className="px-4 pb-2 text-h5 text-text-quaternary">
+          <p className="px-4 pb-2 text-[11px] leading-4 text-text-quaternary">
             Bars show spend{chartQualification}
           </p>
         )}

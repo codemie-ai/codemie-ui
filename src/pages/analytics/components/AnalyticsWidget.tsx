@@ -131,9 +131,9 @@ const AnalyticsWidget: FC<AnalyticsWidgetProps> = ({
         )}
       >
         <div className="flex-1 max-lg:min-w-48">
-          <h3 className="text-h2 font-semibold text-text-primary">{title}</h3>
+          <h3 className="text-lg font-semibold text-text-primary">{title}</h3>
           {typeof description === 'string'
-            ? description && <p className="text-h4 text-text-quaternary mt-1">{description}</p>
+            ? description && <p className="text-sm text-text-quaternary mt-1">{description}</p>
             : description}
         </div>
         <div className="flex items-center gap-2 ml-4 max-lg:ml-0 max-lg:flex-wrap">
