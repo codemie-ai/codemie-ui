@@ -1,0 +1,13 @@
+{"schema":1,"branch":"EPMCDME-16196_unit-tests-locale-fix","head":"92fe29fc9657d41495e1179999ca5504762638bf","runner":"npm","started_at":"2026-10-28T15:10:27Z","completed_at":"2026-10-28T15:25:00Z","status":"BLOCKED","drift_detected":false,
+"gates":[
+{"id":"lint","source":"guide","status":"FAIL","duration_ms":43835,"command":"npm run lint","exit_code":1,"notes":"Auto-fix npm run lint:fix run, re-run still fails. Error is in untouched scripts/generate-marketplace-types.mjs: openapi-typescript not installed; likely stale node_modules (npm ci not run)."},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":27066,"command":"npm run typecheck","exit_code":0},
+{"id":"unit","source":"guide","status":"PASS","duration_ms":327663,"command":"npm run test:unit:slnt","exit_code":0,"notes":"Test Files 797 passed; Tests 8155 passed, 1 skipped. Run without npm ci."},
+{"id":"integration","source":"guide","status":"PASS","duration_ms":180210,"command":"npm run test:integration:slnt","exit_code":0,"notes":"Test Files 55 passed; Tests 627 passed, 1 skipped."},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":1467,"command":"npm run license-headers:check","exit_code":0},
+{"id":"secrets","source":"hook","status":"PASS","duration_ms":21723,"command":"npm run secrets:check","exit_code":0,"notes":"no leaks found"},
+{"id":"sonar-local","source":"hook","status":"N/A","command":"npm run sonar-local","notes":"Needs local SonarQube infrastructure; not run."},
+{"id":"license-check","source":"guide","status":"SKIPPED","command":"npm run license-check","notes":"No dependency changes (only src/setupTests.tsx changed)."},
+{"id":"test-harness","source":"guide","status":"N/A","command":"npm run test-harness","notes":"Needs stack up and ~/.codemie/test-harness.json."}
+],
+"failures":{"lint":"scripts/generate-marketplace-types.mjs\n  46:40  error  Unable to resolve path to module 'openapi-typescript'  import/no-unresolved\n\n1 problem (1 error, 0 warnings)"}}

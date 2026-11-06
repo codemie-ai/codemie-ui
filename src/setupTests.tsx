@@ -61,6 +61,37 @@ jsdomVirtualConsole?.on('jsdomError', (error: Error & { detail?: unknown }) =>
   console.error(error.stack, error.detail)
 )
 
+// ─── Locale ───────────────────────────────────────────────────────────────────
+
+// Node takes its default locale from the OS on Windows (env vars are ignored), so number
+// formatting differs from CI/Linux (e.g. "12 500" vs "12,500"). Default to en-US so that
+// assertions on formatted numbers and currency are host-independent.
+const TEST_LOCALE = 'en-US'
+
+const OriginalNumberFormat = Intl.NumberFormat
+const PatchedNumberFormat = function (
+  this: unknown,
+  locales?: string | string[],
+  options?: Intl.NumberFormatOptions
+) {
+  return new OriginalNumberFormat(locales ?? TEST_LOCALE, options)
+} as unknown as typeof Intl.NumberFormat
+Object.defineProperty(PatchedNumberFormat, 'prototype', { value: OriginalNumberFormat.prototype })
+PatchedNumberFormat.supportedLocalesOf = OriginalNumberFormat.supportedLocalesOf
+Intl.NumberFormat = PatchedNumberFormat
+
+// Number#toLocaleString does not go through the Intl.NumberFormat global, so it is patched too.
+// Intentional: test-only, and the only way to change its default locale.
+const originalNumberToLocaleString = Number.prototype.toLocaleString
+// eslint-disable-next-line no-extend-native
+Number.prototype.toLocaleString = function (
+  this: number,
+  locales?: string | string[],
+  options?: Intl.NumberFormatOptions
+) {
+  return originalNumberToLocaleString.call(this, locales ?? TEST_LOCALE, options)
+}
+
 // ─── Browser globals ──────────────────────────────────────────────────────────
 
 const localStorageMock = (() => {
