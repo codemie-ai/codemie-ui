@@ -141,7 +141,9 @@ describe('ChatPromptLlmSelector — project-default-fetch effect resilience', ()
     mockChatsStore.currentChat = chat('proj-a')
     const { rerender } = render(<ChatPromptLlmSelector />)
 
-    await waitFor(() => expect(mockProjectsStore.getProject).toHaveBeenCalledWith('proj-a'))
+    await waitFor(() =>
+      expect(mockProjectsStore.getProject).toHaveBeenCalledWith('proj-a', false, true)
+    )
 
     // Switch to project B before project A's fetch resolves.
     mockChatsStore.currentChat = chat('proj-b')

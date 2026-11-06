@@ -37,7 +37,7 @@ export async function getFilteredModelsForProject(
   const normalizeModelId = (id: string) => id.replace(/-\d{4}-\d{2}-\d{2}$/, '')
 
   try {
-    const project = await projectsStore.getProject(projectId, true)
+    const project = await projectsStore.getProject(projectId, true, true)
 
     if (!project?.allowed_models || project.allowed_models.length === 0) {
       return allModels

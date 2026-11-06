@@ -16,6 +16,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { projectsStore } from '@/store/projects'
 import type { ModelOption } from '@/types/entity/configuration'
 import { Conversation } from '@/types/entity/conversation'
 
@@ -227,5 +228,12 @@ describe('ChatPromptLlmSelector — project model settings', () => {
     expect(mockToastInfo).toHaveBeenCalledWith(
       'Model disabled-router is not available in project Other Project. The default model will be used.'
     )
+  })
+  it('looks up the project default model silently so non-members get no error toast', () => {
+    mockChatsStore.currentChat = chat('model-b')
+
+    render(<ChatPromptLlmSelector />)
+
+    expect(projectsStore.getProject).toHaveBeenCalledWith('restricted', false, true)
   })
 })

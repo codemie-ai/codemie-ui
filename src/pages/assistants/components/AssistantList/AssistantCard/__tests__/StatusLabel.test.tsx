@@ -100,46 +100,97 @@ describe('StatusLabel', () => {
     expect(statusElement).not.toHaveClass('gap-3')
   })
 
-  it('renders Shared with Project status when isShared is true', () => {
+  it('renders Shared with project status for a project member on a project-shared assistant', () => {
     const mockAssistant = createMockAssistant(false)
 
-    render(<StatusLabel assistant={mockAssistant} isShared={true} />)
+    render(
+      <StatusLabel
+        assistant={mockAssistant}
+        isShared={true}
+        isOwned={false}
+        isProjectMember={true}
+      />
+    )
 
-    const statusElement = screen.getByRole('status')
-    expect(statusElement).toHaveTextContent('Shared with Project')
-    expect(statusElement).toHaveClass('flex', 'items-center')
-    expect(statusElement).toHaveAttribute('aria-label', 'Shared with Project')
-    // Check for SVG icon
-    const svgElement = statusElement.querySelector('svg')
-    expect(svgElement).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Shared with project')
   })
 
-  it('renders Not shared status when isOwned is true', () => {
+  it('renders nothing for a user the assistant is shared with individually (collaboration), outside the project', () => {
+    const mockAssistant = createMockAssistant(false)
+
+    render(
+      <StatusLabel
+        assistant={mockAssistant}
+        isShared={true}
+        isOwned={false}
+        isProjectMember={false}
+      />
+    )
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('renders Not shared with project status for a project member, non-owner, non-shared assistant', () => {
+    const mockAssistant = createMockAssistant(false)
+
+    render(
+      <StatusLabel
+        assistant={mockAssistant}
+        isShared={false}
+        isOwned={false}
+        isProjectMember={true}
+      />
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent('Not shared with project')
+  })
+
+  it('renders Shared with project status for the owner who shared their assistant', () => {
+    const mockAssistant = createMockAssistant(false)
+
+    render(<StatusLabel assistant={mockAssistant} isShared={true} isOwned={true} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent('Shared with project')
+  })
+
+  it('renders Not shared with project status for the owner of a private assistant', () => {
     const mockAssistant = createMockAssistant(false)
 
     render(<StatusLabel assistant={mockAssistant} isOwned={true} />)
 
-    const statusElement = screen.getByRole('status')
-    expect(statusElement).toHaveTextContent('Not shared')
-    expect(statusElement).toHaveClass('flex', 'items-center')
-    expect(statusElement).toHaveAttribute('aria-label', 'Not shared')
-    // Check for SVG icon
-    const svgElement = statusElement.querySelector('svg')
-    expect(svgElement).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Not shared with project')
   })
 
-  it('renders Not shared status by default', () => {
+  it('renders nothing for a viewer with no ownership or project relationship', () => {
     const mockAssistant = createMockAssistant(false)
 
     render(<StatusLabel assistant={mockAssistant} />)
 
-    const statusElement = screen.getByRole('status')
-    expect(statusElement).toHaveTextContent('Not shared')
-    expect(statusElement).toHaveClass('flex', 'items-center')
-    expect(statusElement).toHaveAttribute('aria-label', 'Not shared')
-    // Check for SVG icon
-    const svgElement = statusElement.querySelector('svg')
-    expect(svgElement).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('renders Not shared with project status for a project member who is not the owner', () => {
+    const mockAssistant = createMockAssistant(false)
+
+    render(<StatusLabel assistant={mockAssistant} isProjectMember={true} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent('Not shared with project')
+  })
+
+  it('renders nothing for a user the assistant is shared with individually, outside the project', () => {
+    const mockAssistant = createMockAssistant(false)
+
+    render(<StatusLabel assistant={mockAssistant} isOwned={false} isProjectMember={false} />)
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('StatusLabel for a GLOBAL assistant keeps rendering regardless of isOwned', () => {
+    const mockAssistant = createMockAssistant(true)
+
+    render(<StatusLabel assistant={mockAssistant} isOwned={false} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent('42 uses')
   })
 
   it('prioritizes global status over other statuses', () => {
@@ -151,26 +202,17 @@ describe('StatusLabel', () => {
     expect(statusElement).toHaveTextContent('42 uses')
   })
 
-  it('prioritizes shared status over owned status', () => {
-    const mockAssistant = createMockAssistant(false)
-
-    render(<StatusLabel assistant={mockAssistant} isShared={true} isOwned={true} />)
-
-    const statusElement = screen.getByRole('status')
-    expect(statusElement).toHaveTextContent('Shared with Project')
-  })
-
   it('has the correct gap spacing between icon and text', () => {
     const mockAssistant = createMockAssistant(false)
 
-    render(<StatusLabel assistant={mockAssistant} />)
+    render(<StatusLabel assistant={mockAssistant} isShared={true} isOwned={true} />)
 
     const statusElement = screen.getByRole('status')
     expect(statusElement).toHaveClass('gap-3')
   })
 
   it('prevents text wrapping with whitespace-nowrap', () => {
-    const mockAssistant = createMockAssistant(false)
+    const mockAssistant = createMockAssistant(true)
 
     render(<StatusLabel assistant={mockAssistant} />)
 

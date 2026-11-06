@@ -41,7 +41,8 @@ import {
 } from '@/types/entity/assistant'
 import { FavoriteItem } from '@/types/entity/favorites'
 import { MCPServerDetails } from '@/types/entity/mcp'
-import api from '@/utils/api'
+import { SharableUser, SharedWithUser } from '@/types/entity/sharing'
+import api, { formatErrorMessage } from '@/utils/api'
 import { FILTER_ENTITY, setFilters } from '@/utils/filters'
 import { cleanObject } from '@/utils/helpers'
 import storage from '@/utils/storage'
@@ -206,6 +207,11 @@ interface AssistantsStoreType {
   fetchAssistantsByIds: (ids: string[]) => Promise<void>
   pinAssistant: (id: string) => Promise<void>
   unpinAssistant: (id: string) => Promise<void>
+
+  getSharedWith: (id: string) => Promise<SharedWithUser[]>
+  shareWith: (id: string, userIds: string[]) => Promise<void>
+  removeShare: (id: string, userIds: string[]) => Promise<void>
+  getSharableUsers: (id: string, query: string) => Promise<SharableUser[]>
 }
 
 export const MAX_RECENT_ASSISTANTS = 3
@@ -884,7 +890,9 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     }
 
     try {
-      const response = await api.put(`v1/assistants/${id}`, assistantData)
+      const response = await api.put(`v1/assistants/${id}`, assistantData, {
+        skipErrorHandling: true,
+      })
       const data = await response.json()
       assistantsStore.updateRecentAssistant(id, values)
       assistantsStore.assistants = assistantsStore.assistants.map((a) =>
@@ -904,9 +912,17 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       }
       return data
     } catch (error: any) {
+      const parsedError = error?.parsedError
+      if (!parsedError) {
+        const message = error?.message ?? 'Failed to update assistant'
+        return { error: message, message, assistantId: null }
+      }
+      // The backend wraps most update failures as a generic message with the reason in `details`.
+      const { message, details } = parsedError
       return {
-        error: error.message ?? 'Failed to update assistant',
-        message: error.message ?? 'Failed to update assistant',
+        // `error` feeds the toast (sanitized HTML); `message` is plain text for the inline form error.
+        error: formatErrorMessage({ error: parsedError }),
+        message: typeof details === 'string' && details ? `${message}. ${details}` : message,
         assistantId: null,
       }
     }
@@ -1135,5 +1151,42 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       pinned_assistants: current.filter((x) => x !== id),
     })
     assistantsStore.pinnedAssistants = assistantsStore.pinnedAssistants.filter((p) => p.id !== id)
+  },
+
+  async getSharedWith(id) {
+    const response = await api.get(`v1/assistants/${id}/shared-with`, {
+      skipErrorHandling: true,
+    })
+    const data = await response.json()
+    // Backend wraps results as { shared_with: [...] } (see SharedWithResponse in the
+    // FastAPI schema). Tolerate a flat array too in case that ever changes.
+    return (Array.isArray(data) ? data : data?.shared_with ?? []) as SharedWithUser[]
+  },
+
+  async shareWith(id, userIds) {
+    await api.post(`v1/assistants/${id}/share`, { user_ids: userIds }, { skipErrorHandling: true })
+  },
+
+  async removeShare(id, userIds) {
+    await api.delete(
+      `v1/assistants/${id}/share`,
+      { user_ids: userIds },
+      { skipErrorHandling: true }
+    )
+  },
+
+  async getSharableUsers(id, query) {
+    try {
+      const response = await api.get(
+        `v1/assistants/${id}/sharable-users?q=${encodeURIComponent(query)}`
+      )
+      const data = await response.json()
+      // Backend wraps results as { users: [...] } (see SharableUsersResponse in the
+      // FastAPI schema). Tolerate a flat array too in case that ever changes.
+      return (Array.isArray(data) ? data : data?.users ?? []) as SharableUser[]
+    } catch (error) {
+      console.error('Failed to fetch sharable users:', error)
+      return []
+    }
   },
 })

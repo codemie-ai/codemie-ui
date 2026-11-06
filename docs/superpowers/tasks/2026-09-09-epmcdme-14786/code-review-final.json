@@ -1,0 +1,98 @@
+{
+  "decision": "approved",
+  "rationale": "All 5 blocking findings from the prior round resolved. CR-001 (mock-server search no-op) and CR-003 (ShareAssistantPopup debounced search race) fixed with minimal patches, verified. CR-002, CR-004 and CR-005 dismissed after developer review: CR-002/CR-004 (RemoteAssistantDetails sharing-state visibility, getSharableUsers error handling) are not reachable — 'Share for Collaboration' (and its getSharableUsers search) is gated by the same canEditAssistant/owner check for remote assistants as regular ones, via the shared AssistantActions component, so no non-owner or unpermissioned path exists; CR-005 (commit subject format) is moot under this repo's squash-merge strategy, which discards individual commit subjects. 13 further lens findings from the prior round were already dismissed as cosmetic, unreachable, speculative, or below the emission floor; none met the pre-existing-scope bar required for defer.",
+  "confidence": "low",
+  "risk_flags": [
+    "security",
+    "breaking-change"
+  ],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "fail",
+      "notes": "commit dd7fc4378 'epmcdme-14786: add planning artifacts' uses lowercase ticket prefix and lowercase first word after colon, violating the enforced CI regex"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no code-quality guide found in this repo; no code_quality ArtifactRef passed"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "no dangerouslySetInnerHTML/innerHTML/redirect/postMessage sinks touched; new sharing API calls go through api.ts with query params encoded; no secrets or new deps"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "mock-server/middleware.js",
+      "line": 8,
+      "title": "Sharable-users search filter is a no-op",
+      "problem": "The middleware's comment states it filters /sharable_users by the q query parameter, but the body only lowercases req.query.q and reassigns it to itself; it never rewrites to json-server's search param (e.g. q -> name_like) nor filters the response list.",
+      "impact": "Every sharable-user search against the mock server returns the full unfiltered fixture list, so local/dev verification of the search feature is silently broken and gives false confidence.",
+      "recommendation": "Rewrite req.query to json-server's actual full-text search parameter (or filter the response list directly) so the mock endpoint narrows results as the comment claims.",
+      "outcome": "fixed",
+      "resolution": "middleware.js now filters db.json's sharable_users.users array directly (json-server's built-in ?q= only searches top-level array resources, and sharable_users is stored as {users: [...]}, not an array). Verified locally: ?q=alice returns only the matching user."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/RemoteAssistantDetails/RemoteAssistantDetails.tsx",
+      "line": 118,
+      "title": "Remote assistant sidebar leaks owner's private sharing state",
+      "problem": "This branch added an ownership guard around the 'Shared status' DetailsProperty in AssistantDetailsSidebarSections.tsx ((assistant.is_global || assistant.created_by?.id === userStore.user?.userId) && ...) specifically to stop non-owners seeing the owner's sharing choice, but the sibling RemoteAssistantDetails.tsx still renders its equivalent 'Shared' DetailsProperty via getSharedValue(assistant.is_global, assistant.shared) with no such guard.",
+      "impact": "A user an A2A/remote assistant is shared with for collaboration (not the owner) still sees whether the owner shared it with the project ('Shared'/'Not shared with project') in the remote assistant details sidebar -- the exact leak this change set out to close for regular assistants, now inconsistently left open for remote ones. No existing test would catch a regression here.",
+      "recommendation": "Wrap the 'Shared' DetailsProperty at RemoteAssistantDetails.tsx:118-121 in the same ownership check used in AssistantDetailsSidebarSections.tsx (assistant.is_global || assistant.created_by?.id === userStore.user?.userId).",
+      "outcome": "skipped",
+      "resolution": "Product/dev confirmed no leak: only the assistant owner has access to \"Share for Collaboration\" for remote/A2A assistants (same canEditAssistant gate as regular assistants, routed through the shared AssistantActions component), so non-owners never reach a state where this sharing detail is exposed to them via that flow."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/ShareAssistantPopup/ShareAssistantPopup.tsx",
+      "line": 90,
+      "title": "Debounced user search has no response-sequencing guard",
+      "problem": "handleFilter's setTimeout callback calls assistantsStore.getSharableUsers and unconditionally calls setSearchOptions with whatever resolves, with no request id or sequence tracking.",
+      "impact": "If a user retypes before an earlier debounced search resolves, a slower earlier response can resolve after a newer one and overwrite searchOptions with stale results, showing the wrong user list.",
+      "recommendation": "Track a request id (e.g. an incrementing ref) per fetch and only apply setSearchOptions when the response's request id still matches the latest one.",
+      "outcome": "fixed",
+      "resolution": "Added an incrementing searchRequestIdRef checked before applying either the success or error branch of the debounced fetch, so a stale response can no longer overwrite newer search results or fire a stale error toast."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/assistants.ts",
+      "line": 1097,
+      "title": "getSharableUsers omits skipErrorHandling, risking a duplicate error toast",
+      "problem": "getSharableUsers calls api.get without { skipErrorHandling: true }, unlike the sibling getSharedWith which explicitly opts out; on a non-2xx response the global API error handler fires (api.ts calls this.handleError?.(errorData) whenever skipErrorHandling is not set) in addition to the caller's own catch in ShareAssistantPopup.handleFilter, which shows toaster.error('User search failed...').",
+      "impact": "A single failed user search can surface two conflicting error signals to the user (a global handler notification plus the caller's own toast).",
+      "recommendation": "Pass { skipErrorHandling: true } to the api.get call in getSharableUsers, matching getSharedWith, so only the caller's toast fires.",
+      "outcome": "skipped",
+      "resolution": "Product/dev confirmed no fix needed: getSharableUsers backs the \"Share for Collaboration\" popup search, reachable only by assistant owners with the corresponding API permission, so the failure path this flags is not a realistic/observed occurrence. Adding a guard here is unnecessary hardening for this surface."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "commit dd7fc4378",
+      "title": "Commit subject violates enforced commit-format standard",
+      "problem": "Commit dd7fc4378's subject 'epmcdme-14786: add planning artifacts' uses a lowercase ticket prefix and a lowercase first word after the colon, violating git-workflow.md's documented ^EPMCDME-XXXX: Capital sentence$ regex.",
+      "impact": "git-workflow.md states this format is enforced by Tekton CI, which blocks the pipeline on violations.",
+      "recommendation": "Reword the commit subject to 'EPMCDME-14786: Add planning artifacts', or squash it into a compliant commit before merge per the documented squash-merge strategy.",
+      "outcome": "skipped",
+      "resolution": "Merge strategy for this repo is squash-merge, so this commit's individual subject line never reaches the target branch history; the squashed MR commit carries the compliant subject. No action needed."
+    }
+  ]
+}

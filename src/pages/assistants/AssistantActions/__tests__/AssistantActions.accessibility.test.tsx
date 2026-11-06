@@ -14,7 +14,8 @@
 //
 
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import AssistantActions from '../AssistantActions'
 
@@ -32,7 +33,19 @@ vi.mock('@/assets/icons/edit.svg?react', () => ({ default: () => <span /> }))
 vi.mock('@/assets/icons/info.svg?react', () => ({ default: () => <span /> }))
 vi.mock('@/assets/icons/publish.svg?react', () => ({ default: () => <span /> }))
 vi.mock('@/assets/icons/unpublish.svg?react', () => ({ default: () => <span /> }))
+vi.mock('@/assets/icons/share.svg?react', () => ({ default: () => <span /> }))
 vi.mock('@/components/ConfirmationModal', () => ({ default: () => null }))
+vi.mock('@/pages/assistants/components/ShareAssistantPopup', () => ({ default: () => null }))
+
+const { mockUserStore, mockIsUserManagementEnabled } = vi.hoisted(() => ({
+  mockUserStore: { user: { userId: 'u1' } as { userId: string } | undefined },
+  mockIsUserManagementEnabled: vi.fn(() => true),
+}))
+vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
+vi.mock('@/utils/featureFlags', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utils/featureFlags')>()),
+  isUserManagementEnabled: () => mockIsUserManagementEnabled(),
+}))
 
 const makeAssistant = (overrides: Record<string, unknown> = {}) => ({
   id: 'asst-1',
@@ -51,6 +64,36 @@ const makeAssistant = (overrides: Record<string, unknown> = {}) => ({
   guardrail_assignments: [],
   created_by: { id: 'u1', name: 'User', email: 'u1@test.com', username: 'u1' },
   ...overrides,
+})
+
+describe('Share action visibility', () => {
+  beforeEach(() => {
+    mockUserStore.user = { userId: 'u1' }
+    mockIsUserManagementEnabled.mockReturnValue(true)
+  })
+
+  it('shows Share action for owner when user management is enabled', async () => {
+    const user = userEvent.setup()
+    render(<AssistantActions assistant={makeAssistant()} />)
+    await user.click(screen.getByRole('button', { name: /More options/ }))
+    expect(await screen.findByText('Share')).toBeInTheDocument()
+  })
+
+  it('hides Share action for owner when user management is disabled', async () => {
+    mockIsUserManagementEnabled.mockReturnValue(false)
+    const user = userEvent.setup()
+    render(<AssistantActions assistant={makeAssistant()} />)
+    await user.click(screen.getByRole('button', { name: /More options/ }))
+    expect(screen.queryByText('Share')).not.toBeInTheDocument()
+  })
+
+  it('hides Share action for non-owners regardless of edit rights', async () => {
+    mockUserStore.user = { userId: 'u2' }
+    const user = userEvent.setup()
+    render(<AssistantActions assistant={makeAssistant({ user_abilities: ['write'] })} />)
+    await user.click(screen.getByRole('button', { name: /More options/ }))
+    expect(screen.queryByText('Share')).not.toBeInTheDocument()
+  })
 })
 
 describe('AssistantActions accessibility (contextId via sr-only span)', () => {

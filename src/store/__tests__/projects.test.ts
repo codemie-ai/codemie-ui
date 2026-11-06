@@ -671,6 +671,28 @@ describe('projectsStore', () => {
     })
   })
 
+  describe('getProject', () => {
+    it('lets the global error handler run by default', async () => {
+      mockGet.mockResolvedValue({ json: async () => ({ name: 'p1' }) })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.getProject('p1')
+
+      expect(mockGet).toHaveBeenCalledWith('v1/projects/p1', { skipErrorHandling: false })
+    })
+
+    it('skips the global error handler when silent', async () => {
+      mockGet.mockResolvedValue({ json: async () => ({ name: 'admin@codemie.ai' }) })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.getProject('admin@codemie.ai', true, true)
+
+      expect(mockGet).toHaveBeenCalledWith('v1/projects/admin%40codemie.ai?include_spending=true', {
+        skipErrorHandling: true,
+      })
+    })
+  })
+
   describe('updateAllowedModels', () => {
     it('should call PATCH endpoint with allowed_models payload', async () => {
       mockPatch.mockResolvedValue({

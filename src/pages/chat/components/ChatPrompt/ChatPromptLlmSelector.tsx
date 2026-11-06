@@ -179,7 +179,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     let cancelled = false
     const fetchDefaultModel = async () => {
       try {
-        const project = await projectsStore.getProject(currentChat.projectId)
+        const project = await projectsStore.getProject(currentChat.projectId, false, true)
         if (cancelled) return
         setProjectDefaultModelId(project.default_model ?? null)
       } catch (error) {
@@ -321,7 +321,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     dropdownFetchTokenRef.current += 1
     const token = dropdownFetchTokenRef.current
     try {
-      const project = await projectsStore.getProject(currentChat.projectId)
+      const project = await projectsStore.getProject(currentChat.projectId, false, true)
       if (dropdownFetchTokenRef.current !== token) return
       const newDefaultId = project.default_model ?? null
 

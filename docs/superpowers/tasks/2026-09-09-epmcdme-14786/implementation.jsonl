@@ -1,0 +1,5 @@
+{"task_id":"1","status":"done","commit":"785838a","test_command":"n/a - type declarations only"}
+{"task_id":"2","status":"done","commit":"d49e23c","test_command":"n/a - store methods follow established api.* pattern"}
+{"task_id":"3","status":"done","commit":"0fe5c25","test_command":"npx vitest run src/pages/assistants/components/ShareAssistantPopup/__tests__/ShareAssistantPopup.test.tsx"}
+{"task_id":"4","status":"done","commit":"b9f4857","test_command":"npx vitest run src/pages/assistants/AssistantActions/__tests__/AssistantActions.accessibility.test.tsx"}
+{"task_id":"5","status":"done","commit":"35cbe4a","test_command":"n/a - mock data"}

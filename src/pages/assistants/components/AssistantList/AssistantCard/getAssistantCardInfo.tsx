@@ -14,6 +14,7 @@
 //
 
 import { Assistant } from '@/types/entity/assistant'
+import { isProjectMember } from '@/utils/entity'
 
 export const getAssistantCardInfo = (assistant: Assistant, user) => {
   const isShared = assistant.shared
@@ -27,5 +28,6 @@ export const getAssistantCardInfo = (assistant: Assistant, user) => {
     isVerified: assistant.is_verified ?? false,
     marketplaceStatus: assistant.marketplace_status ?? null,
     marketplaceDecisionReason: assistant.marketplace_decision_reason ?? null,
+    isProjectMember: isProjectMember(assistant, user?.projects),
   }
 }

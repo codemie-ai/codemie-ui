@@ -18,8 +18,8 @@ import toaster from '@/utils/toaster'
 export class HttpError extends Error {
   parsedError?: {
     message: string
-    details?: string | object
-    help?: string
+    details?: string | object | null
+    help?: string | null
   }
 
   constructor(public readonly response: Response) {

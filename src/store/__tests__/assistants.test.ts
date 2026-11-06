@@ -21,14 +21,17 @@ import { Assistant } from '@/types/entity/assistant'
 
 const mockGet = vi.fn()
 const mockPost = vi.fn()
+const mockPut = vi.fn()
+const mockDelete = vi.fn()
 
-vi.mock('@/utils/api', () => ({
+vi.mock('@/utils/api', async (importOriginal) => ({
+  formatErrorMessage: (await importOriginal<typeof import('@/utils/api')>()).formatErrorMessage,
   default: {
     get: (...args: unknown[]) => mockGet(...args),
     post: (...args: unknown[]) => mockPost(...args),
-    put: vi.fn(),
+    put: (...args: unknown[]) => mockPut(...args),
     patch: vi.fn(),
-    delete: vi.fn(),
+    delete: (...args: unknown[]) => mockDelete(...args),
   },
 }))
 
@@ -421,6 +424,172 @@ describe('assistantsStore', () => {
       await assistantsStore.fetchAssistantsByIds(['chat-1'])
 
       expect(assistantsStore.chatAssistants).toEqual([hydratedAssistant])
+    })
+  })
+
+  describe('getSharedWith', () => {
+    it('calls the correct endpoint and tolerates the wrapped response shape', async () => {
+      const users = [{ id: 'u1', name: 'Alice', email: 'alice@test.com' }]
+      mockGet.mockResolvedValue({ json: async () => ({ shared_with: users }) })
+
+      const result = await assistantsStore.getSharedWith('a-1')
+
+      expect(mockGet).toHaveBeenCalledWith('v1/assistants/a-1/shared-with', {
+        skipErrorHandling: true,
+      })
+      expect(result).toEqual(users)
+    })
+
+    it('tolerates a flat array response', async () => {
+      const users = [{ id: 'u1', name: 'Alice', email: 'alice@test.com' }]
+      mockGet.mockResolvedValue({ json: async () => users })
+
+      const result = await assistantsStore.getSharedWith('a-1')
+
+      expect(result).toEqual(users)
+    })
+
+    it('propagates the error when the request fails', async () => {
+      mockGet.mockRejectedValue(new Error('network error'))
+
+      await expect(assistantsStore.getSharedWith('a-1')).rejects.toThrow('network error')
+    })
+  })
+
+  describe('shareWith', () => {
+    it('posts the user ids to the share endpoint', async () => {
+      mockPost.mockResolvedValue(undefined)
+
+      await assistantsStore.shareWith('a-1', ['u1', 'u2'])
+
+      expect(mockPost).toHaveBeenCalledWith(
+        'v1/assistants/a-1/share',
+        { user_ids: ['u1', 'u2'] },
+        { skipErrorHandling: true }
+      )
+    })
+
+    it('skips duplicate error handling to allow the popup to toast once', async () => {
+      mockPost.mockResolvedValue(undefined)
+
+      await assistantsStore.shareWith('a-1', ['u1', 'u2'])
+
+      expect(mockPost).toHaveBeenCalledWith(
+        'v1/assistants/a-1/share',
+        { user_ids: ['u1', 'u2'] },
+        { skipErrorHandling: true }
+      )
+    })
+  })
+
+  describe('updateAssistant', () => {
+    it('skips duplicate error handling so only the form shows the failure once', async () => {
+      mockPut.mockRejectedValue(
+        Object.assign(new Error('HTTP error 400'), {
+          parsedError: { message: 'Personal integrations cannot be used in a shared assistant.' },
+        })
+      )
+
+      await assistantsStore.updateAssistant('a-1', { name: 'Test' } as Assistant)
+
+      expect(mockPut).toHaveBeenCalledWith('v1/assistants/a-1', expect.anything(), {
+        skipErrorHandling: true,
+      })
+    })
+
+    it('surfaces the backend parsedError message when the request is rejected', async () => {
+      mockPut.mockRejectedValue(
+        Object.assign(new Error('HTTP error 400'), {
+          parsedError: { message: 'Personal integrations cannot be used in a shared assistant.' },
+        })
+      )
+
+      const result = await assistantsStore.updateAssistant('a-1', { name: 'Test' } as Assistant)
+
+      expect(result.error).toBe('Personal integrations cannot be used in a shared assistant.')
+    })
+
+    it('keeps the backend details: HTML for the toast, plain text for the inline error', async () => {
+      mockPut.mockRejectedValue(
+        Object.assign(new Error('HTTP error 400'), {
+          parsedError: {
+            message: 'Failed to update assistant',
+            details: 'An error occurred while trying to update the assistant: Category is required',
+          },
+        })
+      )
+
+      const result = await assistantsStore.updateAssistant('a-1', { name: 'Test' } as Assistant)
+
+      expect(result.error).toBe(
+        'Failed to update assistant<br> An error occurred while trying to update the assistant: Category is required'
+      )
+      expect(result.message).toBe(
+        'Failed to update assistant. An error occurred while trying to update the assistant: Category is required'
+      )
+    })
+
+    it('falls back to a generic message when the rejection has no parsedError', async () => {
+      mockPut.mockRejectedValue(new Error('network error'))
+
+      const result = await assistantsStore.updateAssistant('a-1', { name: 'Test' } as Assistant)
+
+      expect(result.error).toBe('network error')
+    })
+  })
+
+  describe('removeShare', () => {
+    it('deletes the user ids from the share endpoint', async () => {
+      mockDelete.mockResolvedValue(undefined)
+
+      await assistantsStore.removeShare('a-1', ['u1'])
+
+      expect(mockDelete).toHaveBeenCalledWith(
+        'v1/assistants/a-1/share',
+        { user_ids: ['u1'] },
+        { skipErrorHandling: true }
+      )
+    })
+
+    it('skips duplicate error handling to allow the popup to toast once', async () => {
+      mockDelete.mockResolvedValue(undefined)
+
+      await assistantsStore.removeShare('a-1', ['u1'])
+
+      expect(mockDelete).toHaveBeenCalledWith(
+        'v1/assistants/a-1/share',
+        { user_ids: ['u1'] },
+        { skipErrorHandling: true }
+      )
+    })
+  })
+
+  describe('getSharableUsers', () => {
+    it('calls the correct endpoint with an encoded query and tolerates the wrapped response shape', async () => {
+      const users = [{ id: 'u2', name: 'Bob', email: 'bob@test.com' }]
+      mockGet.mockResolvedValue({ json: async () => ({ users }) })
+
+      const result = await assistantsStore.getSharableUsers('a-1', 'bo b')
+
+      expect(mockGet).toHaveBeenCalledWith('v1/assistants/a-1/sharable-users?q=bo%20b')
+      expect(result).toEqual(users)
+    })
+
+    it('tolerates a flat array response', async () => {
+      const users = [{ id: 'u2', name: 'Bob', email: 'bob@test.com' }]
+      mockGet.mockResolvedValue({ json: async () => users })
+
+      const result = await assistantsStore.getSharableUsers('a-1', 'bob')
+
+      expect(result).toEqual(users)
+    })
+
+    it('returns an empty array when the request fails', async () => {
+      mockGet.mockRejectedValue(new Error('network error'))
+
+      const result = await assistantsStore.getSharableUsers('a-1', 'bob')
+
+      expect(result).toEqual([])
     })
   })
 })

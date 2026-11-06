@@ -22,19 +22,23 @@ import EditSvg from '@/assets/icons/edit.svg?react'
 import ExportSvg from '@/assets/icons/export.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
 import PublishSvg from '@/assets/icons/publish.svg?react'
+import ShareSvg from '@/assets/icons/share.svg?react'
 import UnpublishSvg from '@/assets/icons/unpublish.svg?react'
 import { ButtonType } from '@/constants'
 import { AssistantType, MARKETPLACE_STATUS } from '@/constants/assistants'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { useAssistantFeatures } from '@/pages/chat/hooks/useAssistantFeatures'
 import { assistantsStore } from '@/store'
+import { userStore } from '@/store/user'
 import { Assistant } from '@/types/entity/assistant'
-import { canDelete, canEdit } from '@/utils/entity'
+import { canDelete, canEdit, isOwner } from '@/utils/entity'
+import { isUserManagementEnabled } from '@/utils/featureFlags'
 import { copyToClipboard } from '@/utils/utils'
 
 import ActionConfirmationModal from './components/ActionConfirmationModal'
 import AssistantMenu, { ActionItem } from './components/AssistantMenu'
 import PublishToMarketplaceModal from './components/PublishToMarketplaceModal'
+import ShareAssistantPopup from '../components/ShareAssistantPopup'
 import { getAssistantEditRoute, getAssistantLink } from '../utils/getAssistantLink'
 
 interface AssistantActionsProps {
@@ -60,6 +64,7 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
   )
   const [isPublishToMarketplaceModalVisible, setIsPublishToMarketplaceModalVisible] =
     useState(false)
+  const [isSharePopupVisible, setIsSharePopupVisible] = useState(false)
 
   const isRemoteAssistant = assistant.type === AssistantType.A2A
   const { clone: canClone } = useAssistantFeatures([
@@ -109,6 +114,13 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
       icon: <CloneSvg />,
       isVisible: canClone,
       onClick: () => router.push({ name: 'clone-assistant', params: { id: assistant.id } }),
+    },
+    {
+      id: 'share',
+      label: 'Share',
+      icon: <ShareSvg />,
+      isVisible: isOwner(assistant, userStore.user?.userId) && isUserManagementEnabled(),
+      onClick: () => setIsSharePopupVisible(true),
     },
     // {
     //   id: 'start-chat',
@@ -193,6 +205,15 @@ const AssistantActions: React.FC<AssistantActionsProps> = ({
         onClose={() => setIsPublishToMarketplaceModalVisible(false)}
         onSuccess={() => {
           reloadAssistants?.()
+          loadAssistant?.()
+        }}
+      />
+
+      <ShareAssistantPopup
+        visible={isSharePopupVisible}
+        assistant={assistant}
+        onHide={() => {
+          setIsSharePopupVisible(false)
           loadAssistant?.()
         }}
       />

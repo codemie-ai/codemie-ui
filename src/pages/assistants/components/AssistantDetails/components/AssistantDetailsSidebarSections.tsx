@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import CodeSvg from '@/assets/icons/code.svg?react'
@@ -27,7 +27,9 @@ import { useRequestHedgingEnabled } from '@/hooks/useFeatureFlags'
 import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import ToolkitsViewList from '@/pages/assistants/components/ToolkitsViewList'
 import { appInfoStore } from '@/store/appInfo'
+import { assistantsStore } from '@/store/assistants'
 import { mcpStore } from '@/store/mcp'
+import { userStore } from '@/store/user'
 import {
   Assistant,
   AssistantContext,
@@ -35,12 +37,15 @@ import {
   ContextType,
 } from '@/types/entity/assistant'
 import { GuardrailEntity } from '@/types/entity/guardrail'
+import { SharedWithUser } from '@/types/entity/sharing'
 import { Skill } from '@/types/entity/skill'
 import { sortToolkitsByOrder } from '@/utils/assistants'
+import { isOwner, isProjectMember } from '@/utils/entity'
 import { isNumberValue } from '@/utils/helpers'
 import { getSharedValue, getToolkitFromMcpServers, getRootPath } from '@/utils/utils'
 
 import RequestHedgingDetails from './RequestHedgingDetails'
+import SidebarSharedWith from './sidebar_details/SidebarSharedWith'
 import SidebarSubassistants from './sidebar_details/SidebarSubassistants'
 import SidebarTags from './sidebar_details/SidebarTags'
 import { getAssistantLink } from '../../../utils/getAssistantLink'
@@ -76,6 +81,7 @@ const AssistantDetailsSidebarSections = ({
 }: AssistantDetailsSidebarSectionsProps) => {
   const snapshot = useSnapshot(mcpStore)
   const [isRequestHedgingEnabled] = useRequestHedgingEnabled()
+  const [sharedWith, setSharedWith] = useState<SharedWithUser[]>([])
 
   useEffect(() => {
     const idsToFetch = assistant.mcp_servers
@@ -84,6 +90,28 @@ const AssistantDetailsSidebarSections = ({
       .filter((id) => !mcpStore.configs.some((c) => c.id === id))
     idsToFetch.forEach((id) => mcpStore.getConfig(id).catch(() => {}))
   }, [assistant.mcp_servers])
+
+  useEffect(() => {
+    if (!isOwner(assistant, userStore.user?.userId)) {
+      setSharedWith([])
+      return
+    }
+
+    let cancelled = false
+    // Re-fetch whenever the assistant object is reloaded (e.g. after the share
+    // popup closes via `loadAssistant`), not just when its id changes.
+    assistantsStore
+      .getSharedWith(assistant.id)
+      .then((users) => {
+        if (!cancelled) setSharedWith(users)
+      })
+      .catch(() => {})
+
+    // eslint-disable-next-line consistent-return
+    return () => {
+      cancelled = true
+    }
+  }, [assistant])
 
   const projectDisplayNames = useProjectDisplayNames(assistant.project)
   const projectDisplayName =
@@ -166,10 +194,14 @@ const AssistantDetailsSidebarSections = ({
             )
           }
         />
-        <DetailsProperty
-          label="Shared status"
-          value={getSharedValue(assistant.is_global, assistant.shared)}
-        />
+        {(assistant.is_global ||
+          isOwner(assistant, userStore.user?.userId) ||
+          isProjectMember(assistant, userStore.user?.projects)) && (
+          <DetailsProperty
+            label="Shared status"
+            value={getSharedValue(assistant.is_global, assistant.shared)}
+          />
+        )}
         <DetailsCopyField
           label="ASSISTANT ID"
           value={assistant.id}
@@ -266,6 +298,12 @@ const AssistantDetailsSidebarSections = ({
           onAssistantClick={onSubassistantClick}
         />
       </DetailsSidebarSection>
+
+      {sharedWith.length > 0 && (
+        <DetailsSidebarSection headline="SHARED WITH" itemsWrapperClassName="gap-2 -mt-2">
+          <SidebarSharedWith users={sharedWith} />
+        </DetailsSidebarSection>
+      )}
 
       {assistant.project && (
         <GuardrailAssignmentsDetails

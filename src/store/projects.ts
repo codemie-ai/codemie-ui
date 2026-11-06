@@ -59,7 +59,11 @@ interface ProjectsStore {
     page?: number,
     perPage?: number
   ) => Promise<PaginatedResponse<Project>>
-  getProject: (projectName: string, includeSpending?: boolean) => Promise<ProjectDetail>
+  getProject: (
+    projectName: string,
+    includeSpending?: boolean,
+    silent?: boolean
+  ) => Promise<ProjectDetail>
   createProject: (data: ProjectRequest) => Promise<Project>
   updateProject: (id: string, data: ProjectRequest) => Promise<Project>
   transferOwnership: (projectName: string, userId: string) => Promise<Project>
@@ -168,7 +172,8 @@ export const projectsStore = proxy<ProjectsStore>({
     }
   },
 
-  async getProject(projectName: string, includeSpending = false) {
+  // `silent` suppresses the error toast for best-effort lookups; the backend answers 404 to non-members.
+  async getProject(projectName: string, includeSpending = false, silent = false) {
     this.loading = true
     this.error = null
 
@@ -176,7 +181,7 @@ export const projectsStore = proxy<ProjectsStore>({
       const url = includeSpending
         ? `v1/projects/${encodeURIComponent(projectName)}?include_spending=true`
         : `v1/projects/${encodeURIComponent(projectName)}`
-      const response = await api.get(url)
+      const response = await api.get(url, { skipErrorHandling: silent })
       const data = await response.json()
 
       const project = {

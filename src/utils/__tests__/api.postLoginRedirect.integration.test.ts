@@ -59,6 +59,23 @@ describe('api.handleSessionExpired — postLoginRedirect integration', () => {
     expect(mockAssign).toHaveBeenCalledWith('/auth/sign-in')
   })
 
+  it('does NOT redirect to sign-in on a 401 "Access denied" permission error', async () => {
+    mockAPI('GET', 'v1/denied-resource', { error: { message: 'Access denied' } }, 401)
+
+    await api.get('v1/denied-resource', { skipErrorHandling: true }).catch(() => {})
+
+    expect(mockAssign).not.toHaveBeenCalled()
+    expect(sessionStorage.getItem('postLoginRedirect')).toBeNull()
+  })
+
+  it('still redirects to sign-in on a 401 "Authentication failed" (expired session)', async () => {
+    mockAPI('GET', 'v1/expired-resource', { error: { message: 'Authentication failed' } }, 401)
+
+    await api.get('v1/expired-resource', { skipErrorHandling: true }).catch(() => {})
+
+    expect(mockAssign).toHaveBeenCalledWith('/auth/sign-in')
+  })
+
   it('does NOT write postLoginRedirect when already on the sign-in page', async () => {
     stubLocation('/auth/sign-in')
 

@@ -28,6 +28,8 @@ import { getMode, getIsLocalAuth } from '@/utils/utils'
 
 export const ABORT_ERROR = 'AbortError'
 export const DEFAULT_ERROR_MESSAGE = 'Oops! Something went wrong'
+// Must match `raise_access_denied` in the backend (routers/utils.py).
+const ACCESS_DENIED_MESSAGE = 'Access denied'
 
 export interface StreamOptions {
   errorToast?: boolean
@@ -97,16 +99,16 @@ interface RequestOptions extends RequestInit {
 export interface ErrorBody {
   error: {
     message: string
-    details?: string | object
-    help?: string
+    details?: string | object | null
+    help?: string | null
   }
 }
 
 interface ResponseWithParsedError extends Response {
   parsedError?: {
     message: string
-    details?: string | object
-    help?: string
+    details?: string | object | null
+    help?: string | null
   }
 }
 
@@ -405,7 +407,13 @@ class API {
             const isBrokerAuthRequired =
               (authRequiredBody as Record<string, Record<string, unknown>> | null)?.error
                 ?.login_url != null
-            if (!isAuthGatePayload(authRequiredBody) && !isBrokerAuthRequired) {
+            // Backend permission failures (e.g. an assistant no longer shared with the user) are
+            // also 401 "Access denied" — the session is fine, so show the error instead of
+            // bouncing a logged-in user to sign-in (which loops back to the same page).
+            const isAccessDenied =
+              (authRequiredBody as Record<string, Record<string, unknown>> | null)?.error
+                ?.message === ACCESS_DENIED_MESSAGE
+            if (!isAuthGatePayload(authRequiredBody) && !isBrokerAuthRequired && !isAccessDenied) {
               this.handleSessionExpired(url)
               return reject(response) // NOSONAR - callers use instanceof Response to detect API errors
             }

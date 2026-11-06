@@ -41,3 +41,14 @@ export const canEdit = (entity: Entity): boolean => {
 export const canView = (entity: Entity): boolean => {
   return entity[ABILITY_KEY]?.includes(ABILITIES.READ) ?? false
 }
+
+export const isOwner = (assistant: { created_by?: { id?: string } }, userId?: string): boolean => {
+  return !!userId && assistant.created_by?.id === userId
+}
+
+export const isProjectMember = (
+  assistant: { project?: string | null },
+  userProjects?: { name: string }[]
+): boolean => {
+  return !!assistant.project && !!userProjects?.some((p) => p.name === assistant.project)
+}

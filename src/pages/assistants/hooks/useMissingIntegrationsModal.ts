@@ -23,6 +23,8 @@ import { buildAssistantMaps, applySettingsToToolkits } from '../utils/missingInt
 export interface SubmitResponse {
   error?: string
   success?: boolean
+  /** Plain-text form of `error` for inline display (`error` may carry toast HTML). */
+  message?: string
   validation?: {
     has_missing_integrations: boolean
     missing_by_credential_type: MissingIntegrationByCredentialType[]
@@ -44,6 +46,8 @@ interface UseMissingIntegrationsModalOptions<T = any> {
   onSuccess?: () => void
   unblockTransition?: () => void
   onToolkitsUpdate?: (toolkits: AssistantToolkit[]) => void
+  /** Reports a save failure from the modal's own submit paths (Save with integrations / Skip). */
+  onError?: (error: string, message?: string) => void
 }
 
 export const useMissingIntegrationsModal = <T = any>({
@@ -51,6 +55,7 @@ export const useMissingIntegrationsModal = <T = any>({
   onSuccess,
   unblockTransition,
   onToolkitsUpdate,
+  onError,
 }: UseMissingIntegrationsModalOptions<T>) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [missingIntegrationsState, setMissingIntegrationsState] =
@@ -69,7 +74,7 @@ export const useMissingIntegrationsModal = <T = any>({
         const response = await onSubmit(values, skipValidation)
 
         if (response.error) {
-          return { success: false, error: response.error }
+          return { success: false, error: response.error, message: response.message }
         }
 
         if (response.success === false) {
@@ -121,13 +126,15 @@ export const useMissingIntegrationsModal = <T = any>({
         toolkits: updatedToolkits,
       }
 
-      await handleSubmit(valuesWithIntegrations, false)
+      const result = await handleSubmit(valuesWithIntegrations, false)
+      if (result.error) onError?.(result.error, result.message)
     },
     [
       missingIntegrationsState.pendingAssistantValues,
       missingIntegrationsState.missingByCredentialType,
       handleSubmit,
       onToolkitsUpdate,
+      onError,
     ]
   )
 
@@ -140,7 +147,8 @@ export const useMissingIntegrationsModal = <T = any>({
     try {
       const response = await onSubmit(missingIntegrationsState.pendingAssistantValues, true)
       if (response.error) {
-        return { success: false, error: response.error }
+        onError?.(response.error, response.message)
+        return { success: false, error: response.error, message: response.message }
       }
       if (response.success === false) {
         return { success: false }
@@ -149,12 +157,20 @@ export const useMissingIntegrationsModal = <T = any>({
       onSuccess?.()
       return { success: true }
     } catch (error: any) {
-      return { success: false, error: error.message || 'Failed to update assistant' }
+      const message = error.message || 'Failed to update assistant'
+      onError?.(message)
+      return { success: false, error: message }
     } finally {
       setIsSubmitting(false)
       setMissingIntegrationsState((prev) => ({ ...prev, pendingAssistantValues: null }))
     }
-  }, [missingIntegrationsState.pendingAssistantValues, onSubmit, onSuccess, unblockTransition])
+  }, [
+    missingIntegrationsState.pendingAssistantValues,
+    onSubmit,
+    onSuccess,
+    unblockTransition,
+    onError,
+  ])
 
   /** Open the modal for a validation result obtained outside this hook's own submit. */
   const openMissingIntegrations = useCallback(

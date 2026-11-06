@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14786_concurrent-collaboration-popup",
+  "head": "ab6291da47aef60033137d498dffbdb776194ec8",
+  "runner": "npm",
+  "started_at": "2026-10-08T16:07:47Z",
+  "completed_at": "2026-10-08T16:24:11Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 27517,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19049,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2059,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 7305,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Real gitleaks scan ran (scanned ~100.25 MB in 6.78s); no leaks found."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 460030,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "680 test files passed; 6939 passed, 1 skipped."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 170030,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "49 test files passed; 556 passed, 1 skipped."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 388,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2327 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 212,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN (and reachable SonarQube host from .sonarlint/connectedMode.json) to run this locally; a real Sonar scan is still owed before merge."
+    }
+  ],
+  "failures": {}
+}

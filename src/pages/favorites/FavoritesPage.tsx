@@ -24,6 +24,7 @@ import { SKILL_INDEX_SCOPES } from '@/constants/skills'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import AssistantActions from '@/pages/assistants/AssistantActions/AssistantActions'
 import AssistantCard from '@/pages/assistants/components/AssistantList/AssistantCard'
+import { getAssistantCardInfo } from '@/pages/assistants/components/AssistantList/AssistantCard/getAssistantCardInfo'
 import AssistantFilters from '@/pages/assistants/components/AssistantList/AssistantFilters'
 import { useAssistantFilters } from '@/pages/assistants/hooks/useAssistantFilters'
 import SkillCard from '@/pages/skills/components/SkillCard'
@@ -34,6 +35,7 @@ import WorkflowsFilters from '@/pages/workflows/components/WorkflowsFilters'
 import { WORKFLOW_LIST_SCOPE } from '@/pages/workflows/constants'
 import { chatsStore } from '@/store/chats'
 import { favoritesStore } from '@/store/favorites'
+import { userStore } from '@/store/user'
 import { workflowsStore } from '@/store/workflows'
 import { Assistant } from '@/types/entity/assistant'
 import { FavoriteFilter, FavoriteItem, FavoritesFilters } from '@/types/entity/favorites'
@@ -55,6 +57,7 @@ const SECTION_TITLE_CLASS = 'flex-row px-1 w-full text-xs text-quaternary font-s
 
 const FavoritesPage: React.FC<FavoritesPageProps> = ({ filter }) => {
   const { favorites, assistants, skills, workflows, loading } = useSnapshot(favoritesStore)
+  const { user } = useSnapshot(userStore)
   const router = useVueRouter()
 
   const startChat = async (workflow: Workflow) => {
@@ -115,10 +118,14 @@ const FavoritesPage: React.FC<FavoritesPageProps> = ({ filter }) => {
     <div className={GRID_CLASS}>
       {items.map((item) => {
         const assistant = item as unknown as Assistant
+        const { isShared, isOwned, isProjectMember } = getAssistantCardInfo(assistant, user)
         return (
           <AssistantCard
             key={item.id}
             assistant={assistant}
+            isShared={isShared}
+            isOwned={isOwned}
+            isProjectMember={isProjectMember}
             onViewAssistant={handleViewAssistant}
             navigation={
               <AssistantActions

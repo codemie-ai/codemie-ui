@@ -13,12 +13,20 @@
 // limitations under the License.
 //
 
-import { render } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { render, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { userStore } from '@/store/user'
 import { Assistant } from '@/types/entity/assistant'
+import { User } from '@/types/entity/user'
 
 import AssistantDetailsSidebarSections from '../AssistantDetailsSidebarSections'
+
+const mockGetSharedWith = vi.fn().mockResolvedValue([])
+
+vi.mock('@/store/assistants', () => ({
+  assistantsStore: { getSharedWith: (...args: unknown[]) => mockGetSharedWith(...args) },
+}))
 
 vi.mock('@/hooks/useProjectDisplayNames', () => ({
   useProjectDisplayNames: () => new Map([['my-project', 'My Display Name']]),
@@ -40,6 +48,10 @@ vi.mock('@/store/appInfo', () => ({
 
 vi.mock('@/store/mcp', () => ({
   mcpStore: { configs: [], getConfig: vi.fn().mockResolvedValue({}) },
+}))
+
+vi.mock('@/store/user', () => ({
+  userStore: { user: { userId: 'owner-id' } },
 }))
 
 vi.mock('@/pages/assistants/components/ToolkitsViewList', () => ({
@@ -84,5 +96,118 @@ describe('AssistantDetailsSidebarSections — project name display', () => {
     const projectValue = getByText('my-project')
     expect(projectValue.getAttribute('data-tooltip-id')).toBe('react-tooltip')
     expect(projectValue.getAttribute('data-tooltip-content')).toBe('My Display Name')
+  })
+})
+
+describe('AssistantDetailsSidebarSections — shared status property', () => {
+  it('shows Shared status for the owner of the assistant', () => {
+    const ownedAssistant: Assistant = {
+      ...assistant,
+      shared: true,
+      created_by: { id: 'owner-id', name: 'Owner', email: 'owner@test.com' },
+    }
+    const { getByText } = render(<AssistantDetailsSidebarSections assistant={ownedAssistant} />)
+    expect(getByText('Shared status', { exact: false })).toBeInTheDocument()
+  })
+
+  it('hides Shared status for an assistant shared with the current user by someone else', () => {
+    const sharedWithMeAssistant: Assistant = {
+      ...assistant,
+      shared: true,
+      created_by: { id: 'someone-else', name: 'Someone Else', email: 'someone@test.com' },
+    }
+    const { queryByText } = render(
+      <AssistantDetailsSidebarSections assistant={sharedWithMeAssistant} />
+    )
+    expect(queryByText('Shared status', { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('shows Shared status for a project member who is not the owner', () => {
+    const originalUser = userStore.user
+    userStore.user = { userId: 'member-id', projects: [{ name: 'my-project' }] } as User
+    try {
+      const memberAssistant: Assistant = {
+        ...assistant,
+        shared: true,
+        created_by: { id: 'someone-else', name: 'Someone Else', email: 'someone@test.com' },
+      }
+      const { getByText } = render(<AssistantDetailsSidebarSections assistant={memberAssistant} />)
+      expect(getByText('Shared status', { exact: false })).toBeInTheDocument()
+    } finally {
+      userStore.user = originalUser
+    }
+  })
+
+  it('hides Shared status when neither the assistant creator nor the viewer id is known', () => {
+    const originalUser = userStore.user
+    userStore.user = {} as User
+    try {
+      const { queryByText } = render(<AssistantDetailsSidebarSections assistant={assistant} />)
+      expect(queryByText('Shared status', { exact: false })).not.toBeInTheDocument()
+    } finally {
+      userStore.user = originalUser
+    }
+  })
+
+  it('shows Shared status for global assistants regardless of ownership', () => {
+    const globalAssistant: Assistant = {
+      ...assistant,
+      is_global: true,
+      created_by: { id: 'someone-else', name: 'Someone Else', email: 'someone@test.com' },
+    }
+    const { getByText } = render(<AssistantDetailsSidebarSections assistant={globalAssistant} />)
+    expect(getByText('Shared status', { exact: false })).toBeInTheDocument()
+  })
+})
+
+describe('AssistantDetailsSidebarSections — shared with section', () => {
+  const ownedAssistant: Assistant = {
+    ...assistant,
+    created_by: { id: 'owner-id', name: 'Owner', email: 'owner@test.com' },
+  }
+
+  beforeEach(() => {
+    mockGetSharedWith.mockReset().mockResolvedValue([])
+  })
+
+  it('does not render the SHARED WITH section when nobody has access', async () => {
+    const { queryByText } = render(<AssistantDetailsSidebarSections assistant={ownedAssistant} />)
+    await waitFor(() => expect(mockGetSharedWith).toHaveBeenCalledWith(ownedAssistant.id))
+    expect(queryByText('SHARED WITH')).not.toBeInTheDocument()
+  })
+
+  it('renders the SHARED WITH section and its users once loaded', async () => {
+    mockGetSharedWith.mockResolvedValue([{ id: 'u1', name: 'Alice', email: 'alice@test.com' }])
+    const { getByText } = render(<AssistantDetailsSidebarSections assistant={ownedAssistant} />)
+    await waitFor(() => expect(getByText('SHARED WITH')).toBeInTheDocument())
+    expect(getByText('Alice')).toBeInTheDocument()
+  })
+
+  it('does not fetch shared-with users for a non-owner viewing the assistant', async () => {
+    const nonOwnerAssistant: Assistant = {
+      ...assistant,
+      created_by: { id: 'someone-else', name: 'Someone Else', email: 'someone@test.com' },
+    }
+    const { queryByText } = render(
+      <AssistantDetailsSidebarSections assistant={nonOwnerAssistant} />
+    )
+    await waitFor(() => expect(queryByText('SHARED WITH')).not.toBeInTheDocument())
+    expect(mockGetSharedWith).not.toHaveBeenCalled()
+  })
+
+  it('does not reject unhandled when getSharedWith fails', async () => {
+    mockGetSharedWith.mockRejectedValueOnce(new Error('network error'))
+    const unhandledRejection = vi.fn()
+    process.on('unhandledRejection', unhandledRejection)
+
+    const { queryByText } = render(<AssistantDetailsSidebarSections assistant={ownedAssistant} />)
+    await waitFor(() => expect(mockGetSharedWith).toHaveBeenCalledWith(ownedAssistant.id))
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0)
+    })
+
+    expect(queryByText('SHARED WITH')).not.toBeInTheDocument()
+    expect(unhandledRejection).not.toHaveBeenCalled()
+    process.off('unhandledRejection', unhandledRejection)
   })
 })

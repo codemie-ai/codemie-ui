@@ -1,0 +1,16 @@
+{
+  "standards_review": [
+    {"kind": "commit-format", "status": "fail", "notes": "git-workflow.md requires ^EPMCDME-XXXX: Capital sentence$ (uppercase ticket prefix, capitalized first word after colon); commit subject 'epmcdme-14786: add planning artifacts' in the review range uses lowercase prefix and lowercase first word, violating the documented regex"},
+    {"kind": "code-quality", "status": "na", "notes": "no code-quality guide found at .ai-run/guides/standards/code-quality.md (directory only contains git-workflow.md) and no code_quality ArtifactRef was passed"},
+    {"kind": "security", "status": "pass", "notes": "security-patterns.md checklist: no dangerouslySetInnerHTML/innerHTML sinks touched (ShareAssistantPopup.tsx, SidebarSharedWith.tsx render user name/email as plain JSX text, React-escaped); no window.location/redirect/postMessage code touched; no import.meta.env or window._env_ changes; new API calls (getSharedWith/shareWith/removeShare/getSharableUsers in src/store/assistants.ts) go through the existing api.ts layer with query params passed through encodeURIComponent; no new dependency added, no secrets or nosonar markers introduced"}
+  ],
+  "blocking_findings": [
+    {
+      "location": "commit subject 'epmcdme-14786: add planning artifacts'",
+      "violation": "git-workflow.md's documented commit regex requires an uppercase EPMCDME ticket prefix and a capitalized first word after the colon; this subject uses lowercase 'epmcdme-14786' and lowercase 'add'",
+      "why_blocking": "git-workflow.md states this format is enforced by Tekton CI, which blocks the pipeline on violations",
+      "remedy": "reword the commit subject to 'EPMCDME-14786: Add planning artifacts' (or squash it into a compliant commit before merge, per the documented squash-merge strategy)"
+    }
+  ],
+  "coverage_gap": false
+}

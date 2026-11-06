@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14786_concurrent-collaboration-popup",
+  "head": "0a5e397947e003b41302adc49cd920efb5f02311",
+  "runner": "npm",
+  "started_at": "2026-09-15T09:58:16Z",
+  "completed_at": "2026-09-15T10:11:11Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 52687,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 36786,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 4040,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 7145,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output confirms 'no leaks found', not just exit code."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 343540,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "512 test files, all passed (0 failures observed in output; --silent reporter omits the final summary line but no FAIL/\u2717 markers present)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 0,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "21 test files, all passed, 0 failures. Duration not captured precisely (heavy local memory/swap pressure from a prior concurrent run slowed this run; two earlier attempts were invalidated by accidental concurrent vitest processes colliding on the HMR websocket port and were discarded, not counted as failures)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 397,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 201,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN to run locally; CI settles this via pipeline context."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "No staged files at gate-run time; only meaningful at commit time via the husky pre-commit hook."
+    }
+  ],
+  "failures": {}
+}

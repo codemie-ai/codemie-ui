@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "task": "Apply UI MR review fixes to the assistant Share dialog (EPMCDME-14786): ownership and user-management gating, access-list load error with retry, min 2-char search, surfacing backend personal-integration rejections, single error toast, dialog retitle/subtitle, project-member status label, ownership-gated sidebar fetch, and Remove aria-labels.",
+  "generated": "2026-10-08T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 16,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches ShareAssistantPopup, AssistantActions, StatusLabel, AssistantDetailsSidebarSections, AssistantForm/AssistantSetupSection, the assistants store and shared utils (api.ts toast handling, entity.ts ownership rule): 4+ components across UI and client-state layers, including shared utilities." },
+    { "dimension": "file_change_estimate", "reason": "About 10 source files modified across pages/assistants subdirectories, store and utils, plus 3-4 existing test files updated (popup, StatusLabel, sidebar, actions accessibility); few or no new files." },
+    { "dimension": "technical_risk", "reason": "Existing patterns cover most of it (isUserManagementEnabled flag, existing popup and toast flows). Risk is in matching the backend ownership rule (created_by.id with creator fallback) and scoping the toast change in shared utils/api.ts so other callers keep working. Bumped one level for the authorization-gating change. Closest calibration example (M, epmcdme-10203) agrees with the M band." },
+    { "dimension": "requirements_clarity", "reason": "Owner decisions settle every item (a3, a5, a10, a11 won't fix, a12, a19, a20) with exact copy and file/line pointers. Only open point is the backend error contract coming from the sibling backend child." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S to M: affects authorization (Share and owner-only fetches gated on real ownership instead of canEdit)"
+  ],
+  "split_recommendation": null
+}

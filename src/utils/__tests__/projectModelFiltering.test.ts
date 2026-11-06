@@ -112,6 +112,14 @@ describe('projectModelFiltering', () => {
     expect(result.map((m) => m.value).sort()).toEqual(['claude-3', 'gpt-3.5'])
   })
 
+  it('fetches the project silently so non-members get no error toast', async () => {
+    ;(projectsStore.getProject as any).mockResolvedValue({ name: 'zoo', allowed_models: [] })
+
+    await getFilteredModelsForProject('zoo', mockAllModels)
+
+    expect(projectsStore.getProject).toHaveBeenCalledWith('zoo', true, true)
+  })
+
   it('returns all models when project fetch fails', async () => {
     ;(projectsStore.getProject as any).mockRejectedValue(new Error('Network error'))
 

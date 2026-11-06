@@ -110,6 +110,13 @@ describe('formatErrorMessage', () => {
     const result = formatErrorMessage({} as any)
     expect(result).toBe('Oops! Something went wrong')
   })
+
+  it('omits the details line when details is null', () => {
+    const result = formatErrorMessage({
+      error: { message: 'Personal integrations cannot be used', details: null, help: null },
+    })
+    expect(result).toBe('Personal integrations cannot be used')
+  })
 })
 
 describe('parseContentDispositionFilename', () => {

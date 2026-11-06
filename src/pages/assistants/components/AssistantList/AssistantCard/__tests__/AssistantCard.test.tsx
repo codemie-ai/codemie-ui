@@ -237,11 +237,59 @@ describe('AssistantCard', () => {
     expect(screen.getByTestId('navigation')).toBeInTheDocument()
   })
 
-  it('renders status label with correct text', () => {
-    render(<AssistantCard assistant={mockAssistant} isShared={true} onViewAssistant={() => {}} />)
+  it('renders status label for global assistants', () => {
+    const globalAssistant: Assistant = {
+      ...mockAssistant,
+      is_global: true,
+      unique_users_count: 42,
+    }
+
+    render(<AssistantCard assistant={globalAssistant} onViewAssistant={() => {}} />)
 
     const statusLabel = screen.getByRole('status')
     expect(statusLabel).toBeInTheDocument()
+    expect(statusLabel).toHaveTextContent('42 uses')
+  })
+
+  it('renders Shared with project status for a non-owner project member', () => {
+    render(
+      <AssistantCard
+        assistant={mockAssistant}
+        isShared={true}
+        isOwned={false}
+        isProjectMember={true}
+        onViewAssistant={() => {}}
+      />
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent('Shared with project')
+  })
+
+  it('renders nothing for a user the assistant is shared with individually, outside the project', () => {
+    render(
+      <AssistantCard
+        assistant={mockAssistant}
+        isShared={true}
+        isOwned={false}
+        isProjectMember={false}
+        onViewAssistant={() => {}}
+      />
+    )
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('renders Shared with project status for the owner who shared their assistant', () => {
+    render(
+      <AssistantCard
+        assistant={mockAssistant}
+        isShared={true}
+        isOwned={true}
+        onViewAssistant={() => {}}
+      />
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent('Shared with project')
   })
 
   it('does not render status label when isTemplate is true', () => {

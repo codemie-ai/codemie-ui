@@ -26,12 +26,13 @@ interface StatusLabelProps {
   assistant: Assistant
   isShared?: boolean
   isOwned?: boolean
+  isProjectMember?: boolean
 }
 
 const STATUS_TEXT = {
-  SHARED: 'Shared with Project',
-  OWNED: 'Visible only for me',
-  NOT_SHARED: 'Not shared',
+  GLOBAL: 'total uses',
+  SHARED: 'Shared with project',
+  NOT_SHARED: 'Not shared with project',
   UNKNOWN: 'Unknown',
 }
 
@@ -42,7 +43,12 @@ enum StatusType {
   NOT_SHARED = 'not_shared',
 }
 
-const StatusLabel: React.FC<StatusLabelProps> = ({ assistant, isShared, isOwned }) => {
+const StatusLabel: React.FC<StatusLabelProps> = ({
+  assistant,
+  isShared,
+  isOwned,
+  isProjectMember,
+}) => {
   const getStatusType = (): StatusType => {
     if (assistant.is_global) return StatusType.GLOBAL
     if (isShared) return StatusType.SHARED
@@ -58,6 +64,22 @@ const StatusLabel: React.FC<StatusLabelProps> = ({ assistant, isShared, isOwned 
     const id = assistant.id || assistant.slug
     return 'status-tooltip-target-' + id
   }, [assistant.id, assistant.slug])
+
+  // Unreachable today (getStatusType only returns OWNED when isOwned is true); kept defensive
+  // for a future caller that passes isOwned=false with no isShared flag.
+  if (statusType === StatusType.OWNED && !isOwned) {
+    return null
+  }
+
+  // SHARED/NOT_SHARED describe the assistant's project-visibility, meaningful only to the
+  // owner or another project member — not to a user it was shared with individually.
+  if (
+    (statusType === StatusType.SHARED || statusType === StatusType.NOT_SHARED) &&
+    !isOwned &&
+    !isProjectMember
+  ) {
+    return null
+  }
 
   const getStatusText = (type: StatusType): string => {
     switch (type) {

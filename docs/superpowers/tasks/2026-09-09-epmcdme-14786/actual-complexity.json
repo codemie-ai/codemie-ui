@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-09-09T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 18,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 11,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "New ShareAssistantPopup component, 4 new store methods on assistantsStore, integration into AssistantActions, and new sharing type interfaces — 3-4 components across UI, service/store, and types layers."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "11 files changed: 5 new (ShareAssistantPopup.tsx, index.ts, sharing.ts, ShareAssistantPopup.test.tsx, AssistantActions.accessibility.test.tsx) and 6 modified (AssistantActions.tsx, assistants.ts, mock-server db/middleware/routes, package.json), spanning 5 directories."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

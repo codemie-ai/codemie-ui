@@ -249,6 +249,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     const [isKnowledgeBasesEnabled] = useFeatureFlag(FEATURE_FLAGS.KNOWLEDGE_BASES)
     const [isDatasourcesEnabled] = useFeatureFlag(FEATURE_FLAGS.DATASOURCES)
     const [isCodeIndexingEnabled] = useFeatureFlag(FEATURE_FLAGS.CODE_INDEXING)
+    const [formSubmitError, setFormSubmitError] = useState<string | null>(null)
     const isDataSourcesSurfaceEnabled =
       isKnowledgeBasesEnabled || isDatasourcesEnabled || isCodeIndexingEnabled
     const [aiGeneratedFieldMarkers, setAiGeneratedFieldMarkers] = useState<AssistantAIFieldMarkers>(
@@ -387,6 +388,12 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       onSuccess,
       unblockTransition,
       onToolkitsUpdate: handleToolkitsChange,
+      // The modal's own submit paths bypass handleFormSubmit, so surface their failures here.
+      onError: (error, message) => {
+        toaster.error(error)
+        setFormSubmitError(message ?? error)
+        blockTransition()
+      },
     })
 
     const handleMcpServersChange = useCallback(
@@ -418,11 +425,13 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
 
     const handleFormSubmit = handleSubmit(async () => {
       unblockTransition()
+      setFormSubmitError(null)
 
       const values = prepareFormData()
       const result = await handleMissingIntegrationsSubmit(values)
       if (result?.error) {
         toaster.error(result.error)
+        setFormSubmitError(result.message ?? result.error)
       }
       if (result && !result.success) {
         blockTransition()
@@ -639,6 +648,8 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             isChatConfig ? 'pl-4 pr-2 pt-0 max-w-full' : 'max-lg:px-0'
           )}
         >
+          {formSubmitError && <p className="text-xs text-red-500">{formSubmitError}</p>}
+
           {isChatConfig && (
             <div className="sticky top-0 bg-surface-base-sidebar z-30 pb-2 pt-4 flex justify-between items-center w-full -mb-6">
               <h2 className="font-semibold text-sm">Configure & Test</h2>

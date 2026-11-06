@@ -62,6 +62,7 @@ interface AssistantCardProps {
   isShared?: boolean
   isOwned?: boolean
   isAdmin?: boolean
+  isProjectMember?: boolean
   description?: string
   name?: string
   onViewAssistant: (assistant: Assistant) => void
@@ -75,6 +76,7 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   isShared,
   isOwned,
   isAdmin,
+  isProjectMember,
   description,
   name,
   onViewAssistant,
@@ -300,7 +302,14 @@ const AssistantCard: React.FC<AssistantCardProps> = ({
   }
 
   const renderStatus = () => {
-    return <StatusLabel assistant={assistant} isShared={isShared} isOwned={isOwned} />
+    return (
+      <StatusLabel
+        assistant={assistant}
+        isShared={isShared}
+        isOwned={isOwned}
+        isProjectMember={isProjectMember}
+      />
+    )
   }
 
   const label = useMemo(() => {

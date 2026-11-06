@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "head": "3db856d1407e34bb11312dfbf69adbd1c94653d1",
+  "feature_id": "share-assistant-popup",
+  "tool": "vitest-unit",
+  "coverage_source": "existing-test",
+  "test_command": "npx vitest run --project unit src/pages/assistants/components/ShareAssistantPopup",
+  "app_url": null,
+  "screenshot_path": null,
+  "console_errors": [],
+  "network_failures": [],
+  "result": "FAIL",
+  "tests_passed": 0,
+  "tests_failed": 1,
+  "failure_reason": "ReferenceError: Cannot access 'mockStore' before initialization — vi.mock factory references a top-level variable (mockStore) that is not yet initialized when vi.mock is hoisted. All 5 test cases in ShareAssistantPopup.test.tsx could not run.",
+  "remediation": "Wrap mockStore definition inside a vi.hoisted() call (Vitest >=0.31) or inline the mock return value directly in the vi.mock factory without referencing external variables."
+}

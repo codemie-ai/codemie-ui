@@ -29,8 +29,8 @@ export const displayValue = (value: string | null | undefined, fallback = '-'): 
   value && value !== 'NULL' ? value : fallback
 
 export const SHARED = {
-  NOT_SHARED: 'Not shared',
-  WITH_PROJECT: 'With Project',
+  NOT_SHARED: 'Not shared with project',
+  WITH_PROJECT: 'Shared with project',
   GLOBAL: 'Marketplace',
 }
 

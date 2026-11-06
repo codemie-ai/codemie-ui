@@ -57,6 +57,7 @@ describe('getAssistantCardInfo', () => {
       description: 'Brief desc',
       isShared: false,
       isOwned: true,
+      isProjectMember: false,
       isAdmin: false,
       isVerified: false,
       marketplaceStatus: null,
@@ -112,5 +113,29 @@ describe('getAssistantCardInfo', () => {
     const result = getAssistantCardInfo(assistant, mockUser)
 
     expect(result.isAdmin).toBe(false)
+  })
+
+  it('identifies a viewer who belongs to the assistant project', () => {
+    const assistant = {
+      ...createMockAssistant('Name', 'Description', false, 'other-user'),
+      project: 'proj-a',
+    }
+    const user = { ...mockUser, projects: [{ name: 'proj-a' }] }
+
+    const result = getAssistantCardInfo(assistant, user)
+
+    expect(result.isProjectMember).toBe(true)
+  })
+
+  it('identifies a viewer who does not belong to the assistant project', () => {
+    const assistant = {
+      ...createMockAssistant('Name', 'Description', false, 'other-user'),
+      project: 'proj-a',
+    }
+    const user = { ...mockUser, projects: [{ name: 'proj-b' }] }
+
+    const result = getAssistantCardInfo(assistant, user)
+
+    expect(result.isProjectMember).toBe(false)
   })
 })

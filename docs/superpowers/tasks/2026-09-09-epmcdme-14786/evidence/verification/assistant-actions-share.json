@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "head": "3db856d1407e34bb11312dfbf69adbd1c94653d1",
+  "feature_id": "assistant-actions-share",
+  "tool": "vitest-unit",
+  "coverage_source": "existing-test",
+  "test_command": "npx vitest run --project unit src/pages/assistants/AssistantActions/__tests__",
+  "app_url": null,
+  "screenshot_path": null,
+  "console_errors": [],
+  "network_failures": [],
+  "result": "PASS",
+  "tests_passed": 5,
+  "tests_failed": 0,
+  "notes": "All 5 tests passed: Share action visibility (owner/non-owner) and AssistantActions accessibility (aria-labelledby, sr-only span)."
+}

@@ -28,7 +28,7 @@
     "prepare": "husky",
     "build:keycloak": "VITE_ENTRY=keycloakify npm run build:prod && npx keycloakify build",
     "start:keycloak": "source .env && sed -e \"s|\\${KC_ENTRA_TENANT_ID}|$KC_ENTRA_TENANT_ID|g\" -e \"s|\\${KC_ENTRA_CLIENT_ID}|$KC_ENTRA_CLIENT_ID|g\" -e \"s|\\${KC_ENTRA_CLIENT_SECRET}|$KC_ENTRA_CLIENT_SECRET|g\" .keycloakify/realm-kc-26.template.json > .keycloakify/realm-kc-26.json && VITE_ENTRY=keycloakify npx keycloakify start-keycloak --keycloak-version 26.4.5 2>&1 | sed 's|https://my-theme.keycloakify.dev/?port=8888|http://localhost:8888/realms/myrealm/account|g'",
-    "mock-server": "json-server --watch mock-server/db.json --routes mock-server/routes.json --port 8080",
+    "mock-server": "json-server --watch mock-server/db.json --routes mock-server/routes.json --middlewares mock-server/middleware.js --port 8080",
     "license-check": "npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;Python-2.0;CC-BY-4.0;Apache*;(MIT OR CC0-1.0);MulanPSL-2.0;MPL-2.0;LGPL-3.0-only;UNLICENSED'",
     "license-headers:check": "node scripts/license_headers/check_license_headers.mjs --check",
     "license-headers:fix": "node scripts/license_headers/check_license_headers.mjs --fix",

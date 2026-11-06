@@ -80,10 +80,8 @@ const AssistantGrid: React.FC<AssistantGridProps> = ({
         )}
       >
         {assistantList.map((assistant) => {
-          const { description, isShared, isOwned, isAdmin, name } = getAssistantCardInfo(
-            assistant,
-            user
-          )
+          const { description, isShared, isOwned, isAdmin, isProjectMember, name } =
+            getAssistantCardInfo(assistant, user)
           return (
             <li key={assistant.id || assistant.slug} className="w-full">
               <AssistantCard
@@ -92,6 +90,7 @@ const AssistantGrid: React.FC<AssistantGridProps> = ({
                 isShared={isShared}
                 isOwned={isOwned}
                 isAdmin={isAdmin}
+                isProjectMember={isProjectMember}
                 name={name}
                 isTemplate={isTemplate}
                 reloadAssistants={reloadAssistants}

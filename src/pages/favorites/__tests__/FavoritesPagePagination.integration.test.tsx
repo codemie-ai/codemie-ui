@@ -239,3 +239,48 @@ describe('FavoritesPage - assistant pinned state derived from preferences', () =
     expect(await screen.findByRole('button', { name: 'Unpin assistant' })).toBeInTheDocument()
   })
 })
+
+describe('FavoritesPage - assistant status label', () => {
+  beforeEach(() => {
+    mockAPI('GET', 'v1/config', [])
+  })
+
+  it('shows the project-share status on cards of assistants the user owns', async () => {
+    mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+      data: [
+        createAssistantFixture({
+          shared: true,
+          created_by: { id: 'test-user-id', name: 'Me', email: 'me@test.com' },
+        }),
+      ],
+      page: 0,
+      per_page: 12,
+      pages: 1,
+      total: 1,
+    })
+
+    renderPage('/favorites/assistants')
+
+    expect(await screen.findByText('Shared with project')).toBeInTheDocument()
+  })
+
+  it('hides the project-share status on cards of assistants owned by someone outside the project', async () => {
+    mockAPI('GET', 'v1/preferences/test-user-id/favorites/assistants', {
+      data: [
+        createAssistantFixture({
+          shared: true,
+          created_by: { id: 'someone-else', name: 'Other', email: 'other@test.com' },
+        }),
+      ],
+      page: 0,
+      per_page: 12,
+      pages: 1,
+      total: 1,
+    })
+
+    renderPage('/favorites/assistants')
+
+    await screen.findByText('Assistant 1')
+    expect(screen.queryByText('Shared with project')).not.toBeInTheDocument()
+  })
+})

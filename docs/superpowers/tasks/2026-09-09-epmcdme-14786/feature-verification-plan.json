@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "tool": "unconfigured",
+  "fallback": "vitest-unit",
+  "note": "No Playwright or Cypress found; falling back to existing Vitest unit/integration tests for changed UI surfaces.",
+  "changed_ui_files": [
+    "src/pages/assistants/AssistantActions/AssistantActions.tsx",
+    "src/pages/assistants/components/ShareAssistantPopup/ShareAssistantPopup.tsx",
+    "src/pages/assistants/components/ShareAssistantPopup/index.ts"
+  ],
+  "matched_tests": [
+    "src/pages/assistants/components/ShareAssistantPopup/__tests__/ShareAssistantPopup.test.tsx",
+    "src/pages/assistants/AssistantActions/__tests__/AssistantActions.accessibility.test.tsx"
+  ],
+  "commands": [
+    "npx vitest run --project unit src/pages/assistants/components/ShareAssistantPopup src/pages/assistants/AssistantActions/__tests__"
+  ]
+}

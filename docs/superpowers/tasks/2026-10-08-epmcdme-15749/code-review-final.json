@@ -1,0 +1,55 @@
+{
+  "decision": "request-changes",
+  "rationale": "Diff is oversized (confidence floor); two major, newly-introduced defects: an unhandled promise rejection on the sidebar's getSharedWith fetch (src/pages/assistants/components/AssistantDetails/components/AssistantDetailsSidebarSections.tsx:103, no .catch unlike the popup's parallel path) and the ShareAssistantPopup's getSharedWith fetch missing the isOwner defensive gate the design explicitly requires (currently unreachable since the sole call site already gates Share on isOwner, but unimplemented and untested). Standards: a commit-format violation exists in the checked range but on an unrelated prior-ticket subject, not introduced by this change. 4 findings deferred as pre-existing/out-of-scope edge cases (error-handling policy inconsistency across the 4 sharing API methods, concurrent-remove race, stale-debounce-on-assistant-switch race, missing empty-array guard on removeShare/shareWith). 2 findings dismissed as noise (StatusLabel OWNED case does have a matching switch branch so no dead-code gap; mock-server fixture guard is test-only with no production impact).",
+  "confidence": "low",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    { "kind": "spec", "item": "isOwner() helper added to src/utils/entity.ts", "status": "pass", "notes": "src/utils/entity.ts:45-47; covered by entity.test.ts" },
+    { "kind": "story-ac", "item": "Share action isVisible gated on isOwner() && isUserManagementEnabled()", "status": "pass", "notes": "AssistantActions.tsx:120; edit/clone/delete/publish untouched" },
+    { "kind": "spec", "item": "ShareAssistantPopup getSharedWith fetch gated on isOwner (defensive second gate)", "status": "fail", "notes": "Not implemented; isOwner never imported in ShareAssistantPopup.tsx; see CR-002" },
+    { "kind": "story-ac", "item": "AssistantDetailsSidebarSections gates getSharedWith on isOwner for non-owners", "status": "pass", "notes": "Line 95; tested for non-owner no-fetch case" },
+    { "kind": "spec", "item": "Access-list load error with Retry: getSharedWith propagates errors", "status": "pass", "notes": "No try/catch in store method; propagates; covered by assistants.test.ts" },
+    { "kind": "spec", "item": "ShareAssistantPopup shows inline error + Retry, keeps list inert until success", "status": "pass", "notes": "loadError state + retry button; tested" },
+    { "kind": "story-ac", "item": "2-character search floor", "status": "pass", "notes": "handleFilter guards query.length < 2; tested incl. race" },
+    { "kind": "spec", "item": "No client-side disabling of Share for personal integrations", "status": "pass", "notes": "No integration-type check added" },
+    { "kind": "story-ac", "item": "Backend rejection surfaced inline in handleShare, dialog stays open, selection preserved", "status": "pass", "notes": "shareError state from parsedError.message with fallback; tested" },
+    { "kind": "story-ac", "item": "AssistantForm renders result.error inline in addition to toaster.error", "status": "pass", "notes": "formSubmitError state added alongside existing toast; tested" },
+    { "kind": "spec", "item": "Single error toast per share/remove failure", "status": "pass", "notes": "shareWith/removeShare pass skipErrorHandling; popup's own catch is sole toast source; tested" },
+    { "kind": "story-ac", "item": "Popup header 'Share assistant' with subtitle 'Can chat and view setup; cannot edit'", "status": "pass", "notes": "header/headerDescription props set; tested" },
+    { "kind": "story-ac", "item": "StatusLabel no longer suppresses SHARED/NOT_SHARED text for non-owners", "status": "pass", "notes": "Guard narrowed to OWNED-only; tested for non-owner visibility" },
+    { "kind": "story-ac", "item": "Remove button gets aria-label 'Remove {name}'", "status": "pass", "notes": "aria-label set from user.name; tested" },
+    { "kind": "spec", "item": "Non-goal: Add/Remove staging (a11) unchanged", "status": "pass", "notes": "Remove still immediate, Add still batched behind Save" },
+    { "kind": "spec", "item": "Non-goal: canEdit/canDelete-gated actions left untouched", "status": "pass", "notes": "Only the new share entry added to AssistantActions.tsx" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "fail", "notes": "34/35 subjects conform; 'epmcdme-14786: add planning artifacts' uses lowercase prefix and lowercase first word, both invalid per git-workflow.md" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality guide exists in repo and no ArtifactRef was supplied" },
+    { "kind": "security", "status": "pass", "notes": "No HTML sinks, postMessage, window.location/_env_, or secrets introduced; isOwner is UI-level gating only, not covered by the security checklist" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantDetails/components/AssistantDetailsSidebarSections.tsx",
+      "line": 103,
+      "title": "Unhandled rejection on sidebar getSharedWith fetch",
+      "problem": "The sidebar's useEffect calls assistantsStore.getSharedWith(assistant.id).then(...) with no .catch(). The store method now intentionally propagates errors uncaught (per this change's own Access-list-error AC), so any fetch failure here surfaces as an unhandled promise rejection rather than a handled error state.",
+      "impact": "An owner viewing assistant details when the shared-with fetch fails (network error, 403, backend outage) gets a console-logged unhandled rejection and a silently empty SHARED WITH section, with no retry affordance — unlike the popup's parallel call to the same store method, which does catch and surface a Retry UI.",
+      "recommendation": "Add a .catch() to the getSharedWith call in this effect, consistent with the cancelled-ref pattern already present, mirroring ShareAssistantPopup.tsx's loadSharedWith error handling."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/ShareAssistantPopup/ShareAssistantPopup.tsx",
+      "line": 87,
+      "title": "Popup's getSharedWith fetch missing isOwner defensive gate",
+      "problem": "loadSharedWith calls assistantsStore.getSharedWith(assistant.id) unconditionally whenever the popup is visible with an assistant set. The design explicitly specifies this fetch should also be gated on isOwner(assistant) as a defensive second gate; isOwner is never imported into this file.",
+      "impact": "Currently unreachable in the shipped UI — the popup's sole call site (AssistantActions.tsx) already gates the Share action itself on isOwner(assistant, userId) && isUserManagementEnabled() — but the explicit design requirement is unimplemented, untested, and would allow an owner-only fetch to run for a non-owner if the popup is ever opened through any future call site that skips that outer gate.",
+      "recommendation": "Import isOwner from @/utils/entity and gate the fetch (or the visible && assistant effect) on isOwner(assistant, userStore.user?.userId), matching the pattern already used in AssistantDetailsSidebarSections.tsx:95."
+    }
+  ]
+}
