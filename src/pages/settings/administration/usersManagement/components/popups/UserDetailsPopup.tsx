@@ -248,11 +248,20 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
             <div className="flex flex-col gap-1">
               <h3 className="text-lg font-semibold text-text-primary">{user.name}</h3>
-              <DetailsCopyField
-                readOnlyText
-                value={user.email}
-                notification="Email copied to clipboard"
-              />
+              <div className="flex items-center gap-3">
+                <DetailsCopyField
+                  readOnlyText
+                  label="Email"
+                  value={user.email}
+                  notification="Email copied to clipboard"
+                />
+                <DetailsCopyField
+                  readOnlyText
+                  label="ID"
+                  value={user.id}
+                  notification="ID copied to clipboard"
+                />
+              </div>
             </div>
           </div>
 

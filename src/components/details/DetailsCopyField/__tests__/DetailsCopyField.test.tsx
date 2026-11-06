@@ -45,7 +45,19 @@ describe('DetailsCopyField', () => {
     expect(inputElement.value).toBe(value)
     expect(inputElement).toHaveAttribute('readOnly')
 
-    expect(screen.getByRole('button')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: `Copy ${label}` })).toBeInTheDocument()
+  })
+
+  it('names the copy button after the label in the readOnlyText variant', () => {
+    render(<DetailsCopyField label={label} value={value} readOnlyText />)
+
+    expect(screen.getByRole('button', { name: `Copy ${label}` })).toBeInTheDocument()
+  })
+
+  it('falls back to a plain "Copy" name when no label is given', () => {
+    render(<DetailsCopyField value={value} />)
+
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument()
   })
 
   it('should apply custom className to the root element', () => {

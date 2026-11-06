@@ -35,18 +35,16 @@ const DetailsCopyField = ({
 
   if (readOnlyText) {
     return (
-      <div className={cn('flex flex-col gap-2', className)}>
-        {label && <h4 className="text-xs text-text-primary">{label}</h4>}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-text-primary break-all">{value}</span>
-          <button
-            className="flex-shrink-0 text-text-accent hover:text-border-accent transition"
-            onClick={() => copyToClipboard(value, notification ?? 'Value copied to clipboard')}
-            aria-label="Copy"
-          >
-            <CopySvg className="w-4 h-4" />
-          </button>
-        </div>
+      <div className={cn('flex items-center gap-2', className)}>
+        {label && <span className="text-xs text-text-quaternary">{label}:</span>}
+        <span className="text-xs text-text-primary break-all">{value}</span>
+        <button
+          className="flex-shrink-0 text-text-accent hover:text-border-accent transition"
+          onClick={() => copyToClipboard(value, notification ?? 'Value copied to clipboard')}
+          aria-label={label ? `Copy ${label}` : 'Copy'}
+        >
+          <CopySvg className="w-4 h-4" />
+        </button>
       </div>
     )
   }
@@ -63,7 +61,7 @@ const DetailsCopyField = ({
         <button
           className="h-full px-2 transition codemieLight:rounded-r-lg codemieLight:border codemieLight:border-border-quaternary text-text-accent hover:bg-surface-specific-secondary-button-hover"
           onClick={() => copyToClipboard(value, notification ?? 'Value copied to clipboard')}
-          aria-label="Copy"
+          aria-label={label ? `Copy ${label}` : 'Copy'}
         >
           <CopySvg />
         </button>

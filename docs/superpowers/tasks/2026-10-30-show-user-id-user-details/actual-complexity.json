@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-11-02T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 10,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "UserDetailsPopup.tsx adds a new DetailsCopyField row for the ID (copy-adapt of the existing email row, same UI layer). Separately, the aria-label fix lands in DetailsCopyField.tsx itself, a shared component also consumed by MCPServerDetails, DataSourceDetails, AssistantDetailsSidebarSections, SkillDetails, AwsAgentCoreEndpointDetailsPopup and RemoteAssistantDetails — editing it touches every one of those consumers, not just this feature." },
+    { "dimension": "file_change_estimate", "reason": "4 files changed per diffstat (2 modified source files, 1 modified test file, 1 new test file) across 2 directories (components/details and pages/settings/.../popups)." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: the aria-label fix touches DetailsCopyField.tsx, a shared component reused by 7+ other feature areas, so the change's blast radius extends beyond the User Details popup it was written for."
+  ],
+  "split_recommendation": null
+}

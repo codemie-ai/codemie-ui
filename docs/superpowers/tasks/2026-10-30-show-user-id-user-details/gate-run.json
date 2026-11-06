@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16611-Show-the-user-ID-on-the-User-Details-page",
+  "head": "aae9e0d2a69d1338996333c39c7517e87fecfedb",
+  "runner": "npm",
+  "started_at": "2026-11-02T14:55:00Z",
+  "completed_at": "2026-11-02T11:42:09Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 119492,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 97371,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 10963,
+      "command": "npm run license-check",
+      "exit_code": 1
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 90430,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output: 'no leaks found'. Same command is also the pre-commit hook's secret-detection step; not duplicated below."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 1291086,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "1 of 8169 tests failed: src/components/Popup/__tests__/Popup.test.tsx > Popup — stacked dialogs > traps focus in the topmost (inner) dialog when two dialogs are stacked. Unrelated to the files changed on this branch (DetailsCopyField, UserDetailsPopup)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 563967,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 106571,
+      "command": "npm run test-harness",
+      "exit_code": 2,
+      "notes": "Requires the local stack up (API at http://localhost:8080) per the guide; connection refused in this environment: 'Cannot read GET /v1/config ... Failed to establish a new connection ... target machine actively refused it'. Infrastructure unreachable here, not a code failure. Guide says never skip this gate manually; it still needs to run against a live stack before the MR."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 4600,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: '→ No staged files found.' Nothing was staged in the working tree during this run (git status showed only untracked files). To run it for real, stage the changed files (git add) first, as the pre-commit hook does at commit time."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 7029,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2558 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 4592,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN locally to run the real scan; this check is still owed and only CI (or a configured local token) can settle it."
+    }
+  ],
+  "failures": {
+    "license-check": "> ai-assistant@0.0.0 license-check\n> npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;Python-2.0;CC-BY-4.0;Apache*;(MIT OR CC0-1.0);MulanPSL-2.0;MPL-2.0;LGPL-3.0-only;UNLICENSED'\n\nPackage \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted by the --onlyAllow flag. Exiting.",
+    "unit": "FAIL  |unit| src/components/Popup/__tests__/Popup.test.tsx > Popup — stacked dialogs > traps focus in the topmost (inner) dialog when two dialogs are stacked\nError: expect(element).toHaveFocus()\n\nExpected element with focus:\n  <input data-testid=\"folder-name\" placeholder=\"Folder name\" />\nReceived element with focus:\n  <button aria-label=\"Close\" class=\"p-dialog-header-icon p-dialog-header-close p-link\" data-pc-section=\"closebutton\" type=\"button\"><span aria-label=\"close icon\" /></button>\n at src/components/Popup/__tests__/Popup.test.tsx:267:25\n\nFAIL  |unit| src/components/Popup/__tests__/Popup.test.tsx > Popup — stacked dialogs > traps focus in the topmost (inner) dialog when two dialogs are stacked\nError: expect(element).toHaveFocus()\n\nExpected element with focus:\n  <button class=\"relative flex justify-center transition whitespace-nowrap rounded-lg border button min-w-14 bg-button-primary-bg hover:bg-button-primary-bg-hover text-text-accent py-0.5 px-3 has-[>svg:first-child]:pl-2 gap-1.5 items-center text-xs font-semibold leading-6 tracking-tight h-7\" type=\"button\">Create</button>\nReceived element with focus:\n  <input data-testid=\"folder-name\" placeholder=\"Folder name\" />\n at src/components/Popup/__tests__/Popup.test.tsx:273:23\n\n Test Files  1 failed | 799 passed (800)\n      Tests  1 failed | 8167 passed | 1 skipped (8169)\n   Start at  15:05:13\n   Duration  1273.43s (environment 36%, tests 22%, import 20%, setup 16%, transform 6%, worker 1%)"
+  }
+}
