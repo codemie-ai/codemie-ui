@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "task": "Remove the 'Models and usage' section (ProjectOverviewIndicators) from the project Overview tab in codemie-ui (EPMCDME-16612).",
+  "generated": "2026-11-04T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 11,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "The section also contains an always-shown integrations count card with a View link; the ticket does not say whether removing it is intended. One open question, minor rework risk. Scored M (below L, so not listed as high)." },
+    { "dimension": "file_change_estimate", "reason": "Delete ProjectOverviewIndicators.tsx and its test; modify ProjectOverviewSection.tsx, its test, and optionally ProjectDetailsPage.tsx for prop cleanup. All under one settings/administration directory tree." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

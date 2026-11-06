@@ -261,8 +261,6 @@ const ProjectDetailsPage = () => {
           isChargebackFeatureEnabled={isChargebackFeatureEnabled}
           costCentersEnabled={isCostCentersEnabled}
           canViewBudgets={canViewBudgets}
-          canManageProject={canManageProject}
-          isModelsConfigEnabled={isModelsConfigEnabled}
           spendingRows={canViewBudgets ? project.spending_widget?.data?.rows : undefined}
           onProjectChanged={loadProject}
         />

@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16612_remove-models-usage-section",
+  "head": "db96b78a5a02d2e393090ba6177a030a93a7faf7",
+  "runner": "npm",
+  "started_at": "2026-11-04T12:20:00Z",
+  "completed_at": "2026-11-04T12:40:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 57132,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29703,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "notes": "Skip if: no dependency added/removed/moved in diff"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 18769,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output: no leaks found"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 369514,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "8371 passed, 1 skipped"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 198833,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "642 passed, 1 skipped"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "notes": "Needs running stack and ~/.codemie/test-harness.json; still owed before MR"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 289,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "0 missing headers"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "notes": "Needs SonarQube infrastructure; only CI/commit hook settles it"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "notes": "Staged-file only; covered by full lint"
+    }
+  ],
+  "failures": {}
+}

@@ -50,10 +50,6 @@ vi.mock('@/pages/analytics/components/widgets/SpendingProgressBar', () => ({
   default: () => <div />,
 }))
 
-vi.mock('../components/ProjectOverviewIndicators', () => ({
-  default: () => <div />,
-}))
-
 vi.mock('../ProjectBudgetsSection', () => ({
   ProjectBudgetManagementControl: () => <div />,
 }))
@@ -74,7 +70,6 @@ const renderOverview = (overrides: Partial<ProjectDetail> = {}) =>
       onCostCenterOpen={vi.fn()}
       budgetsAccess="view"
       canViewBudgets={false}
-      canManageProject={false}
     />
   )
 
@@ -139,7 +134,6 @@ describe('ProjectOverviewSection spend qualification', () => {
         onCostCenterOpen={vi.fn()}
         budgetsAccess="view"
         canViewBudgets
-        canManageProject={false}
       />
     )
 

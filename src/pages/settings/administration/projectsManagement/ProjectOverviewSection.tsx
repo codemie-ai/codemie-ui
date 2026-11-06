@@ -28,7 +28,6 @@ import { formatSpendQualificationSuffix } from '@/utils/analyticsFormatters'
 import { formatDateTime, pluralize } from '@/utils/helpers'
 import { displayValue } from '@/utils/utils'
 
-import ProjectOverviewIndicators from './components/ProjectOverviewIndicators'
 import {
   formatCurrency,
   getSpendColor,
@@ -207,8 +206,6 @@ interface Props {
   isChargebackFeatureEnabled?: boolean
   costCentersEnabled?: boolean
   canViewBudgets: boolean
-  canManageProject: boolean
-  isModelsConfigEnabled?: boolean
   spendingRows?: ProjectSpendingWidgetRow[]
   /** Reload the project after a budget save — chargeback settings live on the project. */
   onProjectChanged?: () => void | Promise<void>
@@ -250,8 +247,6 @@ const ProjectOverviewSection: FC<Props> = ({
   isChargebackFeatureEnabled,
   costCentersEnabled,
   canViewBudgets,
-  canManageProject,
-  isModelsConfigEnabled = false,
   spendingRows = [],
   onProjectChanged,
 }) => {
@@ -496,12 +491,6 @@ const ProjectOverviewSection: FC<Props> = ({
             </div>
           </section>
         </div>
-
-        <ProjectOverviewIndicators
-          projectName={project.name}
-          canManageProject={canManageProject}
-          isModelsConfigEnabled={isModelsConfigEnabled}
-        />
 
         {!isPersonalProject && (
           <section>

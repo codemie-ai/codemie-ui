@@ -1,0 +1,92 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; 0 findings"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; 0 findings"
+    }
+  ],
+  "reviewed_head": "db96b78a5a02d2e393090ba6177a030a93a7faf7",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case and acceptance lenses (compact profile) ran clean with no findings; all four acceptance criteria pass and the gate criterion is pending-stage-7. 0 deferred, 0 dismissed.",
+  "confidence": "high",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "1. Overview tab shows no Models and usage section or cards",
+      "status": "pass",
+      "notes": "Render removed from ProjectOverviewSection; component deleted."
+    },
+    {
+      "kind": "story-ac",
+      "item": "2. Component and test deleted, no references remain",
+      "status": "pass",
+      "notes": "Both files deleted; no remaining references found."
+    },
+    {
+      "kind": "story-ac",
+      "item": "3. ProjectOverviewSection drops canManageProject/isModelsConfigEnabled; page no longer passes them",
+      "status": "pass",
+      "notes": "Props removed from interface, destructuring, call site and tests."
+    },
+    {
+      "kind": "story-ac",
+      "item": "4. Models tab, Integrations tab, member overrides unchanged",
+      "status": "pass",
+      "notes": "Page-level flag uses and ProjectMembersManager untouched."
+    },
+    {
+      "kind": "story-ac",
+      "item": "5. Type-check, lint, unit tests pass; Test Files line quoted",
+      "status": "pending-stage-7",
+      "notes": "Requires running gates."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case and acceptance lenses (compact profile) ran clean with no findings; all four acceptance criteria pass and the gate criterion is pending-stage-7. 0 deferred, 0 dismissed.",
+    "confidence": "high",
+    "risk_flags": []
+  }
+}
