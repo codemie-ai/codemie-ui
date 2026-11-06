@@ -1,0 +1,3 @@
+# Deferred from code review — 2026-09-14-epmcdme-14856-datasource-type-dropdown-black-bg (2026-09-15)
+
+- **Provider/static-type id collision can produce duplicate Autocomplete options** — `src/pages/dataSources/components/DataSourceTypeSelector.tsx:79-87` — a dynamic provider's id can collide with a static `INDEX_TYPES` value, producing two options with the same `value`; `options.find(value)` then resolves the wrong duplicate, and its label mismatch can make selection styling fall back to the unstyled/string-value branch again. Pre-existing: the un-deduplicated options merge predates this narrow Autocomplete/`ptPreset.ts` styling fix and is out of its scope.

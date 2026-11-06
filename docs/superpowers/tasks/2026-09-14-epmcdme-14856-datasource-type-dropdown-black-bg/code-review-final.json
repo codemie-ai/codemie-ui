@@ -1,0 +1,63 @@
+{
+  "decision": "request-changes",
+  "rationale": "CR-001 (major, patch): the ptPreset.ts token swap in commit 1bc4cdcda that fixed the pure-black selected item replaced it with bg-surface-interactive-active (#1A1A1A dark), which computes to ~1.09:1 contrast against the panel bg-surface-base-secondary (#212224 dark) -- far below WCAG 1.4.11's 3:1 minimum, and the same near-invisible pairing already documented as a contrast failure for this exact token in EPMCDME-8547; a purpose-built higher-contrast token (bg-surface-specific-dropdown-focused, #888888 dark) already exists in this codebase for this exact case. The acceptance lens file predates this commit and still cites the superseded bg-surface-base-navigation token, so AC1/AC2 were re-graded directly against current source instead of trusted as-is, which caps confidence at low; AC4 independently stays partial on the unenforced options referential-stability invariant. 1 finding deferred as pre-existing (provider/static-type id collision in DataSourceTypeSelector's un-deduplicated options merge, out of this styling fix's scope) and 1 dismissed as noise (the referential-stability edge case, reconfirmed unreachable -- all current Autocomplete call sites are referentially stable per the prior review round's exhaustive check, and this round's diff does not touch option-passing logic).",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: reopening dropdown after Description-textarea blur no longer shows black/unthemed selected item",
+      "status": "pending-stage-7",
+      "notes": "Token swapped off pure black; real dark-theme browser confirmation still belongs to stage 7. See CR-001: the replacement value is separately near-invisible against the panel."
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: every item background state resolves to an existing semantic Tailwind token, no raw/hex color",
+      "status": "pass",
+      "notes": "Current ptPreset.ts item callback uses only bg-surface-interactive-active / hover:bg-surface-specific-dropdown-hover / text-text-primary tokens. Token choice's contrast is flagged separately as CR-001."
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: automated regression test drives DataSourceTypeSelector through open->blur to Description->reopen and asserts selected token class",
+      "status": "pass",
+      "notes": "DataSourceTypeSelector.test.tsx updated in 1bc4cdcda to assert bg-surface-interactive-active retained (and bg-surface-base-navigation absent) after reopen; p-highlight/p-focus absent."
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: no regression to Select/Dropdown family; other Autocomplete consumers inherit the corrected shared styling",
+      "status": "partial",
+      "notes": "Select/Dropdown files untouched, holds by inspection. Fix still relies on an unenforced (only JSDoc-documented) referential-stability invariant for options across all consumers."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not expected for the compact review profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not expected for the compact review profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not expected for the compact review profile."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/form/Autocomplete/ptPreset.ts",
+      "line": 63,
+      "title": "Selected item background fails contrast in dark theme",
+      "problem": "The selected-item token was swapped from bg-surface-base-navigation (pure black, #000000 dark) to bg-surface-interactive-active, which resolves to neutral['925'] = #1A1A1A in dark theme, rendered inside the Autocomplete panel whose background (bg-surface-base-secondary) is neutral['875'] = #212224.",
+      "impact": "The computed contrast ratio between #1A1A1A and #212224 is ~1.09:1, far below the WCAG 1.4.11 non-text-contrast minimum of 3:1 -- the same token pairing already measured and documented as a contrast failure (~1.1:1) for the sibling Dropdown/MultiSelect focus state in EPMCDME-8547. The selected item is now visually almost indistinguishable from the panel background in dark theme, so while the literal pure-black glitch is gone, the selected-state affordance itself is effectively invisible.",
+      "recommendation": "Use a token proven to meet 3:1 against the dark panel background, e.g. bg-surface-specific-dropdown-focused (neutral['525'] = #888888 dark), which EPMCDME-8547 already introduced for exactly this class of dropdown-item contrast problem in the sibling Dropdown/MultiSelect presets, and verify the resulting ratio against #212224 in both themes."
+    }
+  ]
+}

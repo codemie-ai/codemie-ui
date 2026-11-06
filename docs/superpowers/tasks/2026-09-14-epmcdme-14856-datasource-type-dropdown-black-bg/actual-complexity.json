@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-09-15T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 15,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 9,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "Fix touches PrimeReact AutoComplete's reference-identity selection tracking inside the shared Autocomplete.tsx component — no prior precedent in the codebase for this object-identity-vs-string gotcha; behavior change lands in a component reused across many forms/workflows, so it carries moderate regression risk beyond the datasource-type dropdown that motivated it." },
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 9 files changed (Autocomplete.tsx fix, new DataSourceTypeSelector regression test, .gitignore, plus SDLC pipeline artifacts: spec.md, plan.md, technical-analysis.md, complexity-assessment.json, decisions.jsonl, events.jsonl), which maps to the 7-10 file L band per the diffstat-to-score mapping." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: touches core shared UI component (src/components/form/Autocomplete/Autocomplete.tsx), a form primitive reused across multiple product areas/workflows."
+  ],
+  "split_recommendation": null
+}

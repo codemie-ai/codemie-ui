@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "task": "Fix a black background on the selected Datasource Type Autocomplete dropdown item after the Description textarea is clicked and the dropdown is reopened.",
+  "generated": "2026-09-14T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Fix lands in the Autocomplete component's ptPreset.ts pass-through styling (and possibly the global primeReactPtOptions in src/constants/theme.ts) — a shared, reusable form primitive under src/components/form/, not a page-local file, so a change here is scoped as touching core shared UI utilities even though only one interaction bug is being fixed." },
+    { "dimension": "technical_risk", "reason": "Root cause is an established, well-documented pattern (PrimeReact pt overrides plus Tailwind semantic theme tokens per theme-management.md), so novelty is low, but no test exists for DataSourceTypeSelector or for the specific cross-field focus/blur interaction sequence the acceptance criteria describe — that defensive-test gap pushes risk up one notch." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: fix touches Autocomplete, a shared/reusable form primitive (core shared utility), via its ptPreset.ts pass-through styling module.",
+    "Technical Risk bumped from S to M: acceptance criteria include an edge case (no regression to other dropdowns / specific focus-then-reopen sequence) with no existing test template covering that cross-field focus interaction."
+  ],
+  "split_recommendation": null
+}

@@ -53,7 +53,18 @@ const preset: PrimeReactPTOptions['autocomplete'] = {
     className: [
       'text-sm rounded-lg py-1.5 pl-2.5 mx-2 text-text-primary cursor-pointer hover:bg-surface-specific-dropdown-hover hover:text-text-accent transition',
       'overflow-hidden whitespace-nowrap truncate',
-      { 'bg-surface-base-navigation text-text-primary': context.selected },
+      // `surface-base-navigation` (the token this used before) is scoped to nav bar
+      // / selected nav items and resolves to pure black (`0 0 0`) in dark theme.
+      // AutoComplete's item context never carries a `focused` flag (unlike Dropdown
+      // and MultiSelect, which mask this token behind a `focused && selected` case),
+      // so it was the only style ever shown for the selected item — rendering as a
+      // solid black row on every open (EPMCDME-14856). `surface-specific-dropdown-focused`
+      // is the token EPMCDME-8547 introduced for exactly this dropdown-item contrast
+      // case in the sibling Dropdown/MultiSelect presets (~3:1+ against the panel
+      // background in both themes) — `surface-interactive-active` (#1A1A1A dark)
+      // was tried first but is itself only ~1.09:1 against the panel (#212224),
+      // effectively invisible.
+      { 'bg-surface-specific-dropdown-focused text-text-primary': context.selected },
     ],
   }),
   list: { className: 'show-scroll max-h-[200px] overflow-auto' },

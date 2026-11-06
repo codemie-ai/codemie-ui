@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14856_datasource-type-dropdown-black-bg",
+  "head": "bb2f149de99b901920a6cd384eab0f435ce73bf8",
+  "runner": "npm",
+  "started_at": "2026-09-15T12:50:07Z",
+  "completed_at": "2026-09-15T15:34:00Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 82488,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 42512,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 6474,
+      "command": "npm run license-check",
+      "exit_code": 1,
+      "notes": "Reproduced identically to the prior gate run on this branch (head 13d94d41f): fails only via `npm run` on this machine because npm's script-shell resolves to cmd.exe (`npm config get script-shell` -> null -> cmd.exe default), which does not treat the single-quoted, semicolon-delimited --onlyAllow list as one token, so license-checker sees a truncated allow list and rejects the first-scanned package (@adobe/css-tools@4.5.0, MIT). This is an environment/script-shell quoting defect on Windows, not a licensing violation introduced by this branch, but the command fails verbatim as specified in the guide, so it is reported as FAIL per the literal Fail criterion."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 38669,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 839999,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "Authoritative isolated re-run (not concurrent with other gates). Single failure: src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts > 'recognises the surfaces that already carry the host'. Root cause: the guard test builds relative paths with Node's path.relative(), which yields backslash separators on Windows (e.g. 'components\\\\Popup\\\\Popup.tsx'), then asserts against a hardcoded forward-slash literal, so it can never match on a Windows checkout. Not touched by this branch's diff (git diff origin/main...HEAD excludes this file); pre-existing, OS-specific test bug, identical to the diagnosis recorded in the prior gate run on this branch. Note: an earlier attempt that ran this gate concurrently with the integration gate additionally surfaced 2 flaky timeouts in src/pages/integrations/components/SettingsForm/__tests__/SettingsForm.autoFill.test.tsx (resource contention under concurrent load); those did not reproduce when the file was re-run in isolation, so they are not counted here — this record reflects the clean, isolated run."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 586829,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "n/a",
+      "notes": "UI surface changed (src/components/form/Autocomplete/Autocomplete.tsx, src/components/form/Autocomplete/ptPreset.ts, src/pages/dataSources/components/__tests__/DataSourceTypeSelector.test.tsx match ui_globs) but no configured UI test script (`test:ui`) exists in package.json; browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 5596,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2862,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: script printed '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' and exited 0 without scanning. Requires SONAR_TOKEN to be set locally (and network access to the SonarQube server) to run for real; this environment has neither configured. CI still owes this check."
+    }
+  ],
+  "failures": {
+    "license-check": "> ai-assistant@0.0.0 license-check\n> npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;Python-2.0;CC-BY-4.0;Apache*;(MIT OR CC0-1.0);MulanPSL-2.0;MPL-2.0;LGPL-3.0-only;UNLICENSED'\n\nPackage \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted by the --onlyAllow flag. Exiting.",
+    "unit": " Test Files  1 failed | 545 passed (546)\n      Tests  1 failed | 5620 passed (5621)\n\n FAIL  |unit| src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts > modal surfaces host the live region > recognises the surfaces that already carry the host\nAssertionError: expected [ …(2) ] to include 'components/Popup/Popup.tsx'\n ❯ src/components/appLevel/ToasterAnnouncer/__tests__/modalSurfaces.guard.test.ts:73:23\n     71|       .map(({ path }) => path)\n     72|\n     73|     expect(declaring).toContain('components/Popup/Popup.tsx')\n       |                       ^\n     74|     expect(declaring).toContain('components/Navigation/NavigationProfi…\n     75|   })\n\n   Start at  15:04:15 (isolated re-run)\n   Duration  828.07s (transform 91.51s, setup 380.19s, collect 3641.27s, tests 410.37s, environment 869.02s, prepare 196.08s)"
+  }
+}

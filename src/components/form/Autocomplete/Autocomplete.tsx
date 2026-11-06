@@ -30,6 +30,19 @@ export interface AutocompleteProps {
   name?: string
   value?: string
   onChange?: (value: string) => void
+  /**
+   * The full list of selectable options.
+   *
+   * Must be referentially stable across renders for the currently-selected option
+   * (e.g. memoized with `useMemo`/`useCallback`, or sourced from a module-level
+   * constant) — do not pass a fresh array/object literal computed inline on every
+   * render. Selection-identity tracking (see the `autocompleteValue` derivation
+   * below) matches the selected option by comparing it against entries in this
+   * array; passing a new array every render still works for typing/filtering,
+   * but can make PrimeReact briefly treat the selected item as unselected/
+   * unstyled on the option object itself (EPMCDME-14856) until it re-resolves
+   * via another selection event.
+   */
   options?: FilterOption[]
   placeholder?: string
   className?: string
@@ -199,12 +212,30 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
       }
     }
 
+    // PrimeReact tracks "is this item selected?" (both its own internal state and
+    // the `context.selected` seen by ptPreset.ts's `item` callback) by comparing its
+    // last-known selected value against each suggestion object — by reference for
+    // the pt context, by deep-equality internally. Passing the bare label string
+    // here (e.g. "Git") can never match a `{ value, label }` suggestion object, so
+    // PrimeReact only learns the *real* selected option after some other event
+    // (like `forceSelection` on blur) happens to select it via the object identity
+    // path — until then, the previously-selected item silently renders unselected/
+    // unstyled instead of picking up the `bg-surface-base-navigation` token
+    // (EPMCDME-14856). Pass the matching option object whenever the visible text
+    // still IS that option's label (the idle/just-opened state) so selection
+    // tracking is correct from the very first open. The moment the user types
+    // something else, textValue diverges from the option's label and we fall back
+    // to the plain string so filtering/typing keeps working exactly as before.
+    const selectedOption = options.find((option) => option.value === value)
+    const autocompleteValue =
+      selectedOption && selectedOption.label === textValue ? selectedOption : textValue
+
     const autocompleteElement = (
       <AutoComplete
         ref={autocompleteEl}
         id={id}
         name={name}
-        value={textValue}
+        value={autocompleteValue}
         suggestions={filteredOptions}
         completeMethod={search}
         onChange={(e) => setTextValue(e.value as unknown as string)}

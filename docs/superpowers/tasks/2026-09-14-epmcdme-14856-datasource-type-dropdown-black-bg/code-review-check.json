@@ -1,0 +1,57 @@
+{
+  "decision": "approve",
+  "rationale": "CR-001 (the sole prior blocking finding) is resolved: commit bb2f149de swaps the selected-item token in src/components/form/Autocomplete/ptPreset.ts:67 from bg-surface-interactive-active (~1.09:1 against the panel) to bg-surface-specific-dropdown-focused. Current source and tailwind.config.ts confirm that token resolves to neutral['525'] = #888888 in dark theme against the panel's neutral['875'] = #212224 (~4.8:1, clears the 3:1 WCAG 1.4.11 minimum) -- the same value already used for the proven dropdown-focused state in the sibling Dropdown (src/styles/presets/lara/dropdown/index.ts) and MultiSelect (src/components/form/MultiSelect/ptPreset.ts) presets from EPMCDME-8547. The regression test in DataSourceTypeSelector.test.tsx was updated in the same commit to assert the new class on both first-open and reopen-after-blur. All 1 blocking finding graded within budget; no new findings raised (fix stayed scoped to the token and its test). business_review and standards_review carried forward unchanged from the prior verdict per the check-round contract.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: reopening dropdown after Description-textarea blur no longer shows black/unthemed selected item",
+      "status": "pending-stage-7",
+      "notes": "Token swapped off pure black; real dark-theme browser confirmation still belongs to stage 7. See CR-001: the replacement value is separately near-invisible against the panel."
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: every item background state resolves to an existing semantic Tailwind token, no raw/hex color",
+      "status": "pass",
+      "notes": "Current ptPreset.ts item callback uses only bg-surface-interactive-active / hover:bg-surface-specific-dropdown-hover / text-text-primary tokens. Token choice's contrast is flagged separately as CR-001."
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: automated regression test drives DataSourceTypeSelector through open->blur to Description->reopen and asserts selected token class",
+      "status": "pass",
+      "notes": "DataSourceTypeSelector.test.tsx updated in 1bc4cdcda to assert bg-surface-interactive-active retained (and bg-surface-base-navigation absent) after reopen; p-highlight/p-focus absent."
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: no regression to Select/Dropdown family; other Autocomplete consumers inherit the corrected shared styling",
+      "status": "partial",
+      "notes": "Select/Dropdown files untouched, holds by inspection. Fix still relies on an unenforced (only JSDoc-documented) referential-stability invariant for options across all consumers."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not expected for the compact review profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not expected for the compact review profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not expected for the compact review profile."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "ptPreset.ts:67 now uses bg-surface-specific-dropdown-focused (neutral 525, #888888 dark), confirmed in tailwind.config.ts (~4.8:1 against panel #212224), matching the token already proven by EPMCDME-8547 in the sibling Dropdown/MultiSelect presets. Test updated to assert the new class on open and reopen."
+    }
+  ]
+}
