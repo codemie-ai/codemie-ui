@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "generated": "2026-11-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 16,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 9,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Delivered work spans the AgentWorkspaceBrowserPopup, a new workspacePreview helper module (PreviewKind enum, front-matter split, safe JSON formatting, image helpers), the shared CodeBlock and CodeBlockExpandPopup (new optional hideDownload prop) and the shared FILE_EXTENSIONS map (exported, log/diff added), plus reuse of ExpandedYamlShell. Baseline M (3-4 components, one layer), bumped to L because shared components used across the app were changed." },
+    { "dimension": "file_change_estimate", "reason": "About 9 source files: 2 new (workspacePreview.ts, __tests__/workspacePreview.test.ts) and 7 modified (AgentWorkspaceBrowserPopup.tsx, ChatHeaderBrowseFilesButton.test.tsx, CodeBlock.tsx, CodeBlockExpandPopup.tsx, fileExtensions.ts, CodeBlock.integration.test.tsx, CodeBlockExpandPopup.test.tsx) in 2 directories (pages/chat/.../ChatHeader, components/CodeBlock). Committed planning artifacts under docs/superpowers/tasks are left out of the count. The count comes from source inspection because no diffstat was supplied, so it is an estimate. 7-10 files maps to L." },
+    { "dimension": "technical_risk", "reason": "Established patterns cover the rendering: the sanitized Markdown component, CodeBlock highlighting and ExpandedYamlShell. New logic includes BOM- and empty-front-matter-tolerant regex parsing, keeping unsafe large integers in JSON unformatted, and whole-name matching for Dockerfile and dotfiles. An additive optional prop on a widely used shared CodeBlock adds blast radius. Parameterized test templates (it.each) already exist, so the edge-case cases add no bump." },
+    { "dimension": "requirements_clarity", "reason": "Core acceptance criteria were clear, but MR !2230 review forced design rework: reuse of the shared extension map and CodeBlock instead of a custom text renderer, and the shared popup instead of in-place enlarge with a capture-phase Esc listener. The spec was then revised. That is gap-driven rework at M level." },
+    { "dimension": "summary", "reason": "Supersedes the earlier pre-review actual (total 12, S, 4 files). The bundled S calibration example (epmcdme-10102, 3 files, additive) is clearly smaller than this delivery, which supports M. UI layer only, no new dependencies." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: touches core shared UI components (CodeBlock, CodeBlockExpandPopup, FILE_EXTENSIONS)"
+  ],
+  "split_recommendation": null
+}

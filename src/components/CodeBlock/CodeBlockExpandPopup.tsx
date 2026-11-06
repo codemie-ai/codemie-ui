@@ -36,6 +36,7 @@ interface CodeBlockExpandPopupProps {
   text: string
   downloadFilename?: string
   expandWithEditor?: boolean
+  hideDownload?: boolean
 }
 
 const CodeBlockExpandPopup: FC<CodeBlockExpandPopupProps> = ({
@@ -47,6 +48,7 @@ const CodeBlockExpandPopup: FC<CodeBlockExpandPopupProps> = ({
   text,
   downloadFilename,
   expandWithEditor,
+  hideDownload,
 }) => {
   const popupLabel = label ?? title ?? (language ? language.toUpperCase() : 'Code')
 
@@ -80,16 +82,18 @@ const CodeBlockExpandPopup: FC<CodeBlockExpandPopupProps> = ({
               <CopySvg className="mr-0.5" />{' '}
               <span className="code-block-header-btn-label">Copy</span>
             </Button>
-            <Button
-              variant="secondary"
-              className="!px-2"
-              data-tooltip-id="react-tooltip"
-              data-tooltip-place="bottom"
-              data-tooltip-content={`Download as ${fileLanguage.toLowerCase()}`}
-              onClick={downloadCode}
-            >
-              <DownloadSvg /> <span className="code-block-header-btn-label">Download</span>
-            </Button>
+            {!hideDownload && (
+              <Button
+                variant="secondary"
+                className="!px-2"
+                data-tooltip-id="react-tooltip"
+                data-tooltip-place="bottom"
+                data-tooltip-content={`Download as ${fileLanguage.toLowerCase()}`}
+                onClick={downloadCode}
+              >
+                <DownloadSvg /> <span className="code-block-header-btn-label">Download</span>
+              </Button>
+            )}
           </>
         }
       />
@@ -104,6 +108,7 @@ const CodeBlockExpandPopup: FC<CodeBlockExpandPopupProps> = ({
         title={title}
         downloadFilename={downloadFilename}
         isInExpandPopup
+        hideDownload={hideDownload}
       />
     </ExpandedYamlShell>
   )

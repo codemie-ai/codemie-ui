@@ -165,6 +165,18 @@ describe('CodeBlock Download tooltip placement', () => {
   })
 })
 
+describe('CodeBlock hideDownload prop', () => {
+  afterEach(cleanup)
+
+  it('hides only the Download button', () => {
+    const { queryByText, getByText } = render(
+      <CodeBlock text="const x = 1;" language="js" hideDownload />
+    )
+    expect(queryByText('Download')).not.toBeInTheDocument()
+    expect(getByText('Copy')).toBeInTheDocument()
+  })
+})
+
 describe('CodeBlock headerBadge prop', () => {
   afterEach(cleanup)
 

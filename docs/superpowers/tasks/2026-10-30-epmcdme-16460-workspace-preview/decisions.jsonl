@@ -1,0 +1,4 @@
+{"ts":"2026-10-30T14:21:21Z","gate_id":"spec.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved spec","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-30T14:27:20Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved plan","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-30T14:40:09Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"request-changes","rationale":"Review found 2 findings (front matter empty/BOM, JSON large integers); fixed inline, check round follows","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-10-30T15:03:25Z","gate_id":"code-review.check","mode":"hitl","verdict":{"decision":"approve","rationale":"Check round approved; CR-001 and CR-002 resolved","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

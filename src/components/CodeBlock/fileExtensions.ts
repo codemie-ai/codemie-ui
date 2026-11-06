@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-const FILE_EXTENSIONS = {
+export const FILE_EXTENSIONS = {
   javascript: 'js',
   typescript: 'ts',
   python: 'py',
@@ -119,6 +119,8 @@ const FILE_EXTENSIONS = {
   velocity: 'vm',
   freemarker: 'ftl',
   txt: 'txt',
+  log: 'log',
+  diff: 'diff',
   mermaid: 'mermaid',
 } as const
 

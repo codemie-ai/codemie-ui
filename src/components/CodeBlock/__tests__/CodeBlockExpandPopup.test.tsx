@@ -57,6 +57,24 @@ describe('CodeBlockExpandPopup', () => {
     expect(getPopupHeader()).toHaveTextContent('YAML Configuration')
   })
 
+  it.each([false, true])(
+    'passes hideDownload to the expanded view (expandWithEditor: %s)',
+    (expandWithEditor) => {
+      render(
+        <CodeBlockExpandPopup
+          isVisible
+          onHide={() => {}}
+          text="const x = 1;"
+          language="js"
+          expandWithEditor={expandWithEditor}
+          hideDownload
+        />
+      )
+      expect(screen.queryByText('Download')).not.toBeInTheDocument()
+      expect(screen.getByText('Copy')).toBeInTheDocument()
+    }
+  )
+
   it('passes isInExpandPopup to the inner CodeBlock so Download tooltip avoids the close icon', () => {
     const { getByText } = render(
       <CodeBlockExpandPopup isVisible onHide={() => {}} text="const x = 1;" language="js" />

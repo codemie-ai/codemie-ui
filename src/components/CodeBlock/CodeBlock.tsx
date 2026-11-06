@@ -49,6 +49,7 @@ interface CodeBlockProps {
   expandWithEditor?: boolean
   isInExpandPopup?: boolean
   headerBadge?: ReactNode
+  hideDownload?: boolean
 }
 
 const CodeBlock: FC<CodeBlockProps> = ({
@@ -68,6 +69,7 @@ const CodeBlock: FC<CodeBlockProps> = ({
   expandWithEditor,
   isInExpandPopup,
   headerBadge,
+  hideDownload,
 }) => {
   const [isHtmlPopupVisible, setIsHtmlPopupVisible] = useState(false)
   const [isExpandPopupVisible, setIsExpandPopupVisible] = useState(false)
@@ -166,16 +168,18 @@ const CodeBlock: FC<CodeBlockProps> = ({
               <span className="code-block-header-btn-label">Copy</span>
             </Button>
 
-            <Button
-              type="secondary"
-              className="!px-2"
-              data-tooltip-id="react-tooltip"
-              data-tooltip-place={isInExpandPopup ? 'bottom' : 'top'}
-              data-tooltip-content={`Download as ${displayLanguage}`}
-              onClick={downloadCode}
-            >
-              <DownloadSvg /> <span className="code-block-header-btn-label">Download</span>
-            </Button>
+            {!hideDownload && (
+              <Button
+                type="secondary"
+                className="!px-2"
+                data-tooltip-id="react-tooltip"
+                data-tooltip-place={isInExpandPopup ? 'bottom' : 'top'}
+                data-tooltip-content={`Download as ${displayLanguage}`}
+                onClick={downloadCode}
+              >
+                <DownloadSvg /> <span className="code-block-header-btn-label">Download</span>
+              </Button>
+            )}
 
             {headerActionsLast && headerActionsTemplate}
           </div>
@@ -207,6 +211,7 @@ const CodeBlock: FC<CodeBlockProps> = ({
           text={text}
           downloadFilename={downloadFilename}
           expandWithEditor={expandWithEditor}
+          hideDownload={hideDownload}
         />
       )}
     </div>

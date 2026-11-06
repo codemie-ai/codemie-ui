@@ -13,16 +13,32 @@
 // limitations under the License.
 //
 
-import { FC, useEffect } from 'react'
+import { FC, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
 
 import DownloadSvg from '@/assets/icons/download.svg?react'
+import ExpandSvg from '@/assets/icons/expand.svg?react'
 import FileSvg from '@/assets/icons/file.svg?react'
 import Button from '@/components/Button'
+import CodeBlock from '@/components/CodeBlock'
+import { FileExtension } from '@/components/CodeBlock/fileExtensions'
+import ExpandedYamlShell from '@/components/ExpandedYaml/ExpandedYamlShell'
+import Markdown from '@/components/markdown/Markdown'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner/Spinner'
 import { agentWorkspaceStore } from '@/store/agentWorkspace'
+import { AgentWorkspaceFileContent } from '@/types/entity/agentWorkspace'
 import { cn } from '@/utils/utils'
+
+import {
+  buildTextPreview,
+  canPreviewAsImage,
+  formatFileSize,
+  getImagePreviewSrc,
+  getPathExtension,
+  getPreviewKind,
+  PreviewKind,
+} from './workspacePreview'
 
 interface AgentWorkspaceBrowserPopupProps {
   visible: boolean
@@ -30,79 +46,67 @@ interface AgentWorkspaceBrowserPopupProps {
   onHide: () => void
 }
 
-const TEXT_PREVIEWABLE_EXTENSIONS = ['txt', 'py', 'js'] as const
-const IMAGE_PREVIEWABLE_EXTENSIONS = [
-  'apng',
-  'avif',
-  'bmp',
-  'gif',
-  'ico',
-  'jpeg',
-  'jpg',
-  'png',
-  'svg',
-  'webp',
-] as const
-
-const IMAGE_MIME_TYPES_BY_EXTENSION: Record<(typeof IMAGE_PREVIEWABLE_EXTENSIONS)[number], string> =
-  {
-    apng: 'image/apng',
-    avif: 'image/avif',
-    bmp: 'image/bmp',
-    gif: 'image/gif',
-    ico: 'image/x-icon',
-    jpeg: 'image/jpeg',
-    jpg: 'image/jpeg',
-    png: 'image/png',
-    svg: 'image/svg+xml',
-    webp: 'image/webp',
-  }
-
-const getFileExtension = (path: string) => {
-  return path.split('.').pop()?.toLowerCase() ?? ''
+interface MarkdownPreviewProps {
+  frontMatter: string | null
+  body: string
+  // Fill the expanded popup instead of the inline minimum height
+  fill?: boolean
 }
 
-const isImageMimeType = (mimeType?: string | null) => {
-  return mimeType?.toLowerCase().startsWith('image/') ?? false
-}
+const MarkdownPreview: FC<MarkdownPreviewProps> = ({ frontMatter, body, fill }) => (
+  <div
+    data-testid="workspace-preview"
+    className={cn(
+      'overflow-auto rounded-lg border border-border-specific-panel-outline bg-surface-base-secondary p-4 shadow-block',
+      fill ? 'min-h-0 flex-1' : 'min-h-[240px]'
+    )}
+  >
+    {frontMatter !== null && (
+      <pre
+        data-testid="workspace-preview-frontmatter"
+        className="m-0 mb-4 whitespace-pre-wrap break-words border-b border-border-structural pb-4 font-mono text-xs leading-5 text-text-primary"
+      >
+        {frontMatter}
+      </pre>
+    )}
+    <div data-testid="workspace-preview-markdown">
+      <Markdown content={body} />
+    </div>
+  </div>
+)
 
-const getNormalizedImageMimeType = (path: string, mimeType?: string | null) => {
-  const normalizedMimeType = mimeType?.toLowerCase()
-
-  if (normalizedMimeType?.startsWith('image/')) return normalizedMimeType
-
-  const extension = getFileExtension(path) as keyof typeof IMAGE_MIME_TYPES_BY_EXTENSION
-
-  return IMAGE_MIME_TYPES_BY_EXTENSION[extension] ?? 'image/*'
-}
-
-const getImagePreviewSrc = ({
-  path,
-  content,
-  mimeType,
-  isBinary,
-}: {
+interface ImagePreviewProps {
   path: string
-  content: string
-  mimeType?: string | null
-  isBinary: boolean
-}) => {
-  if (content.startsWith('data:')) return content
-
-  const normalizedMimeType = getNormalizedImageMimeType(path, mimeType)
-  const normalizedContent = isBinary ? content.replace(/\s+/g, '') : content
-
-  if (normalizedMimeType === 'image/svg+xml' && !isBinary) {
-    return `data:${normalizedMimeType};charset=utf-8,${encodeURIComponent(normalizedContent)}`
-  }
-
-  return `data:${normalizedMimeType};base64,${normalizedContent}`
+  file: AgentWorkspaceFileContent | null
+  previewUrl: string | null
+  // Fill the expanded popup instead of the inline 60vh cap
+  fill?: boolean
 }
 
-const formatFileSize = (size?: number) => {
-  if (size == null) return 'Unknown size'
-  return `${size.toLocaleString()} bytes`
-}
+const ImagePreview: FC<ImagePreviewProps> = ({ path, file, previewUrl, fill }) => (
+  <div
+    data-testid="workspace-preview"
+    className={cn(
+      'flex items-center justify-center overflow-auto rounded-lg border border-border-specific-panel-outline bg-surface-base-secondary p-4 shadow-block',
+      fill ? 'min-h-0 flex-1' : 'min-h-[240px]'
+    )}
+  >
+    <img
+      data-testid="workspace-preview-image"
+      src={
+        previewUrl ||
+        getImagePreviewSrc({
+          path,
+          content: file?.content ?? '',
+          mimeType: file?.mime_type,
+          isBinary: file?.is_binary ?? true,
+        })
+      }
+      alt={path.split('/').pop() ?? 'Selected workspace file preview'}
+      className={cn('max-w-full rounded-md object-contain', fill ? 'max-h-full' : 'max-h-[60vh]')}
+    />
+  </div>
+)
 
 const AgentWorkspaceBrowserPopup: FC<AgentWorkspaceBrowserPopupProps> = ({
   visible,
@@ -128,21 +132,34 @@ const AgentWorkspaceBrowserPopup: FC<AgentWorkspaceBrowserPopupProps> = ({
     agentWorkspaceStore.openForConversation(conversationId)
   }, [conversationId, visible])
 
-  const isTextPreviewAvailable =
-    !!selectedFilePath &&
-    !selectedFile?.is_binary &&
-    typeof selectedFile?.content === 'string' &&
-    TEXT_PREVIEWABLE_EXTENSIONS.includes(
-      getFileExtension(selectedFilePath) as (typeof TEXT_PREVIEWABLE_EXTENSIONS)[number]
-    )
+  const selectedContent = selectedFile?.content
+  const previewKind =
+    !!selectedFilePath && !selectedFile?.is_binary && typeof selectedContent === 'string'
+      ? getPreviewKind(selectedFilePath)
+      : null
 
-  const isImagePreviewAvailable =
-    !!selectedFilePath &&
-    (!!selectedFilePreviewUrl || typeof selectedFile?.content === 'string') &&
-    (isImageMimeType(selectedFile?.mime_type) ||
-      IMAGE_PREVIEWABLE_EXTENSIONS.includes(
-        getFileExtension(selectedFilePath) as (typeof IMAGE_PREVIEWABLE_EXTENSIONS)[number]
-      ))
+  const textPreview = useMemo(
+    () => buildTextPreview(previewKind, selectedContent),
+    [previewKind, selectedContent]
+  )
+
+  const isImagePreviewAvailable = canPreviewAsImage({
+    path: selectedFilePath,
+    hasData: !!selectedFilePreviewUrl || typeof selectedContent === 'string',
+    mimeType: selectedFile?.mime_type,
+  })
+
+  const hasImagePreview = isImagePreviewAvailable && !!(selectedFilePreviewUrl || selectedContent)
+
+  // Markdown and images expand here; text and JSON expand through their CodeBlock
+  const canExpand =
+    !isPreviewLoading && (textPreview ? textPreview.kind === PreviewKind.MARKDOWN : hasImagePreview)
+
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  useEffect(() => {
+    if (!canExpand || !visible) setIsExpanded(false)
+  }, [canExpand, visible])
 
   const footerContent = (
     <div className="flex w-full justify-end">
@@ -165,50 +182,39 @@ const AgentWorkspaceBrowserPopup: FC<AgentWorkspaceBrowserPopupProps> = ({
       )
     }
 
-    if (isTextPreviewAvailable) {
-      return (
-        <div
-          data-testid="workspace-preview"
-          className="min-h-[240px] overflow-auto rounded-lg border border-border-structural bg-surface-base-primary p-4"
-        >
-          <pre
-            data-testid="workspace-preview-text"
-            className="m-0 whitespace-pre-wrap break-words font-mono text-xs leading-5 text-text-primary"
-          >
-            {selectedFile?.content}
-          </pre>
-        </div>
-      )
+    if (textPreview?.kind === PreviewKind.MARKDOWN) {
+      return <MarkdownPreview frontMatter={textPreview.frontMatter} body={textPreview.body} />
     }
 
-    if (isImagePreviewAvailable && (selectedFilePreviewUrl || selectedFile?.content)) {
+    if (textPreview) {
       return (
-        <div
-          data-testid="workspace-preview"
-          className="flex min-h-[240px] items-center justify-center overflow-auto rounded-lg border border-border-structural bg-surface-base-primary p-4"
-        >
-          <img
-            data-testid="workspace-preview-image"
-            src={
-              selectedFilePreviewUrl ||
-              getImagePreviewSrc({
-                path: selectedFilePath,
-                content: selectedFile?.content ?? '',
-                mimeType: selectedFile?.mime_type,
-                isBinary: selectedFile?.is_binary ?? true,
-              })
-            }
-            alt={selectedFilePath.split('/').pop() ?? 'Selected workspace file preview'}
-            className="max-h-[60vh] max-w-full rounded-md object-contain"
+        <div data-testid="workspace-preview">
+          <CodeBlock
+            text={textPreview.body}
+            // Text and JSON kinds are only given to FILE_EXTENSIONS values
+            language={getPathExtension(selectedFilePath) as FileExtension}
+            expandable
+            expandLabel={selectedFilePath}
+            hideDownload
           />
         </div>
       )
     }
 
+    if (hasImagePreview) {
+      return (
+        <ImagePreview
+          path={selectedFilePath}
+          file={selectedFile}
+          previewUrl={selectedFilePreviewUrl}
+        />
+      )
+    }
+
     return (
       <div className="flex min-h-[240px] items-center justify-center rounded-lg border border-dashed border-border-structural px-6 text-center text-sm text-text-quaternary">
-        Preview is currently available for .txt, .py, and .js text files, plus common image formats
-        supported by modern browsers.
+        Preview is available for Markdown, JSON, text and source code files, and common image
+        formats.
       </div>
     )
   }
@@ -224,7 +230,10 @@ const AgentWorkspaceBrowserPopup: FC<AgentWorkspaceBrowserPopupProps> = ({
       bodyClassName="overflow-hidden"
     >
       <div className="grid h-[65vh] min-h-[420px] grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="flex min-h-0 flex-col rounded-lg border border-border-structural bg-surface-base-primary">
+        <div
+          data-testid="workspace-file-panel"
+          className="flex min-h-0 flex-col rounded-lg border border-border-structural bg-surface-base-primary"
+        >
           <div className="border-b border-border-structural px-4 py-3 text-sm font-semibold text-text-primary">
             Files
           </div>
@@ -276,27 +285,39 @@ const AgentWorkspaceBrowserPopup: FC<AgentWorkspaceBrowserPopupProps> = ({
               </div>
             </div>
 
-            <Button
-              variant="secondary"
-              aria-label="Download selected file"
-              disabled={!selectedFilePath || isDownloading}
-              isLoading={isDownloading}
-              onClick={() => agentWorkspaceStore.downloadSelectedFile()}
-            >
-              <DownloadSvg aria-hidden="true" />
-              Download
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              {canExpand && (
+                <Button
+                  variant="secondary"
+                  data-testid="workspace-preview-expand"
+                  onClick={() => setIsExpanded(true)}
+                >
+                  <ExpandSvg aria-hidden="true" />
+                  Expand
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                aria-label="Download selected file"
+                disabled={!selectedFilePath || isDownloading}
+                isLoading={isDownloading}
+                onClick={() => agentWorkspaceStore.downloadSelectedFile()}
+              >
+                <DownloadSvg aria-hidden="true" />
+                Download
+              </Button>
+            </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
             {error && (
-              <div className="mb-4 rounded-lg border border-failed-secondary bg-failed-secondary/10 px-4 py-3 text-sm text-failed-secondary">
+              <div className="mb-4 shrink-0 rounded-lg border border-failed-secondary bg-failed-secondary/10 px-4 py-3 text-sm text-failed-secondary">
                 {error}
               </div>
             )}
 
             {selectedFile && (
-              <div className="mb-4 grid grid-cols-1 gap-2 rounded-lg border border-border-structural bg-surface-base-secondary px-4 py-3 text-xs text-text-quaternary md:grid-cols-2">
+              <div className="mb-4 grid shrink-0 grid-cols-1 gap-2 rounded-lg border border-border-structural bg-surface-base-secondary px-4 py-3 text-xs text-text-quaternary md:grid-cols-2">
                 <div>Type: {selectedFile.mime_type}</div>
                 <div>Version: {selectedFile.version}</div>
                 <div>Size: {formatFileSize(selectedFile.size)}</div>
@@ -308,6 +329,26 @@ const AgentWorkspaceBrowserPopup: FC<AgentWorkspaceBrowserPopupProps> = ({
           </div>
         </div>
       </div>
+
+      {/* The same popup CodeBlock's Expand opens, for previews that are not code */}
+      {selectedFilePath && (
+        <ExpandedYamlShell
+          visible={isExpanded && canExpand && visible}
+          onCollapse={() => setIsExpanded(false)}
+          label={selectedFilePath}
+        >
+          {textPreview ? (
+            <MarkdownPreview frontMatter={textPreview.frontMatter} body={textPreview.body} fill />
+          ) : (
+            <ImagePreview
+              path={selectedFilePath}
+              file={selectedFile}
+              previewUrl={selectedFilePreviewUrl}
+              fill
+            />
+          )}
+        </ExpandedYamlShell>
+      )}
     </Popup>
   )
 }

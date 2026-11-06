@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -68,10 +68,11 @@ vi.mock('@/store/agentWorkspace', () => ({
 }))
 
 vi.mock('@/components/Popup', () => ({
-  default: ({ visible, header, onHide, footerContent, children }: any) =>
+  default: ({ visible, header, headerContent, onHide, footerContent, children }: any) =>
     visible ? (
       <div>
         <div>{header}</div>
+        {headerContent}
         <button type="button" aria-label="Close popup" onClick={onHide}>
           x
         </button>
@@ -81,9 +82,20 @@ vi.mock('@/components/Popup', () => ({
     ) : null,
 }))
 
+vi.mock('@/components/markdown/Markdown', () => ({
+  default: ({ content }: { content: string }) => (
+    <div data-testid="markdown-mock">
+      {content.startsWith('# ') ? <h1>{content.slice(2)}</h1> : content}
+    </div>
+  ),
+}))
+
 vi.mock('@/components/Spinner/Spinner', () => ({
   default: () => <div>Loading</div>,
 }))
+
+// Text and JSON render through CodeBlock; its <code> holds the shown text
+const getCodeText = () => screen.getByTestId('workspace-preview').querySelector('code')?.textContent
 
 describe('ChatHeaderBrowseFilesButton', () => {
   let user: UserEvent
@@ -185,9 +197,8 @@ describe('ChatHeaderBrowseFilesButton', () => {
     render(<ChatHeaderBrowseFilesButton />)
     await user.click(screen.getByRole('button', { name: 'Browse files' }))
 
-    expect(screen.getByTestId('workspace-preview-text').textContent).toBe(
-      'def main():\n    return 1\n\nprint(main())'
-    )
+    expect(getCodeText()).toBe('def main():\n    return 1\n\nprint(main())')
+    expect(screen.getByTestId('workspace-preview').querySelector('code')).toHaveClass('language-py')
   })
 
   it('renders image preview for supported image files', async () => {
@@ -308,5 +319,187 @@ describe('ChatHeaderBrowseFilesButton', () => {
       expect(screen.queryByText('Agent workspace')).not.toBeInTheDocument()
     })
     expect(mockAgentWorkspaceStore.reset).toHaveBeenCalled()
+  })
+
+  const selectTextFile = (path: string, content: string, mime = 'text/plain') => {
+    mockAgentWorkspaceStore.selectedFilePath = path
+    mockAgentWorkspaceStore.selectedFile = {
+      path,
+      mime_type: mime,
+      checksum: 'hash',
+      size: 100,
+      version: 1,
+      update_date: '2026-04-23T10:05:00',
+      is_binary: false,
+      content,
+    }
+  }
+
+  const openBrowser = async () => {
+    render(<ChatHeaderBrowseFilesButton />)
+    await user.click(screen.getByRole('button', { name: 'Browse files' }))
+  }
+
+  it('renders markdown with front matter separately', async () => {
+    selectTextFile('docs/a.md', '---\ntitle: x\n---\n# Heading')
+    await openBrowser()
+
+    expect(screen.getByTestId('workspace-preview-frontmatter').textContent).toBe('title: x')
+    expect(screen.getByRole('heading', { name: 'Heading' })).toBeInTheDocument()
+    expect(screen.getByTestId('workspace-preview-markdown')).toContainElement(
+      screen.getByRole('heading', { name: 'Heading' })
+    )
+  })
+
+  it('renders markdown without front matter block', async () => {
+    selectTextFile('docs/a.md', '# Heading')
+    await openBrowser()
+
+    expect(screen.queryByTestId('workspace-preview-frontmatter')).not.toBeInTheDocument()
+  })
+
+  it('pretty prints json with two spaces', async () => {
+    selectTextFile('a.json', '{"a":1}', 'application/json')
+    await openBrowser()
+
+    expect(getCodeText()).toBe('{\n  "a": 1\n}')
+  })
+
+  it('shows invalid json unchanged', async () => {
+    selectTextFile('a.json', '{bad', 'application/json')
+    await openBrowser()
+
+    expect(getCodeText()).toBe('{bad')
+  })
+
+  it('previews yaml as text', async () => {
+    selectTextFile('a.yaml', 'k: v')
+    await openBrowser()
+
+    expect(getCodeText()).toBe('k: v')
+  })
+
+  it('previews an empty text file', async () => {
+    selectTextFile('empty.txt', '')
+    await openBrowser()
+
+    expect(getCodeText()).toBe('')
+  })
+
+  it('renders text in a code block with its own expand and no second download', async () => {
+    selectTextFile('infra/Dockerfile', 'FROM node:20')
+    await openBrowser()
+
+    expect(screen.getByTestId('workspace-preview').querySelector('code')).toHaveClass(
+      'language-dockerfile'
+    )
+    expect(screen.queryByTestId('workspace-preview-expand')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /download/i })).toHaveLength(1)
+
+    await user.click(screen.getByRole('button', { name: 'Expand' }))
+
+    expect(document.querySelector('span.font-mono')).toHaveTextContent('infra/Dockerfile')
+    expect(screen.getAllByRole('button', { name: /download/i })).toHaveLength(1)
+  })
+
+  it('shows the updated hint for unsupported files', async () => {
+    selectTextFile('a.bin', 'xx', 'application/octet-stream')
+    await openBrowser()
+
+    expect(screen.getByText(/Markdown/)).toHaveTextContent(/JSON/)
+  })
+
+  describe('expand toggle', () => {
+    it('is absent with no selection', async () => {
+      await openBrowser()
+      expect(screen.queryByTestId('workspace-preview-expand')).not.toBeInTheDocument()
+    })
+
+    it('is absent for an unknown file', async () => {
+      selectTextFile('a.bin', 'xx', 'application/octet-stream')
+      await openBrowser()
+      expect(screen.queryByTestId('workspace-preview-expand')).not.toBeInTheDocument()
+    })
+
+    it('is present for markdown', async () => {
+      selectTextFile('a.md', '# T')
+      await openBrowser()
+      expect(screen.getByTestId('workspace-preview-expand')).toBeInTheDocument()
+    })
+
+    it.each([
+      ['a.json', '{}'],
+      ['a.py', 'x = 1'],
+    ])('is absent for %s, which expands through its code block', async (path, content) => {
+      selectTextFile(path, content)
+      await openBrowser()
+      expect(screen.queryByTestId('workspace-preview-expand')).not.toBeInTheDocument()
+    })
+
+    it('is present for an image', async () => {
+      mockAgentWorkspaceStore.selectedFilePath = 'i.png'
+      mockAgentWorkspaceStore.selectedFile = {
+        path: 'i.png',
+        mime_type: 'image/png',
+        checksum: 'h',
+        size: 1,
+        version: 1,
+        update_date: '2026-04-23T10:05:00',
+        is_binary: true,
+        content: 'AAAA',
+      }
+      await openBrowser()
+      expect(screen.getByTestId('workspace-preview-expand')).toBeInTheDocument()
+    })
+
+    it('opens markdown in the shared expanded popup and collapses back', async () => {
+      selectTextFile('docs/a.md', '# T')
+      await openBrowser()
+
+      await user.click(screen.getByTestId('workspace-preview-expand'))
+
+      expect(document.querySelector('span.font-mono')).toHaveTextContent('docs/a.md')
+      expect(screen.getAllByTestId('workspace-preview-markdown')).toHaveLength(2)
+
+      await user.click(screen.getByRole('button', { name: 'Collapse' }))
+
+      expect(screen.getAllByTestId('workspace-preview-markdown')).toHaveLength(1)
+      expect(screen.getByText('Agent workspace')).toBeInTheDocument()
+      expect(mockAgentWorkspaceStore.reset).not.toHaveBeenCalled()
+    })
+
+    it('opens an image in the shared expanded popup', async () => {
+      mockAgentWorkspaceStore.selectedFilePath = 'i.png'
+      mockAgentWorkspaceStore.selectedFile = {
+        path: 'i.png',
+        mime_type: 'image/png',
+        checksum: 'h',
+        size: 1,
+        version: 1,
+        update_date: '2026-04-23T10:05:00',
+        is_binary: true,
+        content: 'AAAA',
+      }
+      await openBrowser()
+
+      await user.click(screen.getByTestId('workspace-preview-expand'))
+
+      expect(screen.getAllByTestId('workspace-preview-image')).toHaveLength(2)
+    })
+
+    it('Esc reaches document handlers when collapsed', async () => {
+      selectTextFile('a.md', '# T')
+      await openBrowser()
+      const spy = vi.fn()
+      document.addEventListener('keydown', spy)
+
+      fireEvent(
+        document.body,
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+      )
+
+      document.removeEventListener('keydown', spy)
+      expect(spy).toHaveBeenCalledTimes(1)
+    })
   })
 })
