@@ -95,7 +95,7 @@ import ConfirmationModal from '@/components/ConfirmationModal'
 | `RadioGroup` | Radio group | `@/components/form/RadioGroup` | varies |
 | `Switch` | Toggle switch | `@/components/form/Switch` | varies |
 | `File` | File upload | `@/components/form/File` | varies |
-| `FilesListInput` | Multi-file upload | `@/components/form/FilesListInput` | varies |
+| `FilesDropzone` | Multi-file drop zone (`files`, `onChange`, `maxFiles`) | `@/components/form/FilesDropzone` | varies |
 | `InputArray` | Dynamic list input | `@/components/form/InputArray` | varies |
 | `InfoBox` | Info display inside form | `@/components/form/InfoBox` | varies |
 
@@ -171,15 +171,15 @@ When in doubt about exact prop names or types, read the interface directly:
 
 | Component | Props interface location |
 |---|---|
-| `Popup` | `src/components/Popup/Popup.tsx:25` |
-| `Button` | `src/components/Button/Button.tsx:30` |
-| `Input` | `src/components/form/Input/Input.tsx:22` |
-| `Card` | `src/components/Card/Card.tsx:26` |
-| `Tabs` | `src/components/Tabs/Tabs.tsx:22` |
-| `Pagination` | `src/components/Pagination/Pagination.tsx:27` |
-| `ConfirmationModal` | `src/components/ConfirmationModal/ConfirmationModal.tsx:24` |
-| `Spinner` | `src/components/Spinner/Spinner.tsx:21` |
-| `InfoWarning` | `src/components/InfoWarning/InfoWarning.tsx:20` |
+| `Popup` | `src/components/Popup/Popup.tsx::PopupProps` |
+| `Button` | `src/components/Button/Button.tsx::ButtonProps` |
+| `Input` | `src/components/form/Input/Input.tsx::InputProps` |
+| `Card` | `src/components/Card/Card.tsx::CardProps` |
+| `Tabs` | `src/components/Tabs/Tabs.tsx::TabsProps` |
+| `Pagination` | `src/components/Pagination/Pagination.tsx::PaginationProps` |
+| `ConfirmationModal` | `src/components/ConfirmationModal/ConfirmationModal.tsx::ConfirmationModalProps` |
+| `Spinner` | `src/components/Spinner/Spinner.tsx::SpinnerProps` |
+| `InfoWarning` | `src/components/InfoWarning/InfoWarning.tsx::InfoWarningProps` |
 
 ---
 

@@ -156,7 +156,7 @@ Hard limit: **300 lines per file**. Exceeding requires extraction (see Component
 
 | Category | DON'T | DO |
 |---|---|---|
-| Styling | Inline styles, custom CSS | Tailwind classes only via `cn()` |
+| Styling | Inline styles, a new `.css`/`.scss` file | Tailwind classes via `cn()`; the existing stylesheets in Mandatory Rules 1 of `.ai-run/guides/styling/styling-guide.md` are the exception |
 | Modals | Import `Dialog` from PrimeReact | Use `Popup` component (`@/components/Popup`) |
 | API calls | `fetch()`/`axios` in component body | Call store method |
 | State reads | Access `store.value` directly | `useSnapshot(store)` |
@@ -226,7 +226,7 @@ Avoid:
 - [ ] Component file under 300 lines
 - [ ] TypeScript interface covers all props, no `any`
 - [ ] `cn()` used for conditional class merges
-- [ ] No custom CSS, no inline `style={{}}`
+- [ ] No new `.css`/`.scss` file, no inline `style={{}}`
 - [ ] Store access via `useSnapshot`, mutations via store methods
 - [ ] `useEffect` returns cleanup when listeners or timers registered
 - [ ] No magic strings — constants imported from `@/constants`

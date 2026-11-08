@@ -140,7 +140,7 @@ Always remove connected edges before removing the node:
 | Would create cycle | 'Cannot create circular connections' |
 | Source has reached max connections | 'Maximum connections reached' |
 
-The graph must remain a DAG — run `wouldCreateCycle()` before accepting any connection.
+`isValidConnection` already rejects self-loops and circular connections (`checkCircularConnection` walks the target's parents) along with the type, iterator-key and iterator-parent rules; route a new connection path through it (`src/utils/workflowEditor/helpers/connections/connectionValidator.ts::isValidConnection`).
 
 ---
 
@@ -150,16 +150,13 @@ The graph must remain a DAG — run `wouldCreateCycle()` before accepting any co
 
 `src/utils/workflowEditor/serialization/deserializer/deserializer.ts`
 
-- Map each `WorkflowState` to a `Node`: `type = '${state.type}Node'`, `position = state.position ?? { x: 0, y: 0 }`, `data = { state }`.
-- Flatten `state.transitions` entries into `Edge` objects: `source = state.id`, `target = targetId`, `sourceHandle = handle`.
+- `deserialize(yamlString)` parses the workflow YAML into a `WorkflowConfiguration`; on a parse error it toasts `Failed loading YAML config` and continues with empty `states`, `orphaned_states` and `meta_states` (`src/utils/workflowEditor/serialization/deserializer/deserializer.ts::deserialize`).
 
 ### Serializer — React Flow → backend
 
 `src/utils/workflowEditor/serialization/serializer.ts`
 
-- Map each `Node` to a `WorkflowState`: spread `node.data.state`, add `position: node.position`.
-- Build a `transitionMap` from edges: `Map<sourceId, Record<handle, targetId>>`.
-- Assign `state.transitions = transitionMap.get(state.id) ?? {}` for each state.
+- `serialize(configuration)` writes the `WorkflowConfiguration` back to a YAML string: states are split into `states`, `orphaned_states` and `meta_states`, and `_meta` is stripped from regular states (`src/utils/workflowEditor/serialization/serializer.ts::serialize`).
 
 **Always include `position` in serialization** — omitting it loses manual layout on reload.
 
@@ -169,24 +166,7 @@ The graph must remain a DAG — run `wouldCreateCycle()` before accepting any co
 
 `src/utils/workflowEditor/build/layout.ts`
 
-```typescript
-import dagre from 'dagre'
-
-export const autoLayout = (nodes: Node[], edges: Edge[]) => {
-  const graph = new dagre.graphlib.Graph()
-  graph.setGraph({ rankdir: 'TB' })
-  graph.setDefaultEdgeLabel(() => ({}))
-  nodes.forEach(n => graph.setNode(n.id, { width: NODE_WIDTH, height: NODE_HEIGHT }))
-  edges.forEach(e => graph.setEdge(e.source, e.target))
-  dagre.layout(graph)
-  return nodes.map(n => {
-    const pos = graph.node(n.id)
-    return { ...n, position: { x: pos.x - NODE_WIDTH / 2, y: pos.y - NODE_HEIGHT / 2 } }
-  })
-}
-```
-
-`rankdir: 'TB'` = top-to-bottom flow. Call `autoLayout` on initial load and after bulk node additions. Subtract half node dimensions to center the dagre position anchor.
+`applyLayout(nodes, edges)` lays non-iterator nodes out with dagre left to right (`rankdir: 'LR'`), then fits each iterator around its children and makes their positions relative (`src/utils/workflowEditor/build/layout.ts::applyLayout`).
 
 ---
 
@@ -194,7 +174,7 @@ export const autoLayout = (nodes: Node[], edges: Edge[]) => {
 
 Iterator nodes can contain child nodes. When a node is dropped inside an iterator:
 
-- Set `droppedNode.parentNode = iteratorNode.id`.
+- Set `droppedNode.parentId = iteratorNode.id` (`applyLayout` groups children by `parentId`).
 - Set `droppedNode.extent = 'parent'` to constrain movement within the parent.
 - Push the child state into `iteratorState.states`.
 
@@ -219,7 +199,7 @@ Obtain `reactFlowInstance` via the `useReactFlow()` hook inside a component wrap
 |---------|-----|
 | Node positions lost on save/reload | Always include `position` in serializer |
 | Edges remain after node delete | Remove connected edges first in `deleteState` |
-| Circular connections allowed | Run `wouldCreateCycle()` in `validateConnection` |
+| Circular connections allowed | Call `isValidConnection`, which runs the circular check |
 | Iterator children escape parent | Set `extent: 'parent'` on child nodes |
 | Stale node data after config update | Create new `node.data` reference on update |
 | Expensive edge build on every render | Wrap with `useMemo` keyed on `workflow.states` |
@@ -243,4 +223,4 @@ describe('createState', () => {
 })
 ```
 
-Test `validateConnection`, `serializeWorkflow`, `deserializeWorkflow`, and `autoLayout` as pure functions with no DOM dependency.
+Test `isValidConnection`, `serialize`, `deserialize` and `applyLayout` as pure functions with no DOM dependency.

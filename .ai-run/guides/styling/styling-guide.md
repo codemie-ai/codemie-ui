@@ -1,14 +1,16 @@
 # Styling Guide
 
-> CRITICAL: Tailwind CSS only. No custom CSS. No inline styles. No arbitrary values.
+> CRITICAL: Tailwind utilities for new component styles. No inline styles. No arbitrary values. The existing stylesheets listed in Mandatory Rules 1 are the allowed exception.
 
 ## Mandatory Rules
 
-1. Only Tailwind CSS classes — no `<style>` blocks, no `style={{}}`, no `.css`/`.scss` files for component styles
+1. Tailwind utilities for new component styles — no `<style>` blocks, no `style={{}}`, no new `.css`/`.scss` file. Allowed exception: the existing stylesheets that style markdown, editor or third-party rendered output: `src/components/CodeBlock/CodeBlock.scss`, `src/components/markdown/Markdown.scss`, `src/components/Editor/Editor.scss`, `src/components/Thought/ThoughtDocument.scss`, `src/components/AceEditor/AceEditor.css`, `src/pages/chat/components/ChatPrompt/ChatPrompt.scss`, `src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.scss`, `src/pages/chat/components/ChatHistory/ChatAiMessage/ThinkingLoader.scss`, `src/pages/terms/TermsAndConditionsPage.scss`, `src/a2ui/theme.css`, `src/pages/workflows/details/popups/WorkflowStartExecutionPopup.scss`
 2. Only semantic theme tokens from `themeTokens` — never raw palette tokens (`neutral-*`, `blue-*`, `brand-*`)
 3. Only predefined spacing scale — never `p-[18px]` or `mt-[20px]`
 4. Use `cn()` utility for all conditional class merging
 5. Verify token names exist in `tailwind.config.ts` before using
+6. Put a global override in a partial that `src/assets/stylesheets/main.scss::tailwind` already pulls in (`_colors.scss`, `_primevue_custom.scss`, `toastify.scss`, `_codemie-custom.scss`); `main.scss` is the stylesheet `src/main.tsx` imports, so a new top-level file nothing imports is never loaded
+7. Restyle a PrimeReact `checkbox`, `dropdown`, `inputswitch` or `tag` through its pass-through entry in `src/styles/presets/lara/index.ts::dropdown`; `src/constants/theme.ts::primeReactPtOptions` hands that preset to `PrimeReactProvider` in `src/App.tsx`
 
 ---
 
@@ -276,7 +278,7 @@ When you need a color that has no existing token:
 
 ## Pre-Delivery Checklist
 
-- [ ] No custom CSS, `<style>` tags, or inline `style={{}}` props
+- [ ] No new `.css`/`.scss` file (Mandatory Rules 1 lists the allowed existing ones), no `<style>` tags, no inline `style={{}}` props
 - [ ] All colors are semantic tokens (no `neutral-*`, `blue-*`, `brand-*`, etc.)
 - [ ] No arbitrary values (`p-[18px]`, `bg-[#fff]`, `w-[340px]`)
 - [ ] `cn()` used for all conditional class logic

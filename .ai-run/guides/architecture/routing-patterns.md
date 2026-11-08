@@ -3,9 +3,9 @@
 ## Overview
 
 - Router: **React Router v7.9.5** (`react-router` package — import from `'react-router'`, not `'react-router-dom'`)
-- Strategy: **hash-based** (`createHashRouter`) — all paths live inside `#/`
+- Strategy: browser history (`createBrowserRouter(routes, { basename: import.meta.env.BASE_URL })`, `src/router.tsx::router`) — paths carry no `#/`
 - Route tree defined in a single file: `src/router.tsx`
-- Entry point: `src/main.tsx:40` renders `<RouterProvider router={router} />`
+- Entry point: `src/main.tsx` renders `<RouterProvider router={router} />`, imported from `'react-router/dom'`
 - Route IDs are string constants in `src/constants/routes.ts`; reference by ID, not raw string
 
 ---
@@ -18,7 +18,7 @@
 all into a single root route object (`src/router.tsx:552-591`).
 
 ```
-src/router.tsx:16    import { createHashRouter, redirect, RouteObject } from 'react-router'
+src/router.tsx::router  import { createBrowserRouter, Navigate, Outlet, redirect, RouteObject } from 'react-router'
 src/router.tsx:95    const chatRoutes: RouteObject[] = […]
 src/router.tsx:118   const assistantRoutes: RouteObject[] = […]
 src/router.tsx:186   const skillRoutes: RouteObject[] = […]
@@ -33,7 +33,7 @@ src/router.tsx:462   const awsSettingsRoutes: RouteObject[] = […]
 src/router.tsx:517   const analyticsRoutes: RouteObject[] = […]
 src/router.tsx:535   const otherRoutes: RouteObject[] = […]
 src/router.tsx:552   export const routes: RouteObject[] = [{ path: '/', Component: App, … }]
-src/router.tsx:591   export const router = createHashRouter(routes)
+src/router.tsx::router  export const router = createBrowserRouter(routes, { basename: import.meta.env.BASE_URL })
 ```
 
 ### Root route
@@ -232,8 +232,8 @@ EDIT_WORKFLOW, ANALYTICS, SKILLS_ALL, NEW_SKILL, SKILL_DETAILS …
 
 URL builder utilities keep path construction off call sites:
 ```
-src/pages/assistants/utils/getAssistantLink.tsx:18
-  getAssistantLink(id) → `${getRootPath()}/#/assistants/${encodeURIComponent(id)}`
+src/pages/assistants/utils/getAssistantLink.tsx::getAssistantLink
+  getAssistantLink(assistant) → `${getRootPath()}/assistants/{project}/{slug}`, else `${getRootPath()}/assistants/${encodeURIComponent(id)}`
 ```
 
 ---

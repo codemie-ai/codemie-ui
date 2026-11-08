@@ -170,11 +170,11 @@ Components subscribe to `derivedStore` fields — they re-render only when the d
 
 ### Virtual scrolling (1000+ items)
 
-Use `react-window` `FixedSizeList` for large datasets. Never render thousands of DOM nodes unconditionally.
+Virtualize long lists with `@tanstack/react-virtual` (`useVirtualizer`), as `src/pages/chat/components/ChatSidebar/ChatList/useSidebarVirtualList.ts::useSidebarVirtualList` does; `react-window` is not a dependency.
 
 ```tsx
-import { FixedSizeList } from 'react-window'
-// height={600} itemCount={items.length} itemSize={50}
+import { useVirtualizer } from '@tanstack/react-virtual'
+// const virtualizer = useVirtualizer({ count, getScrollElement, estimateSize })
 ```
 
 ### Conditional rendering vs CSS hide
@@ -261,7 +261,7 @@ For identical concurrent requests, cache the in-flight `Promise` and return it t
 | `useCallback` for all handlers | `useCallback` only for props to memoized children |
 | Import entire page at startup | `lazy()` all route-level components |
 | `key={Math.random()}` | `key={item.id}` |
-| Render 10 000 items directly | `FixedSizeList` from `react-window` |
+| Render 10 000 items directly | `useVirtualizer` from `@tanstack/react-virtual` |
 | `useSnapshot(entireStore)` | Destructure only used fields |
 | Three separate store mutations | Batch in one function call |
 | Fetch all records | Paginate with `PAGINATION.DEFAULT_PAGE_SIZE` |

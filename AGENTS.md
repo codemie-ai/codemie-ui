@@ -83,7 +83,7 @@ from the same source tree.
 
 ## Stack
 
-React 18 · TypeScript 5 · Vite 8 · Tailwind 3 · Valtio (state) · react-router 7 ·
+React 19 · TypeScript 5 · Vite 8 · Tailwind 3 · Valtio (state) · react-router 7 ·
 react-hook-form · PrimeReact · marked + DOMPurify (markdown) · Keycloakify (login theme).
 Tests: Vitest with React Testing Library, two projects — `unit` and `integration`.
 

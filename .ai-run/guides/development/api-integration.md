@@ -70,8 +70,7 @@ const result = await response.json()
 
 ```typescript
 const abort = new AbortController()
-const stream = await api.stream('chat/stream', { message: 'Hello' }, abort)
-const reader = stream.getReader()
+const reader = await api.stream('chat/stream', { message: 'Hello' }, abort) // a reader for application/x-ndjson, else the raw Response
 while (true) {
   const { done, value } = await reader.read()
   if (done) break
@@ -145,7 +144,7 @@ const MyComponent = () => {
 
 ### Default behavior
 
-The API client shows toaster notifications automatically on errors. You do not need to display them manually unless customizing the message.
+`makeRequest` (`get`, `post`, `put`, `patch`, `delete`) toasts the parsed error body on a non-ok response and then rejects with the cloned `Response`, its `parsedError` set (`src/utils/api.ts::makeRequest`). A 401 under local auth redirects to sign-in without a toast; `postMultipart` and `putMultipart` reject with an `HttpError` and never toast.
 
 ### Catching in store
 
@@ -162,21 +161,21 @@ try {
 ### Skip automatic toaster
 
 ```typescript
-const response = await api.get('endpoint', { skipErrorHandling: true })
-if (!response.ok) {
-  const err = await response.json()
-  // handle manually
+try {
+  await api.get('endpoint', { skipErrorHandling: true })
+} catch (err) {
+  // a non-ok response still rejects; only the toast is skipped — read (err as ResponseWithParsedError).parsedError
 }
 ```
 
 ### Check response status
 
 ```typescript
-const response = await api.get('items')
-if (response.ok) {
-  const data = await response.json()
-} else {
-  console.error('Failed:', response.status)
+// makeRequest resolves only when response.ok; a non-ok status arrives in catch
+try {
+  const data = await (await api.get('items')).json()
+} catch (err) {
+  console.error('Failed:', (err as Response).status)
 }
 ```
 
@@ -199,10 +198,10 @@ useEffect(() => {
 
 ## Loading & Error State Pattern
 
-Every store action must set `loading` and `error`. Components rely on these to show spinners and error messages without managing their own state.
+A new list-fetching store action sets `loading` and `error`, so components show spinners and error messages without managing their own state; `src/store/budgets.ts::listBudgets` follows it.
 
 ```typescript
-// Store: always this structure
+// New list-fetching store action: this structure
 async doAction() {
   this.loading = true
   this.error = null
@@ -220,7 +219,7 @@ async doAction() {
 
 ## Configuration
 
-Set API base URL in `.env`:
+The base URL is `window._env_.VITE_API_URL` when the served `config.js` sets it, else the build-time `VITE_API_URL` (`src/utils/api.ts::BASE_URL`); for local dev set it in `.env`:
 ```
 VITE_API_URL=http://localhost:8080
 VITE_SUFFIX=/app          # optional URL suffix

@@ -2,14 +2,14 @@
 
 ## Overview
 
-CodeMie UI is a React 18.3.1 / TypeScript 5.8.3 / Vite 8.3.1 SPA with hash-based routing,
+CodeMie UI is a React / TypeScript / Vite SPA (versions in `package.json`) routed by `createBrowserRouter` under `import.meta.env.BASE_URL` (`src/router.tsx::router`), with
 module federation (micro-frontend host), and dual-mode authentication (local email/password
 or Keycloak SSO). All state is managed through Valtio proxy stores. All HTTP goes through a
 single custom fetch-based API client. Styling is Tailwind CSS exclusively.
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│  Browser (hash-based SPA — #/route/path)               │
+│  Browser (history-routed SPA under BASE_URL)           │
 │                                                        │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │  Presentation layer                              │  │
@@ -45,11 +45,11 @@ single custom fetch-based API client. Styling is Tailwind CSS exclusively.
 | **Components** | Reusable UI primitives and shared UI | `src/components/` |
 | **Store** | Global state, API calls, business logic, error/loading | `src/store/*.ts` |
 | **Integration** | HTTP, auth headers, redirect handling, error parsing | `src/utils/api.ts` |
-| **Hooks** | Reusable React logic; no direct API calls | `src/hooks/` |
+| **Hooks** | Reusable React logic; no direct API calls (one exception, below) | `src/hooks/` |
 | **Utils** | Pure functions, data transforms, URL builders | `src/utils/` |
 | **Types** | Shared TypeScript interfaces and enums | `src/types/` |
 | **Constants** | Named values; no magic strings/numbers | `src/constants/` |
-| **Config** | Feature flags, onboarding flows, theming | `src/config/` |
+| **Config** | Onboarding flow definitions and release notes | `src/configs/onboarding/index.ts::navigationIntroductionFlow` |
 | **Authentication** | Local auth pages + Keycloak theme entry point | `src/authentication/` |
 
 ### What each layer must NOT do
@@ -59,7 +59,7 @@ single custom fetch-based API client. Styling is Tailwind CSS exclusively.
 | Page / Component | Call `api.*` directly; own business logic |
 | Store | Render JSX; call `useNavigate`; import React components |
 | Integration | Manage state; transform domain objects |
-| Hook | Call `api.*` directly; import Valtio stores from outside |
+| Hook | Call `api.*` directly (one allowed exception, below); import Valtio stores from outside |
 | Utils | Mutate global state; trigger side effects (one deliberate exception, below) |
 
 **Utils exception — sign-in window helpers.** `src/utils/openSignInWindow.ts` and
@@ -69,6 +69,9 @@ share with the auth callback listener hook). They sit in `src/utils/` so the hoo
 use one copy of the window logic. They must still not import hooks, stores or components. New side
 effects do not belong in Utils on this precedent.
 
+**Hook exception — MCP auth prompt.** `src/hooks/useMCPAuthPrompt.ts::useMCPAuthPrompt` calls `api.post` on the row's
+`initiate_url` to start an MCP sign-in. It is the one hook allowed to call `api.*`; a new hook calls a store method.
+
 ---
 
 ## Data Flow (Component → Store → API)
@@ -77,40 +80,41 @@ The canonical pattern is strictly three steps. Components observe the store snap
 never touch the API client directly.
 
 Step 1 — Page subscribes and triggers:
-  `src/pages/assistants/AssistantsListPage.tsx:18` (`useSnapshot` import)
+  `src/pages/assistants/AssistantsListPage.tsx::useSnapshot` (`useSnapshot` import)
 
 Step 2 — Store owns the API call and state mutation:
-  `src/store/assistants.ts:156` (proxy definition), `:177` (`indexAssistants` method calling `api.get`)
+  `src/store/assistants.ts::assistantsStore` (proxy definition), `src/store/assistants.ts::indexAssistants` (calls `api.get`)
 
 Step 3 — Response is parsed with `.json()`, never `.data`:
-  `src/store/assistants.ts:193` (`.then((response) => response.json())`)
+  `src/store/assistants.ts::indexAssistants` (`.then((response) => response.json())`)
 
-Loading and error states are always properties on the store, set synchronously before and
-after the async call. `toaster.error()` is called from the store on failure.
+Error toasts come from the API layer: `makeRequest` calls `handleError` on a non-ok response unless the caller passes
+`skipErrorHandling` (`src/utils/api.ts::handleError`); `indexAssistants` itself sets no `loading` or `error` field.
 
-Session expiry handling lives in `src/store/user.ts:33-35`: `api.redirectHandler` sets
-`userStore.isSessionExpired = true`, which `SessionExpiredPopup` observes.
+Session expiry: an opaque-redirect response calls `api.redirectHandler`, which `src/store/user.ts::redirectHandler` sets to
+flip `userStore.isSessionExpired` (rendered by `src/App.tsx::SessionExpiredPopup`); a 401 under local auth goes to
+`handleSessionExpired` instead, which saves the post-login redirect and navigates to `/auth/sign-in` (`src/utils/api.ts::handleSessionExpired`).
 
 ---
 
 ## Authentication Architecture
 
-Two independent auth paths share zero code:
+The two auth paths have separate entries; both render the shared `@/components` primitives (`Button`, `Input`):
 
 | Path | Entry | Use case |
 |---|---|---|
-| Local auth | `src/authentication/local/SignInPage`, `SignUpPage` | Dev/standalone deployments |
+| Local auth | `src/authentication/local/SignInPage.tsx::SignInPage`, `src/authentication/local/SignUpPage.tsx::SignUpPage` | IdP provider `local` (`getIsLocalAuth()`) |
 | Keycloak SSO | `src/authentication/keycloak-theme/keycloakify.tsx` (separate Vite entry) | Production; EPAM SSO via Azure Entra ID |
 
 For Keycloak builds, set `VITE_ENTRY=keycloakify`; the `keycloak-entry` plugin in
 `vite.config.ts:18` swaps the HTML entry to `index-keycloak.html` which renders only
 the `KcPage` component — no router, no app shell.
 
-In production the app receives a Keycloak JWT session cookie automatically; the API client
-reads it via `getIsLocalAuth()` to toggle `credentials: 'include'` (`src/utils/api.ts:128`).
+The API client sends `credentials: 'include'` only when `getIsLocalAuth()` is true, i.e. the IdP provider is `local`
+(`src/utils/utils.ts::getIsLocalAuth`); in local dev mode without local auth it sends a `user-id` header instead (`src/utils/api.ts::authHeaders`).
 
 User state after login: `userStore.user.isAuthenticated` and `userStore.user.isAdmin`
-(`src/types/entity/user.ts:27-29`), populated in `src/store/user.ts:128-130`.
+(`src/types/entity/user.ts::isAuthenticated`), held on `src/store/user.ts::userStore`.
 
 ---
 
@@ -133,19 +137,19 @@ create a page under `src/pages/applications/` that dynamically imports from it.
 
 | Pattern | Description | Key reference |
 |---|---|---|
-| Valtio proxy store | `proxy<StoreType>(…)` — auto-reactive global state | `src/store/assistants.ts:156` |
-| `useSnapshot` read binding | Creates a frozen read-only snapshot inside components | `src/App.tsx:41` |
-| Typed store interface | All stores have a named `interface *StoreType` before `proxy` | `src/store/assistants.ts:55` |
-| Custom `API` class | `get/post/patch/put/delete/stream/postMultipart` methods | `src/utils/api.ts:85-117` |
-| `navigateBack` utility | History-first back with path-matching fallback | `src/utils/helpers.ts:266` |
-| Feature `goBack*` wrappers | Per-feature `navigateBack` call with allowed route IDs | `src/pages/assistants/utils/goBackAssistants.ts:25` |
-| Route ID constants | Exported string constants consumed by both router and `navigateBack` | `src/constants/routes.ts` |
-| `useHistoryStack` | Valtio proxy tracking navigation history stack | `src/hooks/appLevel/useHistoryStack.tsx:36` |
-| `isEnterpriseEdition()` gate | Feature-flag to include/exclude route arrays at app start | `src/router.tsx:567-568` |
-| `useFeatureFlag(name)` hook | Runtime feature flag from API; non-React context uses `src/utils/featureFlags` | `src/hooks/useFeatureFlags.ts:61` |
+| Valtio proxy store | `proxy<StoreType>(…)` — auto-reactive global state | `src/store/assistants.ts::assistantsStore` |
+| `useSnapshot` read binding | Creates a frozen read-only snapshot inside components | `src/App.tsx::useSnapshot` |
+| Typed store interface | Stores pass an interface to `proxy<T>(…)`; names vary (`AssistantsStoreType`, `ApplicationsStore`) and `costCentersStore` is a plain object | `src/store/assistants.ts::AssistantsStoreType` |
+| Custom `API` class | `get/post/patch/put/delete` through `makeRequest`, plus `stream`, `postMultipart`, `putMultipart`, `downloadFileStream` | `src/utils/api.ts::makeRequest` |
+| `navigateBack` utility | History-first back with path-matching fallback | `src/utils/helpers.ts::navigateBack` |
+| Feature `goBack*` wrappers | Per-feature `navigateBack` call with allowed route IDs | `src/pages/assistants/utils/goBackAssistants.ts::goBackAssistants` |
+| Route ID constants | Exported string constants consumed by both router and `navigateBack` | `src/constants/routes.ts::ASSISTANT_DETAILS` |
+| `useHistoryStack` | Updates the `history` Valtio proxy that tracks the navigation stack | `src/hooks/appLevel/useHistoryStack.tsx::useHistoryStack` |
+| `isEnterpriseEdition()` gate | Reads the `ENTERPRISE_EDITION` feature flag at call time; not referenced by `src/router.tsx` | `src/utils/enterpriseEdition.ts::isEnterpriseEdition` |
+| `useFeatureFlag(name)` hook | Reads `settings.enabled` of the matching `appInfoStore.configs` entry; returns `[isEnabled, isConfigFetched]` | `src/hooks/useFeatureFlags.ts::useFeatureFlag` |
 | Component-scoped files | Sub-components, utils, and tests collocated inside feature folder | `src/pages/workflows/editor/` |
 | Workflow editor extraction | Complex canvas logic extracted to `utils/` to keep components slim | `src/pages/workflows/editor/utils/` |
-| `ErrorBoundary` on root route | `ErrorPage` as `ErrorBoundary` prop on the root route object | `src/router.tsx:557` |
+| `ErrorBoundary` on root route | `ErrorPage` as `ErrorBoundary` prop on the root route object | `src/router.tsx::ErrorBoundary` |
 
 ---
 
@@ -202,9 +206,9 @@ and is spread into the root children array (`src/router.tsx:552-571`).
 
 | DO | DON'T |
 |---|---|
-| Call `api.*` inside store methods only | Call `api.*` in components, hooks, or utils |
+| Call `api.*` inside store methods only; the one hook exception is `src/hooks/useMCPAuthPrompt.ts::useMCPAuthPrompt` | Call `api.*` in components, hooks, or utils |
 | Parse responses with `.json()` | Access `.data` (Axios pattern) — no Axios in this project |
-| Use Tailwind classes for all styling | Write custom CSS or inline styles |
+| Use Tailwind classes for new component styles; the existing stylesheets in Mandatory Rules 1 of `.ai-run/guides/styling/styling-guide.md` are the exception | Add a new `.css`/`.scss` file or inline styles |
 | Use `Popup` component for all dialogs | Import `Dialog` from PrimeReact directly |
 | Read global state via `useSnapshot(store)` | Directly read or subscribe to the mutable proxy in JSX |
 | Keep components under 300 lines; extract sub-components | Build monolithic page components |

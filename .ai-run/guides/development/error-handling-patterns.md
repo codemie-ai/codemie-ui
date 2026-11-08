@@ -19,8 +19,8 @@ Never bypass a layer — components must not catch API errors directly.
 
 ## Error Boundaries
 
-There is **no app-wide error boundary**. The repo has exactly one, scoped to a
-single surface: `src/components/InteractiveElements/InteractiveErrorBoundary.tsx`.
+Route errors land in the root route's `ErrorBoundary: ErrorPage` (`src/router.tsx::ErrorBoundary`). The one render
+boundary is `src/a2ui/fallback.tsx::A2uiErrorBoundary`, around agent-authored A2UI surfaces.
 Copy its shape rather than inventing a generic one.
 
 What that boundary actually does:
@@ -30,6 +30,7 @@ What that boundary actually does:
   bracketed source tag, behind an `eslint-disable-next-line no-console`.
 - Fallback is a bordered notice using theme tokens (`border-border-primary/40`,
   `text-text-secondary`) and a `data-testid` so tests can assert the degraded state.
+- `componentDidUpdate` clears `hasError` when the `resetKey` prop changes, so the next payload renders afresh.
 - No `fallback` prop, no retry button. Degrade quietly; do not offer an action
   the boundary cannot perform.
 
@@ -42,7 +43,7 @@ tells you nothing about which surface failed.
 
 ## API Error Handling in Stores
 
-`src/store/assistants.ts` — standard store error pattern:
+Pattern for a new list-fetching store action (the snippet is illustrative; `src/store/budgets.ts::listBudgets` follows it, `src/store/assistants.ts::indexAssistants` sets no `loading` or `error`):
 
 ```typescript
 export const assistantsStore = proxy({
@@ -68,7 +69,7 @@ export const assistantsStore = proxy({
 ```
 
 Rules:
-- Always reset `error = null` at the start of an action.
+- In a list-fetching action, reset `error = null` at the start.
 - Always use `finally` to reset `loading` — never leave it stuck on `true`.
 - For mutation actions (`create`, `update`, `delete`): `toaster.error` in the store, then `throw error` so the component can respond (e.g. keep form open).
 
@@ -238,7 +239,7 @@ const fetchWithRetry = async (endpoint: string, retries = 3) => {
 
 | Problem | Fix |
 |---------|-----|
-| Entire page crashes on render error | Add a surface-scoped boundary modelled on `InteractiveErrorBoundary` — there is no generic one to reuse |
+| A surface crashes the page on a render error | Add a surface-scoped boundary modelled on `A2uiErrorBoundary`; route-level errors already reach `ErrorPage` |
 | `loading` stuck on `true` after error | Add `finally { this.loading = false }` |
 | No user feedback on failure | Always `toaster.error` + set `error` in store |
 | Double-notification on form errors | `toaster` in store only; component just logs |

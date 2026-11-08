@@ -37,7 +37,7 @@
 | `Checkbox` | Boolean toggle |
 | `RadioButton` / `RadioGroup` | Exclusive choice |
 | `Switch` | Toggle switch |
-| `File` / `FilesListInput` | File upload |
+| `File` / `FilesDropzone` | File upload |
 
 ---
 
