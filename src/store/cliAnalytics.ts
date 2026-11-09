@@ -26,9 +26,33 @@ import type {
   CliAnalyticsUserChartsData,
   CliAnalyticsUserTableData,
   SessionDetail,
+  SessionRow,
 } from '@/types/cliAnalytics'
 import type { ErrorDetails, ErrorResponse } from '@/types/common'
 import api from '@/utils/api'
+
+interface UnpricedMetadata {
+  metadata?: { unpriced_models?: string[] }
+}
+
+// Mirrors the backend normalize_model (coding_agent_pricing.py): metadata names the raw model ids,
+// while row.model_name holds the normalized ones (Bedrock wrapper, provider prefix, '-v1:0' tag).
+const normalizeModelName = (model: string): string =>
+  model
+    .replace(/^(bedrock\/)?(converse|invoke)\//i, '')
+    .replace(/^([a-z0-9-]+\.)?anthropic\./i, '')
+    .replace(/(\d{8})-v\d+:\d+$/, '$1')
+
+// The list metadata names unpriced models for the whole page; keep on each row the ones it used.
+const withRowUnpricedModels = (row: SessionRow, unpriced: string[]): SessionRow => {
+  const models = new Set(
+    row.model_name ? row.model_name.split(',').map((name) => normalizeModelName(name.trim())) : []
+  )
+  return {
+    ...row,
+    unpriced_models: unpriced.filter((name) => models.has(normalizeModelName(name))),
+  }
+}
 
 interface CliAnalyticsState {
   abortControllers: Map<string, AbortController>
@@ -220,14 +244,20 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
   },
 
   async fetchSessions(params) {
-    const data = await fetchWithState<{ data: CliAnalyticsSessionsData }>(
+    const data = await fetchWithState<{ data: CliAnalyticsSessionsData } & UnpricedMetadata>(
       cliAnalyticsStore,
       'sessions',
       'v1/analytics/cli-analytics/sessions',
       params,
       'Failed to fetch local analytics sessions'
     )
-    if (data) cliAnalyticsStore.sessions = data.data
+    if (data) {
+      const unpriced = data.metadata?.unpriced_models ?? []
+      cliAnalyticsStore.sessions = {
+        ...data.data,
+        sessions: data.data.sessions.map((row) => withRowUnpricedModels(row, unpriced)),
+      }
+    }
   },
 
   async fetchOverview(params) {
@@ -280,14 +310,19 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
 
   async fetchSessionDetail(traceId) {
     const key = `session:${traceId}`
-    const data = await fetchWithState<{ data: SessionDetail }>(
+    const data = await fetchWithState<{ data: SessionDetail } & UnpricedMetadata>(
       cliAnalyticsStore,
       key,
       `v1/analytics/cli-analytics/sessions/${traceId}`,
       undefined,
       'Failed to fetch session detail'
     )
-    if (data) cliAnalyticsStore.sessionDetail[traceId] = data.data
+    if (data) {
+      cliAnalyticsStore.sessionDetail[traceId] = {
+        ...data.data,
+        unpriced_models: data.metadata?.unpriced_models ?? [],
+      }
+    }
   },
 
   async fetchFrameworks(params) {

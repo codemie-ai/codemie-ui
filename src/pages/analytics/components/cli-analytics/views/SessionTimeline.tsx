@@ -15,6 +15,7 @@
 
 import { type FC, useEffect, useMemo, useState } from 'react'
 
+import { ABSENT_VALUE_MARKER } from '@/constants'
 import type { DispatchRow } from '@/types/cliAnalytics'
 import { formatTokens } from '@/utils/analyticsFormatters'
 import { adjustLightness, getStatusColors } from '@/utils/chartColors'
@@ -53,9 +54,18 @@ const generateNonSessionChartColors = (count: number): string[] => {
 interface SessionTimelineProps {
   dispatches: DispatchRow[]
   sessionDurationMs: number
+  // false when the session has no priced model: a dispatch's 0 cost is then unknown, not $0.
+  costAvailable?: boolean
 }
 
-const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDurationMs }) => {
+const SessionTimeline: FC<SessionTimelineProps> = ({
+  dispatches,
+  sessionDurationMs,
+  costAvailable,
+}) => {
+  const formatDispatchCost = (cost: number) =>
+    costAvailable === false ? ABSENT_VALUE_MARKER : formatCliAnalyticsCost(cost)
+
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const sortedDispatches = useMemo(
@@ -124,7 +134,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDuration
           const rowTooltip = [
             dispatch.label,
             `Duration: ${formatDuration(dispatch.duration_ms)}`,
-            dispatch.cost_usd != null ? `Cost: ${formatCliAnalyticsCost(dispatch.cost_usd)}` : null,
+            dispatch.cost_usd != null ? `Cost: ${formatDispatchCost(dispatch.cost_usd)}` : null,
             dispatchTokens ? `Tokens: ${dispatchTokens}` : null,
           ]
             .filter(Boolean)
@@ -176,8 +186,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({ dispatches, sessionDuration
                     (dispatch.cache_creation_tokens ?? 0)
                 )
               : '—'
-          const costLabel =
-            dispatch.cost_usd != null ? formatCliAnalyticsCost(dispatch.cost_usd) : '—'
+          const costLabel = dispatch.cost_usd != null ? formatDispatchCost(dispatch.cost_usd) : '—'
           const hasBreakdown =
             dispatch.input_tokens != null ||
             dispatch.output_tokens != null ||

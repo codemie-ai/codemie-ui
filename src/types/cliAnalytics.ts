@@ -72,6 +72,10 @@ export interface SessionRow {
   net_lines?: number | null
   bloat_pct?: number
   delivery_framework?: string
+  // false = no model of the session has a catalog price, so cost_usd is unknown, not a real zero.
+  cost_available?: boolean
+  // Models the session used that have no usable catalog price; a non-empty list understates cost_usd.
+  unpriced_models?: string[]
 }
 
 export interface SessionEvent {

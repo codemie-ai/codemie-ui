@@ -310,4 +310,53 @@ describe('SessionsView', () => {
       expect(screen.getByText((1234).toLocaleString())).toBeInTheDocument()
     })
   })
+  describe('cost', () => {
+    const renderRow = (row: Partial<SessionRow>) => {
+      vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+        displayRows: [{ ...MOCK_ROW, ...row }],
+        loading: false,
+        error: null,
+        page: 1,
+        totalPages: 1,
+        perPage: 20,
+        setPage: vi.fn(),
+        search: '',
+        setSearch: vi.fn(),
+      })
+      return render(<SessionsView filters={MOCK_FILTERS} />)
+    }
+    const costCell = () => screen.getAllByRole('cell').at(-1) as HTMLElement
+
+    it('shows an unknown cost as a dash naming the unpriced models, never $0.00', () => {
+      renderRow({ cost_usd: 0, cost_available: false, unpriced_models: ['mai-code-1.1-flash'] })
+
+      expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+      expect(costCell()).toHaveTextContent(/^-$/)
+      expect(costCell().querySelector('[data-tooltip-content]')).toHaveAttribute(
+        'data-tooltip-content',
+        'Cost unknown: no price for mai-code-1.1-flash'
+      )
+    })
+
+    it('marks a partly priced cost as understated', () => {
+      renderRow({
+        cost_usd: 0.01617,
+        cost_available: true,
+        unpriced_models: ['mai-code-1.1-flash'],
+      })
+
+      expect(costCell()).toHaveTextContent('$0.02')
+      expect(screen.getByTestId('unpriced-cost-marker')).toHaveAttribute(
+        'data-tooltip-content',
+        'Understated: no price for mai-code-1.1-flash'
+      )
+    })
+
+    it('renders a fully priced cost without a marker', () => {
+      renderRow({ cost_usd: 0.01617, cost_available: true, unpriced_models: [] })
+
+      expect(costCell()).toHaveTextContent('$0.02')
+      expect(screen.queryByTestId('unpriced-cost-marker')).not.toBeInTheDocument()
+    })
+  })
 })

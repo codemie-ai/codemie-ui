@@ -19,6 +19,11 @@ import { Metric } from '@/types/analytics'
 import { formatMetricQualification, formatMetricValue } from '@/utils/analyticsFormatters'
 import { cn } from '@/utils/utils'
 
+// `break-words`, not `break-all`: a long unbroken number wraps instead of overflowing. The qualification
+// below sets its own rule. Exported so a `valueOverride` can keep the card's value typography.
+export const METRIC_VALUE_CLASS_NAME =
+  'text-lg font-semibold leading-snug tracking-tight text-text-primary break-words [font-variant-numeric:tabular-nums]'
+
 interface MetricCardProps {
   metric: Metric
   mutedTextClassName?: string
@@ -32,9 +37,7 @@ const MetricCard: FC<MetricCardProps> = ({
   metric,
   mutedTextClassName = 'text-text-quaternary',
   badge,
-  // `break-words`, not `break-all`: a long unbroken number wraps instead of overflowing. The qualification
-  // below sets its own rule.
-  valueClassName = 'text-lg font-semibold leading-snug tracking-tight text-text-primary break-words [font-variant-numeric:tabular-nums]',
+  valueClassName = METRIC_VALUE_CLASS_NAME,
   valueColorClassName,
   valueOverride,
 }) => {

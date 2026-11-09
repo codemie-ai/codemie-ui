@@ -24,9 +24,9 @@ import { NOT_REPORTED_LABEL } from '@/constants/cliAnalytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 import type { SessionRow } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
-import { formatCliAnalyticsCost } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 
+import SessionCostValue from './SessionCostValue'
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { describeSessionCount, formatLines, linesTitle } from '../format'
@@ -102,7 +102,13 @@ const CachedTokensCell: FC<{ row: SessionRow }> = ({ row }) => (
 )
 
 const CostCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="text-right">{formatCliAnalyticsCost(row.cost_usd)}</div>
+  <div className="text-right">
+    <SessionCostValue
+      value={row.cost_usd}
+      costAvailable={row.cost_available}
+      unpricedModels={row.unpriced_models}
+    />
+  </div>
 )
 
 const SESSION_CELL_RENDERERS = {

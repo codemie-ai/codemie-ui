@@ -33,10 +33,11 @@ import { formatTokens } from '@/utils/analyticsFormatters'
 import { formatCliAnalyticsCost } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 
+import SessionCostValue from './SessionCostValue'
 import SessionTimeline from './SessionTimeline'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import BarChartWidget from '../../widgets/BarChartWidget'
-import MetricCard from '../../widgets/MetricCard'
+import MetricCard, { METRIC_VALUE_CLASS_NAME } from '../../widgets/MetricCard'
 import {
   describeSessionCount,
   describeSessionToolCalls,
@@ -89,6 +90,15 @@ const growthChartOptions = {
   },
 }
 
+// Unknown cost: no cost series, so the cost axis would only print a meaningless $0 scale.
+const growthChartOptionsWithoutCost = {
+  ...growthChartOptions,
+  scales: {
+    ...growthChartOptions.scales,
+    y: { ...growthChartOptions.scales.y, display: false },
+  },
+}
+
 // Build a Metric object with a pre-formatted string value so MetricCard renders
 // it verbatim without a secondary formatMetricValue transformation.
 function m(id: string, label: string, value: string, description?: string): Metric {
@@ -127,6 +137,24 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
     ),
     m('started', 'Started', formatDateTime(session.start_time, 'short')),
   ]
+
+  // Unknown or understated money replaces the plain value; a fully priced session renders it as is.
+  const costIsQualified =
+    session.cost_available === false || (session.unpriced_models?.length ?? 0) > 0
+  const costOverrides: Record<string, number | null | undefined> = {
+    cost_usd: session.cost_usd,
+    cache_read_cost: session.cache_read_cost_usd,
+  }
+  const costValueOverride = (id: string) =>
+    costIsQualified && id in costOverrides ? (
+      <p className={METRIC_VALUE_CLASS_NAME}>
+        <SessionCostValue
+          value={costOverrides[id]}
+          costAvailable={session.cost_available}
+          unpricedModels={session.unpriced_models}
+        />
+      </p>
+    ) : undefined
 
   const tokenMetrics: Metric[] = [
     m('input', 'Input', formatTokens(session.input_tokens)),
@@ -188,7 +216,11 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
         <AnalyticsWidget title="Cost & Time" expandable={false}>
           <div className="grid grid-cols-2 gap-3 max-sm:gap-2">
             {costMetrics.map((metric) => (
-              <MetricCard key={metric.id} metric={metric} />
+              <MetricCard
+                key={metric.id}
+                metric={metric}
+                valueOverride={costValueOverride(metric.id)}
+              />
             ))}
           </div>
         </AnalyticsWidget>
@@ -223,16 +255,21 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
               data={{
                 labels: growthData.labels,
                 datasets: [
-                  {
-                    label: 'Cost ($)',
-                    data: growthData.costSeries,
-                    borderColor: '#7C5CFC',
-                    backgroundColor: 'rgba(124,92,252,0.1)',
-                    yAxisID: 'y',
-                    fill: true,
-                    tension: 0.25,
-                    pointRadius: 0,
-                  },
+                  // An unknown cost has no curve: the per-turn zeros are not a confirmed $0.
+                  ...(session.cost_available === false
+                    ? []
+                    : [
+                        {
+                          label: 'Cost ($)',
+                          data: growthData.costSeries,
+                          borderColor: '#7C5CFC',
+                          backgroundColor: 'rgba(124,92,252,0.1)',
+                          yAxisID: 'y',
+                          fill: true,
+                          tension: 0.25,
+                          pointRadius: 0,
+                        },
+                      ]),
                   {
                     label: 'Tokens',
                     data: growthData.tokenSeries,
@@ -245,7 +282,11 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
                   },
                 ],
               }}
-              options={growthChartOptions}
+              options={
+                session.cost_available === false
+                  ? growthChartOptionsWithoutCost
+                  : growthChartOptions
+              }
             />
           </div>
         ) : (
@@ -259,6 +300,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
         <SessionTimeline
           dispatches={session.dispatches ?? []}
           sessionDurationMs={session.duration_ms}
+          costAvailable={session.cost_available}
         />
       </AnalyticsWidget>
 

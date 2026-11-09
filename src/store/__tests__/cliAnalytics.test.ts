@@ -13,9 +13,33 @@
 // limitations under the License.
 //
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+import type { SessionRow } from '@/types/cliAnalytics'
 
 import { cliAnalyticsStore } from '../cliAnalytics'
+
+const mockApi = vi.hoisted(() => ({ get: vi.fn() }))
+vi.mock('@/utils/api', () => ({ default: mockApi }))
+
+const respondWith = (body: unknown) => {
+  mockApi.get.mockResolvedValueOnce({ json: () => Promise.resolve(body) })
+}
+
+const sessionRow = (trace_id: string, model_name: string): SessionRow => ({
+  trace_id,
+  developer_name: 'dev',
+  repository: null,
+  start_time: '2026-01-01T00:00:00Z',
+  duration_ms: 1,
+  model_name,
+  input_tokens: 1,
+  output_tokens: 1,
+  cost_usd: 0.01,
+  tool_call_count: 0,
+  branch: null,
+  cost_available: true,
+})
 
 describe('cliAnalyticsStore.clearRepositories', () => {
   it('resets the repositories slot to null', () => {
@@ -41,5 +65,77 @@ describe('cliAnalyticsStore.clearRepositories', () => {
     cliAnalyticsStore.clearRepositories()
 
     expect(cliAnalyticsStore.repositories).toBeNull()
+  })
+})
+
+describe('cliAnalyticsStore unpriced models', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset()
+  })
+
+  it('fetchSessionDetail keeps metadata.unpriced_models on the detail', async () => {
+    respondWith({
+      data: { ...sessionRow('t1', 'mai-code-1.1-flash'), events: [], harness_name: 'claude' },
+      metadata: { unpriced_models: ['mai-code-1.1-flash'] },
+    })
+
+    await cliAnalyticsStore.fetchSessionDetail('t1')
+
+    expect(cliAnalyticsStore.sessionDetail.t1.unpriced_models).toEqual(['mai-code-1.1-flash'])
+  })
+
+  it('fetchSessionDetail stores an empty list when metadata is absent', async () => {
+    respondWith({
+      data: { ...sessionRow('t2', 'claude-sonnet-4-6'), events: [], harness_name: 'claude' },
+    })
+
+    await cliAnalyticsStore.fetchSessionDetail('t2')
+
+    expect(cliAnalyticsStore.sessionDetail.t2.unpriced_models).toEqual([])
+  })
+
+  it('fetchSessions gives each row the unpriced models it used', async () => {
+    respondWith({
+      data: {
+        sessions: [
+          sessionRow('t1', 'claude-sonnet-4-6, mai-code-1.1-flash'),
+          sessionRow('t2', 'claude-sonnet-4-6'),
+        ],
+        page: 0,
+        per_page: 20,
+        total: 2,
+      },
+      metadata: { unpriced_models: ['mai-code-1.1-flash'] },
+    })
+
+    await cliAnalyticsStore.fetchSessions({})
+
+    expect(cliAnalyticsStore.sessions?.sessions.map((row) => row.unpriced_models)).toEqual([
+      ['mai-code-1.1-flash'],
+      [],
+    ])
+  })
+
+  it('fetchSessions matches a Bedrock-wrapped unpriced name to the normalized row model', async () => {
+    const wrapped = 'bedrock/converse/eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+    respondWith({
+      data: {
+        sessions: [
+          sessionRow('t1', 'claude-sonnet-4-6, claude-haiku-4-5-20251001'),
+          sessionRow('t2', 'claude-sonnet-4-6'),
+        ],
+        page: 0,
+        per_page: 20,
+        total: 2,
+      },
+      metadata: { unpriced_models: [wrapped] },
+    })
+
+    await cliAnalyticsStore.fetchSessions({})
+
+    expect(cliAnalyticsStore.sessions?.sessions.map((row) => row.unpriced_models)).toEqual([
+      [wrapped],
+      [],
+    ])
   })
 })
