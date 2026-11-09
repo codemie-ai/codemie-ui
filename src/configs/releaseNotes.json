@@ -1,5 +1,183 @@
 [
   {
+    "version": "2.66.0",
+    "date": "2026-11-10",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Share assistants with selected users",
+            "description": "Enables controlled assistant sharing with specific users.",
+            "issues": [
+              {
+                "key": "EPMCDME-14786",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14786"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "Project budget provisioning API",
+            "description": "Adds API support for third-party systems to manage project budgets.",
+            "issues": [
+              {
+                "key": "EPMCDME-16902",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16902"
+              }
+            ]
+          },
+          {
+            "title": "Sub-assistant tool-call confirmation",
+            "description": "Adds confirmation flows for tool calls made within sub-assistants.",
+            "issues": [
+              {
+                "key": "EPMCDME-16461",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16461"
+              }
+            ]
+          },
+          {
+            "title": "Agent workspace content previews",
+            "description": "Provides readable previews of documents, data, and logs in the agent workspace browser.",
+            "issues": [
+              {
+                "key": "EPMCDME-16460",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16460"
+              }
+            ]
+          },
+          {
+            "title": "Enterprise spend-collection packaging",
+            "description": "Moves spend-collection ETL capabilities into the Enterprise package.",
+            "issues": [
+              {
+                "key": "EPMCDME-16406",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16406"
+              }
+            ]
+          },
+          {
+            "title": "Public export API",
+            "description": "Adds a public REST endpoint for exports.",
+            "issues": [
+              {
+                "key": "EPMCDME-15313",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15313"
+              }
+            ]
+          },
+          {
+            "title": "Project and user-management refinements",
+            "description": "Shows user IDs in User Details and streamlines the Project Overview experience.",
+            "issues": [
+              {
+                "key": "EPMCDME-16611",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16611"
+              },
+              {
+                "key": "EPMCDME-16612",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16612"
+              }
+            ]
+          },
+          {
+            "title": "Project and budget management observability",
+            "description": "Expands logging coverage for project and budget management operations.",
+            "issues": [
+              {
+                "key": "EPMCDME-13904",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13904"
+              }
+            ]
+          },
+          {
+            "title": "Security and dependency maintenance",
+            "description": "Includes non-user-facing security remediation and dependency maintenance updates.",
+            "issues": []
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Project budget and spend attribution accuracy",
+            "description": "Corrects ledger, integration-key, project-period, and project analytics spending attribution.",
+            "issues": [
+              {
+                "key": "EPMCDME-16989",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16989"
+              },
+              {
+                "key": "EPMCDME-16929",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16929"
+              },
+              {
+                "key": "EPMCDME-15071",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15071"
+              },
+              {
+                "key": "EPMCDME-14380",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14380"
+              }
+            ]
+          },
+          {
+            "title": "Analytics visual consistency",
+            "description": "Restores consistent default font rendering across analytics cards.",
+            "issues": [
+              {
+                "key": "EPMCDME-16946",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16946"
+              }
+            ]
+          },
+          {
+            "title": "Windows locale-compatible UI tests",
+            "description": "Fixes codemie-ui unit-test failures on Windows systems using non-US locales.",
+            "issues": [
+              {
+                "key": "EPMCDME-16196",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16196"
+              }
+            ]
+          },
+          {
+            "title": "Accessible navigation control contrast",
+            "description": "Fixes hover contrast for the sidebar’s Hide Menu control.",
+            "issues": [
+              {
+                "key": "EPMCDME-8467",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-8467"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.65.0",
     "date": "2026-11-04",
     "sections": [
