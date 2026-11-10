@@ -77,18 +77,18 @@ The canonical pattern is strictly three steps. Components observe the store snap
 never touch the API client directly.
 
 Step 1 — Page subscribes and triggers:
-  `src/pages/assistants/AssistantsListPage.tsx:18` (`useSnapshot` import)
+  `src/pages/assistants/AssistantsListPage.tsx::AssistantsListPage` (`useSnapshot(assistantsStore)`)
 
 Step 2 — Store owns the API call and state mutation:
-  `src/store/assistants.ts:156` (proxy definition), `:177` (`indexAssistants` method calling `api.get`)
+  `src/store/assistants.ts::assistantsStore` (proxy definition), `src/store/assistants.ts::assistantsStore.indexAssistants` (method calling `api.get`)
 
 Step 3 — Response is parsed with `.json()`, never `.data`:
-  `src/store/assistants.ts:193` (`.then((response) => response.json())`)
+  `src/store/assistants.ts::assistantsStore.indexAssistants` (`response.json()`)
 
 Loading and error states are always properties on the store, set synchronously before and
 after the async call. `toaster.error()` is called from the store on failure.
 
-Session expiry handling lives in `src/store/user.ts:33-35`: `api.redirectHandler` sets
+Session expiry handling lives in `src/store/user.ts::redirectHandler`: `api.redirectHandler` sets
 `userStore.isSessionExpired = true`, which `SessionExpiredPopup` observes.
 
 ---
@@ -102,21 +102,21 @@ Two independent auth paths share zero code:
 | Local auth | `src/authentication/local/SignInPage`, `SignUpPage` | Dev/standalone deployments |
 | Keycloak SSO | `src/authentication/keycloak-theme/keycloakify.tsx` (separate Vite entry) | Production; EPAM SSO via Azure Entra ID |
 
-For Keycloak builds, set `VITE_ENTRY=keycloakify`; the `keycloak-entry` plugin in
-`vite.config.ts:18` swaps the HTML entry to `index-keycloak.html` which renders only
-the `KcPage` component — no router, no app shell.
+For Keycloak builds, set `VITE_ENTRY=keycloakify`; `vite.config.ts::isKeycloak` then builds from
+`index-keycloak.html` (the `rename-keycloak-html` plugin renames it to `index.html` in `dist/`), which renders only
+the `KcPage` component (`src/authentication/keycloak-theme/login/KcPage.tsx::KcPage`) — no router, no app shell.
 
 In production the app receives a Keycloak JWT session cookie automatically; the API client
-reads it via `getIsLocalAuth()` to toggle `credentials: 'include'` (`src/utils/api.ts:128`).
+reads it via `getIsLocalAuth()` to toggle `credentials: 'include'` (`src/utils/api.ts::getIsLocalAuth`).
 
 User state after login: `userStore.user.isAuthenticated` and `userStore.user.isAdmin`
-(`src/types/entity/user.ts:27-29`), populated in `src/store/user.ts:128-130`.
+(`src/types/entity/user.ts::User`), populated in `src/store/user.ts::userStore`.
 
 ---
 
 ## Module Federation
 
-Config: `vite.config.ts:37-43`.
+Config: `vite.config.ts::federation`.
 
 - Host name: `codemie-ui-host`.
 - Declared remote: `angular-upgrade-app` (value populated at runtime from `/applications` API).
@@ -133,25 +133,25 @@ create a page under `src/pages/applications/` that dynamically imports from it.
 
 | Pattern | Description | Key reference |
 |---|---|---|
-| Valtio proxy store | `proxy<StoreType>(…)` — auto-reactive global state | `src/store/assistants.ts:156` |
-| `useSnapshot` read binding | Creates a frozen read-only snapshot inside components | `src/App.tsx:41` |
-| Typed store interface | All stores have a named `interface *StoreType` before `proxy` | `src/store/assistants.ts:55` |
-| Custom `API` class | `get/post/patch/put/delete/stream/postMultipart` methods | `src/utils/api.ts:85-117` |
-| `navigateBack` utility | History-first back with path-matching fallback | `src/utils/helpers.ts:266` |
-| Feature `goBack*` wrappers | Per-feature `navigateBack` call with allowed route IDs | `src/pages/assistants/utils/goBackAssistants.ts:25` |
+| Valtio proxy store | `proxy<StoreType>(…)` — auto-reactive global state | `src/store/assistants.ts::assistantsStore` |
+| `useSnapshot` read binding | Creates a frozen read-only snapshot inside components | `src/App.tsx::useSnapshot` |
+| Typed store interface | Most stores pass a named type to `proxy<…>` (`*StoreType`, `*Store` or `*State`); `dataSourceStore` and `llmModelsStore` call `proxy({…})` untyped — do not copy them | `src/store/assistants.ts::AssistantsStoreType` |
+| Custom `API` class | `get/post/patch/put/delete/stream/postMultipart` methods | `src/utils/api.ts::API` |
+| `navigateBack` utility | History-first back with path-matching fallback | `src/utils/helpers.ts::navigateBack` |
+| Feature `goBack*` wrappers | Per-feature `navigateBack` call with allowed route IDs | `src/pages/assistants/utils/goBackAssistants.ts::goBackAssistants` |
 | Route ID constants | Exported string constants consumed by both router and `navigateBack` | `src/constants/routes.ts` |
-| `useHistoryStack` | Valtio proxy tracking navigation history stack | `src/hooks/appLevel/useHistoryStack.tsx:36` |
-| `isEnterpriseEdition()` gate | Feature-flag to include/exclude route arrays at app start | `src/router.tsx:567-568` |
-| `useFeatureFlag(name)` hook | Runtime feature flag from API; non-React context uses `src/utils/featureFlags` | `src/hooks/useFeatureFlags.ts:61` |
+| `useHistoryStack` | Valtio proxy tracking navigation history stack | `src/hooks/appLevel/useHistoryStack.tsx::history` |
+| `FeatureGuard` on route elements | Wraps a route element so it renders only when its feature flags are on; the router itself spreads every route array unconditionally | `src/components/FeatureGuard.tsx::FeatureGuard` |
+| `useFeatureFlag(name)` hook | Runtime feature flag from API; non-React context uses `src/utils/featureFlags` | `src/hooks/useFeatureFlags.ts::useFeatureFlag` |
 | Component-scoped files | Sub-components, utils, and tests collocated inside feature folder | `src/pages/workflows/editor/` |
 | Workflow editor extraction | Complex canvas logic extracted to `utils/` to keep components slim | `src/pages/workflows/editor/utils/` |
-| `ErrorBoundary` on root route | `ErrorPage` as `ErrorBoundary` prop on the root route object | `src/router.tsx:557` |
+| `ErrorBoundary` on root route | `ErrorPage` as `ErrorBoundary` prop on the root route object | `src/router.tsx::routes` |
 
 ---
 
 ## Feature Folder Convention
 
-Each domain feature follows this layout. Deviations require justification.
+Assistants, skills and workflows follow the full layout below, `goBack<Feature>` included (`src/pages/workflows/utils/goBackWorkflows.ts::goBackWorkflows`); other areas such as `src/pages/dataSources/DataSourcesPage.tsx::DataSourcesPage` and `src/pages/integrations/IntegrationsPage.tsx::IntegrationsPage` keep the page files and `__tests__/` without the `utils/` navigation helpers.
 
 ```
 src/pages/<feature>/
@@ -169,7 +169,7 @@ src/pages/<feature>/
 ```
 
 Route array for the feature lives in `src/router.tsx` as `const <feature>Routes: RouteObject[]`
-and is spread into the root children array (`src/router.tsx:552-571`).
+and is spread into the root children array (`src/router.tsx::routes`).
 
 ---
 
@@ -181,7 +181,7 @@ and is spread into the root children array (`src/router.tsx:552-571`).
 4. **Pages** — follow the feature folder convention above.
 5. **Routes** — add `const <feature>Routes: RouteObject[]` in `src/router.tsx`; spread into root children.
 6. **Navigation** — add entry to `src/components/Navigation/Navigation.tsx`.
-7. **Enterprise gate** — wrap route spread with `isEnterpriseEdition()` if needed (see `src/router.tsx:567`).
+7. **Feature gate** — the router spreads every route array unconditionally; wrap a gated route element in `FeatureGuard` (see `src/router.tsx::dataSourcesSurfaceFlags`).
 8. **Tests** — co-locate in `__tests__/` inside the feature folder.
 
 ---
@@ -191,8 +191,8 @@ and is spread into the root children array (`src/router.tsx:552-571`).
 | Concern | Where it lives | Notes |
 |---|---|---|
 | Error display | `toaster.error()` in store catch blocks | `src/utils/toaster.ts` |
-| Session expiry | `api.redirectHandler` → `userStore.isSessionExpired` | `src/store/user.ts:33-35` |
-| Unsaved changes | `UnsavedChangesProvider` + `useUnsavedChangesWarning` hook | `src/App.tsx:57` |
+| Session expiry | `api.redirectHandler` → `userStore.isSessionExpired` | `src/store/user.ts::redirectHandler` |
+| Unsaved changes | `UnsavedChangesProvider` + `useUnsavedChangesWarning` hook | `src/App.tsx::UnsavedChangesProvider` |
 | Initial data fetch | `useInitialDataFetch` hook mounted in `App.tsx` | `src/hooks/appLevel/useInitialDataFetch.tsx` |
 | Theme toggling | `usePrismThemeToggle` and `themeService` | `src/utils/themeService.ts` |
 

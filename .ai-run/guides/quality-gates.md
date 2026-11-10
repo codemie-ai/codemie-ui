@@ -1,108 +1,70 @@
-# Quality Gates — codemie-ui
+# Quality Gates
 
-Run gates in this order (fastest to slowest). All must pass before opening an MR.
+Run order is fastest-to-slowest.
+
+## Full runs
+
+| Command | Covers | Source |
+|---|---|---|
+| `npm run check:pre-commit` | generated marketplace types up to date, typecheck, lint | package.json::check |
+| `npm run build` | typecheck then vite build | package.json::build |
+| `npm run test:coverage` | unit project with coverage, then integration project without coverage | package.json::test |
+| `npm test` | both Vitest projects (unit, integration) | package.json::test |
+| `MR pipeline` | external pre-ci-guard template; waits on ci-pipeline and compliance-report contexts defined outside this repository; no-op for targets other than main | .gitlab-ci.yml::wait-ci-init |
 
 ---
 
-### Lint
+### lint
 
 **Run**: `npm run lint`
+**Pass**: exit code 0
+**Fail**: non-zero exit with eslint error lines
+**Auto-fix**: npm run lint:fix
 
-**Pass**: No output after the file list, exit code 0.
-
-**Fail**: Lines like `error  'foo' is defined but never used  no-unused-vars`. Exit code non-zero.
-
-**Auto-fix**: `npm run lint:fix` — fixes auto-fixable issues (unused imports, quote style, trailing commas). Not all errors are auto-fixable; review remaining errors manually.
-
-**Skip if**: Linting only non-`src/` files (e.g. pure config edits). Always run when touching `src/`.
-
----
-
-### Type-check
+### typecheck
 
 **Run**: `npm run typecheck`
+**Pass**: exit code 0, no output
+**Fail**: non-zero exit with TS error lines
 
-**Pass**: Silent output, exit code 0.
-
-**Fail**: Lines like `src/store/assistants.ts:45:7 - error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.`
-
-**Auto-fix**: None — fix TypeScript errors manually. Common causes: missing type annotations, mismatched prop types, incorrect generic parameters.
-
-**Skip if**: Documentation-only changes (no `.ts`/`.tsx` files modified).
-
----
-
-### License check
-
-**Run**: `npm run license-check`
-
-**Pass**: A licence summary table, exit code 0. Exits 0 on the current tree.
-
-**Fail**: `license-checker` names the offending package and its licence. The allow list is inline in the script in `package.json` — a dependency whose licence falls outside it is not admissible, whatever its version.
-
-**Auto-fix**: None. Either the dependency is replaced or the allow list changes, and changing the allow list is a decision, not a fix.
-
-**Skip if**: No dependency was added, removed, or moved. This gate is not in the pre-commit hook, so it only runs when you run it.
-
----
-
-### Secret detection
-
-**Run**: `npm run secrets:check`
-
-**Pass**: `no leaks found`, exit code 0.
-
-**Fail**: gitleaks prints the rule and the file for each finding.
-
-**Auto-fix**: None. A credential that reached a commit is compromised and must be rotated by a human — deleting the line is not the fix.
-
-**Skip if**: Never skip; it also runs automatically in the pre-commit hook and server-side as the MR pipeline's `gitleaks-scan` task.
-
-> **Read the output, not the exit code.** The script pulls the gitleaks image at run time (tag in `package.json`) and prints `Secrets detected! Please remove sensitive data before committing.` whenever the child exits non-zero — including when the image could not be pulled. It also scans the working tree only, never git history. Both traps: [`security/verification.md`](security/verification.md).
-
----
-
-### Unit Tests
+### unit-tests
 
 **Run**: `npm run test:unit:slnt`
+**Pass**: exit code 0
+**Fail**: non-zero exit with FAIL lines
+**Notes**: A suite that fails to import adds nothing to the counter; quote the Test Files line
 
-**Pass**: All test suites pass, summary shows `X passed`, exit code 0.
-
-**Fail**: `FAIL src/components/Foo/__tests__/Foo.test.tsx` with assertion errors or unresolved mocks.
-
-**Auto-fix**: None — fix the test or the component code. Run a single file with `npm run test:unit -- --reporter=verbose src/path/to/Foo.test.tsx`.
-
-**Skip if**: Changes are limited to files with no corresponding unit tests (e.g. pure config, assets). When in doubt, run anyway.
-
----
-
-### Integration Tests
+### integration-tests
 
 **Run**: `npm run test:integration:slnt`
-
-**Pass**: All integration suites pass, summary shows `X passed`, exit code 0.
-
-**Fail**: Suite error with component render or store interaction failure.
-
-**Auto-fix**: None — integration tests verify Component → Store → API flow. Fix the implementation or the test assertion.
-
+**Pass**: exit code 0
+**Fail**: non-zero exit with FAIL lines
 **Skip if**: Changes are purely in standalone utility functions with no component or store involvement. When in doubt, run anyway.
+**Notes**: Integration tests verify the Component → Store → API flow; fix the implementation or the assertion.
 
----
+### secrets
 
-### Test Harness (MR compliance gate)
+**Run**: `npm run secrets:check`
+**Side effects**: pulls the gitleaks image
+**Pass**: exit code 0
+**Fail**: any non-zero gitleaks exit, image pull failure included, prints 'Secrets detected!'; exit 1 when no container engine is found or its daemon is stopped
+**Notes**: A credential that reached a commit must be rotated. Read the output, not the exit code: the script prints `Secrets detected!` whenever the child exits non-zero, including when the image could not be pulled, and it scans the working tree only, never git history — security/verification.md.
 
-**Run**: `npm run test-harness`
+### license
 
-**Pass**: Summary shows no failures (e.g. `42 passed`), exit code 0.
+**Run**: `npm run license-check`
+**Side effects**: Writes nothing to the repository: there is no --out flag, so output goes to stdout. If license-checker is not installed, npx downloads the latest registry version into the npx cache over the network, so the checker version is not pinned. The scan reads the installed node_modules tree, dev dependencies included, not package-lock.json. A stale or partial install therefore checks the wrong tree.
+**Pass**: Exit 0 and a licence summary (licence names with package counts) on stdout. That happens when every scanned package's licence string contains at least one allow-list entry as a substring (license-checker matches with indexOf, not an exact or SPDX match). Exit 0 does not prove the scan worked: a scan error prints 'Found error' and the error to stderr, then still prints the summary and exits 0. Read stderr, not just the exit code.
+**Fail**: Exit 1 at the first package whose licence string contains none of the allow-list entries. stderr then shows `Package "<name@version>" is licensed under "<licence>" which is not permitted by the --onlyAllow flag. Exiting.` Only that first package is reported, and no summary is printed.
+**Notes**: Changing the allow list is a decision, not a fix. Behaviour read from license-checker@25.0.1 (unpinned; fetched by npx).
 
-**Fail**: Paste the summary anyway and group failures by cause in the MR (see the template). Reproduce on `main` with the same complete config before calling a failure unrelated.
+### sonar
 
-**Auto-fix**: None.
-
-**Skip if**: Never. The `auto_epm-cdme_vcs` bot checks the `## Test harness` section of the MR; without it the MR fails the compliance check. Needs the stack up and `~/.codemie/test-harness.json`. A gate that could not run is unverified, not passed. Manual browser scenarios and screenshots: [testing/local-verification.md](testing/local-verification.md).
-
----
+**Run**: `npm run sonar-local`
+**Side effects**: runs the full unit coverage and integration suites, writes the coverage report, uploads analysis for the current branch
+**Pass**: exit code 0 after the scanner's quality gate passes
+**Fail**: exit 1 on any thrown error: missing sonar-project.properties, unresolved branch, coverage run failure, scanner or quality-gate failure (issue details printed)
+**Skip if**: SONAR_TOKEN unset, or the Sonar host unreachable (exit 0 without scanning)
 
 ## Pre-commit Gate (Automatic)
 
@@ -110,10 +72,10 @@ The Husky pre-commit hook runs these automatically on every `git commit`:
 
 | Gate | Command | Notes |
 |---|---|---|
-| Staged file lint/format | `npx lint-staged` | Formats and lints only staged files |
+| Staged file lint/format | `npx lint-staged` | Runs prettier and eslint --fix on staged code files, then `tsc --noEmit` over the whole project, and adds missing licence headers under `src/` (`package.json::lint-staged`) |
 | License headers | `npm run license-headers:check` | Checks all source files for license header |
 | Secret detection | `npm run secrets:check` | Scans for accidentally committed secrets |
-| Sonar local scan | `npm run sonar-local` | Local SonarQube static analysis |
+| Sonar local scan | `npm run sonar-local` | Exits 0 without scanning when `SONAR_TOKEN` is unset or the Sonar host is unreachable; otherwise runs `npm run test:coverage` first, then `sonar-scanner` waiting on the quality gate (`scripts/sonar/run-local-sonar.mjs::main`) |
 
 These run automatically — you do not invoke them manually before committing.
 
@@ -128,4 +90,4 @@ npm run test:unit:slnt         # Unit tests
 npm run test:integration:slnt  # Integration tests
 ```
 
-All four must exit 0 before pushing and opening an MR. Then run the harness gate above and the scenarios in [testing/local-verification.md](testing/local-verification.md).
+All four must exit 0 before pushing and opening an MR. Then run `npm run test-harness` (`README.md` § Sanity UI suite) and the scenarios in [testing/local-verification.md](testing/local-verification.md).

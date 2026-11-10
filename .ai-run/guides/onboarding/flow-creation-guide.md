@@ -10,7 +10,7 @@
 |---|---|
 | `src/types/onboarding.ts` | `OnboardingFlow`, `OnboardingFlowTriggers`, step type definitions |
 | `src/store/onboarding.ts` | Flow registry, `getFlowsForPage`, `getFlowsForWelcome` |
-| `src/config/onboarding/flows/` | Individual flow implementations |
+| `src/configs/onboarding/` | Individual flow implementations, re-exported by its `index.ts` (`src/configs/onboarding/index.ts::navigationIntroductionFlow`) |
 | `src/constants/routes.ts` | Route name constants |
 | `src/constants/helpLinks.ts` | `HelpPageId` values |
 
@@ -237,7 +237,7 @@ interface OnboardingFlow {
 }
 ```
 
-Implemented flow files live in `src/config/onboarding/flows/`. See `firstTimeUser.ts` for a reference implementation.
+Implemented flow files live in `src/configs/onboarding/`. See `src/configs/onboarding/navigationIntroduction.tsx::navigationIntroductionFlow` for a reference implementation.
 
 ---
 

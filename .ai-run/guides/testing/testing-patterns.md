@@ -144,8 +144,8 @@ Integration tests use **real Valtio reactivity** — store state changes trigger
 
 | Export | Purpose |
 |---|---|
-| `renderPage(path)` | Renders full app at route via `createMemoryRouter` |
-| `mockAPI(method, url, data, statusOrParams?)` | Registers fetch mock for one test |
+| `renderPage(path)` | Renders full app at route via `createMemoryRouter` (`src/test-utils/integration.tsx::renderPage`) |
+| `mockAPI(method, url, data, statusOrParams?)` | Registers fetch mock for one test (`src/test-utils/integration.tsx::mockAPI`) |
 | `navigate` | `vi.fn()` spy replacing `useNavigate` globally |
 
 ### `mockAPI` Matching Rules
@@ -277,3 +277,21 @@ await userEvent.click(within(row).getByTestId('actions-menu'))
 | Assigning to `import.meta.env` does not compile | Vite 8 turns `import.meta.env` into an expression, and it never reached other modules anyway | `vi.stubEnv('VITE_X', value)` plus `vi.unstubAllEnvs()` in `afterEach` |
 | A test depends on the order of `afterEach` hooks | `vite.config.ts` pins `sequence.hooks: 'parallel'` (Vitest 1 behaviour; Vitest 5 defaults to `'stack'`) | Don't depend on hook order between `setupTests*` and the test file. A request that misses `mockAPI` after the test ended never settles, so it cannot leak `null` into the next test |
 | Test passes alone, crashes an unrelated *later* test with e.g. `ReferenceError: localStorage is not defined` | Page under test has a self-rescheduling `setTimeout`/`setInterval` background poll (e.g. `DataSourcesPage`'s 5s `REFRESH_TIMEOUT`); a request resolving after unmount reschedules a timer nothing clears, which fires after that test's jsdom is torn down | Track real timers created during the test and force-clear them in `afterEach` — do **not** reach for `vi.useFakeTimers()` (it also fakes `waitFor`/`userEvent`'s internal timers and trades one flake for another). Full pattern + code: integration-tester skill's `references/setup.md` → "Background Polling / Self-Rescheduling Timers" |
+
+## Tests Failing in CI but Passing Locally
+
+When the user reports this or pastes a CI `test:coverage` log:
+
+1. Take the failing tests from the `FAIL` lines at the end of the log.
+2. If the error is `Test timed out in 5000ms` (often followed on the retry by "Found multiple
+   elements"), run only that file with coverage:
+   `npx vitest run --coverage --project <unit|integration> <path>`.
+3. Passes locally → it is coverage overhead in CI. Raise `CI_COVERAGE_TEST_TIMEOUT_MS` in
+   `vite.config.ts`; do not rewrite the test.
+4. Fails locally, fails on every CI run, or fails on an assertion rather than a timeout → the
+   timeout is not the cause. Debug it; a common cause is a mock changed with `mockReturnValue`
+   inside a test instead of reset in `beforeEach`.
+
+The worker cap (`maxWorkers` in `vite.config.ts`), the unit-only coverage pass and the timeout
+are explained in `README.md` § Test workers and timeouts. Do not remove the cap to speed up a
+local run; pass `--maxWorkers` on the command line instead.

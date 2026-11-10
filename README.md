@@ -148,7 +148,7 @@ npm run sonar-local          # Run shared local SonarQube check
   separate pass without instrumentation, which is ~3× faster.
 - **Test timeout is 30 s** (`CI_COVERAGE_TEST_TIMEOUT_MS` in `vite.config.ts`) to absorb
   coverage overhead in CI. A test that times out only in CI is not a code bug — see
-  `AGENTS.md` § Reading gate output.
+  `.ai-run/guides/testing/testing-patterns.md` § Tests Failing in CI but Passing Locally.
 
 ### Sanity UI suite (CodeMie test harness)
 

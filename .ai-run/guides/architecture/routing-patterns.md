@@ -3,9 +3,9 @@
 ## Overview
 
 - Router: **React Router v7.9.5** (`react-router` package — import from `'react-router'`, not `'react-router-dom'`)
-- Strategy: **hash-based** (`createHashRouter`) — all paths live inside `#/`
+- Strategy: **browser history** (`createBrowserRouter` with `basename: import.meta.env.BASE_URL`) — paths are real URL paths, no `#/` (`src/router.tsx::router`)
 - Route tree defined in a single file: `src/router.tsx`
-- Entry point: `src/main.tsx:40` renders `<RouterProvider router={router} />`
+- Entry point: `src/main.tsx::RouterProvider` renders `<RouterProvider router={router} />`
 - Route IDs are string constants in `src/constants/routes.ts`; reference by ID, not raw string
 
 ---
@@ -15,25 +15,26 @@
 ### File layout
 
 `src/router.tsx` declares one `RouteObject[]` array per domain feature, then spreads them
-all into a single root route object (`src/router.tsx:552-591`).
+all into a single root route object (`src/router.tsx::routes`).
 
 ```
-src/router.tsx:16    import { createHashRouter, redirect, RouteObject } from 'react-router'
-src/router.tsx:95    const chatRoutes: RouteObject[] = […]
-src/router.tsx:118   const assistantRoutes: RouteObject[] = […]
-src/router.tsx:186   const skillRoutes: RouteObject[] = […]
-src/router.tsx:219   const integrationRoutes: RouteObject[] = […]
-src/router.tsx:247   const dataSourceRoutes: RouteObject[] = […]
-src/router.tsx:270   const katasRoutes: RouteObject[] = […]
-src/router.tsx:308   const workflowRoutes: RouteObject[] = […]
-src/router.tsx:366   const applicationRoutes: RouteObject[] = […]
-src/router.tsx:384   const aiAdoptionConfigRoutes: RouteObject[] = […]
-src/router.tsx:392   const settingsRoutes: RouteObject[] = […]
-src/router.tsx:462   const awsSettingsRoutes: RouteObject[] = […]
-src/router.tsx:517   const analyticsRoutes: RouteObject[] = […]
-src/router.tsx:535   const otherRoutes: RouteObject[] = […]
-src/router.tsx:552   export const routes: RouteObject[] = [{ path: '/', Component: App, … }]
-src/router.tsx:591   export const router = createHashRouter(routes)
+import { createBrowserRouter, Navigate, Outlet, redirect, RouteObject } from 'react-router'
+const chatRoutes: RouteObject[] = […]
+const assistantRoutes: RouteObject[] = […]
+const skillRoutes: RouteObject[] = […]
+const integrationRoutes: RouteObject[] = […]
+const dataSourceRoutes: RouteObject[] = […]
+const schedulerRoutes: RouteObject[] = […]
+const katasRoutes: RouteObject[] = […]
+const workflowRoutes: RouteObject[] = […]
+const applicationRoutes: RouteObject[] = […]
+const settingsRoutes: RouteObject[] = […]
+const awsSettingsRoutes: RouteObject[] = […]
+const analyticsRoutes: RouteObject[] = […]
+const otherRoutes: RouteObject[] = […]
+const favoritesRoutes: RouteObject[] = […]
+export const routes: RouteObject[] = [{ id: 'root', path: '/', Component: App, ErrorBoundary: ErrorPage, … }, …]
+export const router = createBrowserRouter(routes, { basename: import.meta.env.BASE_URL })
 ```
 
 ### Root route
@@ -48,9 +49,9 @@ id: 'root', path: '/', Component: App, ErrorBoundary: ErrorPage
 ### Auth routes (outside root, no nav shell)
 
 ```
-src/router.tsx:574   { id: 'login-success', path: '/login-success', Component: LoginSuccessPage }
-src/router.tsx:580   { id: 'sign-in', path: '/auth/sign-in', Component: SignInPage }
-src/router.tsx:585   { id: 'sign-up', path: '/auth/sign-up', Component: SignUpPage }
+{ id: 'login-success', path: '/login-success', Component: LoginSuccessPage }
+{ id: 'sign-in', path: '/auth/sign-in', Component: SignInPage }
+{ id: 'sign-up', path: '/auth/sign-up', Component: SignUpPage }
 ```
 
 These are siblings of the root route — they render without the main navigation layout.
@@ -59,9 +60,9 @@ These are siblings of the root route — they render without the main navigation
 
 `workflowRoutes` uses a loader to redirect `/workflows` to the default sub-route:
 ```
-src/router.tsx:312  loader: () => redirect('/workflows/my')
+src/router.tsx::workflowRoutes  loader: () => redirect('/workflows/my')
 ```
-This is the standard pattern for default sub-routes across the app.
+`workflowRoutes` is the only route tree with a `loader`; the settings tree redirects with a `<Navigate to=… replace />` element instead (`src/router.tsx::settingsRoutes`).
 
 ---
 
@@ -81,7 +82,7 @@ import { Link } from 'react-router'
 
 ```
 import { useNavigate } from 'react-router'
-// src/pages/settings/administration/MCPManagementPage.tsx:17-66
+// src/pages/settings/administration/MCPManagementPage.tsx::MCPManagementPage
 const navigate = useNavigate()
 navigate('/assistants')           // push
 navigate(-1)                      // go back — avoid on create/edit pages (see goBack section)
@@ -102,7 +103,7 @@ const from = location.state?.from
 ### Navigating after a store action
 
 Store methods return the new entity ID. The component navigates after awaiting the call.
-Pattern: `src/pages/katas/NewKataPage.tsx:56` (useNavigate) + store returns id.
+Pattern: `src/pages/katas/NewKataPage.tsx::NewKataPage` (useNavigate) + store returns id.
 
 ---
 
@@ -112,13 +113,13 @@ Pattern: `src/pages/katas/NewKataPage.tsx:56` (useNavigate) + store returns id.
 
 ```
 import { useParams } from 'react-router'
-// src/pages/katas/EditKataPage.tsx:44
+// src/pages/katas/EditKataPage.tsx::EditKataPage
 const { kataId } = useParams<{ kataId: string }>()
 
-// src/pages/skills/EditSkillPage.tsx:30
+// src/pages/skills/EditSkillPage.tsx::EditSkillPage
 const { id } = useParams<{ id: string }>()
 
-// src/pages/applications/ApplicationFederationPage.tsx:37
+// src/pages/applications/ApplicationFederationPage.tsx::ApplicationFederationPage
 const { slug } = useParams<{ slug: string }>()
 ```
 
@@ -130,15 +131,15 @@ store calls or `useEffect` dependencies.
 **Variant A — `react-router` native** (simple cases, no hash quirk):
 ```
 import { useSearchParams } from 'react-router'
-// src/pages/chat/hooks/useChatInitialPrompt.tsx:17
+// src/pages/chat/hooks/useChatInitialPrompt.tsx::useChatInitialPrompt
 const [searchParams, setSearchParams] = useSearchParams()
 const value = searchParams.get('tab') ?? 'all'
 ```
 
-**Variant B — project custom hook** (hash-routing aware, persists to `sessionStorage`):
+**Variant B — project custom hook** (writes `window.history` directly, persists to `sessionStorage` per pathname):
 ```
 import { useSearchParams } from '@/hooks/useSearchParams'
-// src/hooks/useSearchParams.ts:25
+// src/hooks/useSearchParams.ts::useSearchParams
 const [searchParams, setSearchParams, clearParams] = useSearchParams()
 ```
 
@@ -156,18 +157,18 @@ instead.
 ### Pattern A — path-matching (multiple valid previous destinations)
 
 ```
-// src/pages/assistants/utils/goBackAssistants.ts:25
+// src/pages/assistants/utils/goBackAssistants.ts::goBackAssistants
 export const goBackAssistants = (defaultPath = ASSISTANTS_DEFAULT) =>
   navigateBack(defaultPath, ASSISTANTS_DEFAULT, ASSISTANTS_PROJECT, …)
 ```
 
-`navigateBack` (defined at `src/utils/helpers.ts:266`) checks `history.stack` for the last
+`navigateBack` (defined at `src/utils/helpers.ts::navigateBack`) checks `history.stack` for the last
 matching route ID; if none, climbs the current URL path segment by segment.
 
 ### Pattern B — history stack (single destination)
 
 ```
-// src/pages/skills/utils/goBackSkills.ts:24
+// src/pages/skills/utils/goBackSkills.ts::goBackSkills
 export const goBackSkills = (router, defaultRoute = SKILLS_ALL) => {
   const prevRoute = history.stack[history.currentIndex - 1]
   if (prevRoute) { router.back(); return }
@@ -176,7 +177,7 @@ export const goBackSkills = (router, defaultRoute = SKILLS_ALL) => {
 ```
 
 `history` is a Valtio proxy updated by `useHistoryStack` in `App.tsx`
-(`src/hooks/appLevel/useHistoryStack.tsx:36`).
+(`src/hooks/appLevel/useHistoryStack.tsx::history`).
 
 | Use | When |
 |---|---|
@@ -191,23 +192,18 @@ export const goBackSkills = (router, defaultRoute = SKILLS_ALL) => {
 The project does not use a generic `ProtectedRoute` wrapper component. Protection is handled
 by two complementary mechanisms:
 
-**1. Enterprise edition gate** — entire route arrays are conditionally included at startup:
-```
-src/router.tsx:567  ...(isEnterpriseEdition() ? analyticsRoutes : [])
-src/router.tsx:568  ...(isEnterpriseEdition() ? aiAdoptionConfigRoutes : [])
-```
+**1. Feature-flag gate** — `src/router.tsx::routes` spreads every route array unconditionally; a flagged route wraps its element in `FeatureGuard` (`src/components/FeatureGuard.tsx::FeatureGuard`), as the data-source routes do with `src/router.tsx::dataSourcesSurfaceFlags`.
 
 **2. Component-level role check** — admin-only UI is hidden inside the component using the
 store snapshot:
 ```
-src/pages/settings/AdministrationPage.tsx:25-30
+src/pages/settings/AdministrationPage.tsx::AdministrationPage
 const { user } = useSnapshot(userStore)
 {user?.isAdmin ? <AdminToolsCard /> : null}
 ```
 
-There is no `loader`-based redirect guard in the production codebase (the source guide shows it
-as an illustrative pattern only). Actual protection is in-component or at build-time via
-`isEnterpriseEdition()`.
+There is no `loader`-based redirect guard in the production codebase. Actual protection is in-component or
+through `FeatureGuard` on the route element.
 
 ---
 
@@ -225,15 +221,15 @@ Route IDs serve double duty: they identify routes in the router config and are t
 passed to `navigateBack` / `router.push({ name })`. Always use the constants, never inline strings.
 
 ```
-src/constants/routes.ts:16-52
+src/constants/routes.ts::CHATS
 CHATS, ASSISTANTS_DEFAULT, ASSISTANT_DETAILS, NEW_WORKFLOW, VIEW_WORKFLOW,
 EDIT_WORKFLOW, ANALYTICS, SKILLS_ALL, NEW_SKILL, SKILL_DETAILS …
 ```
 
 URL builder utilities keep path construction off call sites:
 ```
-src/pages/assistants/utils/getAssistantLink.tsx:18
-  getAssistantLink(id) → `${getRootPath()}/#/assistants/${encodeURIComponent(id)}`
+src/pages/assistants/utils/getAssistantLink.tsx::getAssistantLink
+  getAssistantLink(assistant) → readable path from `buildReadablePath`, else `${getRootPath()}/assistants/${encodeURIComponent(assistant.id)}`
 ```
 
 ---

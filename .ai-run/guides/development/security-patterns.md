@@ -52,6 +52,10 @@ The rule that fix encodes:
   `src/utils/__tests__/redirectHashRoutes.test.ts` is the shape to copy — the reason this class of
   bug recurs is that the fix is one line and nothing pins it down.
 
+## Agent-authored A2UI media
+
+- **Draw agent-supplied media through the project renderers.** `Image`, `Video` and `AudioPlayer` are registered in `src/a2ui/registry.tsx::OWN_COMPONENTS` through `src/a2ui/factory.tsx::createMediaImplementation` instead of the SDK catalog; a new A2UI component that loads a URL from the agent is registered the same way.
+
 ## Cross-window messages
 
 ```bash

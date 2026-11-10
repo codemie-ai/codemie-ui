@@ -17,8 +17,8 @@ Every component follows this internal ordering:
 7. Return JSX
 8. `export default`
 
-Real reference: `src/components/Button/Button.tsx:41` (FC declaration pattern)
-Real reference: `src/pages/assistants/AssistantsListPage.tsx:17` (hooks ordering in a page component)
+Real reference: `src/components/Button/Button.tsx::Button` (FC declaration pattern)
+Real reference: `src/pages/assistants/AssistantsListPage.tsx::AssistantsListPage` (hooks ordering in a page component)
 
 ---
 
@@ -40,9 +40,9 @@ Rules:
 - Include `className?: string` on every presentational component so callers can extend layout.
 - Use `React.ReactNode` for slot props (`children`, `actions`, `headerContent`).
 - Extend HTML attributes with `extends Omit<InputHTMLAttributes<...>, 'value'>` when wrapping native elements.
-  - Real reference: `src/components/form/Input/Input.tsx:22`
+  - Real reference: `src/components/form/Input/Input.tsx::InputProps`
 - Use `ButtonHTMLAttributes` extension for button wrappers.
-  - Real reference: `src/components/Button/Button.tsx:30`
+  - Real reference: `src/components/Button/Button.tsx::ButtonProps`
 
 **Props design — DO/DON'T**
 
@@ -53,7 +53,7 @@ Rules:
 | Default values | `submitText = 'Create'` (destructure default) | conditional `\|\|` fallbacks in body |
 | Nullish default | `value ?? defaultValue` | `value \|\| defaultValue` (drops `0`, `''`) |
 
-Real reference: `src/components/Popup/Popup.tsx:25–51` (well-typed PopupProps with slot props)
+Real reference: `src/components/Popup/Popup.tsx::PopupProps` (well-typed PopupProps with slot props)
 
 ---
 
@@ -91,7 +91,7 @@ useEffect(() => {
 }, [visible, onHide])
 ```
 
-Real reference: `src/components/Popup/Popup.tsx:83–94`
+Real reference: `src/components/Popup/Popup.tsx::handleEscapeKey`
 
 ---
 
@@ -106,7 +106,7 @@ const { items, loading, error } = useSnapshot(exampleStore)
 useEffect(() => { exampleStore.fetchItems() }, [])
 ```
 
-Real reference: `src/pages/assistants/AssistantsListPage.tsx:18,52`
+Real reference: `src/pages/assistants/AssistantsListPage.tsx::AssistantsListPage` (`useSnapshot(assistantsStore)`)
 
 ---
 
@@ -123,7 +123,7 @@ Enforced by ESLint. Violations block the linter.
 7. Type imports
 8. Asset imports (`.svg?react`, images)
 
-Real reference: `src/pages/assistants/AssistantsListPage.tsx:17–50` (correct ordering in a page component)
+Real reference: `src/pages/assistants/AssistantsListPage.tsx::AssistantsListPage` (correct ordering in a page component)
 
 ---
 
@@ -174,7 +174,7 @@ Every interactive component must meet these minimums:
 
 - Buttons and links have visible text or an `aria-label`.
 - Modals (Popup) get `aria-labelledby` pointing to the heading id.
-  Real reference: `src/components/Popup/Popup.tsx:80` (`useId()` for headerId)
+  Real reference: `src/components/Popup/Popup.tsx::headerId` (`useId()` for headerId)
 - Form inputs get matching `<label>` via the `label` prop or explicit `htmlFor`.
 - Use `role` and `aria-*` attributes only when a native element cannot convey semantics.
 - Keyboard-navigable controls must be reachable with `Tab` and operable with `Enter`/`Space`.
@@ -190,7 +190,7 @@ Prefer passing `ReactNode` slot props (`headerContent`, `footerContent`, `action
 render-prop functions. This avoids closure complexity and aligns with how PrimeReact Dialog
 slots work.
 
-Real reference: `src/components/Popup/Popup.tsx:43–45` (`headerContent`, `footerContent`)
+Real reference: `src/components/Popup/Popup.tsx::PopupProps` (`headerContent`, `footerContent`)
 
 ### Children for flexible body content
 
@@ -211,7 +211,7 @@ props over unnamed children slots to make structure explicit at the call site.
 | `extends HTMLAttributes` | Wrapping a native element | `Input` extends `InputHTMLAttributes` |
 | `as const` enum objects | Exhaustive string unions | `ButtonType`, `ButtonSize` in `@/constants` |
 | Generic component | Reusable over data shapes | `Tabs<TabId extends string>` |
-| `forwardRef` | Wrapping inputs that need DOM ref | `src/components/form/Input/Input.tsx:50` |
+| `forwardRef` | Wrapping inputs that need DOM ref | `src/components/form/Input/Input.tsx::Input` |
 | `React.FC<Props>` | Standard component declaration | All components in this project |
 
 Avoid:

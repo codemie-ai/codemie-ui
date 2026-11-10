@@ -4,9 +4,9 @@
 
 | Field | Value | Source |
 |---|---|---|
-| Project name | CodeMie UI | `README.md` |
-| Repository/package | `codemie-ui` (npm name `ai-assistant`) | `package.json`, `git remote -v` |
-| Project code/key | EPMCDME | `CONTRIBUTING.md` |
+| Project name | CodeMie UI | README.md::CodeMie |
+| Repository/package | codemie-ui | sonar-project.properties::codemie-ui |
+| Project code/key | EPMCDME | CONTRIBUTING.md::EPMCDME |
 
 ## Work Item Tracker
 
@@ -15,8 +15,6 @@
 | Provider | Jira |
 | Key/prefix | EPMCDME |
 
-> Adapter configuration belongs exclusively in `## Ticket Adapter`. Do not duplicate adapter status or instructions in the Work Item Tracker table.
-
 ## Ticket Adapter
 
 **Status**: configured
@@ -24,6 +22,8 @@
 **Lookup**: Invoke the `codemie-jira-assistant` skill with the ticket key and a request for summary, description, acceptance criteria, and links.
 **Create**: Invoke the `codemie-jira-assistant` skill with the complete ticket payload or approved story file as the argument.
 **Output**: Ticket key and URL returned by the skill.
+**Comment**: Invoke the `codemie-jira-assistant` skill with a request to add a comment to the ticket, passing the comment body as the argument.
+**Attach**: Invoke the `codemie-jira-assistant` skill with a request to attach the file to the ticket, passing the file path as the argument.
 
 ## Source Control And Review
 
@@ -38,7 +38,8 @@
 
 **Status**: configured
 **Adapter**: `glab` CLI, authenticated against the GitLab host in `git remote -v`.
-**Instructions**: Open the MR against `main`. The description must carry the full `npm run test-harness` log and must ask a reviewer to post `/sanity`; requirements are in `standards/git-workflow.md` and `security/README.md` § MR handoff.
+**Instructions**: Open the MR against `main`. The description must carry the full `npm run test-harness` log and must ask a reviewer to post `/sanity`; requirements are in `.gitlab/merge_request_templates/Default.md` and `security/README.md` § MR handoff.
+**Body Template**: .gitlab/merge_request_templates/Default.md
 
 ## Complexity Scoring
 

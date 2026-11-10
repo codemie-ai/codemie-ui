@@ -197,4 +197,6 @@ Usage: `card-grid-2:grid-cols-2`, `view-details-bp:flex-row`
 - `tailwind.config.ts` — token definitions and `generateThemes` call
 - `src/utils/themeHelpers.ts` — theme generation utility
 - `src/hooks/useTheme.ts` — React hook for reading/setting theme
+- `src/constants/theme.ts::primeReactPtOptions` — PrimeReact passthrough options built from the preset in `src/styles/presets/lara/index.ts::dropdown` and siblings, applied by `PrimeReactProvider` in `src/App.tsx::primeReactPtOptions`
+- `src/assets/stylesheets/main.scss::tailwind` — the global stylesheet `src/main.tsx` imports; it loads the Tailwind layers and the PrimeReact and toast overrides
 - `styling-guide.md` — complete token reference and Tailwind rules

@@ -11,7 +11,7 @@ All shared components live in `src/components/`. Import via `@/components/<Name>
 
 The `Popup` component wraps PrimeReact `Dialog` internally and enforces project conventions
 (keyboard handling, footer layout, accessibility).
-See `src/components/Popup/Popup.tsx:16` — it imports Dialog; you never should.
+See `src/components/Popup/Popup.tsx::Dialog` — it imports Dialog; you never should.
 
 ---
 
@@ -39,7 +39,7 @@ See `src/components/Popup/Popup.tsx:16` — it imports Dialog; you never should.
 
 `Button` variants (from `ButtonType` constant): `base`, `primary`, `action`, `secondary`, `tertiary`, `delete`.
 `Button` sizes (from `ButtonSize` constant): `small`, `medium`, `large`.
-Real reference: `src/components/Button/Button.tsx:30–38` (ButtonProps interface).
+Real reference: `src/components/Button/Button.tsx::ButtonProps` (ButtonProps interface).
 
 Usage pattern:
 ```tsx
@@ -60,8 +60,8 @@ import { ButtonType, ButtonSize } from '@/constants'
 | `InfoWarning` | Inline info/warning banner | `@/components/InfoWarning` | `message`, `type?` (`InfoWarningType` enum), `header?` |
 | `ProgressBar` | Progress indicator | `@/components/ProgressBar` | varies |
 
-`Popup` full props defined at: `src/components/Popup/Popup.tsx:25–51`
-`ConfirmationModal` props at: `src/components/ConfirmationModal/ConfirmationModal.tsx:24–39`
+`Popup` full props defined at: `src/components/Popup/Popup.tsx::PopupProps`
+`ConfirmationModal` props at: `src/components/ConfirmationModal/ConfirmationModal.tsx::ConfirmationModalProps`
 
 Popup usage pattern:
 ```tsx
@@ -99,7 +99,7 @@ import ConfirmationModal from '@/components/ConfirmationModal'
 | `InputArray` | Dynamic list input | `@/components/form/InputArray` | varies |
 | `InfoBox` | Info display inside form | `@/components/form/InfoBox` | varies |
 
-`Input` full props at: `src/components/form/Input/Input.tsx:22–48`
+`Input` full props at: `src/components/form/Input/Input.tsx::InputProps`
 
 ---
 
@@ -113,9 +113,9 @@ import ConfirmationModal from '@/components/ConfirmationModal'
 | `Tabs` | Tab navigation + content | `@/components/Tabs` | `tabs`, `activeTab?`, `onChange?`, `isSmall?`, `headerContent?` |
 | `Pagination` | Page controls | `@/components/Pagination` | `currentPage`, `totalPages`, `setPage`, `perPage?` |
 
-`Card` props at: `src/components/Card/Card.tsx:26–36`
-`Tabs`/`Tab` interfaces at: `src/components/Tabs/Tabs.tsx:22–40`
-`Pagination` props at: `src/components/Pagination/Pagination.tsx:27–35`
+`Card` props at: `src/components/Card/Card.tsx::CardProps`
+`Tabs`/`Tab` interfaces at: `src/components/Tabs/Tabs.tsx::Tab`, `src/components/Tabs/Tabs.tsx::TabsProps`
+`Pagination` props at: `src/components/Pagination/Pagination.tsx::PaginationProps`
 
 ---
 
@@ -161,7 +161,7 @@ The global instance is mounted in `src/utils/tooltip.ts` and registered in `main
 | `Checker` | Status/health check display | `@/components/Checker` | varies |
 | `Link` | Styled anchor | `@/components/Link` | wraps React Router `Link` |
 | `ProjectSelector` | Project-scope dropdown | `@/components/ProjectSelector` | varies |
-| `Hint` | Inline tooltip hint icon | `@/components/Pagination` (same dir) | `Hint.tsx` |
+| `Hint` | Inline tooltip hint icon | `@/components/Hint` | `src/components/Hint/Hint.tsx::HintProps` |
 
 ---
 
@@ -171,15 +171,51 @@ When in doubt about exact prop names or types, read the interface directly:
 
 | Component | Props interface location |
 |---|---|
-| `Popup` | `src/components/Popup/Popup.tsx:25` |
-| `Button` | `src/components/Button/Button.tsx:30` |
-| `Input` | `src/components/form/Input/Input.tsx:22` |
-| `Card` | `src/components/Card/Card.tsx:26` |
-| `Tabs` | `src/components/Tabs/Tabs.tsx:22` |
-| `Pagination` | `src/components/Pagination/Pagination.tsx:27` |
-| `ConfirmationModal` | `src/components/ConfirmationModal/ConfirmationModal.tsx:24` |
-| `Spinner` | `src/components/Spinner/Spinner.tsx:21` |
-| `InfoWarning` | `src/components/InfoWarning/InfoWarning.tsx:20` |
+| `Popup` | `src/components/Popup/Popup.tsx::PopupProps` |
+| `Button` | `src/components/Button/Button.tsx::ButtonProps` |
+| `Input` | `src/components/form/Input/Input.tsx::InputProps` |
+| `Card` | `src/components/Card/Card.tsx::CardProps` |
+| `Tabs` | `src/components/Tabs/Tabs.tsx::TabsProps` |
+| `Pagination` | `src/components/Pagination/Pagination.tsx::PaginationProps` |
+| `ConfirmationModal` | `src/components/ConfirmationModal/ConfirmationModal.tsx::ConfirmationModalProps` |
+| `Spinner` | `src/components/Spinner/Spinner.tsx::SpinnerProps` |
+| `InfoWarning` | `src/components/InfoWarning/InfoWarning.tsx::InfoWarningProps` |
+| `Accordion` | `src/components/Accordion/Accordion.tsx::AccordionProps` |
+| `AceEditor` | `src/components/AceEditor/AceEditor.tsx::AceEditorProps` |
+| `Avatar` | `src/components/Avatar/Avatar.tsx::AvatarProps` |
+| `BudgetSelector` | `src/components/BudgetSelector/BudgetSelector.tsx::BudgetSelectorProps` |
+| `Checker` | `src/components/Checker/Checker.tsx::CheckerProps` |
+| `CodeBlock` | `src/components/CodeBlock/CodeBlock.tsx::CodeBlockProps` |
+| `DropdownButton` | `src/components/DropdownButton/DropdownButton.tsx::DropdownButton` |
+| `Editor` | `src/components/Editor/Editor.tsx::EditorProps` |
+| `ExpandedYamlFrame` | `src/components/ExpandedYaml/ExpandedYamlFrame.tsx::ExpandedYamlFrameProps` |
+| `FavoriteButton` | `src/components/FavoriteButton/FavoriteButton.tsx::FavoriteButtonProps` |
+| `FilterAccordionItem` | `src/components/FilterAccordionItem/FilterAccordionItem.tsx::FilterAccordionItemProps` |
+| `Filters` | `src/components/Filters/Filters.tsx::Filters` |
+| `Hint` | `src/components/Hint/Hint.tsx::HintProps` |
+| `Link` | `src/components/Link/Link.tsx::Link` |
+| `MdEditor` | `src/components/MdEditor/MdEditor.tsx::MdEditorProps` |
+| `PageHeader` | `src/components/PageHeader/PageHeader.tsx::PageHeaderProps` |
+| `ProgressBar` | `src/components/ProgressBar/ProgressBar.tsx::ProgressBar` |
+| `ProjectSelector` | `src/components/ProjectSelector/ProjectSelector.tsx::ProjectSelectorProps` |
+| `ResizableSeparator` | `src/components/ResizableSeparator/ResizableSeparator.tsx::ResizableSeparatorProps` |
+| `SchemaForm` | `src/components/SchemaForm/SchemaForm.tsx::SchemaForm` |
+| `SearchableCombobox` | `src/components/SearchableCombobox/SearchableCombobox.tsx::SearchableComboboxProps` |
+| `SelectButton` | `src/components/SelectButton/SelectButton.tsx::SelectButton` |
+| `SkipLink` | `src/components/SkipLink/SkipLink.tsx::SkipLink` |
+| `StatusBadge` | `src/components/StatusBadge/StatusBadge.tsx::StatusBadgeProps` |
+| `Table` | `src/components/Table/Table.tsx::TableProps` |
+| `TabsMenu` | `src/components/TabsMenu/TabsMenu.tsx::CustomTabMenuProps` |
+| `TextDiffView` | `src/components/TextDiffView/TextDiffView.tsx::TextDiffView` |
+| `Tooltip` | `src/components/Tooltip/Tooltip.tsx::TooltipProps` |
+| `TooltipButton` | `src/components/TooltipButton/TooltipButton.tsx::TooltipButtonProps` |
+| `TruncationBadge` | `src/components/TruncationBadge/TruncationBadge.tsx::TruncationBadgeProps` |
+| `UserEmailAutocomplete` | `src/components/UserEmailAutocomplete/UserEmailAutocomplete.tsx::UserEmailAutocompleteProps` |
+| `UserFilter` | `src/components/UserFilter/UserFilter.tsx::UserFilterProps` |
+| `UserSelector` | `src/components/UserSelector/UserSelector.tsx::UserSelectorProps` |
+| `DetailsBadge` | `src/components/details/DetailsBadge.tsx::DetailsBadge` |
+| `Markdown` | `src/components/markdown/markdown.tsx::Markdown` |
+| `Layout` | `src/components/Layouts/Layout/Layout.tsx::Layout` |
 
 ---
 

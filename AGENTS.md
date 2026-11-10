@@ -49,20 +49,21 @@ from the same source tree.
 | Git | only when the user explicitly asks git ops | commit; push; open an MR | `.ai-run/guides/standards/git-workflow.md` | `.ai-run/guides/testing/local-verification.md` |
 <!-- ai-run-init:task-classifier end -->
 
-<!-- ai-run-init:critical-rules start -->
 ## Critical Rules
 
+<!-- ai-run-init:critical-rules start -->
 | Rule | Trigger | Action |
 |---|---|---|
-| Check Guides First | ANY task | Match the request to a category, load that P0 guide before searching the codebase. |
-| Testing | User asks to write, run, or fix tests | Only then work on tests; load `.ai-run/guides/testing/testing-patterns.md` first. |
-| Git Operations | User asks to commit, push, or open an MR | Only then perform git side effects; load `.ai-run/guides/standards/git-workflow.md` first. |
-| Shell | ANY shell command | Use bash/Linux syntax and report the commands actually run. |
-| Reinstall Before Trusting A Gate | Before trusting any test or type-check result | Run `npm ci` first; see `.ai-run/guides/security/verification.md` § 1 — a stale install reports a green test count while suites never run. |
-| Ticket Required | Any branch, commit, or MR | Values live in `.ai-run/guides/project.md` and `.ai-run/guides/standards/git-workflow.md`; do not infer them here. |
-| Security Change | A scanner finding, a version pin, or an MR that carries one | Load `.ai-run/guides/security/README.md` before editing, and follow its MR handoff. |
-| Gates Run Individually | Running more than one gate | Never chain them into one `&&` string — a chain reports only the first failure, and anything invoking commands directly cannot execute shell syntax. |
-| Formatting Is Automatic | After editing a file under `src/` in Claude Code | A `PostToolUse` hook in `.claude/settings.json` runs prettier and eslint --fix. Do not re-run them. |
+| Check Guides First | ANY task | Match request to category and load the P0 guide before searching broadly |
+| Testing | "write tests" / "run tests" | ONLY then |
+| Git Operations | "commit" / "push" / "PR" / "MR" | Only then; load `.ai-run/guides/standards/git-workflow.md` |
+| Shell | ANY shell command | Use bash/Linux-compatible syntax |
+| Carry the ticket key on every branch, commit and MR; ask for it when the request has none | Any branch, commit or MR | load `.ai-run/guides/standards/git-workflow.md` |
+| Load the security guide before editing for a scanner finding, a CVE or a version pin, and follow its MR handoff | A scanner finding, CVE ticket or security pin | load `.ai-run/guides/security/README.md` |
+| Reinstall dependencies from the lock file before trusting a test or type-check result | Before trusting any test or type-check result | load `.ai-run/guides/security/verification.md` |
+| Commit a manifest and its lock file together | Changing `package.json` dependencies | load `.ai-run/guides/security/dependencies.md` |
+| Run gates one at a time and report each result; never chain them | Running more than one gate | load `.ai-run/guides/quality-gates.md` |
+| Sanitize at the producer anything rendered through dangerouslySetInnerHTML | Rendering HTML from markdown, an API or an agent | load `.ai-run/guides/development/security-patterns.md` |
 <!-- ai-run-init:critical-rules end -->
 
 <!-- ai-run-init:commands start -->
@@ -81,165 +82,108 @@ from the same source tree.
 | Verify a change locally before an MR | `.ai-run/guides/testing/local-verification.md` | `package.json` (`test-harness`), `.gitlab/merge_request_templates/Default.md` | Browser scenarios and screenshots go to `## Verified locally`. |
 <!-- ai-run-init:commands end -->
 
-## Stack
+## Behavioral Defaults
 
-React 18 · TypeScript 5 · Vite 8 · Tailwind 3 · Valtio (state) · react-router 7 ·
-react-hook-form · PrimeReact · marked + DOMPurify (markdown) · Keycloakify (login theme).
-Tests: Vitest with React Testing Library, two projects — `unit` and `integration`.
+<!-- ai-run-init:behavioral-defaults start -->
+Behavioral guidelines to reduce common LLM coding mistakes. The Critical Rules above take precedence where they differ.
 
-Exact versions live in `package.json`. Read them there rather than from a document.
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
-## Architecture at a glance
+### 1. Think Before Coding
 
-Enough to decide where a change belongs; the full picture is in
-[architecture.md](.ai-run/guides/architecture/architecture.md).
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-| Area | Holds |
-|---|---|
-| `src/pages/` | One directory per product area; the bulk of the codebase |
-| `src/components/` | Shared presentational and form components |
-| `src/store/` | Valtio stores — shared state and the methods that fetch it |
-| `src/utils/` | `api.ts` (the single HTTP layer), storage, markdown, redirects |
-| `src/hooks/` | Reusable behaviour, including the cross-window auth listener |
-| `src/authentication/` | Sign-in flows and the Keycloak theme source |
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask; in an unattended run, record the assumption where the run records its decisions.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing before you go on.
 
-**Configuration reaches the app twice and both layers are public.** Build-time
-`import.meta.env.VITE_*` is baked into the bundle; run-time `window._env_` comes from `config.js`,
-served from the image. Nothing secret belongs in either —
-[security-patterns.md](.ai-run/guides/development/security-patterns.md).
+### 2. Simplicity First
 
-**Four Dockerfiles exist and only the root one is the served app.** It runs no `npm` — it copies a
-prebuilt `dist/`, so a rebuild needs `npm ci && npm run build:prod` first.
-[security/images.md](.ai-run/guides/security/images.md).
+**Minimum code that solves the problem. Nothing speculative.**
 
-## Orient
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
 
-Structure is derived, not stored. Run the command that answers the question.
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
-| Question | Command |
-|---|---|
-| What are the top-level areas | `git ls-files \| awk -F/ 'NF>1{print $1"/"}' \| sort -u` |
-| What lives under `src/` | `git ls-files 'src/*' \| awk -F/ 'NF>2{print $2"/"}' \| sort -u` |
-| Which product areas exist | `git ls-files 'src/pages/*' \| awk -F/ 'NF>2{print $3}' \| sort -u` |
-| What routes are defined | `grep -n "path: '" src/router.tsx` |
-| Which stores exist | `git ls-files 'src/store/*'` |
-| What tests cover an area | `git ls-files 'src/**/__tests__/**' \| grep <area>` |
-| What runtime config is read | `grep -rn 'import.meta.env\|window._env_' src --include='*.ts' --include='*.tsx'` |
-| What scripts this repo declares | `node -e "console.log(Object.keys(require('./package.json').scripts).join('\n'))"` |
-| Every image and its base | `grep -nE '^FROM' $(git ls-files '*Dockerfile*')` |
-| Which pins are load-bearing security fixes | `grep -rn "Security (EPMCDME" $(git ls-files '*Dockerfile*') package.json` |
-| Why a file looks the way it does | `git log --oneline -- <path>` |
+### 3. Surgical Changes
 
-## Reading gate output
+**Touch only what you must. Clean up only your own mess.**
 
-Commands that look like gates and are not:
-[security/README.md](.ai-run/guides/security/README.md) § Exit codes that mislead and
-[security/verification.md](.ai-run/guides/security/verification.md).
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
 
-A suite that fails to import adds nothing to the test counter, so a broken environment reports a
-higher passing count than a healthy one. Quote the `Test Files` line. A gate that could not run is
-unverified, not passed.
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
 
-**When the user reports tests failing in CI but passing locally** (or pastes a CI
-`test:coverage` log):
+The test: Every changed line should trace directly to the user's request.
 
-1. Take the failing tests from the `FAIL` lines at the end of the log.
-2. If the error is `Test timed out in 5000ms` — often followed on the retry by "Found multiple
-   elements" — run only that file with coverage:
-   `npx vitest run --coverage --project <unit|integration> <path>`.
-3. Passes locally → it is coverage overhead in CI. Raise `CI_COVERAGE_TEST_TIMEOUT_MS` in
-   `vite.config.ts`; do not rewrite the test.
-4. Fails locally, fails on every CI run, or fails on an assertion rather than a timeout →
-   the timeout is not the cause. Debug it; a common cause is a mock changed with
-   `mockReturnValue` inside a test instead of reset in `beforeEach`.
+### 4. Goal-Driven Execution
 
-The worker cap (`maxWorkers` in `vite.config.ts`), the unit-only coverage pass and the timeout
-are explained in `README.md` § Test workers and timeouts. Do not remove the cap to speed up a
-local run — pass `--maxWorkers` on the command line instead.
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals; write or run tests only as the Critical Rules allow:
+- "Add validation" → "Name the invalid inputs it must reject and how each is checked"
+- "Fix the bug" → "Reproduce it, then show it no longer happens"
+- "Refactor X" → "Show the behavior is the same before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+Source: [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills).
+<!-- ai-run-init:behavioral-defaults end -->
 
 ## Boundaries
 
-**Always**
-
-- Carry the ticket key on every branch and commit — format in
-  [standards/git-workflow.md](.ai-run/guides/standards/git-workflow.md), values in
-  [project.md](.ai-run/guides/project.md).
-- Reinstall from the lock file before trusting any test or type-check result.
-- Commit a manifest and its lock file together.
-- Give a security pin a comment naming the ticket and the CVEs —
-  [security/README.md](.ai-run/guides/security/README.md).
-- Sanitize at the producer for anything rendered through `dangerouslySetInnerHTML` —
-  [security-patterns.md](.ai-run/guides/development/security-patterns.md).
+Exact values and procedures live in the guide each line names.
 
 **Ask first**
 
-- Bumping a base image tag in any `FROM` line — it changes the runtime for every consumer.
-- Adding a brand-new dependency rather than moving an existing one. The licence allow list is
-  binding, and a new package needs review on maintenance and footprint.
+- Bumping a base image tag in any `FROM` line — [security/images.md](.ai-run/guides/security/images.md).
+- Adding a brand-new dependency (the licence allow list is binding) — [quality-gates.md](.ai-run/guides/quality-gates.md).
 - Adding a `nosonar` marker or a Sonar ignore criterion.
-- Changing `nginx.conf`. It ships inside the image and no gate in the working tree validates it.
+- Changing `nginx.conf`: it ships in the image and no gate validates it.
 
 **Never**
 
-- **Regenerate or hand-edit the lock file.** Move the one package with the targeted command in
-  [security/dependencies.md](.ai-run/guides/security/dependencies.md), so the security fix stays
-  distinguishable from churn.
-- **Run an audit auto-fix that re-resolves broadly.** It will downgrade or major-bump direct
-  dependencies to satisfy an advisory.
-- **Relax or delete a security pin as cleanup.** Remove it in its own commit when upstream or the
-  base image ships the fix.
-- **Fix an npm CVE with a Dockerfile override.** The override patches the image and leaves the
-  lock file vulnerable for every other consumer.
-- **Let an automated reviewer approve a security MR.** Its default mode pushes and approves,
-  removing the human gate.
-- **Put a real secret in a tracked env file** — [security-patterns.md](.ai-run/guides/development/security-patterns.md).
-- **Skip the pre-commit hook**, or write a summary or validation-report document. Report in the
-  response instead.
+- Regenerate or hand-edit the lock file, or run an audit auto-fix that re-resolves broadly — [security/dependencies.md](.ai-run/guides/security/dependencies.md).
+- Relax or delete a security pin as cleanup, or fix an npm CVE with a Dockerfile override — [security/README.md](.ai-run/guides/security/README.md).
+- Let an automated reviewer approve a security MR.
+- Put a real secret in a tracked env file; `import.meta.env.VITE_*` and `window._env_` are both public — [security-patterns.md](.ai-run/guides/development/security-patterns.md).
+- Skip the pre-commit hook, or write a summary or validation-report document; report in the response.
 
-## Opening an MR
+## Gate output
 
-Two things must reach the description and neither happens by itself: a request for a reviewer to
-post the regression command, and the harness log. Wording and the rest of the checklist:
-[security/README.md](.ai-run/guides/security/README.md) § MR handoff and
-[standards/git-workflow.md](.ai-run/guides/standards/git-workflow.md).
-
-The compliance bot that checks for the log is suppressible with a label, so the log is the only
-regression evidence that reliably reaches a reviewer.
-
-## Skills
-
-`.claude/skills/` holds repo-local skills. The shared ones live in the
-`epm-cdme/codemie-public-skills` repository, on the same GitLab host that serves
-this repo — resolve `<host>` with `git remote -v`.
-
-```bash
-codemie skills add <host>/epm-cdme/codemie-public-skills.git --skill code-reviewer
-codemie skills add <host>/epm-cdme/codemie-public-skills.git --package sdlc-factory
-```
-
-`sdlc-factory` includes `refactor-cleaner`, `unit-tester`, and `integration-tester`. Where a skill
-disagrees with `.ai-run/guides/`, follow the guides unless the user explicitly selected that skill.
+A suite that fails to import adds nothing to the test counter: quote the `Test Files` line, and a gate that could not run is unverified, not passed — [security/verification.md](.ai-run/guides/security/verification.md). Tests failing in CI but passing locally: [testing-patterns.md](.ai-run/guides/testing/testing-patterns.md) § Tests Failing in CI but Passing Locally.
 
 ## Conflict handling
 
 | Conflict | Action |
 |---|---|
 | A guide disagrees with the source | Trust the source; correct the guide only if the task owns that change. |
-| `README.md` disagrees with `package.json` | Prefer the script in `package.json` and say so in the response. |
-| A ticket names a component this repo does not have | Confirm which image or package it means before editing — [security/images.md](.ai-run/guides/security/images.md). |
-| Git work is requested without a ticket | Ask for the ticket before committing; the prefix is validated by CI. |
+| `README.md` disagrees with `package.json` | Prefer `package.json` and say so in the response. |
+| A ticket names a component this repo does not have | Confirm which image or package it means — [security/images.md](.ai-run/guides/security/images.md). |
+| Git work is requested without a ticket | Ask for the ticket before committing. |
 
-## Conventions this file follows
-
-- Every command above was executed and its exit code observed.
-- Structure is derived, never stored. Values that routine maintenance moves — versions, tags,
-  counts — are published as the command that finds them.
-- Anything `README.md`, `CONTRIBUTING.md`, or `package.json` already states correctly is linked,
-  not copied.
-- Security process policy — remediation flow, verify predicates, rotation and delivery rules — is
-  owned by the `secops` bundle. These guides carry only repository-specific facts.
-- `CLAUDE.md` is `@AGENTS.md` and holds no second copy; fix a stale fact here only.
+Shared skills: `epm-cdme/codemie-public-skills` on the GitLab host in `git remote -v`. Where a skill disagrees with `.ai-run/guides/`, follow the guides unless the user selected that skill.
 
 ---
 
-Last reviewed: 2026-08-17 · Owner: AI/Run · Guides: `.ai-run/guides/`
+Last reviewed: 2026-11-10 · Owner: AI/Run · Guides: `.ai-run/guides/` · `CLAUDE.md` is `@AGENTS.md`; fix facts here only.
