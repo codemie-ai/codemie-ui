@@ -76,7 +76,7 @@ const PageLayout = ({
         {(title || onBack || rightContent || renderHeader) && (
           <div
             className={cn(
-              'min-h-layout-header h-layout-header border-b border-border-specific-panel-outline p-3 px-6 flex items-center justify-between',
+              'min-h-layout-header h-layout-header shrink-0 border-b border-border-specific-panel-outline p-3 px-6 flex items-center justify-between',
               // Actions that do not fit next to the title move to their own line on small screens.
               'max-lg:h-auto max-lg:flex-wrap max-lg:px-4 max-lg:gap-3',
               isPageHeaderElevated ? 'bg-surface-specific-page-header' : ''

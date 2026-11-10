@@ -13,7 +13,8 @@
 // limitations under the License.
 //
 
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import Select from '../Select'
@@ -30,6 +31,33 @@ afterEach(() => {
 })
 
 describe('Select', () => {
+  it('consumes Escape for its open dropdown before a containing dialog closes', async () => {
+    const user = userEvent.setup()
+    const outerEscape = vi.fn()
+    const listen = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') outerEscape()
+    }
+    document.addEventListener('keydown', listen)
+    try {
+      render(<Select label="Site root" value="a" options={options} onChange={noop} />)
+      const input = screen.getByRole('textbox', { name: 'Site root' })
+      input.focus()
+      await user.keyboard(' ')
+      await waitFor(() =>
+        expect(document.querySelector('.p-dropdown [aria-expanded="true"]')).not.toBeNull()
+      )
+      await user.keyboard('{Escape}')
+      expect(outerEscape).not.toHaveBeenCalled()
+      expect(input).toHaveFocus()
+      await waitFor(() =>
+        expect(document.querySelector('.p-dropdown [aria-expanded="true"]')).toBeNull()
+      )
+      await user.keyboard('{Escape}')
+      expect(outerEscape).toHaveBeenCalledOnce()
+    } finally {
+      document.removeEventListener('keydown', listen)
+    }
+  })
   describe('error association', () => {
     it('links the combobox to the error message via aria-describedby and role="alert"', () => {
       render(
@@ -103,6 +131,66 @@ describe('Select', () => {
       const secondAlert = screen.getByRole('alert')
       expect(secondAlert).toHaveTextContent('Pick another project')
       expect(secondAlert).not.toBe(firstAlert)
+    })
+
+    it('puts the error state on the combobox only, not on the trigger or the value', () => {
+      render(
+        <Select
+          id="project"
+          label="Project"
+          value={null}
+          options={options}
+          onChange={noop}
+          error="Required"
+        />
+      )
+
+      const combobox = screen.getByLabelText('Project')
+      expect(document.querySelectorAll('[aria-invalid="true"]')).toHaveLength(1)
+      expect(document.querySelectorAll('[aria-describedby]')).toHaveLength(1)
+      expect(combobox).toHaveAttribute('aria-invalid', 'true')
+    })
+  })
+
+  describe('accessible name', () => {
+    it('names the combobox from its visible label and repeats the name nowhere else', () => {
+      render(<Select id="project" label="Project" value={null} options={options} onChange={noop} />)
+
+      const combobox = screen.getByLabelText('Project')
+      expect(combobox).toHaveAttribute('aria-haspopup', 'listbox')
+      expect(combobox).toHaveAttribute('id', 'project-input')
+      expect(combobox).toHaveAccessibleName('Project')
+      expect(combobox).not.toHaveAttribute('aria-label')
+      expect(document.getElementById('project')).toContainElement(combobox)
+      expect(screen.queryByRole('button', { name: 'Project' })).not.toBeInTheDocument()
+      expect(document.querySelector('.p-dropdown-label')).not.toHaveAttribute('aria-label')
+    })
+
+    it('associates the visible label when no id is given', () => {
+      render(<Select label="Project" value={null} options={options} onChange={noop} />)
+
+      const combobox = screen.getByLabelText('Project')
+      expect(combobox).toHaveAttribute('aria-haspopup', 'listbox')
+      expect(combobox).toHaveAccessibleName('Project')
+    })
+
+    it('names a select without a visible label from ariaLabel, on the combobox only', () => {
+      render(
+        <Select
+          id="status"
+          ariaLabel="Status"
+          placeholder="Any status"
+          value={null}
+          options={options}
+          onChange={noop}
+        />
+      )
+
+      const named = screen.getAllByLabelText('Status')
+      expect(named).toHaveLength(1)
+      expect(named[0]).toHaveAttribute('aria-haspopup', 'listbox')
+      expect(named[0]).toHaveAttribute('id', 'status-input')
+      expect(document.querySelector('.p-dropdown-label')).not.toHaveAttribute('aria-label')
     })
   })
 

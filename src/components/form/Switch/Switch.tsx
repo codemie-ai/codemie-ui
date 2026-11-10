@@ -73,6 +73,7 @@ const Switch = forwardRef<HTMLInputElement, SwitchProps>(
             id={id}
             ref={ref}
             role="switch"
+            aria-label={label}
             type="checkbox"
             checked={value}
             onChange={handleChange}

@@ -114,6 +114,28 @@ describe('FilesDropzone', () => {
     expect(noop).not.toHaveBeenCalled()
   })
 
+  describe('field group', () => {
+    it('names its group after the label', () => {
+      render(<FilesDropzone name="artifact" files={[]} onChange={noop} label="Application file" />)
+
+      expect(screen.getByRole('group', { name: 'Application file' })).toBeInTheDocument()
+    })
+
+    it('names an unlabeled group after the default label', () => {
+      render(<FilesDropzone name="files" files={[]} onChange={noop} />)
+
+      expect(screen.getByRole('group', { name: 'Files' })).toBeInTheDocument()
+    })
+
+    it('disables the file input and the remove actions together', () => {
+      render(<FilesDropzone name="files" files={[createFile('a.txt')]} onChange={noop} disabled />)
+
+      expect(screen.getByRole('group', { name: 'Files' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: 'Delete selected file a.txt' })).toBeDisabled()
+      expect(screen.getByLabelText('Select files to upload')).toBeDisabled()
+    })
+  })
+
   describe('error association', () => {
     it('links the file input to a single error wrapper via aria-describedby', () => {
       render(

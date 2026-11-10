@@ -79,6 +79,17 @@ describe('MobileTopBar', () => {
     expect(sectionSwitcher()).toHaveAccessibleName('Navigation menu, current section Assistants')
   })
 
+  it.each([
+    '/apps',
+    '/apps/shared',
+    '/apps/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/view',
+    '/applications/iframe/sales-dashboard',
+  ])('names %s as the Applications section', (path) => {
+    renderTopBar(path)
+
+    expect(sectionSwitcher()).toHaveAccessibleName('Navigation menu, current section Applications')
+  })
+
   it('falls back to the page title, then to "Menu"', () => {
     renderTopBar('/release-notes', 'release-notes')
     expect(sectionSwitcher()).toHaveAccessibleName('Navigation menu, current section Release Notes')

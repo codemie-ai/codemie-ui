@@ -90,7 +90,7 @@ vi.mock('@/pages/settings/components/SpendingCard', () => ({ default: () => null
 vi.mock('@/pages/settings/administration/components/BudgetAssignmentsEditor', () => ({
   default: () => <div data-testid="budget-assignments-editor" />,
 }))
-vi.mock('@/pages/settings/administration/usersManagement/components/UserAvatar', () => ({
+vi.mock('@/components/Avatar/UserAvatar', () => ({
   default: () => null,
 }))
 vi.mock('@/pages/settings/administration/usersManagement/components/UserProjectsTable', () => ({

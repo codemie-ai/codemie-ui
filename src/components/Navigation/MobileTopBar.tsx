@@ -40,6 +40,7 @@ const SECTIONS: Record<string, { label: string; icon?: IconType }> = {
   skills: { label: 'Skills', icon: IconType.SKILL },
   workflows: { label: 'Workflows', icon: IconType.WORKFLOW },
   applications: { label: 'Applications', icon: IconType.APPLICATION },
+  apps: { label: 'Applications', icon: IconType.APPLICATION },
   integrations: { label: 'Integrations', icon: IconType.INTEGRATION },
   'data-sources': { label: 'Data Sources', icon: IconType.DATASOURCE },
   schedulers: { label: 'Schedulers', icon: IconType.SCHEDULER },

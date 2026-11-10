@@ -24,6 +24,8 @@ interface DropzoneAreaProps {
   disabled?: boolean
   children: (isDragging: boolean) => ReactNode
   className?: string
+  /** Accessible name of the interactive (onClick) variant's button, when its visible text is not enough. */
+  ariaLabel?: string
 }
 
 const DropzoneArea: FC<DropzoneAreaProps> = ({
@@ -32,6 +34,7 @@ const DropzoneArea: FC<DropzoneAreaProps> = ({
   disabled = false,
   children,
   className = '',
+  ariaLabel,
 }) => {
   const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } =
     useDragAndDrop({ onFilesDrop })
@@ -75,6 +78,7 @@ const DropzoneArea: FC<DropzoneAreaProps> = ({
         <button
           type="button"
           disabled={disabled}
+          aria-label={ariaLabel}
           onClick={onClick}
           className={cn(
             'relative w-full h-full rounded-lg cursor-[inherit]',

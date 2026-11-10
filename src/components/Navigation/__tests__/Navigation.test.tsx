@@ -17,6 +17,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
+import { hostedApplicationsStore } from '@/store/hostedApplications'
 import { mockMobileLayout } from '@/test-utils/mobileLayout'
 
 import Navigation from '../Navigation'
@@ -118,12 +119,15 @@ describe('Navigation', () => {
     mockAppInfoStore.navigationExpanded = false
     mockAppInfoStore.configs = []
     mockApplicationsStore.applications = []
+    mockAppInfoStore.configs = []
+    hostedApplicationsStore.capabilities = null
     mockRouter.resolve.mockImplementation(({ path, name }: any) => {
       const routes: Record<string, string> = {
         '/chats': '/chats',
         assistants: '/assistants',
         skills: '/skills',
         workflows: '/workflows',
+        '/apps': '/apps',
         applications: '/applications',
         integrations: '/integrations',
         'data-sources': '/data-sources',
@@ -189,6 +193,36 @@ describe('Navigation', () => {
     const { container } = renderWithRouter(<Navigation />)
 
     expect(container.firstChild).toBeInTheDocument()
+  })
+
+  it('links Applications to the /apps catalog when hosted applications can be viewed', () => {
+    mockAppInfoStore.configs = [
+      { id: 'features:hostedApplications', settings: { enabled: true } },
+    ] as never
+    hostedApplicationsStore.capabilities = { view: true } as never
+    renderWithRouter(<Navigation />)
+
+    expect(screen.getByRole('link', { name: 'Applications' })).toHaveAttribute('href', '/apps')
+  })
+
+  it('hides hosted Applications once the feature is turned off, even with loaded capabilities', () => {
+    hostedApplicationsStore.capabilities = { view: true } as never
+    renderWithRouter(<Navigation />)
+
+    expect(screen.queryByRole('link', { name: 'Applications' })).not.toBeInTheDocument()
+  })
+
+  it('links Applications to the /apps catalog when only platform applications exist', () => {
+    mockApplicationsStore.applications = [{ id: '1', name: 'Test App' }] as any
+    renderWithRouter(<Navigation />)
+
+    expect(screen.getByRole('link', { name: 'Applications' })).toHaveAttribute('href', '/apps')
+  })
+
+  it('hides Applications when there is nothing to show there', () => {
+    renderWithRouter(<Navigation />)
+
+    expect(screen.queryByRole('link', { name: 'Applications' })).not.toBeInTheDocument()
   })
 
   it('has proper structure with header and sections', () => {

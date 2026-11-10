@@ -427,12 +427,12 @@ describe('assistantsStore', () => {
     })
   })
 
-  describe('getSharedWith', () => {
+  describe('sharing.loadSharedWith', () => {
     it('calls the correct endpoint and tolerates the wrapped response shape', async () => {
       const users = [{ id: 'u1', name: 'Alice', email: 'alice@test.com' }]
       mockGet.mockResolvedValue({ json: async () => ({ shared_with: users }) })
 
-      const result = await assistantsStore.getSharedWith('a-1')
+      const result = await assistantsStore.sharing.loadSharedWith('a-1')
 
       expect(mockGet).toHaveBeenCalledWith('v1/assistants/a-1/shared-with', {
         skipErrorHandling: true,
@@ -444,7 +444,7 @@ describe('assistantsStore', () => {
       const users = [{ id: 'u1', name: 'Alice', email: 'alice@test.com' }]
       mockGet.mockResolvedValue({ json: async () => users })
 
-      const result = await assistantsStore.getSharedWith('a-1')
+      const result = await assistantsStore.sharing.loadSharedWith('a-1')
 
       expect(result).toEqual(users)
     })
@@ -452,15 +452,15 @@ describe('assistantsStore', () => {
     it('propagates the error when the request fails', async () => {
       mockGet.mockRejectedValue(new Error('network error'))
 
-      await expect(assistantsStore.getSharedWith('a-1')).rejects.toThrow('network error')
+      await expect(assistantsStore.sharing.loadSharedWith('a-1')).rejects.toThrow('network error')
     })
   })
 
-  describe('shareWith', () => {
+  describe('sharing.share', () => {
     it('posts the user ids to the share endpoint', async () => {
       mockPost.mockResolvedValue(undefined)
 
-      await assistantsStore.shareWith('a-1', ['u1', 'u2'])
+      await assistantsStore.sharing.share('a-1', ['u1', 'u2'])
 
       expect(mockPost).toHaveBeenCalledWith(
         'v1/assistants/a-1/share',
@@ -472,7 +472,7 @@ describe('assistantsStore', () => {
     it('skips duplicate error handling to allow the popup to toast once', async () => {
       mockPost.mockResolvedValue(undefined)
 
-      await assistantsStore.shareWith('a-1', ['u1', 'u2'])
+      await assistantsStore.sharing.share('a-1', ['u1', 'u2'])
 
       expect(mockPost).toHaveBeenCalledWith(
         'v1/assistants/a-1/share',
@@ -538,11 +538,11 @@ describe('assistantsStore', () => {
     })
   })
 
-  describe('removeShare', () => {
+  describe('sharing.unshare', () => {
     it('deletes the user ids from the share endpoint', async () => {
       mockDelete.mockResolvedValue(undefined)
 
-      await assistantsStore.removeShare('a-1', ['u1'])
+      await assistantsStore.sharing.unshare('a-1', ['u1'])
 
       expect(mockDelete).toHaveBeenCalledWith(
         'v1/assistants/a-1/share',
@@ -554,7 +554,7 @@ describe('assistantsStore', () => {
     it('skips duplicate error handling to allow the popup to toast once', async () => {
       mockDelete.mockResolvedValue(undefined)
 
-      await assistantsStore.removeShare('a-1', ['u1'])
+      await assistantsStore.sharing.unshare('a-1', ['u1'])
 
       expect(mockDelete).toHaveBeenCalledWith(
         'v1/assistants/a-1/share',
@@ -564,14 +564,18 @@ describe('assistantsStore', () => {
     })
   })
 
-  describe('getSharableUsers', () => {
+  describe('sharing.searchUsers', () => {
     it('calls the correct endpoint with an encoded query and tolerates the wrapped response shape', async () => {
       const users = [{ id: 'u2', name: 'Bob', email: 'bob@test.com' }]
       mockGet.mockResolvedValue({ json: async () => ({ users }) })
 
-      const result = await assistantsStore.getSharableUsers('a-1', 'bo b')
+      const result = await assistantsStore.sharing.searchUsers('a-1', 'bo b')
 
-      expect(mockGet).toHaveBeenCalledWith('v1/assistants/a-1/sharable-users?q=bo%20b')
+      expect(mockGet).toHaveBeenCalledWith('v1/assistants/a-1/sharable-users', {
+        params: { q: 'bo b' },
+        signal: undefined,
+        skipErrorHandling: true,
+      })
       expect(result).toEqual(users)
     })
 
@@ -579,17 +583,18 @@ describe('assistantsStore', () => {
       const users = [{ id: 'u2', name: 'Bob', email: 'bob@test.com' }]
       mockGet.mockResolvedValue({ json: async () => users })
 
-      const result = await assistantsStore.getSharableUsers('a-1', 'bob')
+      const result = await assistantsStore.sharing.searchUsers('a-1', 'bob')
 
       expect(result).toEqual(users)
     })
 
-    it('returns an empty array when the request fails', async () => {
+    // The share popup reports a failed search itself ("User search failed").
+    it('propagates the error when the request fails', async () => {
       mockGet.mockRejectedValue(new Error('network error'))
 
-      const result = await assistantsStore.getSharableUsers('a-1', 'bob')
-
-      expect(result).toEqual([])
+      await expect(assistantsStore.sharing.searchUsers('a-1', 'bob')).rejects.toThrow(
+        'network error'
+      )
     })
   })
 })

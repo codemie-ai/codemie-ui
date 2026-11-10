@@ -33,7 +33,6 @@ import { Link } from 'react-router'
 
 import NavigationMoreSvg from '@/assets/icons/navigation-more.svg?react'
 import { useFocusReturn } from '@/hooks/useFocusReturn'
-import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { cn } from '@/utils/utils'
 
 export interface NavigationItem {
@@ -124,14 +123,12 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   const hasMenuContent =
     Boolean(children) || (visibleItems?.some((item) => !isNavigationDivider(item)) ?? false)
 
-  const isMobileLayout = useIsMobileLayout()
-
   const { refs, floatingStyles, context } = useFloating({
     open: show,
     placement,
-    // A fixed side can run off a phone screen, so there the menu may flip to the other side.
+    // Keep every action visible when a trigger is near a viewport edge, including on desktop.
     middleware: placement
-      ? [offset(4), ...(isMobileLayout ? [flip()] : []), shift({ padding: 8 })]
+      ? [offset(4), flip(), shift({ padding: 8 })]
       : [offset(4), autoPlacement({ alignment, autoAlignment }), shift({ padding: 8 })],
     onOpenChange: handleOpenChange,
     strategy: renderInRoot ? 'fixed' : 'absolute',
@@ -287,6 +284,7 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
         data-testid={triggerTestId}
         data-tooltip-id="react-tooltip"
         data-tooltip-content={dataTooltipContent}
+        data-tooltip-hidden={show}
       >
         {contextId && <span className="sr-only">More options</span>}
         {customIcon || <NavigationMoreSvg />}

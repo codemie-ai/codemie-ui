@@ -19,6 +19,7 @@ import { HTTP_STATUS } from '@/constants'
 import { assistantsStore, chatsStore, userStore } from '@/store'
 import { appInfoStore } from '@/store/appInfo'
 import { applicationsStore } from '@/store/applications'
+import { hostedApplicationsStore } from '@/store/hostedApplications'
 import { preferencesStore } from '@/store/preferences'
 import { skillsStore } from '@/store/skills'
 import { profileSettingsStore } from '@/store/userProfileSettings'
@@ -34,6 +35,8 @@ const useInitialDataFetch = () => {
         if (error instanceof Response && error.status === HTTP_STATUS.UNAUTHORIZED) return
         throw error
       }
+      // Hosted applications keep state per signed-in person: another user starts over.
+      hostedApplicationsStore.followUser(userStore.user!.userId)
 
       await Promise.all([
         preferencesStore.fetchPreferences(userStore.user!.userId),
@@ -61,6 +64,7 @@ const useInitialDataFetch = () => {
       appInfoStore.setIsSidebarExpanded()
 
       applicationsStore.fetchApplications()
+      hostedApplicationsStore.ensureCapabilities()
       assistantsStore.loadShowNewAssistantAIPopup()
 
       assistantsStore.getAssistantCategories()

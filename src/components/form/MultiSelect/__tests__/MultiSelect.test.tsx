@@ -13,12 +13,73 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import MultiSelect from '../MultiSelect'
 
 describe('MultiSelect', () => {
+  it.each(['{Enter}', ' '])(
+    'removes a named chip using the keyboard key %s without opening the panel',
+    async (key) => {
+      const user = userEvent.setup()
+      const onChange = vi.fn()
+      const onSubmit = vi.fn((event) => event.preventDefault())
+      render(
+        <form onSubmit={onSubmit}>
+          <MultiSelect
+            label="People"
+            value={['principal-a', 'principal-b']}
+            options={[
+              { name: 'Alice (alice@example.com)', principal: 'principal-a' },
+              { name: 'Bob (bob@example.com)', principal: 'principal-b' },
+            ]}
+            optionLabel="name"
+            optionValue="principal"
+            display="chip"
+            selectedItemTemplate={(value) => <span>{value}</span>}
+            onChange={onChange}
+          />
+        </form>
+      )
+
+      const remove = screen.getByRole('button', { name: 'Remove Alice (alice@example.com)' })
+      remove.focus()
+      expect(remove).toHaveFocus()
+      await user.keyboard(key)
+
+      expect(onChange).toHaveBeenCalledOnce()
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ value: ['principal-b'], target: { value: ['principal-b'] } })
+      )
+      expect(screen.getByRole('combobox', { name: 'People' })).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+      expect(onSubmit).not.toHaveBeenCalled()
+    }
+  )
+
+  it('disables chip removal when the picker is disabled', () => {
+    const onChange = vi.fn()
+    render(
+      <MultiSelect
+        value={['principal-a']}
+        options={[{ label: 'Alice', value: 'principal-a' }]}
+        display="chip"
+        disabled
+        onChange={onChange}
+      />
+    )
+
+    const remove = screen.getByRole('button', { name: 'Remove Alice' })
+    expect(remove).toBeDisabled()
+    fireEvent.click(remove)
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('keeps the hidden combobox input controlled when value changes from empty to selected', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const onChange = vi.fn()
@@ -71,9 +132,7 @@ describe('MultiSelect', () => {
     const rootEl = container.querySelector('.p-multiselect')
     expect(rootEl).toHaveClass('!border-failed-secondary')
 
-    rerender(
-      <MultiSelect value="" options={options} onChange={vi.fn()} disabled singleValue />
-    )
+    rerender(<MultiSelect value="" options={options} onChange={vi.fn()} disabled singleValue />)
     expect(rootEl).toHaveClass('opacity-60')
     expect(rootEl).toHaveClass('pointer-events-none')
     expect(rootEl).toHaveClass('cursor-default')

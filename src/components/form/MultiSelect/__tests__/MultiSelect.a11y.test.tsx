@@ -14,6 +14,7 @@
 //
 
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import MultiSelect from '../MultiSelect'
@@ -30,6 +31,36 @@ afterEach(() => {
 const focusableTrigger = () => document.querySelector<HTMLElement>('input[role="combobox"]')
 
 describe('MultiSelect a11y error announcement', () => {
+  it('links its visible label to the keyboard input while preserving the wrapper id', async () => {
+    const user = userEvent.setup()
+    render(
+      <MultiSelect id="people" label="People" value={[]} options={options} onChange={vi.fn()} />
+    )
+
+    const trigger = screen.getByRole('combobox', { name: 'People' })
+    expect(screen.getByLabelText('People', { selector: 'input' })).toBe(trigger)
+    expect(document.getElementById('people')).toContainElement(trigger)
+    expect(trigger).not.toHaveAttribute('id', 'people')
+
+    await user.click(screen.getByText('People', { selector: 'label' }))
+    expect(trigger).toHaveFocus()
+  })
+
+  it('names the keyboard input when the visible label is hidden and no id is provided', () => {
+    render(<MultiSelect label="People" hideLabel value={[]} options={options} onChange={vi.fn()} />)
+
+    expect(screen.getByRole('combobox', { name: 'People' })).toBeInTheDocument()
+    expect(screen.queryByText('People', { selector: 'label' })).not.toBeInTheDocument()
+  })
+
+  it('focuses the keyboard input through its visible label when no id is provided', async () => {
+    const user = userEvent.setup()
+    render(<MultiSelect label="People" value={[]} options={options} onChange={vi.fn()} />)
+
+    await user.click(screen.getByText('People', { selector: 'label' }))
+    expect(screen.getByRole('combobox', { name: 'People' })).toHaveFocus()
+  })
+
   it('links the trigger to the error message via aria-describedby and role="alert"', () => {
     render(
       <MultiSelect

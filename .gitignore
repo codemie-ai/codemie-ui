@@ -122,11 +122,18 @@ credentials.json
 # Legacy review artifacts / analytics exports: ignore entirely, no exceptions
 docs/superpowers/reviews/
 docs/codemie/analytics/
+.playwright-mcp
+.playwright-cli
+
+# Generated QA evidence and tool caches are local, not product source.
+/output/
+/.vitest/
+__pycache__/
+*.py[cod]
 
 # Default results folder of codemie-test-harness (junit.xml, results.json)
 codemie-test-reports/
 output/playwright
-.playwright-cli
 
 # Code-review diff artifacts
 *.diff

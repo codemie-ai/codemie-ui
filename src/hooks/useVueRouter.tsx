@@ -138,8 +138,11 @@ const resolve: RouterResolve = ({ name, path, query = {}, params = {} }) => {
   }
 
   const searchParamsString = createSearchParamsString(query)
+  const pathParams = Object.fromEntries(
+    Object.entries(params).map(([key, value]) => [key, value == null ? value : String(value)])
+  )
   const { pathname } = resolvePath({
-    pathname: generatePath(unresolvedPathname, params),
+    pathname: generatePath(unresolvedPathname, pathParams),
   })
 
   const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`

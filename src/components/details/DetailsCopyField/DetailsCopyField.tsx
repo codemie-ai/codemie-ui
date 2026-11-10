@@ -55,6 +55,7 @@ const DetailsCopyField = ({
       <div className="h-8 pl-2 items-center flex bg-surface-base-primary border border-border-primary y rounded-lg overflow-hidden">
         <input
           readOnly
+          aria-label={label}
           value={value}
           className="w-full pr-2 text-ellipsis bg-transparent text-xs text-text-quaternary focus:outline-none"
         />

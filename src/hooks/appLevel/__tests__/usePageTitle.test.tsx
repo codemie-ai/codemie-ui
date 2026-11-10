@@ -16,7 +16,8 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { APP_TITLE } from '@/constants/pageTitles'
+import { APP_TITLE, ROUTE_ID_TO_TITLE } from '@/constants/pageTitles'
+import * as ROUTES from '@/constants/routes'
 
 import { usePageTitle } from '../usePageTitle'
 
@@ -114,5 +115,27 @@ describe('usePageTitle', () => {
     ])
     renderHook(() => usePageTitle())
     expect(document.title).toBe('EPAM AI/Run CodeMie - Edit Assistant')
+  })
+  it.each([
+    ['hosted-applications', '/apps', 'Applications'],
+    ['hosted-applications-project', '/apps/project', 'Applications'],
+    ['hosted-applications-marketplace', '/apps/marketplace', 'Applications Marketplace'],
+    ['hosted-application-share', '/apps/share/token', 'Open Shared Application'],
+  ])('sets document.title for the %s route', (id, pathname, title) => {
+    mockUseMatches.mockReturnValue([
+      { id: 'root', pathname: '/', params: {}, data: null, handle: null },
+      { id, pathname, params: {}, data: null, handle: null },
+    ])
+    renderHook(() => usePageTitle())
+    expect(document.title).toBe(`EPAM AI/Run CodeMie - ${title}`)
+  })
+
+  it('titles exactly the Applications routes that exist', () => {
+    const routeIds = Object.values(ROUTES)
+      .map(String)
+      .filter((value) => value.startsWith('hosted-'))
+    const titled = Object.keys(ROUTE_ID_TO_TITLE).filter((id) => id.startsWith('hosted-'))
+    const byName = (a: string, b: string) => a.localeCompare(b)
+    expect(titled.toSorted(byName)).toEqual(routeIds.toSorted(byName))
   })
 })

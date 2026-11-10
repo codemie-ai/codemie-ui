@@ -14,7 +14,7 @@
 //
 
 import { FC } from 'react'
-import { NavLink, useMatch, useMatches } from 'react-router'
+import { matchPath, NavLink, useLocation, useMatch, useMatches } from 'react-router'
 
 import ApplicationSvg from '@/assets/icons/applications.svg?react'
 import AssistantSvg from '@/assets/icons/assistant.svg?react'
@@ -57,6 +57,8 @@ export interface NavigationLinkItem {
   route?: string
   url?: string
   badge?: string
+  /** Other path prefixes that belong to this item, e.g. pages that live outside `route`. */
+  activeRoutes?: string[]
 }
 
 interface NavigationLinkProps {
@@ -70,7 +72,11 @@ const NavigationLink: FC<NavigationLinkProps> = ({ item, isBottomSection }) => {
   // The bottom section is styled for the rail's gradient; the mobile menu has a plain background.
   const hasBottomStyle = isBottomSection && !isMobileLayout
   const matches = useMatches()
-  const isActiveRoute = useMatch(`${item.route}/*`) && matches.at(-1)?.id !== 'start-assistant-chat'
+  const { pathname } = useLocation()
+  const matchesRoute = useMatch(`${item.route}/*`)
+  const matchesOtherRoute = !!item.activeRoutes?.some((route) => matchPath(`${route}/*`, pathname))
+  const isActiveRoute =
+    (matchesRoute || matchesOtherRoute) && matches.at(-1)?.id !== 'start-assistant-chat'
 
   const Icon = item.icon ? iconComponents[item.icon] : null
 

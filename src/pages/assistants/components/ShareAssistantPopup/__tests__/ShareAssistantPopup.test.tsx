@@ -20,14 +20,14 @@ import toaster from '@/utils/toaster'
 
 import ShareAssistantPopup from '../ShareAssistantPopup'
 
-const mockStore = vi.hoisted(() => ({
-  getSharedWith: vi.fn().mockResolvedValue([]),
-  getSharableUsers: vi.fn().mockResolvedValue([]),
-  shareWith: vi.fn().mockResolvedValue(undefined),
-  removeShare: vi.fn().mockResolvedValue(undefined),
+const mockSharing = vi.hoisted(() => ({
+  loadSharedWith: vi.fn().mockResolvedValue([]),
+  searchUsers: vi.fn().mockResolvedValue([]),
+  share: vi.fn().mockResolvedValue(undefined),
+  unshare: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@/store/assistants', () => ({ assistantsStore: mockStore }))
+vi.mock('@/store/assistants', () => ({ assistantsStore: { sharing: mockSharing } }))
 
 const mockAssistant = {
   id: 'asst-1',
@@ -46,10 +46,10 @@ describe('ShareAssistantPopup', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockStore.getSharedWith.mockResolvedValue([])
-    mockStore.getSharableUsers.mockResolvedValue([])
-    mockStore.shareWith.mockResolvedValue(undefined)
-    mockStore.removeShare.mockResolvedValue(undefined)
+    mockSharing.loadSharedWith.mockResolvedValue([])
+    mockSharing.searchUsers.mockResolvedValue([])
+    mockSharing.share.mockResolvedValue(undefined)
+    mockSharing.unshare.mockResolvedValue(undefined)
   })
 
   it('renders the header', async () => {
@@ -59,7 +59,7 @@ describe('ShareAssistantPopup', () => {
   })
 
   it('gives each Remove button an accessible name including the user name', async () => {
-    mockStore.getSharedWith.mockResolvedValue([otherUser])
+    mockSharing.loadSharedWith.mockResolvedValue([otherUser])
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
     await waitFor(() => expect(screen.getByText(otherUser.name)).toBeInTheDocument())
@@ -78,12 +78,12 @@ describe('ShareAssistantPopup', () => {
     await screen.findByText('Share assistant')
     fireEvent.click(screen.getByRole('button', { name: /Cancel/ }))
     expect(onHide).toHaveBeenCalled()
-    expect(mockStore.shareWith).not.toHaveBeenCalled()
-    expect(mockStore.removeShare).not.toHaveBeenCalled()
+    expect(mockSharing.share).not.toHaveBeenCalled()
+    expect(mockSharing.unshare).not.toHaveBeenCalled()
   })
 
   it('excludes the current user (owner) from People With Access list', async () => {
-    mockStore.getSharedWith.mockResolvedValue([ownerUser, otherUser])
+    mockSharing.loadSharedWith.mockResolvedValue([ownerUser, otherUser])
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
     await waitFor(() => {
@@ -93,10 +93,10 @@ describe('ShareAssistantPopup', () => {
   })
 
   it('excludes already-shared users from search results', async () => {
-    mockStore.getSharedWith.mockResolvedValue([otherUser])
+    mockSharing.loadSharedWith.mockResolvedValue([otherUser])
     const alreadySharedInSearch = { id: otherUser.id, name: otherUser.name, email: otherUser.email }
     const eligible = { id: 'search-elliot', name: 'Elliot', email: 'elliot@test.com' }
-    mockStore.getSharableUsers.mockResolvedValue([alreadySharedInSearch, eligible])
+    mockSharing.searchUsers.mockResolvedValue([alreadySharedInSearch, eligible])
 
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
@@ -113,8 +113,8 @@ describe('ShareAssistantPopup', () => {
   })
 
   it('renders fresh search results in the dropdown after typing a query', async () => {
-    mockStore.getSharedWith.mockResolvedValue([])
-    mockStore.getSharableUsers.mockResolvedValue([searchUserB])
+    mockSharing.loadSharedWith.mockResolvedValue([])
+    mockSharing.searchUsers.mockResolvedValue([searchUserB])
 
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
@@ -123,12 +123,12 @@ describe('ShareAssistantPopup', () => {
     const filterInput = await screen.findByPlaceholderText('Search')
     fireEvent.change(filterInput, { target: { value: 'car' } })
 
-    await waitFor(() => expect(mockStore.getSharableUsers).toHaveBeenCalled())
+    await waitFor(() => expect(mockSharing.searchUsers).toHaveBeenCalled())
     await waitFor(() => expect(screen.getByText(searchUserB.name)).toBeInTheDocument())
   })
 
   it('shows users the backend matched by email even when the name does not match the query', async () => {
-    mockStore.getSharableUsers.mockResolvedValue([searchUserB])
+    mockSharing.searchUsers.mockResolvedValue([searchUserB])
 
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
@@ -138,9 +138,26 @@ describe('ShareAssistantPopup', () => {
     fireEvent.change(filterInput, { target: { value: 'carol@test' } })
 
     await waitFor(() =>
-      expect(mockStore.getSharableUsers).toHaveBeenCalledWith('asst-1', 'carol@test')
+      expect(mockSharing.searchUsers).toHaveBeenCalledWith('asst-1', 'carol@test')
     )
     expect(await screen.findByText(searchUserB.name)).toBeInTheDocument()
+  })
+
+  // Intended (AR-11): the popup reports a failed recipient search itself, once, instead of
+  // the global error handling.
+  it('reports a failed recipient search in the popup as "User search failed"', async () => {
+    mockSharing.searchUsers.mockRejectedValue(new Error('network error'))
+    render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
+    await screen.findByText('Share assistant')
+
+    fireEvent.click(screen.getByRole('combobox'))
+    fireEvent.change(await screen.findByPlaceholderText('Search'), { target: { value: 'carol' } })
+
+    await waitFor(() =>
+      expect(toaster.error).toHaveBeenCalledWith('User search failed. Please try again.')
+    )
+    expect(toaster.error).toHaveBeenCalledTimes(1)
+    expect(mockSharing.searchUsers).toHaveBeenCalledWith('asst-1', 'carol')
   })
 
   it('does not search below the 2-character floor', async () => {
@@ -154,12 +171,12 @@ describe('ShareAssistantPopup', () => {
     await new Promise((r) => {
       setTimeout(r, 400)
     })
-    expect(mockStore.getSharableUsers).not.toHaveBeenCalled()
+    expect(mockSharing.searchUsers).not.toHaveBeenCalled()
     expect(screen.getByText('Type to search users')).toBeInTheDocument()
   })
 
   it('still searches at the 2-character floor', async () => {
-    mockStore.getSharableUsers.mockResolvedValue([searchUserB])
+    mockSharing.searchUsers.mockResolvedValue([searchUserB])
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
 
@@ -167,7 +184,7 @@ describe('ShareAssistantPopup', () => {
     const filterInput = await screen.findByPlaceholderText('Search')
     fireEvent.change(filterInput, { target: { value: 'ab' } })
 
-    await waitFor(() => expect(mockStore.getSharableUsers).toHaveBeenCalled())
+    await waitFor(() => expect(mockSharing.searchUsers).toHaveBeenCalled())
   })
 
   it('clears a pending search when deleted back below the floor before the debounce fires', async () => {
@@ -182,12 +199,12 @@ describe('ShareAssistantPopup', () => {
     await new Promise((r) => {
       setTimeout(r, 400)
     })
-    expect(mockStore.getSharableUsers).not.toHaveBeenCalled()
+    expect(mockSharing.searchUsers).not.toHaveBeenCalled()
   })
 
   it('drops an in-flight search result when the query is cleared below the floor', async () => {
     let resolveSearch: (users: unknown[]) => void = () => {}
-    mockStore.getSharableUsers.mockReturnValue(
+    mockSharing.searchUsers.mockReturnValue(
       new Promise((resolve) => {
         resolveSearch = resolve
       })
@@ -198,7 +215,7 @@ describe('ShareAssistantPopup', () => {
     fireEvent.click(screen.getByRole('combobox'))
     const filterInput = await screen.findByPlaceholderText('Search')
     fireEvent.change(filterInput, { target: { value: 'ab' } })
-    await waitFor(() => expect(mockStore.getSharableUsers).toHaveBeenCalled())
+    await waitFor(() => expect(mockSharing.searchUsers).toHaveBeenCalled())
 
     fireEvent.change(filterInput, { target: { value: '' } })
     resolveSearch([searchUserB])
@@ -210,8 +227,8 @@ describe('ShareAssistantPopup', () => {
   })
 
   // Remove now fires the API call immediately, not via Save
-  it('calls removeShare immediately when Remove is clicked, without waiting for Save', async () => {
-    mockStore.getSharedWith.mockResolvedValue([otherUser])
+  it('calls unshare immediately when Remove is clicked, without waiting for Save', async () => {
+    mockSharing.loadSharedWith.mockResolvedValue([otherUser])
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
     await waitFor(() => expect(screen.getByText(otherUser.name)).toBeInTheDocument())
@@ -219,30 +236,30 @@ describe('ShareAssistantPopup', () => {
     fireEvent.click(screen.getByRole('button', { name: /Remove/ }))
 
     await waitFor(() => {
-      expect(mockStore.removeShare).toHaveBeenCalledWith(mockAssistant.id, [otherUser.id])
+      expect(mockSharing.unshare).toHaveBeenCalledWith(mockAssistant.id, [otherUser.id])
     })
     expect(onHide).not.toHaveBeenCalled()
     expect(screen.queryByText(otherUser.name)).not.toBeInTheDocument()
   })
 
-  it('restores the user in the list and shows an error toast when removeShare fails', async () => {
-    mockStore.getSharedWith.mockResolvedValue([otherUser])
-    mockStore.removeShare.mockRejectedValue(new Error('network error'))
+  it('restores the user in the list and shows an error toast when unshare fails', async () => {
+    mockSharing.loadSharedWith.mockResolvedValue([otherUser])
+    mockSharing.unshare.mockRejectedValue(new Error('network error'))
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
     await waitFor(() => expect(screen.getByText(otherUser.name)).toBeInTheDocument())
 
     fireEvent.click(screen.getByRole('button', { name: /Remove/ }))
 
-    await waitFor(() => expect(mockStore.removeShare).toHaveBeenCalled())
+    await waitFor(() => expect(mockSharing.unshare).toHaveBeenCalled())
     await waitFor(() => expect(screen.getByText(otherUser.name)).toBeInTheDocument())
     expect(toaster.error).toHaveBeenCalledWith('Failed to remove user. Please try again.')
   })
 
   it('ignores Cancel while a remove is in flight, and allows it once settled', async () => {
-    mockStore.getSharedWith.mockResolvedValue([otherUser])
+    mockSharing.loadSharedWith.mockResolvedValue([otherUser])
     let resolveRemove: () => void = () => {}
-    mockStore.removeShare.mockReturnValue(
+    mockSharing.unshare.mockReturnValue(
       new Promise<void>((resolve) => {
         resolveRemove = resolve
       })
@@ -252,7 +269,7 @@ describe('ShareAssistantPopup', () => {
     await waitFor(() => expect(screen.getByText(otherUser.name)).toBeInTheDocument())
 
     fireEvent.click(screen.getByRole('button', { name: /Remove/ }))
-    await waitFor(() => expect(mockStore.removeShare).toHaveBeenCalled())
+    await waitFor(() => expect(mockSharing.unshare).toHaveBeenCalled())
 
     fireEvent.click(screen.getByRole('button', { name: /Cancel/ }))
     expect(onHide).not.toHaveBeenCalled()
@@ -263,8 +280,8 @@ describe('ShareAssistantPopup', () => {
     expect(onHide).toHaveBeenCalled()
   })
 
-  it('shows an error message with a Retry button when getSharedWith rejects', async () => {
-    mockStore.getSharedWith.mockRejectedValueOnce(new Error('network error'))
+  it('shows an error message with a Retry button when loadSharedWith rejects', async () => {
+    mockSharing.loadSharedWith.mockRejectedValueOnce(new Error('network error'))
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
 
@@ -287,19 +304,19 @@ describe('ShareAssistantPopup', () => {
     await new Promise((r) => {
       setTimeout(r, 0)
     })
-    expect(mockStore.getSharedWith).not.toHaveBeenCalled()
+    expect(mockSharing.loadSharedWith).not.toHaveBeenCalled()
   })
 
   it('reloads the list when Retry is clicked after a failed load', async () => {
-    mockStore.getSharedWith.mockRejectedValueOnce(new Error('network error'))
-    mockStore.getSharedWith.mockResolvedValueOnce([otherUser])
+    mockSharing.loadSharedWith.mockRejectedValueOnce(new Error('network error'))
+    mockSharing.loadSharedWith.mockResolvedValueOnce([otherUser])
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
 
     const retryButton = await screen.findByRole('button', { name: 'Retry' })
     fireEvent.click(retryButton)
 
-    await waitFor(() => expect(mockStore.getSharedWith).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(mockSharing.loadSharedWith).toHaveBeenCalledTimes(2))
     expect(await screen.findByText(otherUser.name)).toBeInTheDocument()
     expect(
       screen.queryByText('Failed to load the people with access. Please try again.')
@@ -308,17 +325,17 @@ describe('ShareAssistantPopup', () => {
   })
 
   const selectSearchUserB = async () => {
-    mockStore.getSharableUsers.mockResolvedValue([searchUserB])
+    mockSharing.searchUsers.mockResolvedValue([searchUserB])
     fireEvent.click(screen.getByRole('combobox'))
     const filterInput = await screen.findByPlaceholderText('Search')
     fireEvent.change(filterInput, { target: { value: 'car' } })
-    await waitFor(() => expect(mockStore.getSharableUsers).toHaveBeenCalled())
+    await waitFor(() => expect(mockSharing.searchUsers).toHaveBeenCalled())
     const option = await screen.findByText(searchUserB.name)
     fireEvent.click(option)
   }
 
   it('shows the backend rejection message inline and as a single toast when handleShare fails, and keeps the selection', async () => {
-    mockStore.shareWith.mockRejectedValue({
+    mockSharing.share.mockRejectedValue({
       parsedError: { message: 'Assistant uses a personal integration...' },
     })
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
@@ -336,7 +353,7 @@ describe('ShareAssistantPopup', () => {
   })
 
   it('falls back to the generic message when handleShare fails without a parsedError', async () => {
-    mockStore.shareWith.mockRejectedValue(new Error('network error'))
+    mockSharing.share.mockRejectedValue(new Error('network error'))
     render(<ShareAssistantPopup visible assistant={mockAssistant} onHide={onHide} />)
     await screen.findByText('Share assistant')
 
@@ -351,7 +368,7 @@ describe('ShareAssistantPopup', () => {
   })
 
   it('clears a prior share error when the popup is reopened', async () => {
-    mockStore.shareWith.mockRejectedValue({
+    mockSharing.share.mockRejectedValue({
       parsedError: { message: 'Assistant uses a personal integration...' },
     })
     const { rerender } = render(

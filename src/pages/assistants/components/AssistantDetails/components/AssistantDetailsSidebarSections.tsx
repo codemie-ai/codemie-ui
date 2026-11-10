@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
 import CodeSvg from '@/assets/icons/code.svg?react'
@@ -22,6 +22,7 @@ import DetailsCopyField from '@/components/details/DetailsCopyField'
 import DetailsProperty from '@/components/details/DetailsProperty'
 import DetailsSidebarSection from '@/components/details/DetailsSidebar/components/DetailsSidebarSection'
 import GuardrailAssignmentsDetails from '@/components/guardrails/GuardrailAssignmentsDetails/GuardrailAssignmentsDetails'
+import { SharedWithLoadError, useSharedWith } from '@/components/sharing'
 import { TOOLKIT_ORDER_KEYS } from '@/constants/assistants'
 import { useRequestHedgingEnabled } from '@/hooks/useFeatureFlags'
 import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
@@ -37,7 +38,6 @@ import {
   ContextType,
 } from '@/types/entity/assistant'
 import { GuardrailEntity } from '@/types/entity/guardrail'
-import { SharedWithUser } from '@/types/entity/sharing'
 import { Skill } from '@/types/entity/skill'
 import { sortToolkitsByOrder } from '@/utils/assistants'
 import { isOwner, isProjectMember } from '@/utils/entity'
@@ -81,7 +81,6 @@ const AssistantDetailsSidebarSections = ({
 }: AssistantDetailsSidebarSectionsProps) => {
   const snapshot = useSnapshot(mcpStore)
   const [isRequestHedgingEnabled] = useRequestHedgingEnabled()
-  const [sharedWith, setSharedWith] = useState<SharedWithUser[]>([])
 
   useEffect(() => {
     const idsToFetch = assistant.mcp_servers
@@ -91,27 +90,14 @@ const AssistantDetailsSidebarSections = ({
     idsToFetch.forEach((id) => mcpStore.getConfig(id).catch(() => {}))
   }, [assistant.mcp_servers])
 
-  useEffect(() => {
-    if (!isOwner(assistant, userStore.user?.userId)) {
-      setSharedWith([])
-      return
-    }
-
-    let cancelled = false
-    // Re-fetch whenever the assistant object is reloaded (e.g. after the share
-    // popup closes via `loadAssistant`), not just when its id changes.
-    assistantsStore
-      .getSharedWith(assistant.id)
-      .then((users) => {
-        if (!cancelled) setSharedWith(users)
-      })
-      .catch(() => {})
-
-    // eslint-disable-next-line consistent-return
-    return () => {
-      cancelled = true
-    }
-  }, [assistant])
+  const currentUserId = userStore.user?.userId
+  // Only the owner reads who the assistant is shared with. It loads again whenever the assistant
+  // object is reloaded (e.g. after the share popup closes via `loadAssistant`).
+  const sharedWith = useSharedWith(assistantsStore.sharing, assistant.id, {
+    enabled: isOwner(assistant, currentUserId),
+    currentUserId,
+    reloadKey: assistant,
+  })
 
   const projectDisplayNames = useProjectDisplayNames(assistant.project)
   const projectDisplayName =
@@ -299,9 +285,13 @@ const AssistantDetailsSidebarSections = ({
         />
       </DetailsSidebarSection>
 
-      {sharedWith.length > 0 && (
+      {(sharedWith.failed || sharedWith.users.length > 0) && (
         <DetailsSidebarSection headline="SHARED WITH" itemsWrapperClassName="gap-2 -mt-2">
-          <SidebarSharedWith users={sharedWith} />
+          {sharedWith.failed ? (
+            <SharedWithLoadError onRetry={sharedWith.reload} />
+          ) : (
+            <SidebarSharedWith users={sharedWith.users} />
+          )}
         </DetailsSidebarSection>
       )}
 

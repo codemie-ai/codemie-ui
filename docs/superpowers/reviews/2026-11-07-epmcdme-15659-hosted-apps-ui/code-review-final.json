@@ -1,0 +1,822 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "Check round approved all 23 findings (22 verified in code, CR-001 by recorded decision); the user requested the review end in an approve record"
+  },
+  "gates": [
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "Check round approved all 23 findings (22 verified in code, CR-001 by recorded decision); the user requested the review end in an approve record"
+    }
+  ],
+  "reviewed_head": "fe259da9b82a24a66217f685564262fb78b92c01",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "All 23 prior blocking findings resolved at HEAD 6055206f: 22 code findings confirmed in current source with targeted tests added, and CR-001 resolved by the mapped human decision (confirm owner revoke), which the code now implements. Tests were not executed here (Stage 7 owns execution); business and standards rows are carried forward from the final round unchanged.",
+  "confidence": "low",
+  "check_confidence": "high",
+  "risk_flags": [
+    "security",
+    "breaking-change"
+  ],
+  "open": 0,
+  "closed": {
+    "fixed": 22,
+    "moot": 0,
+    "decided": 1,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "decision",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/components/sharing/ShareLinkSection.tsx",
+      "line": 95,
+      "title": "Owner share-link revoke skips confirmation",
+      "problem": "The owner's 'Revoke link' in the Share popup (onRevoke) revokes immediately, while the moderator path for the same action (useHostedCardActions revoke_link) shows a confirmation warning that people who joined via the link lose access. The spec does not say whether the owner path should confirm.",
+      "impact": "A single mis-click by the owner silently removes access for everyone who joined through the link, with no warning that the moderator path gives.",
+      "recommendation": "Decide whether the owner's 'Revoke link' should show the same confirmation as the moderator path (people who joined via the link lose access); if yes, add a ConfirmationModal before calling revokeLink.",
+      "status": "decided",
+      "check_notes": "Decision recorded (confirm owner revoke); ShareLinkSection now shows a ConfirmationModal before revokeLink, with test.",
+      "fix": {
+        "change": "ShareLinkSection asks 'Revoke the share link?' in a ConfirmationModal before calling revokeLink",
+        "test": "ShareLinkSection.test.tsx: asks for confirmation before revoking and keeps the link when cancelled"
+      },
+      "decision": {
+        "outcome": "Add a confirmation dialog to the owner's Revoke link in ShareLinkSection, worded like the moderator confirmation: 'Revoke the share link?' / people who joined through it lose access; people shared with by name keep theirs.",
+        "rationale": "The user chose to confirm the owner path the same way as the moderator path, because revoking removes access for everyone who joined through the link."
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/sharing/SharePopup.tsx",
+      "line": 184,
+      "title": "Removed person can reappear in share list",
+      "problem": "handleRemove optimistically filters the user out of sharedWith but does not bump loadIdRef, so a shared-with load already in flight (refreshKey reload or retry) still passes its loadId check and calls setSharedWith(users) with a list that includes the removed user.",
+      "impact": "The popup shows a person as still having access after they were removed, inviting a second removal or a wrong conclusion. Reachability unconfirmed: needs a reload to overlap the removal.",
+      "recommendation": "Invalidate any in-flight shared-with load when removing a person (loadIdRef.current += 1 at the start of handleRemove), or reapply pending removals when a load resolves.",
+      "status": "resolved",
+      "check_notes": "handleRemove bumps loadIdRef before filtering, so an in-flight load is discarded; late-load test added.",
+      "fix": {
+        "change": "SharePopup.handleRemove bumps loadIdRef so an in-flight list load cannot restore the removed person",
+        "test": "SharePopup.test.tsx: does not bring a removed person back when an earlier list load answers late"
+      }
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/hooks/appLevel/useInitialDataFetch.tsx",
+      "line": 39,
+      "title": "Startup hosted wiring has no test",
+      "problem": "Regression gap: app start now calls hostedApplicationsStore.followUser(userId) and ensureCapabilities(), but the only reference to useInitialDataFetch in tests mocks it (App.test.tsx), and Navigation tests assign capabilities directly.",
+      "impact": "Consumer: the Navigation Applications item gated by canViewHosted and the per-user reset in followUser. If either call is dropped, users with no platform apps never see Applications, and a same-tab user switch keeps the previous user's hosted state, with no failing test.",
+      "recommendation": "Add a useInitialDataFetch (or renderPage integration) test with the hostedApplications flag on asserting GET v1/hosted-applications/capabilities is issued at startup and the Applications nav link appears, plus a test that a sign-in as another user calls followUser and clears hosted catalog and capabilities.",
+      "status": "resolved",
+      "check_notes": "New useInitialDataFetch test asserts followUser before data load, ensureCapabilities, re-follow on new user, none when signed out.",
+      "fix": {
+        "change": "Added useInitialDataFetch test for followUser ordering, per-user follow, ensureCapabilities and the 401 path",
+        "test": "src/hooks/appLevel/__tests__/useInitialDataFetch.test.tsx"
+      }
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedApplicationViewer.tsx",
+      "line": 126,
+      "title": "Old Explore/Trash URLs miss not-available page",
+      "problem": "Spec 10.1 (UI-9 superseded) requires /apps/explore and other old addresses to fall through to /apps/:id and show the not-available page. They fall through, but a non-UUID id throws HostedUserError('Invalid application link.'), and unavailableCopy renders 'Unable to open application / Invalid application link.' instead of 'This application is not available'.",
+      "impact": "A required spec behaviour is only partly met: bookmarks to removed Explore, Trash and folder addresses show an error page rather than the specified not-available answer.",
+      "recommendation": "Treat a non-UUID application id (and versionId) as not available: render the 'This application is not available' copy (e.g. set error to null / mark unavailable without an error message) instead of throwing HostedUserError('Invalid application link.'); add a test visiting /apps/explore.",
+      "status": "resolved",
+      "check_notes": "Non-UUID id/versionId sets unavailable with no error, rendering 'This application is not available'; tests for explore/trash/folders.",
+      "fix": {
+        "change": "Viewer treats a non-UUID id or versionId as not available (standard copy, no API call) instead of throwing 'Invalid application link.'",
+        "test": "HostedApplicationViewer.test.tsx: shows the standard not-available page for /apps/explore|trash|folders"
+      }
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedApplicationViewer.tsx",
+      "line": 189,
+      "title": "Blocked-tab launch fallback untested",
+      "problem": "Regression gap: when openHostedLaunchWindow() returns null (pop-up blocked), openSeparately submits the ticket into '_self'; no viewer test mocks openWindow to return null.",
+      "impact": "Consumer: the 'Open in new tab' viewer action. If the '?? _self' fallback is dropped or changed, users whose browser blocks pop-ups get nothing and no test fails.",
+      "recommendation": "In embedded-viewer.integration.test.tsx set boundary.openWindow.mockReturnValue(null), click 'Open in new tab', and assert boundary.submit was last called with (expect.objectContaining({ ticket }), '_self').",
+      "status": "resolved",
+      "check_notes": "embedded-viewer test mocks openWindow -> null and asserts submit last called with ticket into '_self'.",
+      "fix": {
+        "change": "Added blocked-tab fallback test (openWindow returns null, ticket posted to _self)",
+        "test": "embedded-viewer.integration.test.tsx: posts the ticket into this tab when the browser blocks the new one"
+      }
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedMetadataDialog.tsx",
+      "line": 104,
+      "title": "Create retry reuses idempotency key after edits",
+      "problem": "createKey is created once per dialog (useRef(crypto.randomUUID())) and never regenerated, so after a create fails with an unknown outcome and the user edits fields, the retry sends a different payload under the same Idempotency-Key.",
+      "impact": "The server either replays the earlier payload or rejects the mismatch (422), so the user cannot create the edited application until the dialog is reopened. Reachability unconfirmed: depends on server idempotency handling.",
+      "recommendation": "Regenerate createKey.current (crypto.randomUUID()) when the form values change while nothing has been persisted yet, so a retry with edited fields is a new create request.",
+      "status": "resolved",
+      "check_notes": "createRequest keyed by serialized payload: edited values get a new Idempotency-Key, same values replay; test added.",
+      "fix": {
+        "change": "Create request key is tied to the create payload; edited values get a new Idempotency-Key, identical retries reuse it",
+        "test": "HostedMetadataDialog.integration.test.tsx: sends an edited retry as a new create request with a new request key"
+      }
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedSharePage.tsx",
+      "line": 57,
+      "title": "Share page calls hosted API when feature off",
+      "problem": "Spec 10.8 requires that with features:hostedApplications off the store never calls the hosted API. HostedSharePage calls store.openShareLink(token) on load without a flag or capabilities check, and openShareLink checks only the auth epoch, so /apps/share/:token POSTs v1/hosted-applications/share-links/open while the feature is off. HostedSharePage.test.tsx has no flag-off test.",
+      "impact": "A required spec requirement is unmet: customers who turned hosted applications off still have the hosted share-link endpoint called (and grants created) from the UI.",
+      "recommendation": "Before calling store.openShareLink, await hostedApplicationsOff() (and use useHostedFeatureRedirect) or check isHostedApplicationsEnabled() inside openShareLink, so the page redirects to Platform apps without calling the API; add a flag-off test to HostedSharePage.test.tsx.",
+      "status": "resolved",
+      "check_notes": "HostedSharePage awaits hostedApplicationsOff() before openShareLink and uses useHostedFeatureRedirect; flag-off test added.",
+      "fix": {
+        "change": "HostedSharePage awaits hostedApplicationsOff() before openShareLink and uses useHostedFeatureRedirect",
+        "test": "HostedSharePage.test.tsx: sends the share page to Platform apps without opening the link while custom apps are off"
+      }
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedValidationDialog.tsx",
+      "line": 127,
+      "title": "Unknown validation state crashes version views",
+      "problem": "HOSTED_VERSION_STATUS[report.state].status (and the same lookup at HostedVersionList.tsx:92) has no fallback, so a validation_state the server adds outside the VersionState union yields undefined.status.",
+      "impact": "The details page or validation dialog throws and crashes rendering. Reachability unconfirmed: requires the server to return a state the UI enum does not know.",
+      "recommendation": "Fall back for unmapped states: const status = HOSTED_VERSION_STATUS[state] ?? { status: StatusEnum.NotStarted, label: String(state) }, in both HostedValidationDialog and HostedVersionList.",
+      "status": "resolved",
+      "check_notes": "hostedVersionStatus() falls back to NotStarted + raw state; used in HostedValidationDialog and HostedVersionList; tests added.",
+      "fix": {
+        "change": "hostedVersionStatus() falls back to NotStarted with the raw state label; used by HostedValidationDialog and HostedVersionList",
+        "test": "validation-fresh-revision and version-selection-eligibility: shows a ... state the UI does not know yet"
+      }
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedValidationDialog.tsx",
+      "line": 178,
+      "title": "Load more findings drops later-page errors",
+      "problem": "The 'Load more findings' handler merges only page.warnings into the report and ignores page.errors; an earlier error is also not cleared before retrying.",
+      "impact": "Blocking validation errors on later pages are never shown to the owner, who cannot see why a version cannot be activated.",
+      "recommendation": "Merge errors too: setReport({ ...report, warnings: [...report.warnings, ...page.warnings], errors: [...report.errors, ...page.errors], next_offset: page.next_offset }); clear any earlier error before retrying.",
+      "status": "resolved",
+      "check_notes": "Load more merges page.errors and clears the earlier error before retrying; test added.",
+      "fix": {
+        "change": "Load more findings merges page.errors and clears an earlier error before retrying",
+        "test": "validation-fresh-revision.integration.test.tsx: keeps the errors of a later findings page and clears an earlier load-more error"
+      }
+    },
+    {
+      "id": "CR-010",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedVersionList.tsx",
+      "line": 109,
+      "title": "Preview selection tied to activate permission",
+      "problem": "'Use for preview' is hidden unless the version is activatable (can_activate and activate not refused by suspension), although can_preview alone controls the Preview button.",
+      "impact": "A manager who may preview but not activate (e.g. while suspended) cannot select a version for preview. Reachability unconfirmed: depends on whether select-version needs activation rights server-side.",
+      "recommendation": "Gate 'Use for preview' on can_preview (and the select-specific server permission) rather than activatable, unless select-version is meant to require activation rights; confirm against the API contract.",
+      "status": "resolved",
+      "check_notes": "'Use for preview' now gated on can_preview and not-selected only; suspension still blocks Activate; tests added.",
+      "fix": {
+        "change": "'Use for preview' gated on can_preview only (backend select_version does not apply the activate suspension)",
+        "test": "version-selection-eligibility: offers Use for preview ... while a suspension refuses activation; details suspended test updated"
+      }
+    },
+    {
+      "id": "CR-011",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedViewerActions.tsx",
+      "line": 59,
+      "title": "Open in new tab disabled while previewing",
+      "problem": "The viewer's 'Open in new tab' is disabled by !canOpen(app) alone, so when an owner previews a version (versionId route) of an app without an active version it is disabled, even though openSeparately launches selected.current.",
+      "impact": "Owners cannot open a version preview in a separate tab before activating it, although the embedded preview works.",
+      "recommendation": "Enable the action when a preview version is being viewed: disabled: !canOpen(app) && !previewVersionId (openSeparately already launches selected.current).",
+      "status": "resolved",
+      "check_notes": "HostedViewerActions takes previewing; Open in new tab enabled when !canOpen but a version is previewed; test added.",
+      "fix": {
+        "change": "HostedViewerActions takes previewing; Open in new tab enabled when a version is previewed",
+        "test": "embedded-viewer.integration.test.tsx: lets a manager open a previewed version in a new tab when no version is active"
+      }
+    },
+    {
+      "id": "CR-012",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/hostedDetailsLoading.ts",
+      "line": 29,
+      "title": "One unreadable pinned version fails details",
+      "problem": "loadHostedDetails fetches the pinned active/selected versions not on the first page with Promise.all; for non-managers the page is empty, so the active version is always fetched via getVersion.",
+      "impact": "If any pinned version returns 403/404 (deleted, or not readable by the viewer), Promise.all rejects and handleLoadError marks the whole existing application not available. Reachability unconfirmed: depends on server read rules for versions.",
+      "recommendation": "Use Promise.allSettled for the pinned active/selected version fetches and keep only fulfilled results, so a 403/404 on one version does not mark the whole application unavailable.",
+      "status": "resolved",
+      "check_notes": "Pinned versions fetched with allSettled; 403/404 dropped, other failures rethrown; both paths tested.",
+      "fix": {
+        "change": "loadHostedDetails uses Promise.allSettled for pinned versions, drops 403/404, rethrows other errors",
+        "test": "hostedDetailsLoading.test.ts: keeps the details when one pinned version can no longer be read"
+      }
+    },
+    {
+      "id": "CR-013",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/useHostedApplicationDetails.ts",
+      "line": 112,
+      "title": "Manage page flag-off redirect untested",
+      "problem": "Regression gap: the manage page waits on hostedApplicationsOff() and relies on useHostedFeatureRedirect() to leave; the flag-off redirect is tested for the viewer only (embedded-viewer.integration.test.tsx), not for HostedApplicationDetails.",
+      "impact": "Consumer: the apps/:id/manage route, which HostedSharePage also navigates to. If the redirect is removed or its condition changes, these links show an endless spinner for customers with hosted apps off, and no test fails.",
+      "recommendation": "Add a HostedApplicationDetails integration test with store.capabilities = { view: false } asserting navigate('/apps/platform', { replace: true }) and that loadHostedDetails / getApplication are never called.",
+      "status": "resolved",
+      "check_notes": "HostedApplicationDetails test with capabilities view:false asserts navigate('/apps/platform') and no load.",
+      "fix": {
+        "change": "Added manage-page flag-off redirect test",
+        "test": "HostedApplicationDetails.integration.test.tsx: sends the manage page to Platform apps without loading the application"
+      }
+    },
+    {
+      "id": "CR-014",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/useHostedApplicationDetails.ts",
+      "line": 242,
+      "title": "Failed version action leaves stale etag",
+      "problem": "When store.versionAction fails (e.g. 412 on a stale If-Match) for select/activate/cancel/retry, the catch sets the error and clears confirmVersion but does not reload the application.",
+      "impact": "The application etag stays stale, so every later version action fails the same way until the user reloads the page manually.",
+      "recommendation": "In the catch, after setting the error and clearing confirmVersion, reload the application (load(true) or equivalent) so the next action uses the current etag.",
+      "status": "resolved",
+      "check_notes": "Version-action catch now sets error, clears confirm, then load(true); test asserts reload and error kept.",
+      "fix": {
+        "change": "Failed version action reloads the application with load(true), keeping the error shown",
+        "test": "HostedApplicationDetails.integration.test.tsx: reloads the application after a failed version action"
+      }
+    },
+    {
+      "id": "CR-015",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/usePlatformApplications.ts",
+      "line": 43,
+      "title": "Unknown platform app types routed to federation",
+      "problem": "The removed ApplicationsPage handler toasted 'Unsupported application type: <type>' for anything other than LINK, IFRAME or MODULE. The new open() sends every non-LINK, non-IFRAME type to the application-federation route; platform-launch-routing tests cover only the three known types.",
+      "impact": "Behaviour regression: a platform application with an unexpected or new type is loaded as a federated module instead of being reported as unsupported.",
+      "recommendation": "Restore the removed branch: route only AppType.MODULE to application-federation and toast `Unsupported application type: ${app.type}` for anything else; add a platform-launch-routing test for an unknown type.",
+      "status": "resolved",
+      "check_notes": "PLATFORM_ROUTES maps only IFRAME/MODULE; unknown type toasts 'Unsupported application type'; test added.",
+      "fix": {
+        "change": "Platform open() routes only IFRAME and MODULE; other types toast 'Unsupported application type: <type>'",
+        "test": "platform-launch-routing.integration.test.tsx: reports an unknown application type"
+      }
+    },
+    {
+      "id": "CR-016",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/hostedApplications.ts",
+      "line": 399,
+      "title": "Thumbnail rejected when content-type has parameters",
+      "problem": "getThumbnail compares the raw content-type header exactly against HOSTED_COVER_TYPES, so 'image/png; charset=binary' or different casing is treated as unavailable.",
+      "impact": "Valid covers silently fall back to initials on cards. Reachability unconfirmed: depends on the server or proxy adding parameters.",
+      "recommendation": "Normalize before comparing: const type = (response.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase().",
+      "status": "resolved",
+      "check_notes": "getThumbnail normalizes content-type (split ';', trim, lowercase) before allowlist check; tests added.",
+      "fix": {
+        "change": "getThumbnail compares the content-type media type, without parameters, trimmed and lower-cased",
+        "test": "hostedApplications.integration.test.ts: application covers"
+      }
+    },
+    {
+      "id": "CR-017",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/hostedApplications.ts",
+      "line": 528,
+      "title": "Upload blocked with misleading size message",
+      "problem": "uploadArtifact throws 'Choose an HTML file or static ZIP within the upload limit.' when capabilities.create is false or capabilities are not loaded, the same message as for a wrong type or size.",
+      "impact": "A manager uploading a new version without the create capability (or before capabilities load) is told the file is too large and cannot tell what is wrong. Reachability unconfirmed: depends on when create is false for an existing app's manager.",
+      "recommendation": "Separate the checks: when capabilities are not loaded or create is false, throw a message that says uploads are unavailable (or reload capabilities); keep the file-size message for kind/size failures only.",
+      "status": "resolved",
+      "check_notes": "Missing create capability now throws 'Uploads are unavailable right now...'; size message kept for kind/size only.",
+      "fix": {
+        "change": "uploadArtifact reports 'Uploads are unavailable right now' when capabilities are missing or create is false; size message kept for kind/size",
+        "test": "hostedApplications.integration.test.ts: says uploads are unavailable, not that the file is too large"
+      }
+    },
+    {
+      "id": "CR-018",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/user.ts",
+      "line": 232,
+      "title": "Nameless user breaks Created-by options",
+      "problem": "loadHostedApplicationsUsers sorts with a.name.localeCompare(b.name), which throws for a user without a name; the catch then toasts 'Failed to fetch Application users' and returns []. HostedCatalogFilters filters !!user.name, implying nameless users are expected.",
+      "impact": "One nameless user empties the whole 'Created by' filter and shows an error toast. Reachability unconfirmed: depends on the API returning users without names.",
+      "recommendation": "Sort null-safely: data.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')).",
+      "status": "resolved",
+      "check_notes": "Sort is null-safe ((a.name ?? '').localeCompare(b.name ?? '')); nameless-user test added.",
+      "fix": {
+        "change": "loadHostedApplicationsUsers sorts null-safely",
+        "test": "user.test.ts: keeps the list when a creator has no name"
+      }
+    },
+    {
+      "id": "CR-019",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/utils/hostedApplicationUpload.ts",
+      "line": 222,
+      "title": "Expired upload reported as still stopping",
+      "problem": "For a version still uploading whose upload.state is not 'created' and can_reset is false, resume always throws 'The previous transfer is still stopping.', including when the state is expired or canceled and will never become resettable.",
+      "impact": "The user is told to wait and retry indefinitely; Resume never succeeds. Reachability unconfirmed: depends on server upload states.",
+      "recommendation": "if (['expired','canceled'].includes(current.upload.state) && !current.upload.can_reset) throw new HostedUserError('This upload expired. Cancel the version and upload again.') before the generic \"still stopping\" message.",
+      "status": "resolved",
+      "check_notes": "expired/canceled upload without can_reset throws 'This upload expired...' before the still-stopping message; tested.",
+      "fix": {
+        "change": "Resume of an expired/canceled, non-resettable transfer says 'This upload expired. Cancel the version and upload again.'",
+        "test": "hostedApplicationUpload.test.ts: tells the user to start over when the transfer is expired|canceled"
+      }
+    },
+    {
+      "id": "CR-020",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/utils/hostedApplicationUpload.ts",
+      "line": 297,
+      "title": "Upload with missing etag fails opaquely",
+      "problem": "uploadHostedArtifact caches an attempt with etag: app.etag! although etag is optional on the type; hostedProtocolHeaders then reads undefined.",
+      "impact": "A TypeError surfaces as a generic error and the cached attempt keeps the bad etag, so retries fail too. Reachability unconfirmed: depends on an application object without etag reaching upload.",
+      "recommendation": "if (!app.etag) throw new HostedUserError('Reload the current application before saving changes.') before caching the attempt.",
+      "status": "resolved",
+      "check_notes": "startAttempt throws 'Reload the current application...' when app.etag is missing before caching; tested.",
+      "fix": {
+        "change": "uploadHostedArtifact refuses to cache an attempt without app.etag ('Reload the current application before saving changes.')",
+        "test": "hostedApplicationUpload.test.ts: asks for a reload instead of starting an upload without the application etag"
+      }
+    },
+    {
+      "id": "CR-021",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/utils/hostedApplicationUpload.ts",
+      "line": 342,
+      "title": "Stale-etag upload attempt never cleared",
+      "problem": "When the begin request is rejected with 412/428 because the app etag changed since the attempt was cached, the catch deletes the attempt only for 400/409/413/422, so the attempt keeps the stale etag.",
+      "impact": "Every retry of the upload for that application fails with the same precondition error until the page is reloaded.",
+      "recommendation": "if (!attempt.staged && error instanceof Response && [400, 409, 412, 413, 422, 428].includes(error.status)) attempts.delete(app.id)",
+      "status": "resolved",
+      "check_notes": "BEGIN_REFUSED now includes 412 and 428, so a stale-etag attempt is deleted.",
+      "fix": {
+        "change": "Begin rejections 412 and 428 also discard the cached attempt",
+        "test": "hostedApplications.integration.test.ts: uses the fresh revision after a definitive 412|428 rejection"
+      }
+    },
+    {
+      "id": "CR-022",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/hostedApplicationFrame.ts",
+      "line": 40,
+      "title": "Container srcdoc is an unsanctioned HTML sink",
+      "problem": "security-patterns.md 'HTML sinks' allows only three shapes (sanitized on the line, sanitized by a named producer, constant in the same file). createHostedFrame builds the srcdoc HTML by interpolating content.origin (from the launch API content_origin, normalized only by new URL().origin and validateHostedLaunch) into a CSP meta attribute and an inline script; HostedApplicationViewer.tsx:253 renders it with sandbox='allow-scripts allow-same-origin', so the container runs with the CodeMie UI origin.",
+      "impact": "Blocks the workflow under the documented security standard: an HTML sink fed by request data outside the sanctioned shapes, executing with full same-origin access to the CodeMie UI.",
+      "recommendation": "Either restrict the interpolated origin to a strict allowlist pattern (e.g. ^https?://[a-z0-9.-]+(:\\d+)?$) checked in createHostedFrame and document HostedFrame.document as a sanitized-by-producer HTML contract, or add a documented fourth-shape exception to security-patterns.md in the same change; add a regression test rejecting an origin with quote or angle-bracket characters.",
+      "status": "resolved",
+      "check_notes": "createHostedFrame rejects origins outside SAFE_ORIGIN allowlist; HostedFrame.document documented as producer-sanitized; test added.",
+      "fix": {
+        "change": "createHostedFrame checks both origins against a strict SAFE_ORIGIN allowlist; HostedFrame.document documented as sanitized-by-producer",
+        "test": "hostedApplicationFrame.test.ts: refuses an origin outside the strict host allowlist"
+      }
+    },
+    {
+      "id": "CR-023",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/hostedApplicationLaunch.ts",
+      "line": 82,
+      "title": "Launch-ticket POST form never tested",
+      "problem": "Regression gap: no test runs submitHostedLaunch with a valid target and checks the submitted form; direct tests only expect throws for invalid targets, and viewer tests mock the module.",
+      "impact": "Consumer: embedded and separate-tab launch in HostedApplicationViewer. Switching the form to GET (ticket in URL, history and logs), renaming the 'ticket' field, posting to the wrong action, or leaving the form in the DOM would ship with a green suite.",
+      "recommendation": "Spy on HTMLFormElement.prototype.submit, call submitHostedLaunch(launch, 'codemie-hosted-<32 hex>') and assert method POST, action === launch.action, target, a single hidden 'ticket' input, and that the form is removed afterwards (also when submit throws).",
+      "status": "resolved",
+      "check_notes": "submitHostedLaunch tests assert POST, action, target, single hidden ticket input and form removal, incl. on throw.",
+      "fix": {
+        "change": "Added submitHostedLaunch form tests (POST, action, target, single hidden ticket, removal even when submit throws)",
+        "test": "hostedApplicationLaunch.test.ts: submitHostedLaunch"
+      }
+    }
+  ],
+  "deferred": [
+    {
+      "id": "DF-001",
+      "severity": "major",
+      "file": "src/pages/applications/usePlatformApplications.ts",
+      "line": 40,
+      "title": "Platform LINK app entry opened untreated",
+      "problem": "open() passes the API-supplied app.entry to window.open with no http/https scheme check, against security-patterns.md 'Navigation built from untrusted input'.",
+      "preexisting": "Moved unchanged from base src/pages/applications/ApplicationsPage.tsx:45; this change only added noopener,noreferrer."
+    }
+  ],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "2.1/10.1 Applications routes (/apps tabs, new, share/:token, :id/manage, :id/preview/:versionId, :id); /applications redirects to /apps",
+      "status": "pass",
+      "notes": "router.tsx catalog, share, manage, preview and viewer routes; /applications loader redirects to APPS_ROOT"
+    },
+    {
+      "kind": "spec",
+      "item": "10.1/S-28 No Moderation route or tab; no redirects for old Explore, Trash and folder addresses",
+      "status": "pass",
+      "notes": "collection ids mine/project/marketplace/shared/platform; no explore/trash routes"
+    },
+    {
+      "kind": "spec",
+      "item": "10.1/UI-9 /apps/explore falls through to /apps/:id and shows the not-available page",
+      "status": "partial",
+      "notes": "falls through, but non-UUID id throws 'Invalid application link.' and shows 'Unable to open application' (CR-004)"
+    },
+    {
+      "kind": "spec",
+      "item": "10.1 Paths come from hostedRoutes.ts",
+      "status": "pass",
+      "notes": "share.path/share.url/preview used by router"
+    },
+    {
+      "kind": "spec",
+      "item": "10.1 Page titles exist for exactly these routes and a test keeps them in step",
+      "status": "pass",
+      "notes": "pageTitles.ts hosted-* entries; usePageTitle test compares route ids"
+    },
+    {
+      "kind": "spec",
+      "item": "10.2/UI-12 hostedAccess.ts is the only module reading the access fields",
+      "status": "pass",
+      "notes": "hostedAccess.ts helpers; no other non-test reader"
+    },
+    {
+      "kind": "spec",
+      "item": "10.2/S-19 suspensionRefuses(app, action) reads the server's suspension_refuses list",
+      "status": "pass",
+      "notes": "no mirrored UI list"
+    },
+    {
+      "kind": "spec",
+      "item": "10.2 'Created by you' byline only for the creator",
+      "status": "pass",
+      "notes": "card and details use isCreator"
+    },
+    {
+      "kind": "spec",
+      "item": "10.2 hostedActions(app) is the one ordered menu for card, details header and viewer",
+      "status": "pass",
+      "notes": "order matches; Revoke share link only when canModerate && !canShare, owner-moderator revokes via Share popup"
+    },
+    {
+      "kind": "spec",
+      "item": "10.2 Open disabled without an active version; Publish disabled by suspensionRefuses; Remove from Marketplace otherwise",
+      "status": "pass",
+      "notes": "hostedActions gating matches"
+    },
+    {
+      "kind": "spec",
+      "item": "10.2/UI-23 Activate also requires the version's own can_activate",
+      "status": "pass",
+      "notes": "HostedVersionList activatable"
+    },
+    {
+      "kind": "spec",
+      "item": "10.2/S-9 'Activate version' wording, 'Active' tag, no 'live' wording",
+      "status": "pass",
+      "notes": "details test asserts no live wording"
+    },
+    {
+      "kind": "spec",
+      "item": "10.3/D4 HostedMetadataDialog project selector and 'Shared with project' switch; no folder field",
+      "status": "pass",
+      "notes": "ProjectSelector + Switch bound to shared"
+    },
+    {
+      "kind": "spec",
+      "item": "10.3/UI-16 Edit sends a PATCH with only the changed fields",
+      "status": "pass",
+      "notes": "saveMetadata diffs fields, skips empty update"
+    },
+    {
+      "kind": "spec",
+      "item": "10.3/UI-26 Switch follows write; turning on and changing project gated by suspensionRefuses",
+      "status": "pass",
+      "notes": "readOnly/moveLocked/shareOnLocked"
+    },
+    {
+      "kind": "spec",
+      "item": "10.4/UI-5/UI-20 SharePopup generic: callbacks, texts, canGrant, extra slot, no entity/store imports",
+      "status": "pass",
+      "notes": "imports only components and types"
+    },
+    {
+      "kind": "spec",
+      "item": "10.4 SharedWithList 'via link' badge; SidebarSharedWith re-exports it",
+      "status": "pass",
+      "notes": "ViaLinkBadge on grant_source link"
+    },
+    {
+      "kind": "spec",
+      "item": "10.4 ShareLinkSection get/create/revoke/buildUrl; copy behaviour; Revoke only while a live link exists",
+      "status": "pass",
+      "notes": "Revoke rendered only when link"
+    },
+    {
+      "kind": "spec",
+      "item": "10.4/D-U2 No plain 'Copy link' for the app address",
+      "status": "pass",
+      "notes": "only 'Copy share link'"
+    },
+    {
+      "kind": "spec",
+      "item": "10.4/AR-2 One sharing client per entity on its store; per-store aliases removed",
+      "status": "pass",
+      "notes": "assistantsStore.sharing and hostedApplicationsStore.sharing via createSharingClient"
+    },
+    {
+      "kind": "spec",
+      "item": "10.4 useSharedWith loads 'Shared with' on both details pages, owner only, retry on failure",
+      "status": "pass",
+      "notes": "used in hosted and assistant details"
+    },
+    {
+      "kind": "spec",
+      "item": "10.4/UI-6/UI-21/S-34 ShareAssistantPopup thin wrapper; loader only for owner; 'User search failed'",
+      "status": "pass",
+      "notes": "wraps SharePopup"
+    },
+    {
+      "kind": "spec",
+      "item": "10.4/UI-14/S-8 HostedSharePopup only when canShare; suspended disables grant and copy; remove/revoke stay",
+      "status": "pass",
+      "notes": "mayGrant drives canGrant/canCreate/notice"
+    },
+    {
+      "kind": "spec",
+      "item": "10.4/S-7 After revoking the link, popup and details sidebar reload people",
+      "status": "pass",
+      "notes": "refreshKey bump + onChanged -> sharedWith.reload"
+    },
+    {
+      "kind": "spec",
+      "item": "10.5/UI-1/UI-2/S-6 Share page opens once per token, then replaces history with /apps/:id/manage",
+      "status": "pass",
+      "notes": "opened ref keyed by attempt:token"
+    },
+    {
+      "kind": "spec",
+      "item": "10.5/UI-3/UI-17/UI-18 Share page error states; token never shown or logged",
+      "status": "pass",
+      "notes": "401/403/404 not-available; status 0 / local-auth 401 neutral; 503 retry extra"
+    },
+    {
+      "kind": "spec",
+      "item": "10.5/UI-11 No referrer policy set on the share page",
+      "status": "pass",
+      "notes": "browser default"
+    },
+    {
+      "kind": "spec",
+      "item": "10.6/UI-4 HostedSecurityDialog suspend/reinstate with required reason, details etag, new key on reason change",
+      "status": "pass",
+      "notes": "store.security posts {reason}"
+    },
+    {
+      "kind": "spec",
+      "item": "10.7/S-1 Search, Project and Created by filters on every tab",
+      "status": "pass",
+      "notes": "users options from GET hosted-applications/users?scope"
+    },
+    {
+      "kind": "spec",
+      "item": "10.7/S-2/S-22 Shared and Status filters on My apps only",
+      "status": "pass",
+      "notes": "only mine collection declares them"
+    },
+    {
+      "kind": "spec",
+      "item": "10.7/AR-3/S-28 No Moderation filter; each collection owns its filters",
+      "status": "pass",
+      "notes": "no security_state key"
+    },
+    {
+      "kind": "spec",
+      "item": "10.7/S-3 Artifact type and Version state filters removed; mine-only filters never sent elsewhere",
+      "status": "pass",
+      "notes": "HostedFilterKey limited"
+    },
+    {
+      "kind": "spec",
+      "item": "10.7/S-5 Switching tabs clears the filters",
+      "status": "pass",
+      "notes": "tab urls carry no query"
+    },
+    {
+      "kind": "spec",
+      "item": "10.8/UI-8/UI-22/D13 No active version: 'No active version yet', Open disabled, viewer launches nothing; managers keep Preview",
+      "status": "pass",
+      "notes": "viewer returns before issueLaunch"
+    },
+    {
+      "kind": "spec",
+      "item": "10.8/S-13/UI-13 Cards show thumbnail or initials only, never call /launch",
+      "status": "pass",
+      "notes": "HostedApplicationCover"
+    },
+    {
+      "kind": "spec",
+      "item": "10.8 Suspended app shows 'Suspended' to managers on card and details",
+      "status": "pass",
+      "notes": "card chip, notices, viewer subtitle"
+    },
+    {
+      "kind": "spec",
+      "item": "10.8/UI-19 HostedApplication types satisfy Entity; removed fields absent; grant_source optional",
+      "status": "pass",
+      "notes": "hostedApplication.ts, sharing.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "10.8 The store fences responses with an authentication epoch",
+      "status": "pass",
+      "notes": "currentJson / guard; reset bumps epoch"
+    },
+    {
+      "kind": "spec",
+      "item": "10.8 With features:hostedApplications off the store never calls the hosted API",
+      "status": "partial",
+      "notes": "HostedSharePage calls openShareLink with no flag or capabilities check (CR-007)"
+    },
+    {
+      "kind": "spec",
+      "item": "6.4 'via link' shown and owner told link joiners can return while it is live",
+      "status": "pass",
+      "notes": "VIA_LINK_NOTE"
+    },
+    {
+      "kind": "spec",
+      "item": "6.4/UI-7/D14 Card shows 'Shared with project' and 'Marketplace'; named sharing only in owner sidebar",
+      "status": "pass",
+      "notes": "card chips from shared/is_global"
+    },
+    {
+      "kind": "spec",
+      "item": "7/D-U1/D3 'Publish to Marketplace' / 'Remove from Marketplace'; no category dialog",
+      "status": "pass",
+      "notes": "direct store.publish/unpublish"
+    },
+    {
+      "kind": "spec",
+      "item": "6.3/UI-10 Share-link URL in path form /apps/share/<token>",
+      "status": "pass",
+      "notes": "buildUrl uses hostedRoutes.share.url"
+    },
+    {
+      "kind": "spec",
+      "item": "D20 Platform configured applications in their own 'Platform apps' tab",
+      "status": "pass",
+      "notes": "/apps/platform"
+    },
+    {
+      "kind": "spec",
+      "item": "3.3 Removed UI concepts (Explore, folders, trash, old sharing dialogs, per-app capabilities)",
+      "status": "pass",
+      "notes": "absent; test fixtures still carry stale capabilities (test-only)"
+    },
+    {
+      "kind": "spec",
+      "item": "D5/CL-2 Delete is irreversible, no trash in the UI",
+      "status": "pass",
+      "notes": "'This cannot be undone' confirmation"
+    },
+    {
+      "kind": "spec",
+      "item": "15.4/UI AC21 Same-origin POST share-links/open carries the real Origin in Chrome, Firefox and Safari",
+      "status": "pending-stage-7",
+      "notes": "needs browser execution evidence"
+    },
+    {
+      "kind": "spec",
+      "item": "15.2 UI gates (lint, typecheck, unit, integration) pass at the final UI head",
+      "status": "pending-stage-7",
+      "notes": "execution evidence owned by Stage 7"
+    },
+    {
+      "kind": "spec",
+      "item": "4 Data model and migrations",
+      "status": "na",
+      "notes": "backend codemie !4432; not in this UI diff"
+    },
+    {
+      "kind": "spec",
+      "item": "5 Access model",
+      "status": "na",
+      "notes": "backend codemie !4432"
+    },
+    {
+      "kind": "spec",
+      "item": "6.1-6.3 Named grants, audit and share-link service behaviour",
+      "status": "na",
+      "notes": "backend codemie !4432"
+    },
+    {
+      "kind": "spec",
+      "item": "8 Versions, validation, storage, gateway, launch and sessions",
+      "status": "na",
+      "notes": "backend and validator"
+    },
+    {
+      "kind": "spec",
+      "item": "9 REST API surface and OpenAPI baseline",
+      "status": "na",
+      "notes": "backend codemie !4432; UI paths match"
+    },
+    {
+      "kind": "spec",
+      "item": "11 Server-side security decisions",
+      "status": "na",
+      "notes": "backend codemie !4432"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "all 40 subjects in 6555239c..HEAD match the git-workflow.md regex ^EPMCDME-<nonzero>:\\s[A-Z]..., none ends with a period"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no code_quality ref passed; absent standard, not adjudicated"
+    },
+    {
+      "kind": "security",
+      "status": "partial",
+      "notes": "postMessage and launch form checks conform; unmet: srcDoc HTML built by interpolating API-derived content.origin (hostedApplicationFrame.ts:40-48); usePlatformApplications.ts:40 window.open(app.entry) untreated"
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "Two spec requirements are only partly met (CR-007: the share page calls the hosted API while the feature is off; CR-004: old Explore/Trash URLs show the wrong page), the standards security row is partial (CR-022), CR-001 needs a human decision, and several findings (CR-002, CR-008, CR-010, CR-012, CR-016-CR-020) kept with reachability unconfirmed. The diff is oversized (~650 KB), so the lenses could not read all of it and coverage of unread hunks is unverified; 1 deferred (platform LINK entry passed to window.open untreated, relocated unchanged from ApplicationsPage.tsx) -> code-review-deferred.local.md, 35 dismissed as noise.",
+    "confidence": "low",
+    "risk_flags": [
+      "security",
+      "breaking-change"
+    ]
+  }
+}

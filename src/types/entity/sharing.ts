@@ -18,6 +18,11 @@ export interface SharedWithUser {
   name: string
   email: string
   picture?: string
+  /**
+   * How the grant was made: `name` when an owner added the person, `link` when they opened a
+   * share link. Sent for hosted applications.
+   */
+  grant_source?: 'name' | 'link'
 }
 
 export interface SharableUser {

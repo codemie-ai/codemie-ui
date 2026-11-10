@@ -18,7 +18,7 @@ import { useSnapshot } from 'valtio'
 
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { MOBILE_OVERLAY_CLASS_NAME } from '@/constants/mobileLayout'
-import { ANALYTICS, SCHEDULERS } from '@/constants/routes'
+import { ANALYTICS, APPLICATIONS, SCHEDULERS } from '@/constants/routes'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import {
   useFeatureFlag,
@@ -30,9 +30,11 @@ import {
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useTheme } from '@/hooks/useTheme'
 import { useVueRouter } from '@/hooks/useVueRouter'
+import { APPS_ROOT } from '@/pages/applications/applicationsRoutes'
 import { appInfoStore } from '@/store/appInfo'
 import { applicationsStore } from '@/store/applications'
 import { chatsStore } from '@/store/chats'
+import { hostedApplicationsStore } from '@/store/hostedApplications'
 import { isNestedLayerFocused } from '@/utils/mobileOverlay'
 import { cn } from '@/utils/utils'
 
@@ -58,6 +60,7 @@ const Navigation: React.FC<NavigationProps> = () => {
   const showGradient = appearance?.gradients ?? true
   const showBorder = appearance?.navigationBorder ?? !isDark
   const { applications } = useSnapshot(applicationsStore)
+  const hosted = useSnapshot(hostedApplicationsStore)
 
   const isExpanded = useNavigationExpanded()
   const isMobileMenuOpen = isMobileLayout && mobileNavigationOpen
@@ -82,6 +85,8 @@ const Navigation: React.FC<NavigationProps> = () => {
   const [isFavoritesPageEnabled] = useFavoritesPageEnabled()
   const [isPinnedAssistantsEnabled] = usePinnedAssistantsEnabled()
   const [isSchedulersViewEnabled] = useSchedulersViewEnabled()
+  const [isHostedApplicationsEnabled] = useFeatureFlag(FEATURE_FLAGS.HOSTED_APPLICATIONS)
+  const canViewHosted = isHostedApplicationsEnabled && !!hosted.capabilities?.view
   const [isKnowledgeBasesEnabled] = useFeatureFlag(FEATURE_FLAGS.KNOWLEDGE_BASES)
   const [isDatasourcesEnabled] = useFeatureFlag(FEATURE_FLAGS.DATASOURCES)
   const [isCodeIndexingEnabled] = useFeatureFlag(FEATURE_FLAGS.CODE_INDEXING)
@@ -115,16 +120,18 @@ const Navigation: React.FC<NavigationProps> = () => {
       route: router.resolve({ name: 'workflows' }).fullPath,
     })
 
-    if (applications?.length) {
+    if (applications?.length || canViewHosted) {
       items.push({
         label: 'Applications',
         icon: IconType.APPLICATION,
-        route: router.resolve({ name: 'applications' }).fullPath,
+        route: router.resolve({ path: APPS_ROOT }).fullPath,
+        // Platform applications are opened under /applications/:slug and belong here too.
+        activeRoutes: [router.resolve({ name: APPLICATIONS }).fullPath],
       })
     }
 
     return items
-  }, [router, applications, isSkillsEnabled])
+  }, [router, applications, isSkillsEnabled, canViewHosted])
 
   const upperSecondaryItems = useMemo(() => {
     const items: NavigationLinkItem[] = [

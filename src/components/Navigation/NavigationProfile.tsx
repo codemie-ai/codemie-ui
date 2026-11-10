@@ -30,6 +30,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
 import { authStore } from '@/store/auth'
 import { userStore } from '@/store/user'
+import toaster from '@/utils/toaster'
 import { cn, copyToClipboard } from '@/utils/utils'
 
 interface NavigationProfileProps {
@@ -89,8 +90,12 @@ const NavigationProfile: FC<NavigationProfileProps> = ({ isExpanded }) => {
     panelRef.current?.hide()
   }
 
-  const handleLogout = () => {
-    authStore.logout()
+  const handleLogout = async () => {
+    try {
+      await authStore.logout()
+    } catch {
+      toaster.error('Sign-out is pending. Your session remains active; please retry Sign out.')
+    }
   }
 
   const avatarSrc = user?.picture || avatarDefault

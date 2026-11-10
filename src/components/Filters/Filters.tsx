@@ -187,6 +187,7 @@ const Filters: React.FC<FiltersProps> = ({
             rootClass="mb-6"
             className="bg-surface-base-content flex"
             id={`search-${searchKey}`}
+            aria-label={searchPlaceholder}
             value={(filters[searchKey] as string) || ''}
             name="filter"
             onChange={(e) => handleInputChange(searchKey, e.target.value)}
@@ -268,6 +269,7 @@ const Filters: React.FC<FiltersProps> = ({
                 {definition.type === FilterDefinitionType.Select && (
                   <Select
                     id={definition.name}
+                    ariaLabel={definition.label}
                     value={(filters[definition.name] as string) || ''}
                     onChange={(e) => handleSelectChange(definition.name, e.target.value)}
                     options={definition.options}

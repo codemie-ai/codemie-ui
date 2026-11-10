@@ -606,4 +606,46 @@ describe('userStore', () => {
       expect(JSON.parse(params.get('filters') ?? '{}')).toEqual({ is_active: true })
     })
   })
+  describe('loadHostedApplicationsUsers', () => {
+    it('asks for the creators of the given hosted scope, sorted by name', async () => {
+      const { userStore } = await import('@/store/user')
+      mockGet.mockResolvedValue({
+        json: () =>
+          Promise.resolve([
+            { id: '2', username: 'zed', name: 'Zed' },
+            { id: '1', username: 'amy', name: 'Amy' },
+          ]),
+      })
+
+      const users = await userStore.loadHostedApplicationsUsers('marketplace')
+
+      expect(mockGet).toHaveBeenCalledWith('v1/hosted-applications/users', {
+        params: { scope: 'marketplace' },
+      })
+      expect(users.map((user) => user.name)).toEqual(['Amy', 'Zed'])
+    })
+
+    it('keeps the list when a creator has no name', async () => {
+      const { userStore } = await import('@/store/user')
+      mockGet.mockResolvedValue({
+        json: () =>
+          Promise.resolve([
+            { id: '2', username: 'zed', name: 'Zed' },
+            { id: '3', username: 'ghost', name: null },
+            { id: '1', username: 'amy', name: 'Amy' },
+          ]),
+      })
+
+      const users = await userStore.loadHostedApplicationsUsers('marketplace')
+
+      expect(users.map((user) => user.id)).toEqual(['3', '1', '2'])
+    })
+
+    it('returns no users when the request fails', async () => {
+      const { userStore } = await import('@/store/user')
+      mockGet.mockRejectedValue(new Error('down'))
+
+      await expect(userStore.loadHostedApplicationsUsers('mine')).resolves.toEqual([])
+    })
+  })
 })

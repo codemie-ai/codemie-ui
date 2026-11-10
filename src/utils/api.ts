@@ -89,6 +89,14 @@ export function sanitizeFileName(name: string | undefined): string | undefined {
 
 const DEV_USER_ID = 'dev-codemie-user'
 
+/**
+ * Request headers owned by this client. Callers may add any other header, but not these: the
+ * request identity comes from the session cookie or `authHeaders()` (`user-id` in local dev), and
+ * browsers drop `Cookie`/`Host` silently. Failing loudly keeps a caller from quietly changing who
+ * the request is made as.
+ */
+const RESERVED_REQUEST_HEADERS = new Set(['authorization', 'cookie', 'host', 'user-id'])
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, any>
   skipErrorHandling?: boolean
@@ -173,6 +181,58 @@ class API {
 
   delete(url: string, body?: any, options?: RequestOptions): Promise<Response> {
     return this.makeRequest(url, 'DELETE', body, options)
+  }
+
+  /**
+   * PUTs raw bytes (a `File` or `Blob`) as the request body, without JSON encoding.
+   * Defaults to `application/octet-stream`; callers may send another `Content-Type` in
+   * `options.headers`. Redirects are never followed, so the bytes cannot be replayed to another
+   * destination; a redirect is reported as an error.
+   */
+  async putBinary(url: string, body: Blob, options: RequestOptions = {}): Promise<Response> {
+    if (options.signal?.aborted) throw new DOMException('Canceled', ABORT_ERROR)
+    const response = await fetch(`${this.BASE_URL}/${url}`, {
+      method: 'PUT',
+      body,
+      signal: options.signal,
+      redirect: 'manual',
+      headers: this.buildHeaders({ 'Content-Type': 'application/octet-stream' }, options.headers),
+      ...(getIsLocalAuth() && { credentials: 'include' as RequestCredentials }),
+    })
+    if (
+      response.type === this.REDIRECT_RESPONSE ||
+      (response.status >= 300 && response.status < 400)
+    ) {
+      // An expired single sign-on session answers with a redirect, as for any other request.
+      if (response.type === this.REDIRECT_RESPONSE) this.redirectHandler(response)
+      throw new Error('The upload was redirected. Reload the page and try again.')
+    }
+    if (!response.ok) {
+      if (response.status === HTTP_STATUS.UNAUTHORIZED && getIsLocalAuth())
+        this.handleSessionExpired(url)
+      const failed = response.clone() as ResponseWithParsedError
+      const error = await this.parseErrorBody(response)
+      failed.parsedError = error.error
+      if (!options.skipErrorHandling) this.handleError(error)
+      throw failed
+    }
+    return response
+  }
+
+  /**
+   * Caller headers merged over `defaults` (a caller value replaces a default of any casing), with
+   * the client's own auth headers last. Throws for the reserved identity headers.
+   */
+  private buildHeaders(defaults: Record<string, string>, input?: HeadersInit) {
+    const headers = new Headers(defaults)
+    new Headers(input).forEach((value, name) => {
+      if (RESERVED_REQUEST_HEADERS.has(name)) {
+        throw new Error(`The "${name}" request header is managed by the API client`)
+      }
+      headers.set(name, value)
+    })
+    Object.entries(this.authHeaders()).forEach(([name, value]) => headers.set(name, value))
+    return Object.fromEntries(headers.entries())
   }
 
   private fetchMultipart(method: 'POST' | 'PUT', url: string, body: FormData): Promise<Response> {
@@ -375,10 +435,7 @@ class API {
     return new Promise((resolve, reject) => {
       const requestOptions: RequestInit = {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.authHeaders(),
-        },
+        headers: this.buildHeaders({ 'Content-Type': 'application/json' }, options.headers),
         body: JSON.stringify(body),
         redirect: 'manual',
         ...(getIsLocalAuth() && { credentials: 'include' }),

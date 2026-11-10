@@ -40,8 +40,27 @@ export const WORKFLOWS_MY = 'workflows-my'
 export const WORKFLOWS_TEMPLATES = 'workflows-templates'
 export const WORKFLOWS_MARKETPLACE = 'workflows-marketplace'
 
+// Legacy Applications list route: redirects to the canonical `/apps` catalog.
 export const APPLICATIONS = 'applications'
 export const APPLICATION = 'application'
+// Platform (federated / iframe) applications keep their `/applications/...` URLs.
+export const APPLICATION_FEDERATION = 'application-federation'
+export const APPLICATION_IFRAME = 'application-iframe'
+// Applications area under `/apps` (hosted catalog, collections and hosted apps).
+export const HOSTED_APPLICATIONS = 'hosted-applications'
+export const HOSTED_APPLICATIONS_SHARED = 'hosted-applications-shared'
+export const HOSTED_APPLICATIONS_PROJECT = 'hosted-applications-project'
+export const HOSTED_APPLICATIONS_MARKETPLACE = 'hosted-applications-marketplace'
+export const HOSTED_APPLICATIONS_PLATFORM = 'hosted-applications-platform'
+export const HOSTED_APPLICATIONS_NEW = 'hosted-applications-new'
+export const HOSTED_APPLICATION = 'hosted-application'
+export const HOSTED_APPLICATION_VIEW = 'hosted-application-view'
+export const HOSTED_APPLICATION_STANDALONE = 'hosted-application-standalone'
+export const HOSTED_APPLICATION_SHARE = 'hosted-application-share'
+// The former details path `/apps/:id/manage`; it redirects to `/apps/:id`.
+export const HOSTED_APPLICATION_MANAGE = 'hosted-application-manage'
+export const HOSTED_APPLICATION_EDIT = 'hosted-application-edit'
+export const HOSTED_APPLICATION_PREVIEW = 'hosted-application-preview'
 export const INTEGRATIONS = 'integrations'
 
 export const SCHEDULERS = 'schedulers'

@@ -35,6 +35,7 @@ export interface CardProps {
   avatar: React.ReactNode
   actions?: React.ReactNode
   status?: React.ReactNode
+  preview?: React.ReactNode
   topRight?: React.ReactNode
   onClick: (e) => void
   id: string
@@ -51,6 +52,7 @@ const Card: React.FC<CardProps> = ({
   actions = null,
   status = null,
   topRight = null,
+  preview = null,
   id,
   onClick,
 }) => {
@@ -70,10 +72,27 @@ const Card: React.FC<CardProps> = ({
   return (
     <>
       <Tooltip target={'.' + tooltipClass} position="left" showDelay={100} />
-      <div
+      <div // NOSONAR - the card holds its own buttons (menu, actions), so it cannot be a native <button>
+        role="button"
+        tabIndex={0}
         onClick={onClick}
-        className="h-card rounded-xl flex flex-col w-full bg-surface-specific-card border-border-structural border-1 cursor-pointer transition group"
+        onKeyDown={(event) => {
+          // Enter or Space on the card itself opens it; keys on its inner controls stay theirs.
+          if (event.target !== event.currentTarget) return
+          if (event.key !== 'Enter' && event.key !== ' ') return
+          event.preventDefault()
+          onClick(event)
+        }}
+        className={classNames(
+          'rounded-xl flex flex-col w-full bg-surface-specific-card border-border-structural border-1 cursor-pointer transition group',
+          preview ? 'h-full' : 'h-card'
+        )}
       >
+        {preview && (
+          <div className="aspect-card-cover overflow-hidden rounded-t-xl border-b border-border-structural">
+            {preview}
+          </div>
+        )}
         <div className="relative">
           {isCardGradientEnabled && (
             <div className="rounded-xl absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition duration-300 overflow-hidden">
@@ -83,7 +102,12 @@ const Card: React.FC<CardProps> = ({
           {topRight && <div className="absolute top-2 right-2 z-10 flex gap-1">{topRight}</div>}
         </div>
 
-        <div className="body h-card flex flex-col justify-between p-4 max-sm:p-3">
+        <div
+          className={classNames(
+            'body flex flex-col justify-between p-4 max-sm:p-3',
+            preview ? 'min-h-card flex-1' : 'h-card'
+          )}
+        >
           {/* Phones: compact rows, and the title wraps to two lines instead of truncating early. */}
           <div className="flex flex-row gap-4 min-h-[88px] max-sm:gap-3 max-sm:min-h-0">
             {avatar}

@@ -41,7 +41,7 @@ const RadioButton: React.FC<RadioButtonProps> = ({
   const tooltipId = `rb-${rawTooltipId.replace(/:/g, '')}`
   const customPT = {
     root: {
-      className: twMerge('flex items-center text-sm', className),
+      className: twMerge('relative flex items-center text-sm', className),
     },
     input: {
       className: 'peer absolute opacity-0 cursor-pointer z-10 w-full h-full left-0 top-0',

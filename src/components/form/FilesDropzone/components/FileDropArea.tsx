@@ -17,8 +17,14 @@ import { FC, useCallback, useRef } from 'react'
 
 import ImportSvg from '@/assets/icons/export.svg?react'
 import DropzoneArea from '@/components/form/DropzoneArea'
-import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB } from '@/components/form/FilesDropzone/constants'
+import { MAX_FILE_SIZE_BYTES } from '@/components/form/FilesDropzone/constants'
 import toaster from '@/utils/toaster'
+
+const DEFAULT_LABEL = 'Files'
+const DEFAULT_INPUT_LABEL = 'Select files to upload'
+const DROP_AREA_LABEL = 'Upload or drop files'
+
+const toMegabytes = (bytes: number) => Math.round((bytes / (1024 * 1024)) * 10) / 10
 
 type FileDropArea = {
   name: string
@@ -27,6 +33,11 @@ type FileDropArea = {
   onChange: (updatedFiles: File[]) => void
   errorId?: string
   maxFiles: number
+  accept?: string
+  disabled?: boolean
+  label?: string
+  /** Largest accepted file; bigger files are reported and skipped. */
+  maxFileSizeBytes?: number
 }
 export const FileDropArea: FC<FileDropArea> = ({
   name,
@@ -35,18 +46,25 @@ export const FileDropArea: FC<FileDropArea> = ({
   onChange,
   errorId,
   maxFiles,
+  accept,
+  disabled = false,
+  label,
+  maxFileSizeBytes = MAX_FILE_SIZE_BYTES,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // A consumer's own label also names the drop target, so several dropzones stay distinguishable.
+  const customLabel = label && label !== DEFAULT_LABEL ? label : undefined
   const addFiles = useCallback(
     (newFiles: File[]) => {
-      const oversized = newFiles.filter((f) => f.size > MAX_FILE_SIZE_BYTES)
-      const validFiles = newFiles.filter((f) => f.size <= MAX_FILE_SIZE_BYTES)
+      if (disabled) return
+      const oversized = newFiles.filter((f) => f.size > maxFileSizeBytes)
+      const validFiles = newFiles.filter((f) => f.size <= maxFileSizeBytes)
 
       if (oversized.length > 0) {
         toaster.error(
           `${oversized.length} file${
             oversized.length > 1 ? 's exceed' : ' exceeds'
-          } the ${MAX_FILE_SIZE_MB}MB size limit and ${
+          } the ${toMegabytes(maxFileSizeBytes)}MB size limit and ${
             oversized.length > 1 ? 'were' : 'was'
           } not added`
         )
@@ -68,7 +86,7 @@ export const FileDropArea: FC<FileDropArea> = ({
         onChange([...files, ...filesToAdd])
       }
     },
-    [files, uploadedFilesCount, onChange, maxFiles]
+    [files, uploadedFilesCount, onChange, maxFiles, disabled, maxFileSizeBytes]
   )
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,29 +102,32 @@ export const FileDropArea: FC<FileDropArea> = ({
   return (
     <>
       <label htmlFor={name} className="text-xs text-text-quaternary">
-        Files
+        {label ?? DEFAULT_LABEL}
       </label>
       <input
         ref={fileInputRef}
         id={name}
         type="file"
-        multiple
+        multiple={maxFiles !== 1}
+        accept={accept}
+        disabled={disabled}
         className="hidden"
         onChange={handleInputChange}
-        aria-label="Select files to upload"
+        aria-label={customLabel ?? DEFAULT_INPUT_LABEL}
         aria-describedby={errorId}
         aria-invalid={errorId ? true : undefined}
       />
       <DropzoneArea
         onFilesDrop={addFiles}
         onClick={() => fileInputRef.current?.click()}
-        disabled={isAtLimit}
+        disabled={disabled || isAtLimit}
+        ariaLabel={customLabel ? `${DROP_AREA_LABEL}: ${customLabel}` : DROP_AREA_LABEL}
       >
         {(isDragging) => (
           <>
             <ImportSvg className="w-4.5 h-4.5" />
             <span className="text-text-primary text-sm underline">
-              {isDragging ? 'Drop files here' : 'Upload or drop files'}
+              {isDragging ? 'Drop files here' : DROP_AREA_LABEL}
             </span>
             {(files.length > 0 || Boolean(uploadedFilesCount)) && (
               <span className="text-xs text-text-quaternary">

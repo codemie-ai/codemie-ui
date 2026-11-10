@@ -28,6 +28,7 @@ import React, {
   useImperativeHandle,
   useEffect,
   useRef,
+  useId,
 } from 'react'
 
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
@@ -192,6 +193,8 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
     },
     ref
   ) => {
+    const generatedId = useId()
+    const inputId = `${id ?? generatedId}-input`
     const selectRef = React.useRef<PrimeMultiselect>(null)
     const inputWidth = useInputWidth(selectRef)
 
@@ -242,25 +245,16 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
       }
     }, [])
 
-    // Handle escape key to close dropdown
-    const handleEscapeKey = useCallback((event: KeyboardEvent) => {
-      if (event.key === 'Escape' && selectRef.current) {
-        selectRef.current.hide()
-      }
-    }, [])
-
     useEffect(() => {
       // Use capture phase to ensure we catch the event before modal overlays
       document.addEventListener('mousedown', handleOutsideClick, true)
       document.addEventListener('touchstart', handleOutsideClick, true)
-      document.addEventListener('keydown', handleEscapeKey)
 
       return () => {
         document.removeEventListener('mousedown', handleOutsideClick, true)
         document.removeEventListener('touchstart', handleOutsideClick, true)
-        document.removeEventListener('keydown', handleEscapeKey)
       }
-    }, [handleOutsideClick, handleEscapeKey])
+    }, [handleOutsideClick])
 
     const mappedSizeClassname = {
       [MultiSelectSize.SMALL]: 'h-8 max-h-8',
@@ -288,6 +282,32 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
 
     const [selectedSnapshot, setSelectedSnapshot] = useState<typeof preparedValue>(preparedValue)
     const [isPanelOpen, setIsPanelOpen] = useState(false)
+
+    useEffect(() => {
+      const handleEscapeKey = (event: KeyboardEvent) => {
+        const select = selectRef.current
+        if (
+          event.key !== 'Escape' ||
+          !(event.target instanceof Node) ||
+          select?.getInput()?.getAttribute('aria-expanded') !== 'true'
+        )
+          return
+        if (
+          !select?.getElement()?.contains(event.target) &&
+          !select?.getOverlay()?.contains(event.target)
+        )
+          return
+
+        // Consume this picker's Escape before a containing modal handles it.
+        event.preventDefault()
+        event.stopPropagation()
+        select.hide()
+        select.getInput()?.focus()
+      }
+
+      document.addEventListener('keydown', handleEscapeKey, true)
+      return () => document.removeEventListener('keydown', handleEscapeKey, true)
+    }, [])
 
     useEffect(() => {
       if (!isPanelOpen) {
@@ -378,16 +398,33 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
 
       if (preparedValue.length === 0) return null
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (option: any) => (
-        <ChipWrapper
-          option={option}
-          selectedItemTemplate={selectedItemTemplate}
-          preparedValue={preparedValue}
-          onChange={onChange}
-        />
-      )
-    }, [display, selectedItemTemplate, preparedValue, onChange])
+      return (option: unknown) => {
+        const selectedValue =
+          typeof option === 'object' && option !== null
+            ? (option as MultiSelectOptionType)[optionValue]
+            : option
+        const selectedOption = options.find((item) => item[optionValue] === selectedValue)
+        return (
+          <ChipWrapper
+            option={option}
+            selectedItemTemplate={selectedItemTemplate}
+            preparedValue={preparedValue}
+            onChange={onChange}
+            label={getTextValue(selectedOption?.[optionLabel])}
+            disabled={disabled}
+          />
+        )
+      }
+    }, [
+      display,
+      selectedItemTemplate,
+      preparedValue,
+      onChange,
+      options,
+      optionValue,
+      optionLabel,
+      disabled,
+    ])
 
     const isEmpty = sortedOptions.length === 0
     const baseVirtualScrollerOptions = hasVirtualScroll
@@ -409,7 +446,10 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
           {({ ariaInvalid, ariaDescribedBy }) => (
             <>
               {label && !hideLabel && (
-                <label htmlFor={id} className="text-xs pb-2 text-text-quaternary flex items-center">
+                <label
+                  htmlFor={inputId}
+                  className="text-xs pb-2 text-text-quaternary flex items-center"
+                >
                   {label}
                   {required && (
                     <span className="text-text-error input-label-required ml-0.5">*</span>
@@ -428,6 +468,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
                 }}
                 ref={selectRef}
                 id={id}
+                inputId={inputId}
                 name={name}
                 value={preparedValue}
                 options={sortedOptions}

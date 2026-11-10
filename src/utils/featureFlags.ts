@@ -58,6 +58,11 @@ export const isCostCentersEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.COST_CENTERS)
 }
 
+/** Custom (hosted) applications: uploaded static web apps on the Applications page. */
+export const isHostedApplicationsEnabled = (): boolean => {
+  return isFeatureEnabled(FEATURE_FLAGS.HOSTED_APPLICATIONS)
+}
+
 export const isFavoritesEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.FAVORITES)
 }

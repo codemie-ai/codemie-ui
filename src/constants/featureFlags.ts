@@ -51,6 +51,7 @@ export const FEATURE_FLAGS = {
   WORKSPACE_SCRIPT_BRIDGE: 'features:workspaceScriptBridge',
   MARKETPLACE_MANAGEMENT: 'features:marketplaceManagement',
   MARKETPLACE_APPROVAL_GATE: 'features:marketplaceApprovalGate',
+  HOSTED_APPLICATIONS: 'features:hostedApplications',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

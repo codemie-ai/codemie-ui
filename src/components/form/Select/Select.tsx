@@ -15,7 +15,7 @@
 
 import { isNil } from 'lodash'
 import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown'
-import { forwardRef, ReactNode, Ref, useId, useRef, useState } from 'react'
+import { forwardRef, ReactNode, Ref, useEffect, useId, useRef, useState } from 'react'
 
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
 import FieldAnnouncer from '@/components/form/FieldAnnouncer'
@@ -55,7 +55,7 @@ interface SelectProps<TValue extends string | number | null = string | number | 
   filter?: boolean
   filterBy?: string
   filterPlaceholder?: string
-  /** The accessible name when there is no visible label. */
+  /** Accessible name for a select without a visible `label`; a visible label names it already. */
   ariaLabel?: string
   /** Id of the element naming the control; used as `aria-labelledby` on the combobox. */
   ariaLabelledBy?: string
@@ -155,7 +155,29 @@ const Select = forwardRef(
   ) => {
     const listId = useId()
     const [announcement, setAnnouncement] = useState('')
-
+    const dropdown = useRef<Dropdown | null>(null)
+    useEffect(() => {
+      const handleEscape = (event: KeyboardEvent) => {
+        const instance = dropdown.current
+        if (
+          event.key !== 'Escape' ||
+          !(event.target instanceof Node) ||
+          !instance?.getElement()?.querySelector('[aria-expanded="true"]')
+        )
+          return
+        if (
+          !instance?.getElement()?.contains(event.target) &&
+          !instance?.getOverlay()?.contains(event.target)
+        )
+          return
+        event.preventDefault()
+        event.stopPropagation()
+        instance?.hide()
+        instance?.focus()
+      }
+      document.addEventListener('keydown', handleEscape, true)
+      return () => document.removeEventListener('keydown', handleEscape, true)
+    }, [])
     const ResolvedOptionTemplate = itemTemplate ?? renderDefaultOptionTemplate
 
     const handleChange = (e: DropdownChangeEvent) => {
@@ -171,6 +193,14 @@ const Select = forwardRef(
       allowCustom && !isNil(value) && value !== '' && !options.some((opt) => opt.value === value)
     const enhancedOptions = shouldAddValue ? [...options, { label: String(value), value }] : options
 
+    // The focusable combobox is PrimeReact's keyboard input, not the root (which keeps `id`).
+    // The visible label names it through `htmlFor`, so `aria-label` is set only for an explicit
+    // `ariaLabel`. Its ARIA attributes are raw `aria-*` props, which PrimeReact applies to that
+    // input alone: its `ariaLabel` prop and `pt.input` would also copy them onto the dropdown
+    // trigger and the value span, giving them duplicate names.
+    const generatedId = useId()
+    const inputId = `${id ?? generatedId}-input`
+
     return (
       <div className={cn('flex flex-col', rootClassName)}>
         <FieldAnnouncer
@@ -182,7 +212,7 @@ const Select = forwardRef(
             <div className="flex flex-col gap-2">
               {label && (
                 <div className="flex gap-2 items-center">
-                  <label className="text-xs text-text-quaternary" htmlFor={id}>
+                  <label className="text-xs text-text-quaternary" htmlFor={inputId}>
                     {label}
                     {required && <span className="text-text-error ml-0.5">*</span>}
                   </label>
@@ -194,7 +224,16 @@ const Select = forwardRef(
                 data-value={dataValue}
                 showClear={showClear}
                 id={id}
-                ref={ref}
+                inputId={inputId}
+                aria-label={a11yCombobox && ariaLabelledBy ? undefined : ariaLabel}
+                aria-labelledby={a11yCombobox ? ariaLabelledBy : undefined}
+                aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedBy}
+                ref={(instance) => {
+                  dropdown.current = instance
+                  if (typeof ref === 'function') ref(instance)
+                  else if (ref) ref.current = instance
+                }}
                 inputRef={inputRef}
                 name={name}
                 value={value}
@@ -210,8 +249,6 @@ const Select = forwardRef(
                 filter={filter}
                 filterBy={filterBy}
                 filterPlaceholder={filterPlaceholder}
-                ariaLabel={a11yCombobox && ariaLabelledBy ? undefined : ariaLabel}
-                aria-labelledby={a11yCombobox ? ariaLabelledBy : undefined}
                 className={cn(
                   'h-8 gap-2 !px-2 text-sm flex text-text-primary justify-between items-center bg-surface-base-content border border-border-primary rounded-lg transition hover:border-border-secondary cursor-pointer',
                   !value && 'text-text-quaternary',
@@ -233,8 +270,6 @@ const Select = forwardRef(
                       'text-ellipsis overflow-hidden text-text-primary',
                       classNameValue
                     ),
-                    'aria-invalid': ariaInvalid,
-                    'aria-describedby': ariaDescribedBy,
                     ...(a11yCombobox && {
                       role: 'combobox',
                       'aria-expanded': !!opts?.state?.overlayVisible,

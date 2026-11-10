@@ -76,11 +76,10 @@ export default defineConfig(({ mode }) => {
     },
     base: env.VITE_SUFFIX || '/',
     experimental: {
-      // Full bundle mode for `vite` dev: serves a Rolldown bundle from memory instead of ~1300
-      // unbundled module requests per page load, so a fresh browser context (every test-harness
-      // test) loads the app like a production build does. Off under Vitest, which reads this
-      // config too and fails to bundle index.html.
-      bundledDev: !process.env.VITEST,
+      // OriginJS federation relies on Vite's unbundled development transforms. Bundled dev
+      // currently leaves bare React imports in the browser and renders a blank application.
+      // Production checks use `vite build`; keep development on the supported transform path.
+      bundledDev: false,
     },
     build: {
       // Supported browsers come from "browserslist" in package.json; Vite doesn't read it itself.

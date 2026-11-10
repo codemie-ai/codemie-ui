@@ -27,6 +27,7 @@ import { useAnnouncementQueue } from '@/hooks/useAnnouncementQueue'
 
 const MAX_FILE_SIZE_MB = 100
 const MAX_IMAGE_FILE_SIZE_MB = 10
+const DEFAULT_LEGEND = 'Files'
 
 type Props = {
   name: string
@@ -37,6 +38,12 @@ type Props = {
   uploadedFiles?: string[]
   onUploadedFileRemove?: (name: string, itemIndex: number) => void
   maxFiles?: number
+  accept?: string
+  disabled?: boolean
+  label?: string
+  hint?: string
+  /** Largest accepted file in bytes; defaults to the shared upload limit. */
+  maxFileSizeBytes?: number
 }
 
 const FilesDropzone: FC<Props> = ({
@@ -48,6 +55,11 @@ const FilesDropzone: FC<Props> = ({
   uploadedFiles = [],
   onUploadedFileRemove,
   maxFiles = MAX_FILES,
+  accept,
+  disabled = false,
+  label,
+  hint,
+  maxFileSizeBytes,
 }) => {
   const reactId = useId()
   const errorId = `${name}-${reactId}-errors`
@@ -86,7 +98,9 @@ const FilesDropzone: FC<Props> = ({
   }, [announce, fileNames, maxFiles])
 
   return (
-    <div className="flex flex-col gap-3">
+    // The fieldset disables every control inside at once (file input and remove buttons).
+    <fieldset disabled={disabled} className="flex flex-col gap-3 min-w-0">
+      <legend className="sr-only">{label ?? DEFAULT_LEGEND}</legend>
       <FileDropArea
         name={name}
         files={files}
@@ -94,6 +108,10 @@ const FilesDropzone: FC<Props> = ({
         onChange={onChange}
         errorId={hasErrors ? errorId : undefined}
         maxFiles={maxFiles}
+        accept={accept}
+        disabled={disabled}
+        label={label}
+        maxFileSizeBytes={maxFileSizeBytes}
       />
       <FileList
         files={files}
@@ -102,11 +120,14 @@ const FilesDropzone: FC<Props> = ({
         onUploadedFileRemove={onUploadedFileRemove}
       />
       <InfoBox
-        text={`${SUPPORTED_FILE_FORMATS_MESSAGE_BASE} Maximum files: ${maxFiles}. Max file size: ${MAX_FILE_SIZE_MB}Mb (images: ${MAX_IMAGE_FILE_SIZE_MB}Mb).`}
+        text={
+          hint ??
+          `${SUPPORTED_FILE_FORMATS_MESSAGE_BASE} Maximum files: ${maxFiles}. Max file size: ${MAX_FILE_SIZE_MB}Mb (images: ${MAX_IMAGE_FILE_SIZE_MB}Mb).`
+        }
       />
       <FileDropzoneErrors errorId={errorId} messages={errorsMessages} />
       <Announcement announcement={announcement} />
-    </div>
+    </fieldset>
   )
 }
 

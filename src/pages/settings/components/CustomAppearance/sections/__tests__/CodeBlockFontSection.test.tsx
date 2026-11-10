@@ -90,8 +90,10 @@ describe('CodeBlockFontSection', () => {
 
     const { container } = render(<CodeBlockFontSection />)
     const label = container.querySelector('label')
-    expect(label).toHaveAttribute('for', 'code-block-font')
-    expect(container.querySelector('#code-block-font')).toBeInTheDocument()
+    expect(label).toHaveAttribute('for', 'code-block-font-input')
+    const input = screen.getByLabelText('Code block font', { selector: 'input' })
+    expect(input).toHaveAccessibleName('Code block font')
+    expect(container.querySelector('#code-block-font')).toContainElement(input)
   })
 
   it('validates font values before calling setAppearance', () => {

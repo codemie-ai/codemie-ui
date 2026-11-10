@@ -18,6 +18,7 @@ import { proxy } from 'valtio'
 import { FEATURE_FLAGS } from '@/constants'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 import { BudgetAssignment } from '@/types/entity/budget'
+import type { HostedScope } from '@/types/entity/hostedApplication'
 import { ProjectRole, ProjectRoleBE } from '@/types/entity/project'
 import {
   User,
@@ -55,6 +56,7 @@ interface UserStoreType {
   loadIndexUsers: () => Promise<User[]>
   loadAssistantsUsers: (params?: { scope?: string }) => Promise<User[]>
   loadSkillsUsers: () => Promise<User[]>
+  loadHostedApplicationsUsers: (scope: HostedScope) => Promise<User[]>
   getAnalyticsUsers: (
     filters?: AnalyticsQueryParams,
     signal?: AbortSignal
@@ -219,6 +221,17 @@ export const userStore = proxy<UserStoreType>({
       .then((data) => data.sort((a, b) => a.name.localeCompare(b.name)))
       .catch(() => {
         toaster.error('Failed to fetch Skill users')
+        return []
+      })
+  },
+
+  loadHostedApplicationsUsers(scope) {
+    return api
+      .get('v1/hosted-applications/users', { params: { scope } })
+      .then((response) => response.json())
+      .then((data) => data.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')))
+      .catch(() => {
+        toaster.error('Failed to fetch Application users')
         return []
       })
   },

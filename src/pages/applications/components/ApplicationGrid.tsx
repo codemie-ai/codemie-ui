@@ -27,14 +27,14 @@ interface ApplicationGridProps {
 const ApplicationGrid: React.FC<ApplicationGridProps> = ({ applications, onOpenApplication }) => {
   if (applications.length === 0) {
     return (
-      <div className="flex justify-center m-40">
+      <div className="flex justify-center py-12 px-4 text-text-secondary">
         <h2>No applications found.</h2>
       </div>
     )
   }
 
   return (
-    <section className="min-w-80 grid auto-rows-min grid-cols-1 card-grid-2:grid-cols-2 card-grid-3:grid-cols-3 gap-2.5 justify-items-center">
+    <section className="min-w-0 grid auto-rows-min grid-cols-1 card-grid-2:grid-cols-2 card-grid-3:grid-cols-3 gap-2.5 justify-items-center">
       {applications.map((application) => (
         <ApplicationCard
           key={application.slug}

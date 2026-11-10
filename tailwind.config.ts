@@ -557,7 +557,11 @@ export default {
         'layout-header': '56px',
       },
       minHeight: {
+        card: 'var(--card-height, 158px)',
         'layout-header': '56px',
+      },
+      aspectRatio: {
+        'card-cover': '2 / 1',
       },
       screens: {
         'card-grid-2': '1300px',

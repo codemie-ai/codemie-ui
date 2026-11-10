@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, waitFor } from '@testing-library/react'
+import { fireEvent, render, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { userStore } from '@/store/user'
@@ -25,7 +25,9 @@ import AssistantDetailsSidebarSections from '../AssistantDetailsSidebarSections'
 const mockGetSharedWith = vi.fn().mockResolvedValue([])
 
 vi.mock('@/store/assistants', () => ({
-  assistantsStore: { getSharedWith: (...args: unknown[]) => mockGetSharedWith(...args) },
+  assistantsStore: {
+    sharing: { loadSharedWith: (...args: unknown[]) => mockGetSharedWith(...args) },
+  },
 }))
 
 vi.mock('@/hooks/useProjectDisplayNames', () => ({
@@ -195,19 +197,36 @@ describe('AssistantDetailsSidebarSections — shared with section', () => {
     expect(mockGetSharedWith).not.toHaveBeenCalled()
   })
 
-  it('does not reject unhandled when getSharedWith fails', async () => {
-    mockGetSharedWith.mockRejectedValueOnce(new Error('network error'))
+  it('does not reject unhandled when loading fails, and offers a retry as the app details do', async () => {
+    mockGetSharedWith
+      .mockRejectedValueOnce(new Error('network error'))
+      .mockResolvedValueOnce([{ id: 'u1', name: 'Alice', email: 'alice@test.com' }])
     const unhandledRejection = vi.fn()
     process.on('unhandledRejection', unhandledRejection)
 
-    const { queryByText } = render(<AssistantDetailsSidebarSections assistant={ownedAssistant} />)
-    await waitFor(() => expect(mockGetSharedWith).toHaveBeenCalledWith(ownedAssistant.id))
-    await new Promise((resolve) => {
-      setTimeout(resolve, 0)
-    })
-
-    expect(queryByText('SHARED WITH')).not.toBeInTheDocument()
+    const { findByRole, findByText, getByText, queryByText } = render(
+      <AssistantDetailsSidebarSections assistant={ownedAssistant} />
+    )
+    expect(await findByText('Could not load the people with access.')).toBeInTheDocument()
+    expect(getByText('SHARED WITH')).toBeInTheDocument()
     expect(unhandledRejection).not.toHaveBeenCalled()
     process.off('unhandledRejection', unhandledRejection)
+
+    fireEvent.click(await findByRole('button', { name: 'Retry loading people' }))
+    expect(await findByText('Alice')).toBeInTheDocument()
+    expect(queryByText('Could not load the people with access.')).not.toBeInTheDocument()
+    expect(mockGetSharedWith).toHaveBeenCalledTimes(2)
+  })
+
+  it('leaves the current user out of the list, as the share popup does', async () => {
+    mockGetSharedWith.mockResolvedValue([
+      { id: 'owner-id', name: 'Owner', email: 'owner@test.com' },
+      { id: 'u1', name: 'Alice', email: 'alice@test.com' },
+    ])
+    const { findByText, queryByText } = render(
+      <AssistantDetailsSidebarSections assistant={ownedAssistant} />
+    )
+    expect(await findByText('Alice')).toBeInTheDocument()
+    expect(queryByText('Owner')).not.toBeInTheDocument()
   })
 })

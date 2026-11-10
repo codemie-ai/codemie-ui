@@ -11,70 +11,39 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-import React, { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router'
+import { useSnapshot } from 'valtio'
 
-import PageLayout from '@/components/Layouts/Layout'
-import Sidebar from '@/components/Sidebar'
-import Spinner from '@/components/Spinner'
-import { useVueRouter } from '@/hooks/useVueRouter'
-import { applicationsStore } from '@/store/applications'
-import { Application, AppType } from '@/types/entity/application'
-import toaster from '@/utils/toaster'
+import { hostedApplicationsStore } from '@/store/hostedApplications'
 
-import ApplicationGrid from './components/ApplicationGrid'
+import { platformApplicationsPath, providerOfPath } from './applicationCollections'
+import HostedApplicationsPage from './hosted/HostedApplicationsPage'
+import PlatformApplicationsPage from './PlatformApplicationsPage'
 
-const ApplicationsPage: React.FC = () => {
-  const [applications, setApplications] = useState<Application[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
-  const router = useVueRouter()
+/**
+ * The Applications area: the registry entry of the current tab names its provider. Platform apps
+ * are served on their own; every other route belongs to hosted applications.
+ */
+const ApplicationsPage = () => {
+  const { capabilities } = useSnapshot(hostedApplicationsStore)
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const platformPath = platformApplicationsPath()
+  // Without hosted applications every /apps route shows Platform apps, even before the redirect.
+  const hostedOff = !!capabilities && !capabilities.view
+  const platformTab = providerOfPath(pathname) === 'platform'
 
   useEffect(() => {
-    const fetchApplications = async () => {
-      const apps = await applicationsStore.fetchApplications()
-      setApplications(apps)
-      setLoading(false)
-    }
-
-    fetchApplications()
+    hostedApplicationsStore.ensureCapabilities()
   }, [])
+  useEffect(() => {
+    if (hostedOff && pathname !== platformPath) navigate(platformPath, { replace: true })
+  }, [hostedOff, pathname])
 
-  const handleOpenApplication = (application: Application) => {
-    if (application.type === AppType.LINK) {
-      return window.open(application.entry, '_blank')
-    }
-
-    if (application.type === AppType.IFRAME) {
-      return router.push({ name: 'application-iframe', params: { slug: application.slug } })
-    }
-
-    if (application.type === AppType.MODULE) {
-      return router.push({ name: 'application-federation', params: { slug: application.slug } })
-    }
-
-    return toaster.error(`Unsupported application type: ${application.type}`)
-  }
-
-  return (
-    <div className="flex h-full">
-      <Sidebar title="Applications" description="Browse and launch available AI applications" />
-      <PageLayout title="Applications" rightContent={true}>
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Spinner />
-          </div>
-        ) : (
-          <div className="py-4">
-            <ApplicationGrid
-              applications={applications}
-              onOpenApplication={handleOpenApplication}
-            />
-          </div>
-        )}
-      </PageLayout>
-    </div>
-  )
+  if (hostedOff || platformTab) return <PlatformApplicationsPage standalone={hostedOff} />
+  return <HostedApplicationsPage />
 }
 
 export default ApplicationsPage

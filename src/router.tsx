@@ -23,7 +23,23 @@ import {
   ANALYTICS,
   ANALYTICS_EDIT_DASHBOARD,
   ANALYTICS_NEW_DASHBOARD,
+  APPLICATION_FEDERATION,
+  APPLICATION_IFRAME,
+  APPLICATIONS,
   CLONE_DATA_SOURCE,
+  HOSTED_APPLICATION,
+  HOSTED_APPLICATION_EDIT,
+  HOSTED_APPLICATION_MANAGE,
+  HOSTED_APPLICATION_PREVIEW,
+  HOSTED_APPLICATION_SHARE,
+  HOSTED_APPLICATION_STANDALONE,
+  HOSTED_APPLICATION_VIEW,
+  HOSTED_APPLICATIONS,
+  HOSTED_APPLICATIONS_MARKETPLACE,
+  HOSTED_APPLICATIONS_NEW,
+  HOSTED_APPLICATIONS_PLATFORM,
+  HOSTED_APPLICATIONS_PROJECT,
+  HOSTED_APPLICATIONS_SHARED,
   MARKETPLACE_MANAGEMENT_PATH,
   VIEW_WORKFLOW,
   WOKRFLOW_EXECUTIONS,
@@ -33,6 +49,14 @@ import AnalyticsPage from '@/pages/analytics/AnalyticsPage'
 import ApplicationFederationPage from '@/pages/applications/ApplicationFederationPage'
 import ApplicationIframePage from '@/pages/applications/ApplicationIframePage'
 import ApplicationsPage from '@/pages/applications/ApplicationsPage'
+import { APPS_ROOT } from '@/pages/applications/applicationsRoutes'
+import EditHostedApplicationPage from '@/pages/applications/hosted/EditHostedApplicationPage'
+import HostedApplicationDetails from '@/pages/applications/hosted/HostedApplicationDetails'
+import HostedApplicationViewer from '@/pages/applications/hosted/HostedApplicationViewer'
+import { hostedRoutes } from '@/pages/applications/hosted/hostedRoutes'
+import HostedSharePage from '@/pages/applications/hosted/HostedSharePage'
+import HostedStandaloneLaunch from '@/pages/applications/hosted/HostedStandaloneLaunch'
+import NewHostedApplicationPage from '@/pages/applications/hosted/NewHostedApplicationPage'
 import AssistantChatStartPage from '@/pages/assistants/AssistantChatStartPage'
 import AssistantDetailsPage from '@/pages/assistants/AssistantDetailsPage'
 import AssistantsListPage from '@/pages/assistants/AssistantsListPage'
@@ -498,19 +522,77 @@ const workflowRoutes: RouteObject[] = [
   },
 ]
 
+// `/apps` is the canonical Applications area: the catalog, its collections, and the
+// hosted applications themselves. Platform applications still open under `/applications/...`.
+const APPS_PATH = APPS_ROOT.replace(/^\//, '')
+
+const catalogRoute = (id: string, path: string): RouteObject => ({
+  id,
+  path,
+  Component: ApplicationsPage,
+})
+
 const applicationRoutes: RouteObject[] = [
+  catalogRoute(HOSTED_APPLICATIONS, APPS_PATH),
+  catalogRoute(HOSTED_APPLICATIONS_PROJECT, `${APPS_PATH}/project`),
+  catalogRoute(HOSTED_APPLICATIONS_MARKETPLACE, `${APPS_PATH}/marketplace`),
+  catalogRoute(HOSTED_APPLICATIONS_SHARED, `${APPS_PATH}/shared`),
+  catalogRoute(HOSTED_APPLICATIONS_PLATFORM, `${APPS_PATH}/platform`),
   {
-    id: 'applications',
-    path: 'applications',
-    Component: ApplicationsPage,
+    id: HOSTED_APPLICATIONS_NEW,
+    path: `${APPS_PATH}/new`,
+    Component: NewHostedApplicationPage,
   },
   {
-    id: 'application-federation',
+    id: HOSTED_APPLICATION_SHARE,
+    path: hostedRoutes.share.path.replace(/^\//, ''),
+    Component: HostedSharePage,
+  },
+  {
+    // The details page moved from `/apps/:id/manage` to `/apps/:id`; keep old links working.
+    id: HOSTED_APPLICATION_MANAGE,
+    path: `${APPS_PATH}/:id/manage`,
+    loader: ({ params }) => redirect(hostedRoutes.details(encodeURIComponent(params.id ?? ''))),
+  },
+  {
+    id: HOSTED_APPLICATION_EDIT,
+    path: `${APPS_PATH}/:id/edit`,
+    Component: EditHostedApplicationPage,
+  },
+  {
+    id: HOSTED_APPLICATION_VIEW,
+    path: `${APPS_PATH}/:id/view`,
+    Component: HostedApplicationViewer,
+  },
+  {
+    id: HOSTED_APPLICATION_STANDALONE,
+    path: `${APPS_PATH}/:id/standalone`,
+    Component: HostedStandaloneLaunch,
+  },
+  {
+    id: HOSTED_APPLICATION_PREVIEW,
+    path: `${APPS_PATH}/:id/preview/:versionId`,
+    Component: HostedApplicationViewer,
+  },
+  {
+    // Static siblings such as `new`, `share/:token` and the collections rank above this param.
+    id: HOSTED_APPLICATION,
+    path: `${APPS_PATH}/:id`,
+    Component: HostedApplicationDetails,
+  },
+  {
+    // The Applications list moved to `/apps`; keep old links and bookmarks working.
+    id: APPLICATIONS,
+    path: 'applications',
+    loader: () => redirect(APPS_ROOT),
+  },
+  {
+    id: APPLICATION_FEDERATION,
     path: 'applications/:slug',
     Component: ApplicationFederationPage,
   },
   {
-    id: 'application-iframe',
+    id: APPLICATION_IFRAME,
     path: 'applications/iframe/:slug',
     Component: ApplicationIframePage,
   },
