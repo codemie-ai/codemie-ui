@@ -21,7 +21,7 @@ import Spinner from '@/components/Spinner'
 import Tooltip from '@/components/Tooltip'
 import { InfoWarningType } from '@/constants'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
-import { truncateInput } from '@/utils/helpers'
+import { formatDateTime, truncateInput } from '@/utils/helpers'
 
 import SessionBody from './SessionBody'
 import { projectOriginLabel, routeWarning, subscriptionLabel } from '../format'
@@ -32,11 +32,11 @@ interface SessionModalProps {
   onHide: () => void
 }
 
-// Caps the title's displayed text and tooltip at a generous but bounded length — matching the
+// Caps the prompt line's displayed text and tooltip at a generous but bounded length — matching the
 // convention Card.tsx uses for its own free-form tooltip text — since session prompts are
 // user-typed and can be arbitrarily long (e.g. pasted logs), and an unbounded tooltip could grow
 // taller than the viewport.
-const MAX_TITLE_LENGTH = 1000
+const MAX_PROMPT_LENGTH = 1000
 
 interface SessionTitleProps {
   traceId: string
@@ -107,26 +107,32 @@ const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
   const { session, loading, error } = useCliAnalyticsSession(traceId)
   const routeNote = routeWarning(session?.routing_label, session?.route_note)
 
-  const title = truncateInput(session?.prompt, MAX_TITLE_LENGTH, 'Session')
-  const subtitle = [
-    session?.harness_name,
-    session?.model_name,
-    session?.repository,
-    session?.branch,
-    session?.delivery_framework,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  // The heading identifies the session by its metadata. The prompt is user-typed free text, so it
+  // sits below as a muted line rather than as the heading.
+  const title =
+    [
+      session?.harness_name,
+      session?.model_name,
+      session?.repository,
+      session?.branch,
+      session?.delivery_framework,
+      session?.start_time ? formatDateTime(session.start_time, 'short') : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || 'Session'
+  const subtitle = session?.prompt
+    ? `Prompt: ${truncateInput(session.prompt, MAX_PROMPT_LENGTH, '')}`
+    : ''
 
   return (
     <Popup
       visible={true}
       onHide={onHide}
       hideFooter
-      // isFullWidth gives w-full max-w-[90vw] xl:max-w-6xl. The arbitrary
-      // max-w-[90vw] lives inside Popup.tsx, not here — acceptable per
-      // styling-guide exception for the Popup primitive.
+      // isFullWidth gives w-full max-w-[90vw] xl:max-w-6xl; widened to 90vw on xl so the
+      // summary groups fit one row each - the same width as ExtendedSessionsModal.
       isFullWidth
+      className="xl:max-w-[90vw]"
       headerContent={
         <div className="flex flex-col gap-0.5 min-w-0">
           <SessionTitle key={title} traceId={traceId} title={title} />

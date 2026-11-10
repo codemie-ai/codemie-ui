@@ -12,17 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
-import { ColumnType } from '@/types/analytics'
+import { analyticsStore } from '@/store/analytics'
+import { ColumnType, TabularMetricType } from '@/types/analytics'
 import type { TabularResponse } from '@/types/analytics'
 
 import BarChartWidget from '../BarChartWidget'
 
 vi.mock('react-chartjs-2', () => ({
-  Bar: ({ data }: { data: { datasets: Array<{ data: number[] }> } }) => (
-    <canvas data-testid="bar-chart" data-values={JSON.stringify(data.datasets[0]?.data ?? [])} />
+  Bar: ({ data }: { data: { labels?: string[]; datasets: Array<{ data: number[] }> } }) => (
+    <canvas
+      data-testid="bar-chart"
+      data-labels={JSON.stringify(data.labels ?? [])}
+      data-values={JSON.stringify(data.datasets[0]?.data ?? [])}
+    />
   ),
 }))
 
@@ -101,5 +106,37 @@ describe('BarChartWidget — net_lines', () => {
     const canvas = screen.getByTestId('bar-chart')
     const values = JSON.parse(canvas.getAttribute('data-values') ?? '[]') as number[]
     expect(values).toEqual([30, -10, 0])
+  })
+})
+
+describe('BarChartWidget — transformData', () => {
+  it('draws the transformed rows when it fetches its own data', async () => {
+    const fetched = makeOverride([{ day: 'Sun', net_lines: 5 }])
+    vi.spyOn(analyticsStore, 'fetchTabularData').mockResolvedValue(fetched)
+    // Reorders and zero-fills the way the CLI Insights weekday transform does.
+    const transformData = (data: TabularResponse): TabularResponse => ({
+      ...data,
+      data: {
+        ...data.data,
+        rows: [{ day: 'Mon', net_lines: 0 }, ...data.data.rows],
+      },
+    })
+
+    render(
+      <BarChartWidget
+        metricType={TabularMetricType.CLI_LLMS}
+        title="Activity"
+        labelField="day"
+        valueField="net_lines"
+        yAxisLabel="net_lines"
+        transformData={transformData}
+      />
+    )
+
+    await waitFor(() => {
+      const canvas = screen.getByTestId('bar-chart')
+      expect(JSON.parse(canvas.getAttribute('data-labels') ?? '[]')).toEqual(['Mon', 'Sun'])
+      expect(JSON.parse(canvas.getAttribute('data-values') ?? '[]')).toEqual([0, 5])
+    })
   })
 })

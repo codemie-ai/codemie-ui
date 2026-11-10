@@ -30,8 +30,8 @@ import type {
   SessionRow,
 } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
-import { formatMetricValue, formatTokens } from '@/utils/analyticsFormatters'
-import { formatCliAnalyticsCost } from '@/utils/currency'
+import { formatMetricValue } from '@/utils/analyticsFormatters'
+import { formatSpend } from '@/utils/currency'
 
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
@@ -41,41 +41,40 @@ import { useCliAnalyticsEfficiency } from '../hooks/useCliAnalyticsEfficiency'
 import { useCliAnalyticsSessions } from '../hooks/useCliAnalyticsSessions'
 import { useSessionModal } from '../hooks/useSessionModal'
 
+// The caption compares the worst session with the average rather than quoting its prompt: a cut-off
+// prompt reads as an unfinished label, and "Most Bloated Sessions" below lists it in full.
+function describeWorstSession(kpis: CliAnalyticsEfficiencyKPIs | null): string {
+  const worst = kpis?.worst_session_ctx_per_call
+  const avg = kpis?.avg_context_per_call
+  if (worst == null) return 'no sessions in range'
+  if (!avg || avg <= 0) return 'highest single session'
+  return `${(worst / avg).toFixed(1)}× the average`
+}
+
 function buildContextBloatMetrics(kpis: CliAnalyticsEfficiencyKPIs | null): Metric[] {
-  const prompt = kpis?.worst_session_prompt ?? null
-
-  let promptPreview = '—'
-
-  if (prompt) {
-    promptPreview = prompt.length > 40 ? `${prompt.slice(0, 40)}…` : prompt
-  }
-
+  const worst = kpis?.worst_session_ctx_per_call
   return [
     {
       id: 'avg_context_per_call',
-      label: 'Avg Context / Call',
+      label: 'Avg Cache Read / Call',
       type: ColumnType.INTEGER,
-      format: MetricFormat.TOKENS,
-      value: kpis?.avg_context_per_call ?? 0,
-      description: 'cache re-read each call',
+      value: Math.round(kpis?.avg_context_per_call ?? 0),
+      description: 'cache read tokens per call',
     },
     {
       id: 'worst_session_ctx_per_call',
-      label: 'Worst Session Ctx / Call',
+      label: 'Max Cache Read / Call',
       type: ColumnType.INTEGER,
-      format: MetricFormat.TOKENS,
-      value: kpis?.worst_session_ctx_per_call ?? 0,
-      description: promptPreview,
+      value: worst != null ? Math.round(worst) : null,
+      description: describeWorstSession(kpis),
     },
     {
       id: 'cache_read_cost_usd',
-      label: 'Cache-Read Cost',
+      label: 'Cache Read Cost',
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
       value: kpis?.cache_read_cost_usd ?? 0,
-      description: kpis
-        ? `${formatMetricValue(kpis.bloat_pct, MetricFormat.PERCENTAGE)} of spend`
-        : '—',
+      description: 'spend on context re-reads',
     },
     {
       id: 'bloat_pct',
@@ -83,7 +82,7 @@ function buildContextBloatMetrics(kpis: CliAnalyticsEfficiencyKPIs | null): Metr
       type: ColumnType.NUMBER,
       format: MetricFormat.PERCENTAGE,
       value: kpis?.bloat_pct ?? 0,
-      description: 'spend on context re-reads',
+      description: 'cache read cost / est. cost',
     },
   ]
 }
@@ -98,9 +97,10 @@ function buildDeadSessionsMetrics(
       label: 'Dead Sessions',
       type: ColumnType.INTEGER,
       value: deadSessions?.count ?? 0,
-      description: deadSessions
-        ? `${formatMetricValue(deadSessions.pct_of_sessions, MetricFormat.PERCENTAGE)} of sessions`
-        : '0% of sessions',
+      description: `${formatMetricValue(
+        deadSessions?.pct_of_sessions ?? 0,
+        MetricFormat.PERCENTAGE
+      )} of sessions`,
     },
     {
       id: 'wasted_cost_usd',
@@ -116,7 +116,7 @@ function buildDeadSessionsMetrics(
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
       value: deadSessions?.avg_cost_per_dead ?? 0,
-      description: 'per unproductive session',
+      description: 'per dead session',
     },
   ]
 }
@@ -167,46 +167,48 @@ function wastedCostSubtitle(
 }
 
 const SESSION_COLUMN_DEFS = [
-  { key: 'session', label: 'SESSION', type: DefinitionTypes.Custom },
-  { key: 'delivery_framework', label: 'FRAMEWORK', type: DefinitionTypes.Custom },
-  { key: 'ctx_per_call', label: 'CTX/CALL', type: DefinitionTypes.Custom },
-  { key: 'cache_read', label: 'CACHE READ', type: DefinitionTypes.Custom },
-  { key: 'cost', label: 'COST', type: DefinitionTypes.Custom },
-  { key: 'bloat', label: 'BLOAT%', type: DefinitionTypes.Custom },
+  { key: 'session', label: 'Session', type: DefinitionTypes.Custom },
+  { key: 'delivery_framework', label: 'Framework', type: DefinitionTypes.Custom },
+  {
+    key: 'ctx_per_call',
+    label: 'Cache Read / Call',
+    type: DefinitionTypes.Custom,
+    headClassNames: 'text-right',
+  },
+  {
+    key: 'cache_read',
+    label: 'Cache Read Tokens',
+    type: DefinitionTypes.Custom,
+    headClassNames: 'text-right',
+  },
+  { key: 'cost', label: 'Est. Cost', type: DefinitionTypes.Custom, headClassNames: 'text-right' },
+  { key: 'bloat', label: 'Bloat %', type: DefinitionTypes.Custom, headClassNames: 'text-right' },
 ]
 
+// Same type size and full figures as the other session tables (e.g. Most Expensive Sessions).
 const SESSION_CUSTOM_COLS = {
   session: (row: SessionRow) => (
-    <div className="truncate max-w-xs text-sm text-text-primary" title={row.prompt ?? row.trace_id}>
+    <div className="truncate max-w-xs" title={row.prompt ?? row.trace_id}>
       {(row.prompt ?? row.trace_id).slice(0, 40)}
       {(row.prompt ?? row.trace_id).length > 40 ? '…' : ''}
     </div>
   ),
   delivery_framework: (row: SessionRow) => (
-    <div
-      className="truncate max-w-[200px] text-sm text-text-primary"
-      title={row.delivery_framework ?? ''}
-    >
+    <div className="truncate max-w-[200px]" title={row.delivery_framework ?? ''}>
       {row.delivery_framework || '—'}
     </div>
   ),
   ctx_per_call: (row: SessionRow) => (
-    <div className="text-sm text-text-primary tabular-nums">
-      {row.ctx_per_call != null ? formatTokens(row.ctx_per_call) : '—'}
+    <div className="text-right">
+      {row.ctx_per_call != null ? Math.round(row.ctx_per_call).toLocaleString() : '—'}
     </div>
   ),
   cache_read: (row: SessionRow) => (
-    <div className="text-sm text-text-primary tabular-nums">
-      {formatTokens(row.cache_read_tokens ?? 0)}
-    </div>
+    <div className="text-right">{(row.cache_read_tokens ?? 0).toLocaleString()}</div>
   ),
-  cost: (row: SessionRow) => (
-    <div className="text-sm text-text-primary tabular-nums">
-      {formatCliAnalyticsCost(row.cost_usd)}
-    </div>
-  ),
+  cost: (row: SessionRow) => <div className="text-right">{formatSpend(row.cost_usd)}</div>,
   bloat: (row: SessionRow) => (
-    <div className="text-sm text-text-primary tabular-nums">
+    <div className="text-right">
       {row.bloat_pct != null ? formatMetricValue(row.bloat_pct, MetricFormat.PERCENTAGE) : '—'}
     </div>
   ),
@@ -261,11 +263,12 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
     <div className="flex flex-col gap-6">
       <AnalyticsWidget
         title="Context Bloat"
+        description="How much context each call re-reads, and what it costs."
         expandable={false}
         loading={loading}
         error={errorDetails}
       >
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 max-sm:gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-sm:gap-2">
           {contextBloatMetrics.map((metric) => (
             <MetricCard key={metric.id} metric={metric} />
           ))}
@@ -273,10 +276,10 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
       </AnalyticsWidget>
 
       <AnalyticsWidget
-        title="Most bloated sessions"
+        title="Most Bloated Sessions"
+        description="Sessions with the most context re-read per call."
         loading={sessionsLoading}
         error={null}
-        actions={<span className="text-xs text-text-quaternary">by context re-read per call</span>}
       >
         <Table<SessionRow>
           items={displayRows}
@@ -296,40 +299,33 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
         />
       </AnalyticsWidget>
 
-      <AnalyticsWidget
-        title="Dead Sessions"
-        expandable={false}
-        loading={loading}
-        error={errorDetails}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {deadSessionsMetrics.map((metric) => (
-            <MetricCard key={metric.id} metric={metric} />
-          ))}
-        </div>
-      </AnalyticsWidget>
-
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-3">
-          <BarChartWidget
-            title="Session depth"
-            labelField="bucket"
-            valueField="count"
-            yAxisLabel="count"
-            yAxisInteger
-            dataOverride={depthTabularData}
-            actions={<span className="text-xs text-text-quaternary">turns per session</span>}
-          />
-        </div>
-
-        <div className="lg:col-span-2">
+      {/* 3 + 4 cards on a 7-column row, so every card has the same width. */}
+      <div className="grid grid-cols-1 xl:grid-cols-7 gap-4">
+        <div className="xl:col-span-3 [&>div]:h-full">
           <AnalyticsWidget
-            title="Code changes"
+            title="Dead Sessions"
+            description="Sessions that produced no file output."
+            expandable={false}
+            loading={loading}
+            error={errorDetails}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {deadSessionsMetrics.map((metric) => (
+                <MetricCard key={metric.id} metric={metric} />
+              ))}
+            </div>
+          </AnalyticsWidget>
+        </div>
+
+        <div className="xl:col-span-4 [&>div]:h-full">
+          <AnalyticsWidget
+            title="Code Changes"
+            description="Files and lines changed by CLI sessions."
             loading={loading}
             error={errorDetails}
             expandable={false}
           >
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {codeChangesMetrics.map((metric) => (
                 <MetricCard key={metric.id} metric={metric} />
               ))}
@@ -337,6 +333,16 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
           </AnalyticsWidget>
         </div>
       </div>
+
+      <BarChartWidget
+        title="Session Depth"
+        description="Distribution of turns per CLI session."
+        labelField="bucket"
+        valueField="count"
+        yAxisLabel="count"
+        yAxisInteger
+        dataOverride={depthTabularData}
+      />
 
       {selectedTraceId && <SessionModal traceId={selectedTraceId} onHide={closeSession} />}
     </div>

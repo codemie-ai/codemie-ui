@@ -141,16 +141,27 @@ describe('EfficiencyView', () => {
     expect(screen.getByTestId('metric-bloat_pct')).toBeInTheDocument()
   })
 
+  // EPMCDME-16991: a cut-off prompt as the caption read as an unfinished label.
+  it('captions the worst session against the average, not with its prompt', () => {
+    render(<EfficiencyView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByTestId('metric-worst_session_ctx_per_call-value')).toHaveTextContent('28000')
+    expect(screen.getByTestId('metric-worst_session_ctx_per_call-description')).toHaveTextContent(
+      '1.9× the average'
+    )
+    expect(screen.queryByText(/Refactor the analytics dashboard/)).not.toBeInTheDocument()
+  })
+
   it('renders the most bloated sessions widget', () => {
     render(<EfficiencyView filters={MOCK_FILTERS} />)
 
     expect(screen.getByTestId('widget-most-bloated-sessions')).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'SESSION' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'FRAMEWORK' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'CTX/CALL' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'CACHE READ' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'COST' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'BLOAT%' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Session' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Framework' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Cache Read / Call' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Cache Read Tokens' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Est. Cost' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Bloat %' })).toBeInTheDocument()
   })
 
   it('renders the dead sessions widget and its metrics', () => {
@@ -312,8 +323,8 @@ describe('EfficiencyView', () => {
           cost_usd: 1,
           tool_call_count: 0,
           branch: null,
-          turns: 1,
-          cache_read_tokens: 1000, // turns-based would render 1,000 — must not.
+          turns: 2,
+          cache_read_tokens: 1000, // turns-based would render 500 — must not.
           ctx_per_call: 5,
         },
       ],
@@ -330,7 +341,7 @@ describe('EfficiencyView', () => {
     render(<EfficiencyView filters={MOCK_FILTERS} />)
 
     expect(screen.getByText('5')).toBeInTheDocument()
-    expect(screen.queryByText('1,000')).not.toBeInTheDocument()
+    expect(screen.queryByText('500')).not.toBeInTheDocument()
   })
 
   it.each([

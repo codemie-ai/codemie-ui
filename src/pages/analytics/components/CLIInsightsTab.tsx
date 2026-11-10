@@ -27,6 +27,7 @@ import CLIInsightsUserDetailsModal from './cliInsights/CLIInsightsUserDetailsMod
 import EnrichedUserSection from './cliInsights/EnrichedUserSection'
 import { getPrimitiveString } from './cliInsights/helpers'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, toPerPage, type TopN } from './utils/topNFilter'
+import { toAllHoursOfDay, toMonFirstWeekdays } from './utils/usagePatterns'
 import BarChartWidget from './widgets/BarChartWidget'
 import DonutChartWidget from './widgets/DonutChartWidget'
 import MetricsWidget from './widgets/MetricsWidget'
@@ -127,25 +128,29 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters, onOpenUsageAttributi
       <section>
         <h2 className="mb-4 text-xl font-semibold text-text-primary">Usage Patterns</h2>
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {/* Same order, axes and titles as CLI Analytics > Activity. These count activity events,
+              not sessions, so the titles say "Activity". */}
           <BarChartWidget
-            title="Weekday Pattern"
-            description="CLI activity distribution by weekday."
+            title="Activity by Weekday"
+            description="CLI activity events per weekday."
             metricType={TabularMetricType.CLI_INSIGHTS_WEEKDAY_PATTERN}
             filters={filters}
             labelField="weekday"
             valueField="activity_count"
             yAxisLabel="activity_count"
             yAxisInteger
+            transformData={toMonFirstWeekdays}
           />
           <BarChartWidget
-            title="Usage by Hour of Day"
-            description="CLI activity distribution by hour."
+            title="Activity by Hour of Day"
+            description="CLI activity events per hour of day."
             metricType={TabularMetricType.CLI_INSIGHTS_HOURLY_USAGE}
             filters={filters}
             labelField="hour"
             valueField="activity_count"
             yAxisLabel="activity_count"
             yAxisInteger
+            transformData={toAllHoursOfDay}
           />
           <BarChartWidget
             title="Session Depth"
@@ -173,7 +178,7 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters, onOpenUsageAttributi
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <BarChartWidget
             title="Most Used Tools"
-            description="Top tools used in CLI sessions."
+            description="Tools by number of CLI sessions that used them."
             metricType={TabularMetricType.CLI_TOOLS}
             filters={filters}
             labelField="tool_name"
@@ -183,8 +188,8 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters, onOpenUsageAttributi
             horizontal
           />
           <DonutChartWidget
-            title="Models"
-            description="CLI model distribution."
+            title="Requests by Model"
+            description="CLI requests per model."
             metricType={TabularMetricType.CLI_LLMS}
             filters={filters}
             labelField="model_name"

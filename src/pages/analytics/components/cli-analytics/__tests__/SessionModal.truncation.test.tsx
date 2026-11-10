@@ -59,6 +59,7 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+// The subtitle is the muted "Prompt: …" line; the title is the session metadata (EPMCDME-16991).
 describe('SessionModal subtitle truncation (real useIsTruncated)', () => {
   it('detects truncation once the subtitle mounts after the session loads asynchronously', async () => {
     // First render: session has not arrived yet (mirrors useCliAnalyticsSession's real initial
@@ -74,21 +75,21 @@ describe('SessionModal subtitle truncation (real useIsTruncated)', () => {
     })
     rerender(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const subtitleEl = screen.getByText(/Cursor/)
+    const subtitleEl = screen.getByText(/^Prompt: /)
     Object.defineProperty(subtitleEl, 'scrollWidth', { configurable: true, value: 500 })
     Object.defineProperty(subtitleEl, 'clientWidth', { configurable: true, value: 100 })
 
     // useIsTruncated schedules its check in a setTimeout(0); poll until it has run.
     await waitFor(() => {
-      expect(subtitleEl).toHaveAttribute('data-pr-tooltip', expect.stringContaining('Cursor'))
+      expect(subtitleEl).toHaveAttribute('data-pr-tooltip', `Prompt: ${MOCK_SESSION.prompt}`)
     })
   })
 
   it('re-measures truncation when the subtitle text changes while already mounted', async () => {
     vi.useFakeTimers()
 
-    // Session already loaded with a short subtitle (one field only) that is not truncated.
-    const SHORT_SESSION: SessionDetail = { ...MOCK_SESSION, model_name: '', repository: null }
+    // Session already loaded with a short prompt that is not truncated.
+    const SHORT_SESSION: SessionDetail = { ...MOCK_SESSION, prompt: 'Fix' }
     mockUseCliAnalyticsSession.mockReturnValue({
       session: SHORT_SESSION,
       loading: false,
@@ -96,7 +97,7 @@ describe('SessionModal subtitle truncation (real useIsTruncated)', () => {
     })
     const { rerender } = render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const shortSubtitleEl = screen.getByText('Cursor')
+    const shortSubtitleEl = screen.getByText('Prompt: Fix')
     Object.defineProperty(shortSubtitleEl, 'scrollWidth', { configurable: true, value: 50 })
     Object.defineProperty(shortSubtitleEl, 'clientWidth', { configurable: true, value: 50 })
 
@@ -114,7 +115,7 @@ describe('SessionModal subtitle truncation (real useIsTruncated)', () => {
     })
     rerender(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const longSubtitleEl = screen.getByText(/Cursor/)
+    const longSubtitleEl = screen.getByText(`Prompt: ${MOCK_SESSION.prompt}`)
     Object.defineProperty(longSubtitleEl, 'scrollWidth', { configurable: true, value: 500 })
     Object.defineProperty(longSubtitleEl, 'clientWidth', { configurable: true, value: 100 })
 
@@ -122,12 +123,12 @@ describe('SessionModal subtitle truncation (real useIsTruncated)', () => {
       await vi.advanceTimersByTimeAsync(0)
     })
 
-    expect(longSubtitleEl).toHaveAttribute('data-pr-tooltip', expect.stringContaining('Cursor'))
+    expect(longSubtitleEl).toHaveAttribute('data-pr-tooltip', `Prompt: ${MOCK_SESSION.prompt}`)
   })
 })
 
 describe('SessionModal title truncation (real useIsTruncated)', () => {
-  it('re-measures truncation once the title text swaps from the loading placeholder to the real prompt', async () => {
+  it('re-measures truncation once the title text swaps from the loading placeholder to the metadata', async () => {
     vi.useFakeTimers()
 
     // First render: session has not arrived yet, so the title span shows the 'Session'
@@ -146,7 +147,7 @@ describe('SessionModal title truncation (real useIsTruncated)', () => {
     })
     expect(placeholderEl).toHaveAttribute('data-pr-tooltip', '')
 
-    // Session arrives; the title text changes from 'Session' to the real (long) prompt.
+    // Session arrives; the title text changes from 'Session' to the (long) metadata line.
     mockUseCliAnalyticsSession.mockReturnValue({
       session: MOCK_SESSION,
       loading: false,
@@ -154,7 +155,7 @@ describe('SessionModal title truncation (real useIsTruncated)', () => {
     })
     rerender(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const titleEl = screen.getByText(MOCK_SESSION.prompt as string)
+    const titleEl = screen.getByText(/^Cursor · /)
     Object.defineProperty(titleEl, 'scrollWidth', { configurable: true, value: 500 })
     Object.defineProperty(titleEl, 'clientWidth', { configurable: true, value: 100 })
 
@@ -162,6 +163,6 @@ describe('SessionModal title truncation (real useIsTruncated)', () => {
       await vi.advanceTimersByTimeAsync(0)
     })
 
-    expect(titleEl).toHaveAttribute('data-pr-tooltip', MOCK_SESSION.prompt)
+    expect(titleEl).toHaveAttribute('data-pr-tooltip', titleEl.textContent)
   })
 })

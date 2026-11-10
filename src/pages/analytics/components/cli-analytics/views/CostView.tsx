@@ -27,7 +27,7 @@ import {
 } from '@/types/analytics'
 import type { SessionRow } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
-import { formatCliAnalyticsCost } from '@/utils/currency'
+import { formatSpend } from '@/utils/currency'
 
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
@@ -99,7 +99,7 @@ const TotalTokensCell: FC<{ row: SessionRow }> = ({ row }) => (
 )
 
 const CostCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="text-right">{formatCliAnalyticsCost(row.cost_usd ?? 0)}</div>
+  <div className="text-right">{formatSpend(row.cost_usd)}</div>
 )
 
 const SESSION_CELL_RENDERERS = {
@@ -119,22 +119,22 @@ function buildKpiMetrics(kpis: {
   total_tokens: number
   avg_cost_per_session: number
 }): Metric[] {
+  // Token cards show the full figure: a compact "2.9B" reads as "2.98" in the mono font.
   return [
     {
       id: 'total_cost_usd',
-      label: 'Total Est. Cost',
+      label: 'Est. Cost',
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
       value: kpis.total_cost_usd,
-      description: 'API-equivalent',
+      description: 'estimated from session tokens',
     },
     {
       id: 'total_tokens',
       label: 'Total Tokens',
       type: ColumnType.INTEGER,
-      format: MetricFormat.TOKENS,
       value: kpis.total_tokens,
-      description: 'across sessions',
+      description: 'Total LLM tokens',
     },
     {
       id: 'avg_cost_per_session',
@@ -233,63 +233,63 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
     () => [
       {
         key: 'prompt',
-        label: 'SESSION',
+        label: 'Session',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
       },
       {
         key: 'developer_name',
-        label: 'USER',
+        label: 'User',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
       },
       {
         key: 'repository',
-        label: 'REPOSITORY',
+        label: 'Repository',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
       },
       {
         key: 'delivery_framework',
-        label: 'FRAMEWORK',
+        label: 'Framework',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
       },
       {
         key: 'input_tokens',
-        label: 'INPUT',
+        label: 'Input Tokens',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'output_tokens',
-        label: 'OUTPUT',
+        label: 'Output Tokens',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'cache_read_tokens',
-        label: 'CACHED',
+        label: 'Cache Read Tokens',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'cost_usd',
-        label: 'TOTAL',
+        label: 'Total Tokens',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'cost_usd_display',
-        label: 'COST',
+        label: 'Est. Cost',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
@@ -315,7 +315,8 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <DonutChartWidget
           metricType={TabularMetricType.CLI_LLMS}
-          title="Cost by user"
+          title="Cost Share by User"
+          description="Share of estimated CLI cost per user."
           labelField="developer_name"
           valueField="cost_usd"
           dataOverride={costByUserOverride}
@@ -331,7 +332,8 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
         />
 
         <BarChartWidget
-          title="Cost by model"
+          title="Cost by Model"
+          description="Estimated CLI cost per model."
           labelField="model_name"
           valueField="cost_usd"
           yAxisLabel="cost_usd"
@@ -341,7 +343,8 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
       </div>
 
       <AnalyticsWidget
-        title="Most expensive sessions"
+        title="Most Expensive Sessions"
+        description="Sessions with the highest estimated cost."
         loading={sessLoading}
         error={sessErrorDetails}
       >

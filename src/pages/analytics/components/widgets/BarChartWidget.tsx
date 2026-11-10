@@ -67,6 +67,8 @@ interface BarChartWidgetProps {
   /** Row field used as the color key passed to colorByLabel (defaults to labelField) */
   colorIdField?: string
   dataOverride?: TabularResponse | null
+  /** Reshapes fetched rows before drawing (e.g. reorder or fill missing buckets). Pass a stable reference. */
+  transformData?: (data: TabularResponse) => TabularResponse
 }
 
 /**
@@ -89,6 +91,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
   colorByLabel,
   colorIdField,
   dataOverride,
+  transformData,
 }) => {
   const { loading, error } = useSnapshot(analyticsStore)
   const [data, setData] = useState<TabularResponse | null>(dataOverride ?? null)
@@ -109,12 +112,12 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
         ...extraParams,
       })
       if (result) {
-        setData(result)
+        setData(transformData ? transformData(result) : result)
       }
     }
 
     fetchData().catch(console.error)
-  }, [metricType, filters, extraParams, dataOverride])
+  }, [metricType, filters, extraParams, dataOverride, transformData])
 
   // Extract labels (dates) and values from data
   const labels =
@@ -147,6 +150,14 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
   const textColor = getTailwindColor('--colors-text-secondary', '#9CA3AF')
   const palette = useMemo(() => generateChartColors(labels.length), [labels.length])
 
+  const barColors = labels.map((label, index) => {
+    const colorId = colorIdField ? data?.data.rows[index]?.[colorIdField] : undefined
+    // Only scalar ids make a colour key; anything else would stringify to "[object Object]".
+    const colorKey =
+      typeof colorId === 'string' || typeof colorId === 'number' ? String(colorId) : label
+    return colorByLabel?.(colorKey, index) || palette[index] || barColor
+  })
+
   const chartData = useMemo(
     () => ({
       labels,
@@ -154,18 +165,8 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
         {
           label: yAxisLabel,
           data: values,
-          backgroundColor: labels.map((label, index) => {
-            const colorKey = colorIdField
-              ? String(data?.data.rows[index]?.[colorIdField] ?? label)
-              : label
-            return colorByLabel?.(colorKey, index) || palette[index] || barColor
-          }),
-          borderColor: labels.map((label, index) => {
-            const colorKey = colorIdField
-              ? String(data?.data.rows[index]?.[colorIdField] ?? label)
-              : label
-            return colorByLabel?.(colorKey, index) || palette[index] || barColor
-          }),
+          backgroundColor: barColors,
+          borderColor: barColors,
           borderWidth: 0,
           borderRadius: 6,
           barPercentage: 0.9,
@@ -173,7 +174,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
         },
       ],
     }),
-    [labels, values, yAxisLabel, barColor, colorByLabel, palette]
+    [labels, values, yAxisLabel, barColors]
   )
 
   const yAxisLabelValue = data?.data.columns.find((c) => c.id === yAxisLabel)?.label

@@ -108,7 +108,7 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DonutChartWidget
             metricType={TabularMetricType.LLMS_USAGE}
-            title="Top LLMs"
+            title="Requests by Model"
             labelField="model_name"
             valueField="total_requests"
             filters={filters}
@@ -124,7 +124,7 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
           />
           <DonutChartWidget
             metricType={TabularMetricType.CLI_LLMS}
-            title="Top CLI LLMs"
+            title="CLI Requests by Model"
             labelField="model_name"
             valueField="total_requests"
             filters={filters}

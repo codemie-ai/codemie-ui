@@ -17,9 +17,9 @@ import { type FC, useEffect, useMemo, useState } from 'react'
 
 import { ABSENT_VALUE_MARKER } from '@/constants'
 import type { DispatchRow } from '@/types/cliAnalytics'
-import { formatTokens } from '@/utils/analyticsFormatters'
+import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { adjustLightness, getStatusColors } from '@/utils/chartColors'
-import { formatCliAnalyticsCost } from '@/utils/currency'
+import { formatSpend } from '@/utils/currency'
 import { cn } from '@/utils/utils'
 
 import { formatDuration } from '../format'
@@ -64,7 +64,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({
   costAvailable,
 }) => {
   const formatDispatchCost = (cost: number) =>
-    costAvailable === false ? ABSENT_VALUE_MARKER : formatCliAnalyticsCost(cost)
+    costAvailable === false ? ABSENT_VALUE_MARKER : formatSpend(cost)
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
@@ -124,7 +124,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({
           const isSession = dispatch.kind === 'session'
           const dispatchTokens =
             dispatch.input_tokens != null && dispatch.output_tokens != null
-              ? formatTokens(
+              ? formatMetricValue(
                   dispatch.input_tokens +
                     dispatch.output_tokens +
                     (dispatch.cache_read_tokens ?? 0) +
@@ -179,7 +179,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({
           const dotColor = getBarColor(dispatch, selectedIndex)
           const totalTokens =
             dispatch.input_tokens != null && dispatch.output_tokens != null
-              ? formatTokens(
+              ? formatMetricValue(
                   dispatch.input_tokens +
                     dispatch.output_tokens +
                     (dispatch.cache_read_tokens ?? 0) +
@@ -237,7 +237,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({
                     <div className="flex justify-between">
                       <span className="text-xs text-text-secondary">Input</span>
                       <span className="text-xs text-text-primary tabular-nums">
-                        {formatTokens(dispatch.input_tokens)}
+                        {formatMetricValue(dispatch.input_tokens)}
                       </span>
                     </div>
                   )}
@@ -245,7 +245,7 @@ const SessionTimeline: FC<SessionTimelineProps> = ({
                     <div className="flex justify-between">
                       <span className="text-xs text-text-secondary">Output</span>
                       <span className="text-xs text-text-primary tabular-nums">
-                        {formatTokens(dispatch.output_tokens)}
+                        {formatMetricValue(dispatch.output_tokens)}
                       </span>
                     </div>
                   )}
@@ -253,15 +253,15 @@ const SessionTimeline: FC<SessionTimelineProps> = ({
                     <div className="flex justify-between">
                       <span className="text-xs text-text-secondary">Cache read</span>
                       <span className="text-xs text-text-primary tabular-nums">
-                        {formatTokens(dispatch.cache_read_tokens!)}
+                        {formatMetricValue(dispatch.cache_read_tokens)}
                       </span>
                     </div>
                   )}
                   {(dispatch.cache_creation_tokens ?? 0) > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-xs text-text-secondary">Cache write</span>
+                      <span className="text-xs text-text-secondary">Cache creation</span>
                       <span className="text-xs text-text-primary tabular-nums">
-                        {formatTokens(dispatch.cache_creation_tokens!)}
+                        {formatMetricValue(dispatch.cache_creation_tokens)}
                       </span>
                     </div>
                   )}

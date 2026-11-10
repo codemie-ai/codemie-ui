@@ -29,15 +29,16 @@ import { Line } from 'react-chartjs-2'
 
 import { ColumnType, type Metric, type TabularResponse } from '@/types/analytics'
 import type { SessionDetail } from '@/types/cliAnalytics'
-import { formatTokens } from '@/utils/analyticsFormatters'
-import { formatCliAnalyticsCost } from '@/utils/currency'
+import { formatMetricValue, formatTokens } from '@/utils/analyticsFormatters'
+import { formatSpend } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 
+import MetricGroups, { type MetricGroup } from './MetricGroups'
 import SessionCostValue from './SessionCostValue'
 import SessionTimeline from './SessionTimeline'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import BarChartWidget from '../../widgets/BarChartWidget'
-import MetricCard, { METRIC_VALUE_CLASS_NAME } from '../../widgets/MetricCard'
+import { METRIC_VALUE_CLASS_NAME } from '../../widgets/MetricCard'
 import {
   describeSessionCount,
   describeSessionToolCalls,
@@ -78,7 +79,7 @@ const growthChartOptions = {
       type: 'linear' as const,
       position: 'left' as const,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ticks: { callback: (v: any) => formatCliAnalyticsCost(v as number) },
+      ticks: { callback: (v: any) => formatSpend(v as number) },
     },
     y1: {
       type: 'linear' as const,
@@ -105,8 +106,10 @@ function m(id: string, label: string, value: string, description?: string): Metr
   return { id, label, type: ColumnType.STRING, value, description }
 }
 
-const countMetric = (id: string, label: string, c: SessionCount): Metric =>
-  m(id, label, c.value, c.note)
+// A finalized count has no qualifier ("Provisional", "Not reported"), so it gets a plain caption
+// instead: an empty caption next to captioned cards reads as unfinished.
+const countMetric = (id: string, label: string, c: SessionCount, caption: string): Metric =>
+  m(id, label, c.value, c.note || caption)
 
 interface SessionBodyProps {
   session: SessionDetail
@@ -120,13 +123,12 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
     (session.cache_creation_tokens ?? 0)
 
   const costMetrics: Metric[] = [
-    m('cost_usd', 'Cost', formatCliAnalyticsCost(session.cost_usd), 'API-equivalent'),
+    m('cost_usd', 'Est. Cost', formatSpend(session.cost_usd), 'from token usage'),
     m(
       'cache_read_cost',
-      'Cache-read',
-      session.cache_read_cost_usd != null
-        ? formatCliAnalyticsCost(session.cache_read_cost_usd)
-        : '—'
+      'Cache Read Cost',
+      session.cache_read_cost_usd != null ? formatSpend(session.cache_read_cost_usd) : '—',
+      'spend on context re-reads'
     ),
     m('duration', 'Duration', formatDuration(session.duration_ms), 'wall-clock'),
     m(
@@ -135,7 +137,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
       session.active_ms != null ? formatDuration(session.active_ms) : '—',
       'excludes idle'
     ),
-    m('started', 'Started', formatDateTime(session.start_time, 'short')),
+    m('started', 'Started', formatDateTime(session.start_time, 'short'), 'first event'),
   ]
 
   // Unknown or understated money replaces the plain value; a fully priced session renders it as is.
@@ -156,19 +158,58 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
       </p>
     ) : undefined
 
+  // Same order as the Overview tokens row. Only the first card keeps "Total".
+  // Full figures, since "2.9B" reads as "2.98".
   const tokenMetrics: Metric[] = [
-    m('input', 'Input', formatTokens(session.input_tokens)),
-    m('output', 'Output', formatTokens(session.output_tokens)),
-    m('cache_read', 'Cache read', formatTokens(session.cache_read_tokens ?? 0)),
-    m('cache_create', 'Cache create', formatTokens(session.cache_creation_tokens ?? 0)),
-    m('total_tokens', 'Total', formatTokens(totalTokens)),
+    m('total_tokens', 'Total Tokens', formatMetricValue(totalTokens), 'Total LLM tokens'),
+    m('input', 'Input Tokens', formatMetricValue(session.input_tokens), 'LLM input tokens'),
+    m('output', 'Output Tokens', formatMetricValue(session.output_tokens), 'LLM output tokens'),
+    m(
+      'cache_read',
+      'Cache Read Tokens',
+      formatMetricValue(session.cache_read_tokens ?? 0),
+      'Cached input tokens'
+    ),
+    m(
+      'cache_create',
+      'Cache Creation Tokens',
+      formatMetricValue(session.cache_creation_tokens ?? 0),
+      'Cache creation tokens'
+    ),
   ]
 
   const activityMetrics: Metric[] = [
-    countMetric('turns', 'Turns', describeSessionCount(session.turns, session, 'turns')),
-    countMetric('tool_calls', 'Tool calls', describeSessionToolCalls(session)),
-    countMetric('agents', 'Agents', describeSessionCount(session.agent_count, session, 'agents')),
-    countMetric('skills', 'Skills', describeSessionCount(session.skill_count, session, 'skills')),
+    countMetric(
+      'turns',
+      'Turns',
+      describeSessionCount(session.turns, session, 'turns'),
+      'prompts submitted'
+    ),
+    countMetric('tool_calls', 'Tool Calls', describeSessionToolCalls(session), 'tools run'),
+    countMetric(
+      'agents',
+      'Agents',
+      describeSessionCount(session.agent_count, session, 'agents'),
+      'subagents dispatched'
+    ),
+    countMetric(
+      'skills',
+      'Skills',
+      describeSessionCount(session.skill_count, session, 'skills'),
+      'skills invoked'
+    ),
+  ]
+
+  const metricGroups: MetricGroup[] = [
+    { id: 'cost', title: 'Cost & Time', metrics: costMetrics },
+    { id: 'tokens', title: 'Tokens', metrics: tokenMetrics },
+    {
+      id: 'activity',
+      title: 'Activity',
+      metrics: activityMetrics,
+      // qualifiers ("Provisional · 1 observed of 3 total · 100% ok") need more than the default 3 lines
+      mutedTextClassName: 'text-text-quaternary line-clamp-5',
+    },
   ]
 
   const growthData = useMemo(() => {
@@ -212,42 +253,17 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
 
   return (
     <div className="flex flex-col gap-6 pb-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <AnalyticsWidget title="Cost & Time" expandable={false}>
-          <div className="grid grid-cols-2 gap-3 max-sm:gap-2">
-            {costMetrics.map((metric) => (
-              <MetricCard
-                key={metric.id}
-                metric={metric}
-                valueOverride={costValueOverride(metric.id)}
-              />
-            ))}
-          </div>
-        </AnalyticsWidget>
+      <AnalyticsWidget title="Summary" expandable={false}>
+        <MetricGroups
+          groups={metricGroups}
+          valueOverride={(metric) => costValueOverride(metric.id)}
+        />
+      </AnalyticsWidget>
 
-        <AnalyticsWidget title="Token usage" expandable={false}>
-          <div className="grid grid-cols-2 gap-3 max-sm:gap-2">
-            {tokenMetrics.map((metric) => (
-              <MetricCard key={metric.id} metric={metric} />
-            ))}
-          </div>
-        </AnalyticsWidget>
-
-        <AnalyticsWidget title="Activity" expandable={false}>
-          <div className="grid grid-cols-2 gap-3 max-sm:gap-2">
-            {activityMetrics.map((metric) => (
-              // qualifiers ("Provisional · 1 observed of 3 total · 100% ok") need more than the default 3 lines
-              <MetricCard
-                key={metric.id}
-                metric={metric}
-                mutedTextClassName="text-text-quaternary line-clamp-5"
-              />
-            ))}
-          </div>
-        </AnalyticsWidget>
-      </div>
-
-      <AnalyticsWidget title="Token & cost growth" description="cumulative per turn">
+      <AnalyticsWidget
+        title="Token & Cost Growth"
+        description="Cumulative cost and tokens per turn."
+      >
         {growthData ? (
           // h-[240px]: explicit design-specified container height for the growth chart
           <div className="h-[240px]">
@@ -296,7 +312,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
         )}
       </AnalyticsWidget>
 
-      <AnalyticsWidget title="Timeline">
+      <AnalyticsWidget title="Timeline" description="Main session and dispatched agents over time.">
         <SessionTimeline
           dispatches={session.dispatches ?? []}
           sessionDurationMs={session.duration_ms}
@@ -306,6 +322,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
 
       <BarChartWidget
         title="Most Used Tools"
+        description="Tool calls in this session."
         labelField="tool_name"
         valueField="call_count"
         yAxisLabel="call_count"

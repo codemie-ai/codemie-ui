@@ -140,7 +140,7 @@ describe('CostView', () => {
   it('renders the cost-by-user and cost-by-model widgets', () => {
     render(<CostView filters={MOCK_FILTERS} />)
 
-    expect(screen.getByTestId('widget-cost-by-user')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-cost-share-by-user')).toBeInTheDocument()
     expect(screen.getByTestId('widget-cost-by-model')).toBeInTheDocument()
   })
 
@@ -148,11 +148,11 @@ describe('CostView', () => {
     render(<CostView filters={MOCK_FILTERS} />)
 
     expect(screen.getByTestId('widget-most-expensive-sessions')).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'SESSION' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'USER' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'REPOSITORY' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'FRAMEWORK' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'COST' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Session' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'User' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Repository' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Framework' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Est. Cost' })).toBeInTheDocument()
   })
 
   it('renders non-summary widgets when kpis are null', () => {
@@ -167,7 +167,7 @@ describe('CostView', () => {
     render(<CostView filters={MOCK_FILTERS} />)
 
     expect(screen.queryByTestId('widget-summary')).not.toBeInTheDocument()
-    expect(screen.getByTestId('widget-cost-by-user')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-cost-share-by-user')).toBeInTheDocument()
     expect(screen.getByTestId('widget-cost-by-model')).toBeInTheDocument()
     expect(screen.getByTestId('widget-most-expensive-sessions')).toBeInTheDocument()
   })

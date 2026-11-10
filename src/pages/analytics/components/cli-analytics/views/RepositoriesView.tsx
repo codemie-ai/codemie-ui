@@ -23,7 +23,7 @@ import type {
   RepositoryRow,
 } from '@/types/cliAnalytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
-import { formatCliAnalyticsCost } from '@/utils/currency'
+import { formatSpend } from '@/utils/currency'
 
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { buildRepoMetrics, formatLines, linesTitle } from '../format'
@@ -188,7 +188,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
                             Tool Success
                           </th>
                           <th className="text-right px-4 py-2.5 border-border-structural border-t border-b text-nowrap w-24 rounded-tr-lg border-r">
-                            Cost
+                            Est. Cost
                           </th>
                         </tr>
                       </thead>
@@ -242,7 +242,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
                                   )}
                                 </td>
                                 <td className="text-text-primary px-4 py-2 text-right bg-surface-base-secondary border-b border-border-structural border-r tabular-nums">
-                                  {formatCliAnalyticsCost(repo.cost_usd)}
+                                  {formatSpend(repo.cost_usd)}
                                 </td>
                               </tr>
                               {expanded.has(repoKey) &&
@@ -286,7 +286,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
                                       )}
                                     </td>
                                     <td className="text-text-primary px-4 py-2 text-right bg-surface-base-tertiary border-b border-border-structural border-r tabular-nums">
-                                      {formatCliAnalyticsCost(b.cost_usd)}
+                                      {formatSpend(b.cost_usd)}
                                     </td>
                                   </tr>
                                 ))}

@@ -28,7 +28,6 @@ export interface UseCliAnalyticsUsersResult {
   totalCount: number
   currentPage: number
   pageSize: number
-  avgSessionDurationMs: number | null
   loading: boolean
   error: string | null
   setPage: (page: number) => void
@@ -134,7 +133,6 @@ export function useCliAnalyticsUsers(
     totalCount: snap.users?.table?.total_count ?? 0,
     currentPage,
     pageSize: PAGE_SIZE,
-    avgSessionDurationMs: snap.users?.table?.avg_session_duration_ms ?? null,
     loading: (snap.loading.usersCharts ?? false) || (snap.loading.usersTable ?? false),
     error: snap.error.usersCharts?.message ?? snap.error.usersTable?.message ?? null,
     setPage: handleSetPage,

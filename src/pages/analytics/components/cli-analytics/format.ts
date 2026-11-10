@@ -22,11 +22,11 @@ import { ColumnType, MetricFormat, type Metric } from '@/types/analytics'
 import type { RepositoryRow, SessionRow, SessionSummaryMetric } from '@/types/cliAnalytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
 
-// session_count/cost_usd/files_changed/net_lines/tool_success_rate are shared by RepositoryRow
-// and RepositoryBranchRow, so either can be passed without reshaping into the other's type.
+// These fields are shared by RepositoryRow and RepositoryBranchRow, so either can be passed
+// without reshaping into the other's type.
 type RepoMetricsSource = Pick<
   RepositoryRow,
-  'session_count' | 'cost_usd' | 'files_changed' | 'net_lines' | 'tool_success_rate'
+  'session_count' | 'cost_usd' | 'files_changed' | 'net_lines' | 'tool_success_rate' | 'tool_calls'
 >
 
 const SECONDS_PER_MINUTE = 60
@@ -36,14 +36,15 @@ const SECONDS_PER_WEEK = 7 * SECONDS_PER_DAY
 // A month has no fixed length; 30 days is the working approximation.
 const SECONDS_PER_MONTH = 30 * SECONDS_PER_DAY
 
-// Units from largest to smallest. A duration is shown with the three units starting at the largest
-// one it fills, so the figure stays short: "2mo 1w 3d", "1w 2d 3h", "1d 2h 3m", "1h 2m 3s".
+// Units from largest to smallest. A duration uses the three units starting at the largest one it
+// fills, and zero units are dropped, so the figure stays short: "2m 1w 3d", "4m", "2m 2d", "1h 3s".
+// Months are "m" and minutes "min", so the two never share a letter.
 const DURATION_UNITS: { label: string; seconds: number }[] = [
-  { label: 'mo', seconds: SECONDS_PER_MONTH },
+  { label: 'm', seconds: SECONDS_PER_MONTH },
   { label: 'w', seconds: SECONDS_PER_WEEK },
   { label: 'd', seconds: SECONDS_PER_DAY },
   { label: 'h', seconds: SECONDS_PER_HOUR },
-  { label: 'm', seconds: SECONDS_PER_MINUTE },
+  { label: 'min', seconds: SECONDS_PER_MINUTE },
   { label: 's', seconds: 1 },
 ]
 const DURATION_UNITS_SHOWN = 3
@@ -58,15 +59,18 @@ export function formatDuration(ms: number | null | undefined): string {
     0,
     DURATION_UNITS.findIndex((unit) => remaining >= unit.seconds)
   )
-  // Seconds and minutes are the last units; keep the window inside the list ("5s", "1m 30s").
+  // Seconds and minutes are the last units; keep the window inside the list ("5s", "1min 30s").
   const window = DURATION_UNITS.slice(first, first + DURATION_UNITS_SHOWN)
 
+  // The first unit is never zero, so at least one part survives the filter.
   return window
     .map(({ label, seconds }) => {
       const value = Math.floor(remaining / seconds)
       remaining -= value * seconds
-      return `${value}${label}`
+      return { value, label }
     })
+    .filter(({ value }) => value > 0)
+    .map(({ value, label }) => `${value}${label}`)
     .join(' ')
 }
 
@@ -161,7 +165,12 @@ export function truncateModelName(name: string, max = 25): string {
 
 export function buildRepoMetrics(row: RepoMetricsSource): Metric[] {
   return [
-    { id: 'session_count', label: 'Sessions', type: ColumnType.INTEGER, value: row.session_count },
+    {
+      id: 'session_count',
+      label: 'Total Sessions',
+      type: ColumnType.INTEGER,
+      value: row.session_count,
+    },
     {
       id: 'cost_usd',
       label: 'Est. Cost',
@@ -177,11 +186,11 @@ export function buildRepoMetrics(row: RepoMetricsSource): Metric[] {
     },
     { id: 'net_lines', label: 'Net Lines', type: ColumnType.INTEGER, value: row.net_lines },
     {
+      // Pre-formatted: no tool calls is no data ("—"), not a 0% success rate.
       id: 'tool_success_rate',
       label: 'Tool Success',
-      type: ColumnType.NUMBER,
-      format: MetricFormat.PERCENTAGE,
-      value: row.tool_success_rate,
+      type: ColumnType.STRING,
+      value: formatToolSuccess(row.tool_success_rate, row.tool_calls),
     },
   ]
 }

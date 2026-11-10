@@ -105,19 +105,19 @@ describe('SessionsView', () => {
     render(<SessionsView filters={MOCK_FILTERS} />)
 
     expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
-      'DATE',
-      'PROMPT',
-      'REPOSITORY',
-      'BRANCH',
-      'FRAMEWORK',
+      'Date',
+      'Prompt',
+      'Repository',
+      'Branch',
+      'Framework',
       'SUBSCRIPTION',
       'PROJECT ORIGIN',
-      'TURNS',
-      'NET LINES',
-      'INPUT',
-      'OUTPUT',
-      'CACHED',
-      'COST',
+      'Turns',
+      'Net Lines',
+      'Input Tokens',
+      'Output Tokens',
+      'Cache Read Tokens',
+      'Est. Cost',
     ])
   })
 

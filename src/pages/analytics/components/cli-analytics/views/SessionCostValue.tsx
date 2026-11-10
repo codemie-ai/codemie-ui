@@ -17,7 +17,7 @@ import { FC } from 'react'
 
 import AlertIcon from '@/assets/icons/alert.svg?react'
 import { ABSENT_VALUE_MARKER } from '@/constants'
-import { formatCliAnalyticsCost } from '@/utils/currency'
+import { formatSpend } from '@/utils/currency'
 
 interface SessionCostValueProps {
   value: number | null | undefined
@@ -43,7 +43,7 @@ const SessionCostValue: FC<SessionCostValueProps> = ({
       </span>
     )
   }
-  const text = value != null ? formatCliAnalyticsCost(value) : ABSENT_VALUE_MARKER
+  const text = value != null ? formatSpend(value) : ABSENT_VALUE_MARKER
   if (!unpricedModels.length) return <>{text}</>
   return (
     <span className="inline-flex items-center gap-1">

@@ -17,6 +17,7 @@ import { FC, ReactNode } from 'react'
 
 import { Metric } from '@/types/analytics'
 import { formatMetricQualification, formatMetricValue } from '@/utils/analyticsFormatters'
+import { capitalize } from '@/utils/helpers'
 import { cn } from '@/utils/utils'
 
 // `break-words`, not `break-all`: a long unbroken number wraps instead of overflowing. The qualification
@@ -69,7 +70,8 @@ const MetricCard: FC<MetricCardProps> = ({
       )}
       {metric.description && (
         <p className={`mt-1 text-[11px] leading-5 line-clamp-3 ${mutedTextClassName}`}>
-          {metric.description}
+          {/* Captions come from many builders and the backend; start every one with a capital. */}
+          {capitalize(metric.description)}
         </p>
       )}
     </div>

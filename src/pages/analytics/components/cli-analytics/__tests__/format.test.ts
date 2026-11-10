@@ -41,10 +41,19 @@ describe('formatDuration', () => {
     expect(formatDuration(5000)).toBe('5s')
   })
   it('formats minutes and seconds', () => {
-    expect(formatDuration(90000)).toBe('1m 30s')
+    expect(formatDuration(90000)).toBe('1min 30s')
   })
   it('formats hours, minutes, and seconds', () => {
-    expect(formatDuration(3661000)).toBe('1h 1m 1s')
+    expect(formatDuration(3661000)).toBe('1h 1min 1s')
+  })
+  it('writes months as m, minutes as min, and drops zero units', () => {
+    const day = 24 * 3600 * 1000
+    expect(formatDuration(120 * day)).toBe('4m')
+    expect(formatDuration(62 * day)).toBe('2m 2d')
+    expect(formatDuration(34 * day)).toBe('1m 4d')
+    expect(formatDuration(7 * day)).toBe('1w')
+    expect(formatDuration(3600000 + 5000)).toBe('1h 5s')
+    expect(formatDuration(60000)).toBe('1min')
   })
 })
 
@@ -74,9 +83,35 @@ describe('buildRepoMetrics', () => {
       files_changed: 2,
       net_lines: 10,
       tool_success_rate: 28.8,
+      tool_calls: 52,
     })
     const toolSuccess = metrics.find((m) => m.id === 'tool_success_rate')
-    expect(toolSuccess?.value).toBe(28.8)
+    expect(toolSuccess?.value).toBe('28.80%')
+  })
+
+  // EPMCDME-16991: a repository with no tool calls has no success rate, not 0%.
+  it('dashes the tool success rate when there were no tool calls', () => {
+    const metrics = buildRepoMetrics({
+      session_count: 131,
+      cost_usd: 3.7,
+      files_changed: 0,
+      net_lines: null,
+      tool_success_rate: 0,
+      tool_calls: 0,
+    })
+    expect(metrics.find((m) => m.id === 'tool_success_rate')?.value).toBe('—')
+  })
+
+  it('labels the session count as Total Sessions', () => {
+    const metrics = buildRepoMetrics({
+      session_count: 1,
+      cost_usd: 0,
+      files_changed: 0,
+      net_lines: 0,
+      tool_success_rate: 0,
+      tool_calls: 0,
+    })
+    expect(metrics.find((m) => m.id === 'session_count')?.label).toBe('Total Sessions')
   })
 })
 
@@ -129,6 +164,7 @@ describe('buildRepoMetrics null lines', () => {
       files_changed: 1,
       net_lines: null,
       tool_success_rate: 1,
+      tool_calls: 1,
     })
     expect(m.find((x) => x.id === 'net_lines')?.value).toBeNull()
   })

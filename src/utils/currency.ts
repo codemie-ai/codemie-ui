@@ -22,8 +22,7 @@ const ONE_CENT = 0.01
  * below one cent, which keeps two significant digits. Real spend must never read as `$0.00`: an LLM
  * call commonly costs a fraction of a cent, and a reader takes `$0.00` for "nothing spent" - the
  * same failure as rendering an absent figure as zero (EPMCDME-15204). Significant digits rather
- * than `formatCliAnalyticsCost`'s fixed four decimals, so an embedding-sized cost (0.0000026) does
- * not read `$0.0000` either.
+ * than fixed four decimals, so an embedding-sized cost (0.0000026) does not read `$0.0000` either.
  */
 export const formatCurrency = (value: number): string =>
   value > 0 && value < ONE_CENT
@@ -62,16 +61,4 @@ export const formatMoneySpent = (
   return amount == null || flags.pending || flags.unavailable
     ? `${ABSENT_VALUE_MARKER}${suffix}`
     : `$${amount.toFixed(4)}`
-}
-
-/**
- * Formats an LLM session cost with precision tiers appropriate for AI spend:
- * - Sub-cent values get 4 decimal places to avoid showing real spend as $0.00
- * - Values >= $100 are rounded to integer to reduce noise at large scale
- */
-export const formatCliAnalyticsCost = (v: number): string => {
-  if (!v) return '$0.00'
-  if (v < 0.01) return `$${v.toFixed(4)}`
-  if (v < 100) return `$${v.toFixed(2)}`
-  return `$${Math.round(v).toLocaleString()}`
 }

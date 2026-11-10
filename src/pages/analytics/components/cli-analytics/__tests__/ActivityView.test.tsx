@@ -70,14 +70,14 @@ describe('ActivityView', () => {
   it('renders the sessions by weekday and hour heatmap', () => {
     render(<ActivityView filters={MOCK_FILTERS} />)
 
-    expect(screen.getByTestId('widget-sessions-by-weekday-×-hour')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-sessions-by-weekday-and-hour')).toBeInTheDocument()
   })
 
   it('renders the hourly and weekday activity breakdowns', () => {
     render(<ActivityView filters={MOCK_FILTERS} />)
 
-    expect(screen.getByTestId('widget-by-hour-of-day')).toBeInTheDocument()
-    expect(screen.getByTestId('widget-by-weekday')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-sessions-by-hour-of-day')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-sessions-by-weekday')).toBeInTheDocument()
   })
 
   it('renders when activity data is empty', () => {
@@ -93,9 +93,9 @@ describe('ActivityView', () => {
 
     render(<ActivityView filters={MOCK_FILTERS} />)
 
-    expect(screen.getByTestId('widget-sessions-by-weekday-×-hour')).toBeInTheDocument()
-    expect(screen.getByTestId('widget-by-hour-of-day')).toBeInTheDocument()
-    expect(screen.getByTestId('widget-by-weekday')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-sessions-by-weekday-and-hour')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-sessions-by-hour-of-day')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-sessions-by-weekday')).toBeInTheDocument()
   })
 
   it('shows an error from the activity hook', () => {

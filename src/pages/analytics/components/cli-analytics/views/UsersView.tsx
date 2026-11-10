@@ -28,15 +28,14 @@ import {
 } from '@/types/analytics'
 import type { ExtendedSessionsTarget, UserRow } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
-import { formatTokens } from '@/utils/analyticsFormatters'
-import { formatCliAnalyticsCost } from '@/utils/currency'
-import { formatDate } from '@/utils/helpers'
+import { formatSpend } from '@/utils/currency'
+import { formatDateTime } from '@/utils/helpers'
 
 import ExtendedSessionsModal from './ExtendedSessionsModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
 import DonutChartWidget from '../../widgets/DonutChartWidget'
-import { formatDuration, formatLines, formatToolSuccess, linesTitle } from '../format'
+import { formatLines, formatToolSuccess, linesTitle } from '../format'
 import { useCliAnalyticsUsers } from '../hooks/useCliAnalyticsUsers'
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend)
@@ -48,7 +47,12 @@ interface UserViewProps {
 
 function buildUserMetrics(row: UserRow): Metric[] {
   return [
-    { id: 'session_count', label: 'Sessions', type: ColumnType.INTEGER, value: row.session_count },
+    {
+      id: 'session_count',
+      label: 'Total Sessions',
+      type: ColumnType.INTEGER,
+      value: row.session_count,
+    },
     {
       id: 'cost_usd',
       label: 'Est. Cost',
@@ -107,16 +111,19 @@ const NetLinesCell: FC<{ row: UserRow }> = ({ row }) => (
 
 const TopModelCell: FC<{ row: UserRow }> = ({ row }) => <div>{row.top_model || '—'}</div>
 
+// The full figure, as in every other token column: a compact "1.7B" reads as "1.78".
 const TokensCell: FC<{ row: UserRow }> = ({ row }) => (
-  <div className="text-right">{formatTokens(tokensOf(row))}</div>
+  <div className="text-right">{tokensOf(row).toLocaleString()}</div>
 )
 
 const CostCell: FC<{ row: UserRow }> = ({ row }) => (
-  <div className="text-right">{formatCliAnalyticsCost(row.cost_usd ?? 0)}</div>
+  <div className="text-right">{formatSpend(row.cost_usd)}</div>
 )
 
 const LastActiveCell: FC<{ row: UserRow }> = ({ row }) => (
-  <div>{row.last_active ? formatDate(row.last_active, 'MMM dd, yyyy, HH:mm') : '—'}</div>
+  <div className="whitespace-nowrap">
+    {row.last_active ? formatDateTime(row.last_active, 'short') : '—'}
+  </div>
 )
 
 const USER_CELL_RENDERERS = {
@@ -133,17 +140,8 @@ const USER_CELL_RENDERERS = {
 }
 
 const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
-  const {
-    chartRows,
-    tableRows,
-    totalCount,
-    currentPage,
-    pageSize,
-    avgSessionDurationMs,
-    loading,
-    error,
-    setPage,
-  } = useCliAnalyticsUsers(filters, repositories)
+  const { chartRows, tableRows, totalCount, currentPage, pageSize, loading, error, setPage } =
+    useCliAnalyticsUsers(filters, repositories)
 
   const [usersTopN, setUsersTopN] = useState<TopN>(TopNFilter.TEN)
   const [selectedTarget, setSelectedTarget] = useState<ExtendedSessionsTarget | null>(null)
@@ -201,65 +199,65 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
 
   const columnDefinitions = useMemo(
     () => [
-      { key: 'developer_name', label: 'USER', type: DefinitionTypes.Custom, sortable: false },
+      { key: 'developer_name', label: 'User', type: DefinitionTypes.Custom, sortable: false },
       {
         key: 'session_count',
-        label: 'SESSIONS',
+        label: 'Sessions',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'turns',
-        label: 'TURNS',
+        label: 'Turns',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'tool_calls',
-        label: 'TOOL CALLS',
+        label: 'Tool Calls',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'tool_success_rate',
-        label: 'TOOL SUCCESS',
+        label: 'Tool Success',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'net_lines',
-        label: 'NET LINES',
+        label: 'Net Lines',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'top_model',
-        label: 'TOP MODEL',
+        label: 'Top Model',
         type: DefinitionTypes.Custom,
         sortable: false,
       },
       {
         key: 'tokens',
-        label: 'TOKENS',
+        label: 'Total Tokens',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'cost_usd',
-        label: 'COST',
+        label: 'Est. Cost',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'last_active',
-        label: 'LAST ACTIVE',
+        label: 'Last Active',
         type: DefinitionTypes.Custom,
         sortable: false,
       },
@@ -278,7 +276,8 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
       <div className="grid grid-cols-1 lg:grid-cols-1">
         <DonutChartWidget
           metricType={TabularMetricType.CLI_LLMS}
-          title="Share of cost"
+          title="Cost Share by User"
+          description="Share of estimated CLI cost per user."
           labelField="developer_name"
           valueField="cost_usd"
           dataOverride={costShareOverride}
@@ -294,7 +293,12 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
         />
       </div>
 
-      <AnalyticsWidget title="Per-user detail" loading={loading} error={errorDetails}>
+      <AnalyticsWidget
+        title="All Users"
+        description="CLI usage per user. Click a user to see their sessions."
+        loading={loading}
+        error={errorDetails}
+      >
         {tableRows.length === 0 && !loading && !error ? (
           <p className="text-text-quaternary text-sm">No user data for the selected filters.</p>
         ) : (
@@ -350,12 +354,6 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
             </button>
           </div>
         </div>
-      )}
-
-      {chartRows.length > 0 && (
-        <p className="text-text-quaternary text-xs">
-          Avg session {formatDuration(avgSessionDurationMs)} across all users.
-        </p>
       )}
 
       {selectedTarget && (

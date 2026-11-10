@@ -18,10 +18,11 @@ import React, { type FC, useMemo } from 'react'
 import { ColumnType, type AnalyticsQueryParams, type TabularResponse } from '@/types/analytics'
 
 import AnalyticsWidget from '../../AnalyticsWidget'
+import { WEEKDAYS_MON_FIRST } from '../../utils/usagePatterns'
 import BarChartWidget from '../../widgets/BarChartWidget'
 import { useCliAnalyticsActivity } from '../hooks/useCliAnalyticsActivity'
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const WEEKDAYS = WEEKDAYS_MON_FIRST
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 interface ActivityViewProps {
@@ -68,7 +69,12 @@ const ActivityView: FC<ActivityViewProps> = ({ filters, repositories }) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <AnalyticsWidget title="Sessions by weekday × hour" loading={loading} error={errorDetails}>
+      <AnalyticsWidget
+        title="Sessions by Weekday and Hour"
+        description="CLI sessions started in each hour of the week."
+        loading={loading}
+        error={errorDetails}
+      >
         <div className="overflow-x-auto">
           <div
             className="grid gap-[3px] w-fit"
@@ -114,22 +120,25 @@ const ActivityView: FC<ActivityViewProps> = ({ filters, repositories }) => {
         </div>
       </AnalyticsWidget>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Same order, titles and axes as CLI Insights "Usage Patterns": weekday first, Mon-Sun, all 24 hours. */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <BarChartWidget
-          title="By hour of day"
-          labelField="hour"
-          valueField="session_count"
-          yAxisLabel="session_count"
-          yAxisInteger
-          dataOverride={hourlyTabularData}
-        />
-        <BarChartWidget
-          title="By weekday"
+          title="Sessions by Weekday"
+          description="CLI sessions started per weekday."
           labelField="weekday"
           valueField="session_count"
           yAxisLabel="session_count"
           yAxisInteger
           dataOverride={weekdayTabularData}
+        />
+        <BarChartWidget
+          title="Sessions by Hour of Day"
+          description="CLI sessions started per hour of day."
+          labelField="hour"
+          valueField="session_count"
+          yAxisLabel="session_count"
+          yAxisInteger
+          dataOverride={hourlyTabularData}
         />
       </div>
     </div>

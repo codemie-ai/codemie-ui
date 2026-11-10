@@ -39,7 +39,8 @@ const ExtendedSessionsModal: FC<ExtendedSessionsModalProps> = ({ target, isVisib
   >
     <div className="flex flex-col gap-6 pb-6">
       <AnalyticsWidget title="Summary" expandable={false} loading={false} error={null}>
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-sm:gap-2">
+        {/* Five summary cards (repository, branch or user) fit one row on a wide screen. */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 max-sm:gap-2">
           {target.metrics.map((metric) => (
             <MetricCard key={metric.id} metric={metric} />
           ))}

@@ -17,7 +17,7 @@ import { type FC, useMemo, useState } from 'react'
 
 import Select from '@/components/form/Select'
 import type { AnalyticsQueryParams, TabularResponse } from '@/types/analytics'
-import { ColumnType, MetricFormat, TabularMetricType } from '@/types/analytics'
+import { ColumnType, TabularMetricType } from '@/types/analytics'
 
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
 import BarChartWidget from '../../widgets/BarChartWidget'
@@ -68,7 +68,6 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
             id: 'total_tokens',
             label: 'Total Tokens',
             type: ColumnType.INTEGER,
-            format: MetricFormat.TOKENS,
           },
         ],
         rows: rows as unknown as Record<string, unknown>[],
@@ -104,6 +103,7 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <BarChartWidget
           title="Most Used Tools"
+          description="Tool calls across CLI sessions."
           labelField="tool_name"
           valueField="call_count"
           yAxisLabel="call_count"
@@ -114,7 +114,8 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
 
         <DonutChartWidget
           metricType={TabularMetricType.CLI_LLMS}
-          title="Tokens by model"
+          title="Tokens by Model"
+          description="CLI tokens per model."
           labelField="model_name"
           valueField="total_tokens"
           dataOverride={tokensByModelOverride}
@@ -132,7 +133,8 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
 
       <div className="grid grid-cols-1 gap-4">
         <BarChartWidget
-          title="Skills invoked"
+          title="Skills Invoked"
+          description="Skill invocations across CLI sessions."
           labelField="name"
           valueField="count"
           yAxisLabel="count"
@@ -141,7 +143,8 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
           dataOverride={skillsTabularData}
         />
         <BarChartWidget
-          title="Agent subtypes"
+          title="Agent Subtypes"
+          description="Sub-agent dispatches by type."
           labelField="name"
           valueField="count"
           yAxisLabel="count"
@@ -150,7 +153,8 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
           dataOverride={agentsTabularData}
         />
         <BarChartWidget
-          title="Slash commands"
+          title="Slash Commands"
+          description="Slash commands run in CLI sessions."
           labelField="name"
           valueField="count"
           yAxisLabel="count"

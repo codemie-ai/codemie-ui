@@ -115,3 +115,11 @@ describe('MetricCard spend qualification', () => {
     expect(cardValue()).toBe('custom')
   })
 })
+
+describe('MetricCard description', () => {
+  it('starts the caption with a capital letter', () => {
+    render(<MetricCard metric={buildMetric({ description: 'net +5 lines' })} />)
+
+    expect(screen.getByText('Net +5 lines')).toBeInTheDocument()
+  })
+})

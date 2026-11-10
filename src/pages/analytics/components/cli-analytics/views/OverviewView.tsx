@@ -26,6 +26,7 @@ import {
   type TabularResponse,
 } from '@/types/analytics'
 import type { ExtendedSessionsTarget, OverviewKPIs, RepositoryRow } from '@/types/cliAnalytics'
+import { formatMetricValue } from '@/utils/analyticsFormatters'
 
 import ExtendedSessionsModal from './ExtendedSessionsModal'
 import RepositoriesTable from './RepositoriesTable'
@@ -46,51 +47,23 @@ interface OverviewViewProps {
 function describeNetLines(netLines: number | null | undefined): string {
   if (netLines == null) return 'net lines not reported'
   const sign = netLines >= 0 ? '+' : ''
-  return `net ${sign}${netLines} lines`
+  return `net ${sign}${netLines.toLocaleString()} lines`
 }
 
 // No calls means no denominator; a real 0% still shows as a percentage.
 function describeToolCallSuccess(totalCalls: number, successRate: number): string {
-  if (totalCalls > 0) return `${successRate.toFixed(1)}% success`
+  if (totalCalls > 0) return `${formatMetricValue(successRate, MetricFormat.PERCENTAGE)} success`
   return '—'
 }
 
-function buildHeadlineMetrics(kpis: OverviewKPIs): Metric[] {
+// Row 1: sessions and spend.
+function buildActivityMetrics(kpis: OverviewKPIs): Metric[] {
   return [
     {
       id: 'total_sessions',
-      label: 'Sessions',
+      label: 'Total Sessions',
       type: ColumnType.INTEGER,
       value: kpis.total_sessions,
-    },
-    {
-      id: 'duration_ms',
-      label: 'Duration',
-      type: ColumnType.NUMBER,
-      value: formatDuration(kpis.duration_ms),
-      description: 'wall-clock span',
-    },
-    {
-      id: 'total_turns',
-      label: 'Turns',
-      type: ColumnType.INTEGER,
-      value: kpis.total_turns,
-      description: `${(kpis.total_turns / Math.max(1, kpis.total_sessions)).toFixed(1)}/session`,
-    },
-    {
-      id: 'total_files_changed',
-      label: 'Files Touched',
-      type: ColumnType.INTEGER,
-      value: kpis.total_files_changed,
-      description: describeNetLines(kpis.net_lines),
-    },
-    {
-      id: 'total_tool_calls',
-      label: 'Tool Calls',
-      type: ColumnType.INTEGER,
-      value: kpis.total_tool_calls,
-      // No calls means no denominator; a real 0% still shows as a percentage.
-      description: describeToolCallSuccess(kpis.total_tool_calls, kpis.tool_call_success_rate),
     },
     {
       id: 'total_cost_usd',
@@ -98,65 +71,109 @@ function buildHeadlineMetrics(kpis: OverviewKPIs): Metric[] {
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
       value: kpis.total_cost_usd,
-      description: 'tokens × pricing',
+      description: 'estimated from session tokens',
     },
-  ]
-}
-
-function buildTokenMetrics(kpis: OverviewKPIs): Metric[] {
-  return [
-    {
-      id: 'total_input_tokens',
-      label: 'Input Tokens',
-      type: ColumnType.INTEGER,
-      format: MetricFormat.TOKENS,
-      value: kpis.total_input_tokens,
-      description: 'prompts sent',
-    },
-    {
-      id: 'total_output_tokens',
-      label: 'Output Tokens',
-      type: ColumnType.INTEGER,
-      format: MetricFormat.TOKENS,
-      value: kpis.total_output_tokens,
-      description: 'completions',
-    },
-    {
-      id: 'total_cache_creation_tokens',
-      label: 'Cache Write',
-      type: ColumnType.INTEGER,
-      format: MetricFormat.TOKENS,
-      value: kpis.total_cache_creation_tokens,
-      description: 'written to cache',
-    },
-    {
-      id: 'total_cache_read_tokens',
-      label: 'Cache Read',
-      type: ColumnType.INTEGER,
-      format: MetricFormat.TOKENS,
-      value: kpis.total_cache_read_tokens,
-      description: 'served from cache',
-    },
-    {
-      id: 'total_tokens',
-      label: 'Total Tokens',
-      type: ColumnType.INTEGER,
-      format: MetricFormat.TOKENS,
-      value: kpis.total_tokens,
-      description: 'across sessions',
-    },
-  ]
-}
-
-function buildEfficiencyMetrics(kpis: OverviewKPIs): Metric[] {
-  return [
     {
       id: 'cache_read_cost_usd',
-      label: 'Cache-Read Cost',
+      label: 'Cache Read Cost',
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
       value: kpis.cache_read_cost_usd,
       description: 'spend on context re-reads',
+    },
+    {
+      id: 'total_turns',
+      label: 'Turns',
+      type: ColumnType.INTEGER,
+      value: kpis.total_turns,
+      description: `${(kpis.total_turns / Math.max(1, kpis.total_sessions)).toFixed(
+        1
+      )} per session`,
+    },
+    {
+      id: 'duration_ms',
+      label: 'Duration',
+      type: ColumnType.STRING,
+      value: formatDuration(kpis.duration_ms),
+      description: 'wall-clock span',
+    },
+  ]
+}
+
+// Row 2: tokens only. Every card is a sum, so every title says Total; titles and captions follow
+// the Insights summary.
+// Full figures: a compact "2.9B" reads as "2.98" in the mono font.
+function buildTokenMetrics(kpis: OverviewKPIs): Metric[] {
+  return [
+    {
+      id: 'total_tokens',
+      label: 'Total Tokens',
+      type: ColumnType.INTEGER,
+      value: kpis.total_tokens,
+      description: 'Total LLM tokens',
+    },
+    {
+      id: 'total_input_tokens',
+      label: 'Total Input Tokens',
+      type: ColumnType.INTEGER,
+      value: kpis.total_input_tokens,
+      description: 'LLM input tokens',
+    },
+    {
+      id: 'total_output_tokens',
+      label: 'Total Output Tokens',
+      type: ColumnType.INTEGER,
+      value: kpis.total_output_tokens,
+      description: 'LLM output tokens',
+    },
+    {
+      id: 'total_cache_read_tokens',
+      label: 'Total Cache Read Tokens',
+      type: ColumnType.INTEGER,
+      value: kpis.total_cache_read_tokens,
+      description: 'Cached input tokens',
+    },
+    {
+      id: 'total_cache_creation_tokens',
+      label: 'Total Cache Creation Tokens',
+      type: ColumnType.INTEGER,
+      value: kpis.total_cache_creation_tokens,
+      description: 'Cache creation tokens',
+    },
+  ]
+}
+
+// Row 3: output and efficiency.
+function buildEfficiencyMetrics(kpis: OverviewKPIs): Metric[] {
+  const deadPct = (kpis.dead_sessions / Math.max(1, kpis.total_sessions)) * 100
+  return [
+    {
+      id: 'total_tool_calls',
+      label: 'Tool Calls',
+      type: ColumnType.INTEGER,
+      value: kpis.total_tool_calls,
+      description: describeToolCallSuccess(kpis.total_tool_calls, kpis.tool_call_success_rate),
+    },
+    {
+      id: 'total_files_changed',
+      label: 'Files Changed',
+      type: ColumnType.INTEGER,
+      value: kpis.total_files_changed,
+      description: describeNetLines(kpis.net_lines),
+    },
+    {
+      id: 'dead_sessions',
+      label: 'Dead Sessions',
+      type: ColumnType.INTEGER,
+      value: kpis.dead_sessions,
+      description: `${formatMetricValue(deadPct, MetricFormat.PERCENTAGE)} of sessions`,
+    },
+    {
+      id: 'avg_context_per_call',
+      label: 'Avg Cache Read / Call',
+      type: ColumnType.INTEGER,
+      value: Math.round(kpis.avg_context_per_call),
+      description: 'cache read tokens per call',
     },
     {
       id: 'bloat_pct',
@@ -164,24 +181,7 @@ function buildEfficiencyMetrics(kpis: OverviewKPIs): Metric[] {
       type: ColumnType.NUMBER,
       format: MetricFormat.PERCENTAGE,
       value: kpis.bloat_pct,
-      description: 'cache reads / total cost',
-    },
-    {
-      id: 'dead_sessions',
-      label: 'Dead Sessions',
-      type: ColumnType.INTEGER,
-      value: kpis.dead_sessions,
-      description: `${((kpis.dead_sessions / Math.max(1, kpis.total_sessions)) * 100).toFixed(
-        1
-      )}% no file output`,
-    },
-    {
-      id: 'avg_context_per_call',
-      label: 'Avg Context / Call',
-      type: ColumnType.INTEGER,
-      format: MetricFormat.TOKENS,
-      value: Math.round(kpis.avg_context_per_call),
-      description: 'cache re-read per call',
+      description: 'cache read cost / est. cost',
     },
   ]
 }
@@ -225,13 +225,17 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
     setSearch: setRepoSearch,
   } = useCliAnalyticsRepositories(filters, repositories, false, 10)
 
-  const headlineMetrics = useMemo(() => (kpis ? buildHeadlineMetrics(kpis) : []), [kpis])
-  const tokenMetrics = useMemo(() => (kpis ? buildTokenMetrics(kpis) : []), [kpis])
-  const efficiencyMetrics = useMemo(() => (kpis ? buildEfficiencyMetrics(kpis) : []), [kpis])
-
-  const summaryMetrics = useMemo(
-    () => [...headlineMetrics, ...tokenMetrics, ...efficiencyMetrics],
-    [headlineMetrics, tokenMetrics, efficiencyMetrics]
+  // One flat grid, like the Insights summary: 15 cards fill three rows of five on a wide screen.
+  const summaryMetrics: Metric[] = useMemo(
+    () =>
+      kpis
+        ? [
+            ...buildActivityMetrics(kpis),
+            ...buildTokenMetrics(kpis),
+            ...buildEfficiencyMetrics(kpis),
+          ]
+        : [],
+    [kpis]
   )
 
   const activityTimelineData: TabularResponse = useMemo(
@@ -285,7 +289,7 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
     <>
       <div className="flex flex-col gap-6">
         <AnalyticsWidget title="Summary" expandable={false} loading={loading} error={errorDetails}>
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-sm:gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 max-sm:gap-2">
             {summaryMetrics.map((metric) => (
               <MetricCard key={metric.id} metric={metric} />
             ))}
@@ -294,7 +298,8 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <BarChartWidget
-            title="Net lines over time"
+            title="Net Lines Over Time"
+            description="Lines added minus removed, per day."
             labelField="day"
             valueField="net_lines"
             yAxisLabel="net_lines"
@@ -304,6 +309,7 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
           <DonutChartWidget
             metricType={TabularMetricType.CLI_LLMS}
             title="Sessions by Model"
+            description="CLI sessions per model."
             valueField="session_count"
             labelField="model_name"
             dataOverride={modelBreakdownData}

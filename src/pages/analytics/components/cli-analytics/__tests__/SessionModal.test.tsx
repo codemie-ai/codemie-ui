@@ -151,8 +151,10 @@ describe('SessionModal routing', () => {
   })
 })
 
+const PROMPT_LINE = `Prompt: ${MOCK_SESSION.prompt}`
+
 describe('SessionModal', () => {
-  it('renders the session harness_name in the subtitle, not a hardcoded value', () => {
+  it('titles the session by its metadata, not a hardcoded value', () => {
     mockUseCliAnalyticsSession.mockReturnValue({
       session: MOCK_SESSION,
       loading: false,
@@ -161,25 +163,12 @@ describe('SessionModal', () => {
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    expect(screen.getByTestId('popup').textContent).toContain('Cursor')
+    const titleEl = screen.getByText(/^Cursor · claude-sonnet-4-5 · svc · /)
+    expect(titleEl).toHaveClass('font-semibold')
     expect(screen.getByTestId('popup').textContent).not.toContain('Claude-Code')
   })
 
-  it('sets a tooltip target with the full subtitle when the subtitle is truncated', () => {
-    mockUseIsTruncated.mockReturnValue(true)
-    mockUseCliAnalyticsSession.mockReturnValue({
-      session: MOCK_SESSION,
-      loading: false,
-      error: null,
-    })
-
-    render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
-
-    const subtitleEl = screen.getByText(/Cursor/)
-    expect(subtitleEl).toHaveAttribute('data-pr-tooltip', expect.stringContaining('Cursor'))
-  })
-
-  it('does not set a tooltip when the subtitle is not truncated', () => {
+  it('does not use the raw prompt as the title (EPMCDME-16991)', () => {
     mockUseIsTruncated.mockReturnValue(false)
     mockUseCliAnalyticsSession.mockReturnValue({
       session: MOCK_SESSION,
@@ -189,8 +178,10 @@ describe('SessionModal', () => {
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const subtitleEl = screen.getByText(/Cursor/)
-    expect(subtitleEl).toHaveAttribute('data-pr-tooltip', '')
+    expect(screen.queryByText(MOCK_SESSION.prompt as string)).toBeNull()
+    const promptEl = screen.getByText(PROMPT_LINE)
+    expect(promptEl).toHaveClass('text-xs')
+    expect(promptEl).not.toHaveClass('font-semibold')
   })
 
   it('sets a tooltip target with the full title when the title is truncated', () => {
@@ -203,8 +194,8 @@ describe('SessionModal', () => {
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const titleEl = screen.getByText(MOCK_SESSION.prompt as string)
-    expect(titleEl).toHaveAttribute('data-pr-tooltip', MOCK_SESSION.prompt)
+    const titleEl = screen.getByText(/^Cursor · /)
+    expect(titleEl).toHaveAttribute('data-pr-tooltip', titleEl.textContent)
   })
 
   it('does not set a tooltip when the title is not truncated', () => {
@@ -217,11 +208,36 @@ describe('SessionModal', () => {
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const titleEl = screen.getByText(MOCK_SESSION.prompt as string)
-    expect(titleEl).toHaveAttribute('data-pr-tooltip', '')
+    expect(screen.getByText(/^Cursor · /)).toHaveAttribute('data-pr-tooltip', '')
   })
 
-  it('caps an extremely long prompt so the title and its tooltip stay a bounded size', () => {
+  it('sets a tooltip target with the full prompt when the prompt line is truncated', () => {
+    mockUseIsTruncated.mockReturnValue(true)
+    mockUseCliAnalyticsSession.mockReturnValue({
+      session: MOCK_SESSION,
+      loading: false,
+      error: null,
+    })
+
+    render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
+
+    expect(screen.getByText(PROMPT_LINE)).toHaveAttribute('data-pr-tooltip', PROMPT_LINE)
+  })
+
+  it('does not set a tooltip when the prompt line is not truncated', () => {
+    mockUseIsTruncated.mockReturnValue(false)
+    mockUseCliAnalyticsSession.mockReturnValue({
+      session: MOCK_SESSION,
+      loading: false,
+      error: null,
+    })
+
+    render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
+
+    expect(screen.getByText(PROMPT_LINE)).toHaveAttribute('data-pr-tooltip', '')
+  })
+
+  it('caps an extremely long prompt so the prompt line and its tooltip stay a bounded size', () => {
     mockUseIsTruncated.mockReturnValue(true)
     const veryLongPrompt = 'x'.repeat(5000)
     mockUseCliAnalyticsSession.mockReturnValue({
@@ -232,18 +248,27 @@ describe('SessionModal', () => {
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const titleEl = screen.getByText(/^x+\.\.\.$/)
-    expect(titleEl.textContent).toHaveLength(1003)
-    expect(titleEl).toHaveAttribute('data-pr-tooltip', titleEl.textContent)
+    const promptEl = screen.getByText(/^Prompt: x+\.\.\.$/)
+    expect(promptEl.textContent).toHaveLength('Prompt: '.length + 1003)
+    expect(promptEl).toHaveAttribute('data-pr-tooltip', promptEl.textContent)
   })
 
-  it('falls back to "Session" as the title when no prompt is present', () => {
+  it('shows no prompt line when no prompt is present', () => {
     mockUseIsTruncated.mockReturnValue(false)
     mockUseCliAnalyticsSession.mockReturnValue({
       session: { ...MOCK_SESSION, prompt: undefined },
       loading: false,
       error: null,
     })
+
+    render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
+
+    expect(screen.queryByText(/^Prompt:/)).toBeNull()
+  })
+
+  it('falls back to "Session" as the title while the session is loading', () => {
+    mockUseIsTruncated.mockReturnValue(false)
+    mockUseCliAnalyticsSession.mockReturnValue({ session: null, loading: true, error: null })
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 

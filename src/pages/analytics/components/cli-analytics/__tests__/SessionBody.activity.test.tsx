@@ -60,9 +60,10 @@ describe('SessionBody activity metrics (EPMCDME-16833)', () => {
       summary_state: 'final',
       summary_metrics: [...ALL],
     })
-    expect(card('Turns')).toBe('5')
-    expect(card('Agents')).toBe('2')
-    expect(card('Tool calls')).toBe('10100% ok')
+    // A finalized count carries a plain caption, never a qualifier.
+    expect(card('Turns')).toBe('5Prompts submitted')
+    expect(card('Agents')).toBe('2Subagents dispatched')
+    expect(card('Tool Calls')).toBe('10100% ok')
     expect(screen.queryByText(/Partial|Provisional|Not reported/)).toBeNull()
   })
 
@@ -76,7 +77,7 @@ describe('SessionBody activity metrics (EPMCDME-16833)', () => {
       summary_state: 'none',
       summary_metrics: [],
     })
-    for (const l of ['Turns', 'Tool calls', 'Agents', 'Skills']) {
+    for (const l of ['Turns', 'Tool Calls', 'Agents', 'Skills']) {
       expect(card(l)).toBe('—Not reported')
     }
   })
@@ -91,9 +92,9 @@ describe('SessionBody activity metrics (EPMCDME-16833)', () => {
       summary_state: 'final',
       summary_metrics: [...ALL],
     })
-    expect(card('Turns')).toBe('0')
-    expect(card('Agents')).toBe('0')
-    expect(card('Tool calls')).toBe('0')
+    expect(card('Turns')).toBe('0Prompts submitted')
+    expect(card('Agents')).toBe('0Subagents dispatched')
+    expect(card('Tool Calls')).toBe('0Tools run')
   })
 
   it('summary total with no observed outcomes says so', () => {
@@ -104,7 +105,7 @@ describe('SessionBody activity metrics (EPMCDME-16833)', () => {
       summary_state: 'final',
       summary_metrics: [...ALL],
     })
-    expect(card('Tool calls')).toBe('4No outcomes observed')
+    expect(card('Tool Calls')).toBe('4No outcomes observed')
   })
 
   it('full summary total is not presented as 100% success for every call', () => {
@@ -117,7 +118,7 @@ describe('SessionBody activity metrics (EPMCDME-16833)', () => {
       summary_state: 'final',
       summary_metrics: [...ALL],
     })
-    expect(card('Tool calls')).toBe('31 observed of 3 total · 100% ok')
+    expect(card('Tool Calls')).toBe('31 observed of 3 total · 100% ok')
   })
 
   it('provisional is labelled', () => {
@@ -132,7 +133,7 @@ describe('SessionBody activity metrics (EPMCDME-16833)', () => {
     })
     expect(card('Turns')).toBe('2Provisional')
     // total == observed does not make it complete
-    expect(card('Tool calls')).toContain('Provisional')
+    expect(card('Tool Calls')).toContain('Provisional')
   })
 
   it('final summary that omits a metric does not make that metric complete', () => {
@@ -146,7 +147,7 @@ describe('SessionBody activity metrics (EPMCDME-16833)', () => {
       summary_metrics: [],
     })
     expect(card('Turns')).toBe('1Partial')
-    expect(card('Tool calls')).toBe('1Observed only · 100% ok')
+    expect(card('Tool Calls')).toBe('1Observed only · 100% ok')
     expect(card('Agents')).toBe('—Not reported')
   })
 
@@ -159,7 +160,7 @@ describe('SessionBody activity metrics (EPMCDME-16833)', () => {
       tool_success_rate: 100,
     })
     expect(card('Turns')).toBe('2Partial')
-    expect(card('Tool calls')).toBe('3Partial · 1 observed of 3 total · 100% ok')
+    expect(card('Tool Calls')).toBe('3Partial · 1 observed of 3 total · 100% ok')
   })
 
   it('a count without any summary is labelled unavailable, not partial', () => {
@@ -176,6 +177,6 @@ describe('SessionBody activity metrics (EPMCDME-16833)', () => {
       summary_state: 'final',
       summary_metrics: [...ALL],
     })
-    expect(card('Tool calls')).toBe('2')
+    expect(card('Tool Calls')).toBe('2Tools run')
   })
 })

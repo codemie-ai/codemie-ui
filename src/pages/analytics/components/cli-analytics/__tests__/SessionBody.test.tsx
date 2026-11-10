@@ -61,7 +61,7 @@ describe('SessionBody cost cards (EPMCDME-16522)', () => {
     })
 
     expect(screen.queryAllByText('$0.00')).toHaveLength(0)
-    for (const label of ['Cost', 'Cache-read']) {
+    for (const label of ['Est. Cost', 'Cache Read Cost']) {
       expect(card(label).textContent).not.toContain('$')
       expect(card(label).querySelector('[data-tooltip-content]')).toHaveAttribute(
         'data-tooltip-content',
@@ -73,9 +73,9 @@ describe('SessionBody cost cards (EPMCDME-16522)', () => {
   it('marks a partly priced cost and cache-read as understated', () => {
     renderSession({ cost_available: true, unpriced_models: ['mai-code-1.1-flash'] })
 
-    expect(card('Cost')).toHaveTextContent('$0.02')
-    expect(card('Cache-read')).toHaveTextContent('$0.0040')
-    for (const label of ['Cost', 'Cache-read']) {
+    expect(card('Est. Cost')).toHaveTextContent('$0.02')
+    expect(card('Cache Read Cost')).toHaveTextContent('$0.004')
+    for (const label of ['Est. Cost', 'Cache Read Cost']) {
       expect(card(label).querySelector('[data-testid="unpriced-cost-marker"]')).toHaveAttribute(
         'data-tooltip-content',
         'Understated: no price for mai-code-1.1-flash'
@@ -86,15 +86,15 @@ describe('SessionBody cost cards (EPMCDME-16522)', () => {
   it('renders a fully priced session with formatted values and no marker', () => {
     renderSession({ cost_available: true, unpriced_models: [] })
 
-    expect(card('Cost')).toHaveTextContent('$0.02')
-    expect(card('Cache-read')).toHaveTextContent('$0.0040')
+    expect(card('Est. Cost')).toHaveTextContent('$0.02')
+    expect(card('Cache Read Cost')).toHaveTextContent('$0.004')
     expect(screen.queryByTestId('unpriced-cost-marker')).not.toBeInTheDocument()
   })
 
   it('keeps the dash for a missing cache-read cost of a priced session', () => {
     renderSession({ cost_available: true, unpriced_models: [], cache_read_cost_usd: undefined })
 
-    expect(card('Cache-read')).toHaveTextContent('—')
+    expect(card('Cache Read Cost')).toHaveTextContent('—')
   })
 })
 

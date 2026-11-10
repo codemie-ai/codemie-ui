@@ -315,14 +315,14 @@ describe('OverviewView', () => {
   it('keeps the success subtitle when tool calls exist', () => {
     renderWithKpis({ total_tool_calls: 640, tool_call_success_rate: 81.3 })
 
-    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('81.3% success')
+    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('81.30% success')
   })
 
   // This surface guards inline, not via formatToolSuccess; fails on a rate truthiness check.
-  it('keeps a real 0.0% success subtitle when calls exist but none succeeded', () => {
+  it('keeps a real 0.00% success subtitle when calls exist but none succeeded', () => {
     renderWithKpis({ total_tool_calls: 12, tool_call_success_rate: 0 })
 
-    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('0.0% success')
+    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('0.00% success')
   })
 
   it('does not render stale rows left in the shared repositories store slot', async () => {

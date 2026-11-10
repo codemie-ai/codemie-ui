@@ -202,35 +202,35 @@ const SessionsView: FC<SessionsViewProps> = ({
     () => [
       {
         key: 'start_time',
-        label: 'DATE',
+        label: 'Date',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'min-w-[110px]',
       },
       {
         key: 'prompt',
-        label: 'PROMPT',
+        label: 'Prompt',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
       },
       {
         key: 'repository',
-        label: 'REPOSITORY',
+        label: 'Repository',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
       },
       {
         key: 'branch',
-        label: 'BRANCH',
+        label: 'Branch',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
       },
       {
         key: 'delivery_framework',
-        label: 'FRAMEWORK',
+        label: 'Framework',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
@@ -251,42 +251,42 @@ const SessionsView: FC<SessionsViewProps> = ({
       },
       {
         key: 'turns',
-        label: 'TURNS',
+        label: 'Turns',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'net_lines',
-        label: 'NET LINES',
+        label: 'Net Lines',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'input_tokens',
-        label: 'INPUT',
+        label: 'Input Tokens',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'output_tokens',
-        label: 'OUTPUT',
+        label: 'Output Tokens',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'cache_read_tokens',
-        label: 'CACHED',
+        label: 'Cache Read Tokens',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'cost_usd',
-        label: 'COST',
+        label: 'Est. Cost',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
@@ -346,6 +346,8 @@ const SessionsView: FC<SessionsViewProps> = ({
           setPage={(p, pp) => setPage(p + 1, pp)}
           perPage={perPage}
           perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+          // Inside a widget the page-background band reads as a stray strip.
+          className="!bg-transparent !border-t-0"
         />
       </div>
       {selectedTraceId && <SessionModal traceId={selectedTraceId} onHide={closeSession} />}

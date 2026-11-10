@@ -118,7 +118,6 @@ function renderWithRow(overrides: Partial<UserRow> = {}) {
     totalCount: 1,
     currentPage: 0,
     pageSize: 20,
-    avgSessionDurationMs: 120000,
     loading: false,
     error: null,
     setPage: vi.fn(),
@@ -133,7 +132,7 @@ describe('UsersView', () => {
 
   it('renders the per-user detail widget', () => {
     renderWithRow()
-    expect(screen.getByTestId('widget-per-user-detail')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-all-users')).toBeInTheDocument()
   })
 
   it('opens ExtendedSessionsModal with user name when a user row is clicked', async () => {

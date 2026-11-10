@@ -113,42 +113,42 @@ const RepositoriesTable: FC<RepositoriesTableProps> = ({
     () => [
       {
         key: 'repository',
-        label: 'REPOSITORY',
+        label: 'Repository',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
       },
       {
         key: 'session_count',
-        label: 'SESSIONS',
+        label: 'Sessions',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'files_changed',
-        label: 'FILES',
+        label: 'Files',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'lines_added',
-        label: 'LINES+',
+        label: 'Lines Added',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'lines_removed',
-        label: 'LINES−',
+        label: 'Lines Removed',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
       },
       {
         key: 'net_lines',
-        label: 'NET LINES',
+        label: 'Net Lines',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',
@@ -162,7 +162,7 @@ const RepositoriesTable: FC<RepositoriesTableProps> = ({
   return (
     <AnalyticsWidget
       title="Top Repositories"
-      description="Sessions by workspace"
+      description="Repositories with the most CLI sessions."
       loading={loading}
       error={error ? { message: error } : null}
     >
