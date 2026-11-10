@@ -20,7 +20,11 @@ import DefaultIconPng from '@/assets/images/ai-avatar.png'
 import Avatar from '@/components/Avatar/Avatar'
 import { ONBOARDING_ASSISTANT_SLUG, CHATBOT_ASSISTANT_SLUG } from '@/constants/assistants'
 import { AvatarType } from '@/constants/avatar'
-import { useFeatureFlag, usePinnedAssistantsEnabled } from '@/hooks/useFeatureFlags'
+import {
+  useCoreAvailable,
+  useFeatureFlag,
+  usePinnedAssistantsEnabled,
+} from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { assistantsStore } from '@/store/assistants'
 import { chatsStore } from '@/store/chats'
@@ -49,7 +53,7 @@ export interface NavSectionItem {
   onClick: () => void
 }
 
-const NavigationPinnedSection: React.FC = () => {
+const NavigationPinnedSectionContent: React.FC = () => {
   const { pinnedAssistants, helpAssistants, helpAssistantsFetched } = useSnapshot(assistantsStore)
   const navigationExpanded = useNavigationExpanded()
   useSnapshot(chatsStore)
@@ -352,6 +356,11 @@ const NavigationPinnedSection: React.FC = () => {
       {renderUnpinPopup()}
     </div>
   )
+}
+
+const NavigationPinnedSection: React.FC = () => {
+  const isCoreAvailable = useCoreAvailable()
+  return isCoreAvailable ? <NavigationPinnedSectionContent /> : null
 }
 
 export default NavigationPinnedSection

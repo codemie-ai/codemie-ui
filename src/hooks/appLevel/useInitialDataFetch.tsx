@@ -23,6 +23,7 @@ import { hostedApplicationsStore } from '@/store/hostedApplications'
 import { preferencesStore } from '@/store/preferences'
 import { skillsStore } from '@/store/skills'
 import { profileSettingsStore } from '@/store/userProfileSettings'
+import { isCoreAvailable } from '@/utils/coreAvailability'
 
 const useInitialDataFetch = () => {
   useEffect(() => {
@@ -43,18 +44,23 @@ const useInitialDataFetch = () => {
         profileSettingsStore.fetchProfileSettings(userStore.user!.userId),
       ])
 
-      await assistantsStore.fetchPinnedAssistants().catch((error) => {
-        console.error('[useInitialDataFetch] failed to fetch pinned assistants:', error)
-      })
-      chatsStore.getFolders().catch((error) => {
-        console.error('[useInitialDataFetch] failed to fetch chat folders:', error)
-      })
-      chatsStore.getAssistantFolders().catch((error) => {
-        console.error('[useInitialDataFetch] failed to fetch assistant folders:', error)
-      })
-      chatsStore.getChats().catch((error) => {
-        console.error('[useInitialDataFetch] failed to fetch chats:', error)
-      })
+      // Read after the awaited config fetch: the effect runs once, so a render-time value is stale.
+      const isCoreOn = isCoreAvailable(appInfoStore.configs)
+
+      if (isCoreOn) {
+        await assistantsStore.fetchPinnedAssistants().catch((error) => {
+          console.error('[useInitialDataFetch] failed to fetch pinned assistants:', error)
+        })
+        chatsStore.getFolders().catch((error) => {
+          console.error('[useInitialDataFetch] failed to fetch chat folders:', error)
+        })
+        chatsStore.getAssistantFolders().catch((error) => {
+          console.error('[useInitialDataFetch] failed to fetch assistant folders:', error)
+        })
+        chatsStore.getChats().catch((error) => {
+          console.error('[useInitialDataFetch] failed to fetch chats:', error)
+        })
+      }
 
       appInfoStore.loadAppInfo()
       appInfoStore.fetchToolConfigs()
@@ -67,10 +73,12 @@ const useInitialDataFetch = () => {
       hostedApplicationsStore.ensureCapabilities()
       assistantsStore.loadShowNewAssistantAIPopup()
 
-      assistantsStore.getAssistantCategories()
-      skillsStore.getSkillCategories()
-      assistantsStore.getDefaultAssistant()
-      assistantsStore.getHelpAssistants()
+      if (isCoreOn) {
+        assistantsStore.getAssistantCategories()
+        skillsStore.getSkillCategories()
+        assistantsStore.getDefaultAssistant()
+        assistantsStore.getHelpAssistants()
+      }
     }
 
     fetchInitialData()

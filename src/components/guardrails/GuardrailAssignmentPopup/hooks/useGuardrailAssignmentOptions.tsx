@@ -17,10 +17,12 @@ import { useEffect, useState } from 'react'
 
 import { AssistantContextOption } from '@/pages/assistants/components/AssistantForm/components/ContextSelector'
 import { WorkflowSelectorOption } from '@/pages/workflows/components/WorkflowSelector'
+import { appInfoStore } from '@/store/appInfo'
 import { dataSourceStore } from '@/store/dataSources'
 import { workflowsStore } from '@/store/workflows'
 import { AssistantContext, Workflow } from '@/types/entity'
 import { GuardrailAssignmentResponse, GuardrailEntity } from '@/types/entity/guardrail'
+import { isCoreAvailable } from '@/utils/coreAvailability'
 import { getContextTypeLabel } from '@/utils/indexing'
 
 const mapWorkflowToOption = (workflow: Workflow): WorkflowSelectorOption => ({
@@ -58,7 +60,9 @@ export const useGuardrailAssignmentOptions = ({
 
       try {
         const [allWorkflows, allDataSources] = await Promise.all([
-          workflowsStore.getWorkflowOptions({ project: assignments.project_name }),
+          isCoreAvailable(appInfoStore.configs)
+            ? workflowsStore.getWorkflowOptions({ project: assignments.project_name })
+            : Promise.resolve([] as Workflow[]),
           dataSourceStore.getDataSourceOptions({ project: assignments.project_name }),
         ])
 

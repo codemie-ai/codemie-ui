@@ -39,6 +39,7 @@ export const FEATURE_FLAGS = {
   GITLAB_OAUTH: 'features:gitlabOauth',
   JIRA_OAUTH: 'features:jiraOauth',
   CONFLUENCE_OAUTH: 'features:confluenceOauth',
+  GOOGLE_OAUTH: 'features:googleOauth',
   SCHEDULERS_VIEW: 'features:schedulersView',
   ROUTING_ANALYTICS: 'features:routingAnalytics',
   KNOWLEDGE_BASES: 'features:knowledgeBases',
@@ -52,6 +53,10 @@ export const FEATURE_FLAGS = {
   MARKETPLACE_MANAGEMENT: 'features:marketplaceManagement',
   MARKETPLACE_APPROVAL_GATE: 'features:marketplaceApprovalGate',
   HOSTED_APPLICATIONS: 'features:hostedApplications',
+  MERMAID: 'features:mermaid',
+  SHAREPOINT_PKCE: 'features:sharepointPkce',
+  // Standalone core gating; verify id against merged EPMCDME-16884
+  CORE: 'features:core',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

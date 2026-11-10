@@ -59,6 +59,7 @@ vi.mock('@/store', () => ({
 }))
 vi.mock('@/store/appInfo', () => ({
   appInfoStore: {
+    configs: [],
     fetchCustomerConfig: boundary.resolved(),
     loadAppInfo: vi.fn(),
     fetchToolConfigs: vi.fn(),

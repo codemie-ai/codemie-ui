@@ -85,6 +85,7 @@ vi.mock('@/store/assistants', () => ({ assistantsStore: mockAssistantsStore }))
 vi.mock('@/store/chats', () => ({ chatsStore: mockChatsStore }))
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
+  useCoreAvailable: vi.fn(() => true),
   useFeatureFlag: vi.fn(() => [true, true]),
   usePinnedAssistantsEnabled: vi.fn(() => [false]),
 }))

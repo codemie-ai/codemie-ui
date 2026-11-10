@@ -14,7 +14,7 @@
 //
 
 import { yupResolver } from '@hookform/resolvers/yup'
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
 
@@ -30,6 +30,7 @@ import Spinner from '@/components/Spinner'
 import ZoomableImage from '@/components/ZoomableImage'
 import { ButtonType } from '@/constants/index'
 import { YAML_PLACEHOLDER } from '@/constants/workflows'
+import { useMermaidEnabled } from '@/hooks/useFeatureFlags'
 import MarketplaceCategories from '@/pages/assistants/components/AssistantForm/components/MarketplaceCategories'
 import { settingsStore } from '@/store/settings'
 import { workflowsStore } from '@/store/workflows'
@@ -72,6 +73,8 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
   ) => {
     const [isLoadingSchema, setIsLoadingSchema] = useState(false)
     const [schemaImage, setSchemaImage] = useState<string | null>(null)
+    const [isMermaidAvailable] = useMermaidEnabled()
+    const isMermaidAvailableRef = useRef(isMermaidAvailable)
 
     const {
       control,
@@ -131,7 +134,23 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
       },
     }))
 
+    useEffect(() => {
+      isMermaidAvailableRef.current = isMermaidAvailable
+      if (!isMermaidAvailable) {
+        setSchemaImage((prev) => {
+          if (prev) {
+            URL.revokeObjectURL(prev)
+          }
+          return null
+        })
+      }
+    }, [isMermaidAvailable])
+
     const generateDiagram = async () => {
+      if (!isMermaidAvailableRef.current) {
+        return
+      }
+
       setIsLoadingSchema(true)
       setSchemaImage('')
 
@@ -146,6 +165,12 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
           URL.revokeObjectURL(schemaImage)
         }
         const json = await response.json()
+        // Mermaid may have flipped to unavailable while the request was in
+        // flight; discard the result rather than render a stale diagram
+        // alongside the "not configured" hint.
+        if (!isMermaidAvailableRef.current) {
+          return
+        }
         setSchemaImage(json.data)
       } catch (error) {
         // Error is already handled by API interceptor via toaster
@@ -321,7 +346,7 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
               <div className="flex justify-between items-center mb-1">
                 <div className="text-sm">Workflow visualisation</div>
                 <Button
-                  disabled={isLoadingSchema || !!errors.yaml_config}
+                  disabled={isLoadingSchema || !!errors.yaml_config || !isMermaidAvailable}
                   variant={ButtonType.SECONDARY}
                   size="medium"
                   onClick={generateDiagram}
@@ -330,6 +355,8 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
                   Visualize
                 </Button>
               </div>
+
+              {!isMermaidAvailable && <InfoBox>Diagram rendering is not configured.</InfoBox>}
 
               <div className="flex flex-col items-center justify-center bg-surface-base-secondary w-full border border-border-specific-panel-outline rounded-xl min-h-48">
                 {isLoadingSchema && <Spinner inline />}

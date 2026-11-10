@@ -21,6 +21,7 @@ import toaster from '@/utils/toaster'
 import { hash, stripFileTokenQuery } from '@/utils/utils'
 
 const UPLOAD_ERROR = 'An error occured while uploading file:'
+const FILE_URL_SEGMENT = '/v1/files/'
 
 const mermaidCache = {
   cache: new Map<string | number, string>(),
@@ -122,11 +123,16 @@ export const filesStore = proxy<FilesStoreType>({
       { skipErrorHandling: true }
     )
     const { file_url } = await response.json()
-    // File downloads require auth; a bare fetch sends no credentials cross-origin.
-    const svgResponse = await fetch(file_url, {
-      credentials: 'include',
-      headers: api.authHeaders(),
-    })
+    // file_url is built from the host the backend sees; behind a proxy (the standalone
+    // nginx, the local dev stack) it can be unreachable. Load the file through the API
+    // client like other file downloads, so the UI's own base URL and auth are used.
+    const segmentIndex = file_url.indexOf(FILE_URL_SEGMENT)
+    const svgResponse =
+      segmentIndex === -1
+        ? await fetch(file_url, { credentials: 'include', headers: api.authHeaders() })
+        : await api.get(`v1/files/${file_url.slice(segmentIndex + FILE_URL_SEGMENT.length)}`, {
+            skipErrorHandling: true,
+          })
     const svgText = await svgResponse.text()
     mermaidCache.set(cacheKey, svgText)
     return svgText

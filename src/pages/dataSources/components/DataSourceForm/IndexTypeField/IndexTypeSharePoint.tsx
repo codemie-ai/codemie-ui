@@ -18,6 +18,7 @@ import { Control, Controller, FieldErrors, UseFormSetValue, UseFormWatch } from 
 import Input from '@/components/form/Input'
 import RadioGroup from '@/components/form/RadioGroup/RadioGroup'
 import { SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useTheme } from '@/hooks/useTheme'
 import { OAuthStatus } from '@/types/entity/dataSource'
@@ -95,7 +96,12 @@ const IndexTypeSharePoint: FC<Props> = ({
   } = useIntegrationManager({ onIntegrationCreated })
 
   const { isDark } = useTheme()
-  const [isCodeMieOAuthEnabled] = useFeatureFlag('features:sharepointCodeMieOAuth')
+  const [isCodeMieOAuthFlagOn, isCodeMieOAuthLoaded] = useFeatureFlag(
+    'features:sharepointCodeMieOAuth'
+  )
+  // The CodeMie sign-in runs the PKCE flow, which the backend answers with 503 when it is off.
+  const [isSharePointPkceAvailable] = useFeatureFlag(FEATURE_FLAGS.SHAREPOINT_PKCE)
+  const isCodeMieOAuthEnabled = isCodeMieOAuthFlagOn && isSharePointPkceAvailable
 
   const isEditing = watch('isEditing')
   const storedAuthType = watch('sharepointAuthType') ?? INTEGRATION
@@ -145,6 +151,22 @@ const IndexTypeSharePoint: FC<Props> = ({
   const visibleAuthMethodOptions = AUTH_METHOD_OPTIONS.filter(
     (opt) => opt.value !== OAUTH_CODEMIE || isCodeMieOAuthEnabled
   )
+
+  // If the currently selected auth method drops out of the visible list (e.g. PKCE was turned
+  // off server-side after a record was created with it), correct the selection once config has
+  // loaded. Gating on isCodeMieOAuthLoaded avoids clobbering an existing, enabled PKCE selection
+  // during the brief window before the feature flag config has been fetched (isCodeMieOAuthEnabled
+  // defaults to false until then).
+  useEffect(() => {
+    if (!isCodeMieOAuthLoaded) return
+    if (visibleAuthMethodOptions.some((opt) => opt.value === authMethod)) return
+    const fallback = visibleAuthMethodOptions[0]?.value
+    if (!fallback) return
+    onAuthMethodChange(authMethod, fallback)
+    prevStoredAuthTypeRef.current = fallback
+    setAuthMethod(fallback)
+    setValue('sharepointAuthType', fallback)
+  }, [authMethod, visibleAuthMethodOptions, isCodeMieOAuthLoaded, onAuthMethodChange, setValue])
 
   const handleMicrosoftSignIn = useCallback(() => {
     const customClientId =

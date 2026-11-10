@@ -18,6 +18,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { INDEX_TYPES } from '@/constants/dataSources'
 import {
   getAvailableCredentialsTypes,
+  getCredentialUIMapping,
   getSettingCredsURL,
   getOriginalCredentialType,
   convertCredsToKeyValue,
@@ -461,6 +462,30 @@ describe('getAvailableCredentialsTypes LiteLLM filtering', () => {
         project: 'demo',
       })
     ).not.toContain('litellm')
+  })
+})
+
+describe('getCredentialUIMapping — Google OAuth feature flag', () => {
+  it('excludes googleoauth when features:googleOauth resolves false', () => {
+    const result = getCredentialUIMapping({
+      settingType: SETTING_TYPE_USER,
+      user: null,
+      project: undefined,
+      customerConfig: [{ id: 'features:googleOauth', settings: { enabled: false } }],
+    } as any)
+
+    expect(Object.keys(result)).not.toContain('googleoauth')
+  })
+
+  it('includes googleoauth when features:googleOauth resolves true', () => {
+    const result = getCredentialUIMapping({
+      settingType: SETTING_TYPE_USER,
+      user: null,
+      project: undefined,
+      customerConfig: [{ id: 'features:googleOauth', settings: { enabled: true } }],
+    } as any)
+
+    expect(Object.keys(result)).toContain('googleoauth')
   })
 })
 

@@ -46,7 +46,7 @@ const AutoPopupManager: FC = () => {
   const router = useVueRouter()
   const { user } = useSnapshot(userStore)
   const { profileSettings, error: profileSettingsError } = useSnapshot(profileSettingsStore)
-  const { appReleases } = useSnapshot(appInfoStore)
+  const { appReleases, isConfigFetched } = useSnapshot(appInfoStore)
   const { isActive: isOnboardingActive } = useSnapshot(onboardingStore)
   const matches = useMatches()
 
@@ -66,7 +66,7 @@ const AutoPopupManager: FC = () => {
   // Effect 1: app-level popups — runs once when user is loaded
   // Handles P1 (onboarding intro) and P2 (new release)
   useEffect(() => {
-    if (!user) return
+    if (!user || !isConfigFetched) return
     if (profileSettings === null && profileSettingsError === null) return
 
     if (!appInfoStore.isOnboardingCompleted() && userStore.isSSOUser()) {
@@ -84,12 +84,12 @@ const AutoPopupManager: FC = () => {
     ) {
       setActivePopup('release')
     }
-  }, [user, profileSettings, profileSettingsError])
+  }, [user, isConfigFetched, profileSettings, profileSettingsError])
 
   // Effect 2: first-time page popup — runs on each route change
   // Handles P3; suppressed when a higher-priority popup or onboarding session is active
   useEffect(() => {
-    if (!currentPageId || !user) return
+    if (!currentPageId || !user || !isConfigFetched) return
     if (isOnboardingActive) {
       // Silently consume the first-visit token so the popup doesn't fire after the tour ends
       if (onboardingStore.isFirstPageVisit(currentPageId)) {
@@ -110,7 +110,7 @@ const AutoPopupManager: FC = () => {
         setActivePopup('page')
       }
     }
-  }, [currentPageId, user, activePopup, isOnboardingActive])
+  }, [currentPageId, user, isConfigFetched, activePopup, isOnboardingActive])
 
   // Release popup (P2) handlers
   const latestVersion = appReleases[0]?.version

@@ -30,6 +30,7 @@ import InfoWarning from '@/components/InfoWarning'
 import InfoMessage from '@/components/Message/Message'
 import ProjectSelector from '@/components/ProjectSelector'
 import { InfoWarningType } from '@/constants'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import {
   GOOGLE_OAUTH_CREDENTIAL_TYPE,
   OAUTH_VARIANT_BY_BASE_TYPE,
@@ -243,7 +244,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   // fields belonging to the selected one are shown - mirrors the SharePoint
   // datasource form. Existing integrations open on whichever method they were saved with.
   const isSharePoint = credentialType === SHAREPOINT_CREDENTIAL_TYPE
-  const [sharePointAuthMethod, setSharePointAuthMethod] = useState<string>(() => {
+  const [selectedSharePointAuthMethod, setSelectedSharePointAuthMethod] = useState<string>(() => {
     if (initialCredentialValues?.auth_type === SHAREPOINT_AUTH_METHODS.OAUTH) {
       return SHAREPOINT_AUTH_METHODS.OAUTH
     }
@@ -253,6 +254,15 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     // New integrations default to signing in - it needs no Azure admin involvement.
     return SHAREPOINT_AUTH_METHODS.OAUTH
   })
+  // Signing in runs the PKCE flow, which the backend answers with 503 when it is off,
+  // so only app auth is offered then, including for an integration saved with sign-in.
+  const [isSharePointPkceAvailable] = useFeatureFlag(FEATURE_FLAGS.SHAREPOINT_PKCE)
+  const sharePointAuthMethod = isSharePointPkceAvailable
+    ? selectedSharePointAuthMethod
+    : SHAREPOINT_AUTH_METHODS.APP
+  const sharePointAuthMethodOptions = SHAREPOINT_AUTH_METHOD_OPTIONS.filter(
+    (option) => isSharePointPkceAvailable || option.value !== SHAREPOINT_AUTH_METHODS.OAUTH
+  )
   const isSharePointOAuth = isSharePoint && sharePointAuthMethod === SHAREPOINT_AUTH_METHODS.OAUTH
   // An integration already saved with delegated credentials stays authenticated
   // without signing in again, so only a fresh sign-in has to be required.
@@ -321,7 +331,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   }, [CREDENTIAL_VALUES_MAPPING, effectiveCredentialType])
 
   const handleSharePointAuthMethodChange = (method: string) => {
-    setSharePointAuthMethod(method)
+    setSelectedSharePointAuthMethod(method)
     // Drop a sign-in captured before the user switched back to app auth, so the
     // backend does not receive an oauth_state that would override the typed fields.
     if (method === SHAREPOINT_AUTH_METHODS.APP) {
@@ -724,7 +734,7 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
                 <p className="mb-2 text-xs text-text-tertiary">Authentication Method:</p>
                 <RadioGroup
                   name="sharePointAuthMethod"
-                  options={SHAREPOINT_AUTH_METHOD_OPTIONS}
+                  options={sharePointAuthMethodOptions}
                   value={sharePointAuthMethod}
                   onChange={(v) => handleSharePointAuthMethodChange(String(v))}
                 />

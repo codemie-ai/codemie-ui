@@ -13,11 +13,14 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { INDEX_TYPES, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { userStore } from '@/store'
+import { dataSourceStore } from '@/store/dataSources'
 import { dataSourceNameId } from '@/utils/ariaIds'
 
 import DataSourceActions from '../DataSourceActions'
@@ -31,6 +34,9 @@ vi.mock('@/assets/icons/copy-link.svg?react', () => ({ default: () => <span /> }
 vi.mock('@/components/ConfirmationModal', () => ({ default: () => null }))
 const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }))
 vi.mock('@/hooks/useVueRouter', () => ({ useVueRouter: () => ({ push: pushMock }) }))
+vi.mock('@/hooks/useFeatureFlags', () => ({
+  useFeatureFlag: vi.fn().mockReturnValue([true, true]),
+}))
 vi.mock('valtio', async (orig) => {
   const actual = await orig<typeof import('valtio')>()
   return {
@@ -38,10 +44,15 @@ vi.mock('valtio', async (orig) => {
     useSnapshot: (store: any) => store,
   }
 })
-vi.mock('@/store/dataSources', () => ({ dataSourceStore: {} }))
+vi.mock('@/store/dataSources', () => ({ dataSourceStore: { updateKBIndex: vi.fn() } }))
 vi.mock('@/store', () => ({ userStore: { user: { isAdmin: false } } }))
 vi.mock('@/utils/utils', async (orig) => ({ ...(await orig<object>()), copyToClipboard: vi.fn() }))
 vi.mock('../DataSourceDeleteModal', () => ({ default: () => null }))
+vi.mock('../SharePointReindexAuthPopup', () => ({
+  default: ({ onSuccess }: { onSuccess: (token: string) => void }) => (
+    <button onClick={() => onSuccess('token-123')}>SP Reauth Success</button>
+  ),
+}))
 
 const makeItem = (overrides: Record<string, unknown> = {}) => ({
   id: 'ds-1',
@@ -101,5 +112,50 @@ describe('DataSourceActions clone menu item', () => {
 
     await screen.findByText('Copy ID')
     expect(screen.queryByText('Clone')).not.toBeInTheDocument()
+  })
+})
+
+describe('DataSourceActions SharePoint reauth fallback', () => {
+  beforeEach(() => {
+    vi.mocked(dataSourceStore.updateKBIndex).mockClear()
+  })
+
+  it('writes back INTEGRATION when sharepoint.auth_type is missing and PKCE is unavailable', () => {
+    vi.mocked(useFeatureFlag).mockReturnValue([false, true])
+    render(<DataSourceActions item={makeItem({ sharepoint: {} }) as any} />)
+
+    fireEvent.click(screen.getByText('SP Reauth Success'))
+
+    expect(dataSourceStore.updateKBIndex).toHaveBeenCalledWith(
+      INDEX_TYPES.SHAREPOINT,
+      expect.objectContaining({ auth_type: SHAREPOINT_AUTH_TYPES.INTEGRATION }),
+      true
+    )
+  })
+
+  it('writes back OAUTH_CODEMIE when sharepoint.auth_type is missing and PKCE is available', () => {
+    vi.mocked(useFeatureFlag).mockReturnValue([true, true])
+    render(<DataSourceActions item={makeItem({ sharepoint: {} }) as any} />)
+
+    fireEvent.click(screen.getByText('SP Reauth Success'))
+
+    expect(dataSourceStore.updateKBIndex).toHaveBeenCalledWith(
+      INDEX_TYPES.SHAREPOINT,
+      expect.objectContaining({ auth_type: SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE }),
+      true
+    )
+  })
+
+  it('writes back INTEGRATION when sharepoint.auth_type is missing and the flag is enabled but not yet loaded', () => {
+    vi.mocked(useFeatureFlag).mockReturnValue([true, false])
+    render(<DataSourceActions item={makeItem({ sharepoint: {} }) as any} />)
+
+    fireEvent.click(screen.getByText('SP Reauth Success'))
+
+    expect(dataSourceStore.updateKBIndex).toHaveBeenCalledWith(
+      INDEX_TYPES.SHAREPOINT,
+      expect.objectContaining({ auth_type: SHAREPOINT_AUTH_TYPES.INTEGRATION }),
+      true
+    )
   })
 })

@@ -37,6 +37,7 @@ const { mockUserStore, mockAppInfoStore, mockOnboardingStore, mockProfileSetting
       mockAppInfoStore: {
         appReleases: [{ version: '2.41.0' }],
         isOnboardingCompleted: vi.fn(() => true),
+        isConfigFetched: true,
         loadReleaseNotes: vi.fn(),
         isAppReleaseNew: vi.fn(() => true),
         isReleasePopupDisabled: vi.fn(() => false),

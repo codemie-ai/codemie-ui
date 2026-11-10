@@ -80,3 +80,70 @@ describe('filesStore.downloadFile', () => {
     expect(downloadSpy).not.toHaveBeenCalled()
   })
 })
+
+describe('filesStore.getMermaidFile', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    filesStore.clearMermaidCache()
+  })
+
+  const mockDiagramResponse = (fileUrl: string) => {
+    vi.mocked(api.post).mockResolvedValueOnce({
+      json: async () => ({ file_url: fileUrl }),
+    } as any)
+    vi.mocked(api.get).mockResolvedValueOnce({
+      text: async () => '<svg>diagram</svg>',
+    } as any)
+  }
+
+  it('loads the SVG through the API client, ignoring the host in file_url', async () => {
+    // Behind the standalone nginx the backend returns a URL with the wrong scheme,
+    // no port and no /api prefix.
+    mockDiagramResponse('https://localhost/v1/files/ABC123+def==')
+
+    const svg = await filesStore.getMermaidFile('graph TD; A-->B')
+
+    expect(api.get).toHaveBeenCalledWith('v1/files/ABC123+def==', { skipErrorHandling: true })
+    expect(svg).toBe('<svg>diagram</svg>')
+  })
+
+  it('keeps the path when file_url carries an API root path', async () => {
+    mockDiagramResponse('https://codemie.example.com/code-assistant-api/v1/files/XYZ')
+
+    await filesStore.getMermaidFile('graph TD; C-->D')
+
+    expect(api.get).toHaveBeenCalledWith('v1/files/XYZ', { skipErrorHandling: true })
+  })
+
+  it('falls back to fetching file_url directly when it has no /v1/files/ segment', async () => {
+    vi.mocked(api.post).mockResolvedValueOnce({
+      json: async () => ({ file_url: 'https://cdn.example.com/diagram.svg' }),
+    } as any)
+    // The global api mock has no authHeaders; stub it for the direct-fetch path.
+    ;(api as any).authHeaders = vi.fn().mockReturnValue({ Authorization: 'Bearer test' })
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ text: async () => '<svg>external</svg>' } as any)
+
+    const svg = await filesStore.getMermaidFile('graph TD; G-->H')
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://cdn.example.com/diagram.svg',
+      expect.objectContaining({ credentials: 'include' })
+    )
+    expect(api.get).not.toHaveBeenCalled()
+    expect(svg).toBe('<svg>external</svg>')
+    fetchSpy.mockRestore()
+  })
+
+  it('returns the cached SVG without new requests for the same code', async () => {
+    mockDiagramResponse('https://localhost/v1/files/CACHED')
+
+    await filesStore.getMermaidFile('graph TD; E-->F')
+    const second = await filesStore.getMermaidFile('graph TD; E-->F')
+
+    expect(second).toBe('<svg>diagram</svg>')
+    expect(api.post).toHaveBeenCalledTimes(1)
+    expect(api.get).toHaveBeenCalledTimes(1)
+  })
+})

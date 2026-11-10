@@ -19,8 +19,11 @@ import FirstTimeWelcomeContent from '@/components/Onboarding/FirstTimeWelcomeCon
 import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
 import { OnboardingFlow } from '@/types/onboarding'
+import { isCoreAvailable } from '@/utils/coreAvailability'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 import { findNavLinkByText } from '@/utils/onboarding'
+
+const isCoreOn = () => isCoreAvailable(appInfoStore.configs)
 
 export const navigationIntroductionFlow: OnboardingFlow = {
   id: 'navigation-introduction',
@@ -78,6 +81,7 @@ Click the expand button at the bottom to show/hide labels.`,
     // Step 3: Create New Chat
     {
       id: 'create-new-chat',
+      condition: isCoreOn,
       actionType: 'Highlight',
       title: 'Quick Chat Creation',
       target: '[data-onboarding="navigation-logo"]',
@@ -90,6 +94,7 @@ This is the fastest way to begin a conversation without navigating through menus
     // Step 4: Chats
     {
       id: 'chats',
+      condition: isCoreOn,
       actionType: 'Highlight',
       title: 'Chats - Your Conversation Hub',
       target: () => findNavLinkByText('Chats'),
@@ -107,6 +112,7 @@ Think of this as your primary workspace for interacting with AI.`,
     // Step 5: Assistants
     {
       id: 'assistants',
+      condition: isCoreOn,
       actionType: 'Highlight',
       title: 'Assistants - Specialized AI Helpers',
       target: () => findNavLinkByText('Assistants'),
@@ -140,13 +146,14 @@ What are skills?
 - Custom skills can be created for your needs`,
       condition: () => {
         // Check if Skills nav item exists
-        return !!findNavLinkByText('Skills')
+        return isCoreOn() && !!findNavLinkByText('Skills')
       },
     },
 
     // Step 7: Workflows
     {
       id: 'workflows',
+      condition: isCoreOn,
       actionType: 'Highlight',
       title: 'Workflows - Automate Your Tasks',
       target: () => findNavLinkByText('Workflows'),
@@ -296,6 +303,7 @@ Click on any assistant to start using it right away!`,
     // Step 14: Help Navigation Item
     {
       id: 'help-nav-item',
+      condition: isCoreOn,
       actionType: 'Highlight',
       title: 'Help - Documentation & Support',
       target: () => findNavLinkByText('Help'),
@@ -307,6 +315,7 @@ Let's explore what's available in the Help Center!`,
     // Tech Step: Navigate to Help
     {
       id: 'navigate-to-help',
+      condition: isCoreOn,
       actionType: 'Navigation',
       route: { name: 'help' },
       delay: 500,
@@ -315,6 +324,7 @@ Let's explore what's available in the Help Center!`,
     // Step 15: AI Help Section
     {
       id: 'ai-help-section',
+      condition: isCoreOn,
       actionType: 'Highlight',
       title: 'AI Help - Instant Smart Support',
       target: '[data-onboarding="help-ai-section"]',
@@ -330,6 +340,7 @@ These assistants are always ready to help you navigate the platform.`,
     // Step 16: Learning Resources Section
     {
       id: 'learning-resources-section',
+      condition: isCoreOn,
       actionType: 'Highlight',
       title: 'Learning Resources',
       target: '[data-onboarding="help-learning-section"]',
@@ -346,6 +357,7 @@ Perfect for deepening your understanding of CodeMie capabilities.`,
     // Step 17: Product Updates Section
     {
       id: 'product-updates-section',
+      condition: isCoreOn,
       actionType: 'Highlight',
       title: 'Product Updates - Stay Current',
       target: '[data-onboarding="help-updates-section"]',
@@ -359,6 +371,7 @@ Stay up-to-date with new features and improvements to make the most of CodeMie.`
     // Step 18: Onboarding Tours Section
     {
       id: 'onboarding-tours-section',
+      condition: isCoreOn,
       actionType: 'Highlight',
       title: 'Onboarding Tours - Interactive Learning',
       target: '[data-onboarding="help-onboarding-section"]',

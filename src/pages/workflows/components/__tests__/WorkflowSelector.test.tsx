@@ -16,6 +16,7 @@
 import { render, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
 import { workflowsStore } from '@/store/workflows'
 
 import WorkflowSelector from '../WorkflowSelector'
@@ -26,9 +27,12 @@ vi.mock('@/store/workflows', () => ({
   },
 }))
 
+vi.mock('@/store/appInfo', () => ({ appInfoStore: { configs: [] as any[] } }))
+
 describe('WorkflowSelector — getOptions prop', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    appInfoStore.configs = []
   })
 
   it('calls the provided getOptions on mount instead of store.getWorkflowOptions', async () => {
@@ -50,5 +54,16 @@ describe('WorkflowSelector — getOptions prop', () => {
     await waitFor(() => {
       expect(workflowsStore.getWorkflowOptions).toHaveBeenCalled()
     })
+  })
+
+  it('issues no request when core is unavailable', async () => {
+    appInfoStore.configs = [{ id: 'features:core', settings: { enabled: false } }] as any
+    const customGetOptions = vi.fn().mockResolvedValue([])
+
+    render(<WorkflowSelector value={[]} onChange={vi.fn()} getOptions={customGetOptions} />)
+    await Promise.resolve()
+
+    expect(customGetOptions).not.toHaveBeenCalled()
+    expect(workflowsStore.getWorkflowOptions).not.toHaveBeenCalled()
   })
 })

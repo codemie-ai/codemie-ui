@@ -1113,6 +1113,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
     displayName: 'Google OAuth',
     serverEnum: 'GoogleOAuth',
     accessType: CredentialAccessType.USER_ONLY,
+    featureFlag: FEATURE_FLAGS.GOOGLE_OAUTH,
     fields: {},
   },
   [MS_TEAMS_CREDENTIAL_TYPE]: {

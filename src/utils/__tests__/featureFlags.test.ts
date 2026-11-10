@@ -23,6 +23,7 @@ import {
   isBudgetManagementEnabled,
   isTeamsEnabled,
   isProjectChargebackEnabled,
+  isMermaidEnabled,
 } from '../featureFlags'
 
 vi.mock('@/store/appInfo', () => ({
@@ -177,5 +178,40 @@ describe('isTeamsEnabled', () => {
     const result = isTeamsEnabled()
 
     expect(result).toBe(false)
+  })
+})
+
+describe('isMermaidEnabled', () => {
+  beforeEach(() => {
+    vi.mocked(appInfoStore).configs = []
+    vi.mocked(appInfoStore).isConfigFetched = false
+  })
+
+  it('should return true when configs are empty and not yet fetched', () => {
+    vi.mocked(appInfoStore).configs = []
+    vi.mocked(appInfoStore).isConfigFetched = false
+
+    expect(isMermaidEnabled()).toBe(true)
+  })
+
+  it('should return true when configs are empty and fetched', () => {
+    vi.mocked(appInfoStore).configs = []
+    vi.mocked(appInfoStore).isConfigFetched = true
+
+    expect(isMermaidEnabled()).toBe(true)
+  })
+
+  it('should return true when features:mermaid is explicitly enabled', () => {
+    vi.mocked(appInfoStore).configs = [{ id: FEATURE_FLAGS.MERMAID, settings: { enabled: true } }]
+    vi.mocked(appInfoStore).isConfigFetched = true
+
+    expect(isMermaidEnabled()).toBe(true)
+  })
+
+  it('should return false when features:mermaid is explicitly disabled', () => {
+    vi.mocked(appInfoStore).configs = [{ id: FEATURE_FLAGS.MERMAID, settings: { enabled: false } }]
+    vi.mocked(appInfoStore).isConfigFetched = true
+
+    expect(isMermaidEnabled()).toBe(false)
   })
 })

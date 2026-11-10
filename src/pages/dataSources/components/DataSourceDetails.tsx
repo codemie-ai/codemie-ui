@@ -42,7 +42,9 @@ import {
   REPO_INDEX_TYPE_OPTIONS,
   SHAREPOINT_AUTH_TYPES,
 } from '@/constants/dataSources'
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { DATASOURCES } from '@/constants/routes'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useProjectDisplayNames } from '@/hooks/useProjectDisplayNames'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import DataSourceTypeIcon from '@/pages/dataSources/components/DataSourceTypeIcon'
@@ -176,6 +178,12 @@ const DataList: React.FC<{ items: DataListItem[]; emptyText?: string }> = ({
 
 const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => {
   const router = useVueRouter()
+  const [isCodeMieOAuthFlagOn, isCodeMieOAuthLoaded] = useFeatureFlag(
+    'features:sharepointCodeMieOAuth'
+  )
+  // The CodeMie sign-in runs the PKCE flow, which the backend answers with 503 when it is off.
+  const [isSharePointPkceAvailable] = useFeatureFlag(FEATURE_FLAGS.SHAREPOINT_PKCE)
+  const isCodeMieOAuthEnabled = isCodeMieOAuthFlagOn && isSharePointPkceAvailable
   const projectDisplayNames = useProjectDisplayNames(dataSource?.project_name)
   const projectDisplayName = dataSource?.project_name
     ? projectDisplayNames.get(dataSource.project_name)
@@ -393,7 +401,11 @@ const DataSourceDetails: React.FC<DataSourceDetailsProps> = ({ dataSource }) => 
         name: dataSource.repo_name,
         project_name: dataSource.project_name,
         site_url: dataSource.sharepoint?.site_url ?? '',
-        auth_type: dataSource.sharepoint?.auth_type ?? SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE,
+        auth_type:
+          dataSource.sharepoint?.auth_type ??
+          (isCodeMieOAuthLoaded && isCodeMieOAuthEnabled
+            ? SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE
+            : SHAREPOINT_AUTH_TYPES.INTEGRATION),
         access_token: accessToken,
         oauth_client_id: customClientId,
         oauth_tenant_id: customTenantId,

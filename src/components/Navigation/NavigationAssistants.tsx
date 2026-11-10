@@ -18,7 +18,7 @@ import { useSnapshot } from 'valtio'
 
 import DefaultIconPng from '@/assets/images/ai-avatar.png'
 import { ONBOARDING_ASSISTANT_SLUG, CHATBOT_ASSISTANT_SLUG } from '@/constants/assistants'
-import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+import { useCoreAvailable, useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { assistantsStore } from '@/store/assistants'
 import { generateAssistantAvatarDataUrl } from '@/utils/assistantAvatar'
@@ -36,7 +36,7 @@ interface AssistantItem {
   iconUrl: string
 }
 
-const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded }) => {
+const NavigationAssistantsContent: React.FC<NavigationAssistantsProps> = ({ isExpanded }) => {
   const router = useVueRouter()
   const { helpAssistants } = useSnapshot(assistantsStore)
   const [assistantItems, setAssistantItems] = useState<AssistantItem[]>([])
@@ -147,6 +147,11 @@ const NavigationAssistants: React.FC<NavigationAssistantsProps> = ({ isExpanded 
       ))}
     </div>
   )
+}
+
+const NavigationAssistants: React.FC<NavigationAssistantsProps> = (props) => {
+  const isCoreAvailable = useCoreAvailable()
+  return isCoreAvailable ? <NavigationAssistantsContent {...props} /> : null
 }
 
 export default NavigationAssistants

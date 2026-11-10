@@ -21,7 +21,9 @@ import InfoBox from '@/components/form/InfoBox'
 import MultiSelect from '@/components/form/MultiSelect'
 import { AvatarType } from '@/constants/avatar'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
+import { appInfoStore } from '@/store/appInfo'
 import { workflowsStore } from '@/store/workflows'
+import { isCoreAvailable } from '@/utils/coreAvailability'
 import { cn } from '@/utils/utils'
 
 export type WorkflowSelectorOption = {
@@ -74,6 +76,10 @@ const WorkflowSelector = forwardRef<TMultiSelect, WorkflowSelectorProps>(
     const [initialValue] = useState(value)
 
     const fetchWorkflowOptions = async (search: string = '') => {
+      if (!isCoreAvailable(appInfoStore.configs)) {
+        setOptions([])
+        return
+      }
       try {
         const fetcher = getOptions ?? workflowsStore.getWorkflowOptions
         const formattedOptions: WorkflowSelectorOption[] = (await fetcher({ search, project })).map(

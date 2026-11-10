@@ -1,0 +1,89 @@
+{
+ "schema": 1,
+ "branch": "EPMCDME-16885_standalone-core-gating",
+ "head": "34888c19952300016e7c35acd0471df798efa324",
+ "runner": "npm",
+ "started_at": "2026-11-05",
+ "completed_at": "2026-11-05",
+ "status": "PASSED",
+ "drift_detected": false,
+ "gates": [
+  {
+   "id": "lint",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 83638,
+   "command": "npm run lint",
+   "exit_code": 0
+  },
+  {
+   "id": "typecheck",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 67668,
+   "command": "npm run typecheck",
+   "exit_code": 0
+  },
+  {
+   "id": "license-check",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 5783,
+   "command": "npm run license-check",
+   "exit_code": 0
+  },
+  {
+   "id": "secrets",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 30844,
+   "command": "npm run secrets:check",
+   "exit_code": 0
+  },
+  {
+   "id": "unit",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 718000,
+   "command": "npm run test:unit:slnt",
+   "exit_code": 0,
+   "notes": "826 files, 8404 passed; first attempt hit the 580s harness timeout, rerun passed"
+  },
+  {
+   "id": "integration",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 370189,
+   "command": "npm run test:integration:slnt",
+   "exit_code": 0,
+   "notes": "56 files, 642 passed"
+  },
+  {
+   "id": "license-headers",
+   "source": "hook",
+   "status": "PASS",
+   "duration_ms": 440,
+   "command": "npm run license-headers:check",
+   "exit_code": 0
+  },
+  {
+   "id": "sonar-local",
+   "source": "hook",
+   "status": "N/A",
+   "duration_ms": 0,
+   "command": "npm run sonar-local",
+   "exit_code": null,
+   "notes": "Needs SonarQube infrastructure; not run locally"
+  },
+  {
+   "id": "test-harness",
+   "source": "guide",
+   "status": "N/A",
+   "duration_ms": 0,
+   "command": "npm run test-harness",
+   "exit_code": null,
+   "notes": "Needs stack up and ~/.codemie/test-harness.json; unverified, owed before MR"
+  }
+ ],
+ "failures": {}
+}

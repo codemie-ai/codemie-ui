@@ -411,7 +411,7 @@ export const skillsStore = proxy<SkillsStoreType>({
       return categories
     } catch (error) {
       console.error('[skillsStore.getSkillCategories] Error:', error)
-      // Return empty array on error, don't show toaster for categories
+      // Return empty array on error; api.ts still toasts unless skipErrorHandling is set
       // Components can handle empty state gracefully
       return []
     }

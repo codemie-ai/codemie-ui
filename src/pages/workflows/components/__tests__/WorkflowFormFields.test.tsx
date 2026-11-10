@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -77,10 +77,20 @@ vi.mock('@/hooks/useTheme', () => ({
   useTheme: () => ({ isDark: false }),
 }))
 
+const { mockGetWorkflowDiagram } = vi.hoisted(() => ({
+  mockGetWorkflowDiagram: vi.fn(),
+}))
+
 vi.mock('@/store/workflows', () => ({
   workflowsStore: {
-    getWorkflowDiagram: vi.fn(),
+    getWorkflowDiagram: mockGetWorkflowDiagram,
   },
+}))
+
+const mockUseMermaidEnabled = vi.hoisted(() => vi.fn())
+
+vi.mock('@/hooks/useFeatureFlags', () => ({
+  useMermaidEnabled: mockUseMermaidEnabled,
 }))
 
 vi.mock('@/pages/assistants/components/AssistantForm/components/MarketplaceCategories', () => ({
@@ -118,6 +128,13 @@ const settingsWithUserType: Record<string, any[]> = {
 
 const renderWorkflowFormFields = (props: Record<string, any> = {}) =>
   render(<WorkflowFormFields {...props} />)
+
+// Default every existing test to the available path — Mermaid gating tests
+// below override this per-case. clearAllMocks() in nested beforeEach hooks
+// only resets call history, not this implementation.
+beforeEach(() => {
+  mockUseMermaidEnabled.mockReturnValue([true, true])
+})
 
 describe('WorkflowFormFields — Share with Project disable behavior', () => {
   beforeEach(() => {
@@ -255,5 +272,100 @@ describe('WorkflowFormFields — setYamlConfig ref method', () => {
 
     const values = ref.current?.getValues()
     expect(values?.yaml_config).toBe('states:\n  - id: ai-step')
+  })
+})
+
+describe('WorkflowFormFields — Mermaid availability gating', () => {
+  beforeEach(() => {
+    mockHasUserIntegrationInYamlConfig.mockReturnValue(false)
+    mockGetWorkflowDiagram.mockReset()
+  })
+
+  describe('when Mermaid is unavailable', () => {
+    beforeEach(() => {
+      mockUseMermaidEnabled.mockReturnValue([false, true])
+    })
+
+    it('disables the Visualize button', () => {
+      renderWorkflowFormFields({ workflow: {} })
+
+      const visualizeButton = screen.getByRole('button', { name: /visualize/i })
+      expect(visualizeButton).toBeDisabled()
+    })
+
+    it('shows a "not configured" hint', () => {
+      renderWorkflowFormFields({ workflow: {} })
+
+      expect(screen.getByText(/not configured/i)).toBeInTheDocument()
+    })
+
+    it('never calls getWorkflowDiagram after clicking Visualize', () => {
+      renderWorkflowFormFields({ workflow: {} })
+
+      const visualizeButton = screen.getByRole('button', { name: /visualize/i })
+      fireEvent.click(visualizeButton)
+
+      expect(mockGetWorkflowDiagram).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when Mermaid is available', () => {
+    beforeEach(() => {
+      mockUseMermaidEnabled.mockReturnValue([true, true])
+      mockGetWorkflowDiagram.mockResolvedValue({
+        json: () => Promise.resolve({ data: 'data:image/png;base64,abc' }),
+      })
+    })
+
+    it('keeps the Visualize button enabled', () => {
+      renderWorkflowFormFields({ workflow: {} })
+
+      const visualizeButton = screen.getByRole('button', { name: /visualize/i })
+      expect(visualizeButton).not.toBeDisabled()
+    })
+
+    it('does not show the "not configured" hint', () => {
+      renderWorkflowFormFields({ workflow: {} })
+
+      expect(screen.queryByText(/not configured/i)).not.toBeInTheDocument()
+    })
+
+    it('calls getWorkflowDiagram when Visualize is clicked (regression)', async () => {
+      renderWorkflowFormFields({ workflow: {} })
+
+      const visualizeButton = screen.getByRole('button', { name: /visualize/i })
+
+      await act(async () => {
+        fireEvent.click(visualizeButton)
+      })
+
+      expect(mockGetWorkflowDiagram).toHaveBeenCalled()
+    })
+
+    it('discards a diagram that resolves after Mermaid flips to unavailable mid-flight (regression)', async () => {
+      let resolveDiagram: (value: any) => void = () => {}
+      mockGetWorkflowDiagram.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveDiagram = resolve
+          })
+      )
+
+      const { rerender } = renderWorkflowFormFields({ workflow: {} })
+
+      const visualizeButton = screen.getByRole('button', { name: /visualize/i })
+      fireEvent.click(visualizeButton)
+
+      // Flip the flag while the request is still in flight.
+      mockUseMermaidEnabled.mockReturnValue([false, true])
+      rerender(<WorkflowFormFields workflow={{}} />)
+
+      await act(async () => {
+        resolveDiagram({ json: () => Promise.resolve({ data: 'data:image/png;base64,abc' }) })
+      })
+
+      expect(screen.queryByAltText('Workflow Diagram')).not.toBeInTheDocument()
+      expect(screen.getByText(/not configured/i)).toBeInTheDocument()
+    })
   })
 })

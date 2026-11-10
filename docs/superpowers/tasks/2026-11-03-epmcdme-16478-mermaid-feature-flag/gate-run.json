@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16478-mermaid-feature-flag",
+  "head": "c474b5cf8cb2b4eea1e23c9ba3c3860b6dad7d8d",
+  "runner": "npm",
+  "started_at": "2026-11-03T09:47:11Z",
+  "completed_at": "2026-11-03T09:53:46Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency added, removed, or moved in this diff (package.json / package-lock.json unchanged vs merge_base); guide's Skip-if condition applies."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 4000,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 121000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 756 passed (756); Tests 7735 passed | 1 skipped (7736)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 67000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 53 passed (53); Tests 608 passed | 1 skipped (609)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Infrastructure unreachable: local 'codemie' backend container is up but reports unhealthy (docker ps: 'Up 2 minutes (unhealthy)'); http://localhost:8080 refuses/empties every request (curl exit 52). Guide says never skip, but harness needs the stack up; this is owed to CI / a healthy local stack, not to this run. Not counted as PASS or FAIL.",
+      "evidence": "Caller must still satisfy its own feature-verification policy before MR; this N/A does not substitute for that."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 0,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2457 files, 0 missing license headers. Not listed as its own gate in quality-gates.md; enforced by the Husky pre-commit chain."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit code 0 but no static analysis actually ran. To enable locally, export a valid SONAR_TOKEN (and SONAR_HOST_URL if required) before running 'npm run sonar-local'. This check is owed to the real pre-commit hook run / CI; only CI (or a local run with the token set) can settle it."
+    },
+    {
+      "id": "ci-external-status-checks",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(none \u2014 gated by external GitLab status checks 'ci-pipeline' and 'compliance-report' via included project 'epm-cdme/codemie-gitlab-templates' ref 0.1.2, /templates/pre-ci-guard.yml)",
+      "exit_code": null,
+      "notes": ".gitlab-ci.yml only waits on externally-produced MR status checks (ci-pipeline, compliance-report); the underlying check commands live in an external template repo not present in this checkout, so there is no local command to execute. Only the real MR pipeline can settle these."
+    }
+  ],
+  "failures": {}
+}

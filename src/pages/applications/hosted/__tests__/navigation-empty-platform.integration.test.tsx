@@ -33,6 +33,7 @@ vi.mock('@/hooks/useTheme', () => ({ useTheme: () => ({ isDark: false }) }))
 vi.mock('@/hooks/useIsMobileLayout', () => ({ useIsMobileLayout: () => false }))
 vi.mock('@/hooks/useEscapeKey', () => ({ useEscapeKey: vi.fn() }))
 vi.mock('@/hooks/useFeatureFlags', () => ({
+  useCoreAvailable: () => true,
   useFeatureFlag: (name: string) => [name === 'features:hostedApplications'],
   useFavoritesEnabled: () => [false],
   useFavoritesPageEnabled: () => [false],

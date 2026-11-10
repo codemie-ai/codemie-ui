@@ -138,7 +138,9 @@ import WorkflowsListPage from '@/pages/workflows/WorkflowsListPage'
 import { setRouter } from '@/routerInstance'
 
 import App from './App'
+import { CoreGuard } from './components/CoreGuard'
 import { FeatureGuard } from './components/FeatureGuard'
+import { useCoreAvailable } from './hooks/useFeatureFlags'
 
 const chatRoutes: RouteObject[] = [
   {
@@ -893,16 +895,7 @@ const analyticsRoutes: RouteObject[] = [
   },
 ]
 
-const otherRoutes: RouteObject[] = [
-  {
-    index: true,
-    Component: Chat,
-  },
-  {
-    id: 'release-notes',
-    path: 'release-notes',
-    Component: ReleaseNotesPage,
-  },
+const helpRoutes: RouteObject[] = [
   {
     id: 'help',
     path: 'help',
@@ -912,6 +905,20 @@ const otherRoutes: RouteObject[] = [
     id: 'help-models',
     path: 'help/models',
     Component: ReadOnlyModelsCatalogPage,
+  },
+]
+
+const IndexRoute = () => (useCoreAvailable() ? <Chat /> : <Navigate to="/analytics" replace />)
+
+const otherRoutes: RouteObject[] = [
+  {
+    index: true,
+    Component: IndexRoute,
+  },
+  {
+    id: 'release-notes',
+    path: 'release-notes',
+    Component: ReleaseNotesPage,
   },
   {
     id: 'terms-and-conditions',
@@ -959,15 +966,25 @@ export const routes: RouteObject[] = [
     Component: App,
     ErrorBoundary: ErrorPage,
     children: [
-      ...chatRoutes,
-      ...assistantRoutes,
-      ...skillRoutes,
-      ...favoritesRoutes,
+      {
+        element: (
+          <CoreGuard>
+            <Outlet />
+          </CoreGuard>
+        ),
+        children: [
+          ...chatRoutes,
+          ...assistantRoutes,
+          ...skillRoutes,
+          ...favoritesRoutes,
+          ...schedulerRoutes,
+          ...workflowRoutes,
+          ...helpRoutes,
+        ],
+      },
       ...integrationRoutes,
       ...dataSourceRoutes,
-      ...schedulerRoutes,
       ...katasRoutes,
-      ...workflowRoutes,
       ...applicationRoutes,
       ...analyticsRoutes,
       ...settingsRoutes,

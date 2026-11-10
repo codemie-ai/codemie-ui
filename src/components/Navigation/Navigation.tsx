@@ -21,6 +21,7 @@ import { MOBILE_OVERLAY_CLASS_NAME } from '@/constants/mobileLayout'
 import { ANALYTICS, APPLICATIONS, SCHEDULERS } from '@/constants/routes'
 import { useEscapeKey } from '@/hooks/useEscapeKey'
 import {
+  useCoreAvailable,
   useFeatureFlag,
   useFavoritesEnabled,
   useFavoritesPageEnabled,
@@ -76,10 +77,15 @@ const Navigation: React.FC<NavigationProps> = () => {
   }
 
   const handleCreateChat = async () => {
+    if (!isCoreAvailable) {
+      router.push({ name: ANALYTICS })
+      return
+    }
     await chatsStore.startNewChat('', '', false)
     router.push({ name: 'new-chat' })
   }
 
+  const isCoreAvailable = useCoreAvailable()
   const [isSkillsEnabled] = useFeatureFlag('skills')
   const [isFavoritesEnabled] = useFavoritesEnabled()
   const [isFavoritesPageEnabled] = useFavoritesPageEnabled()
@@ -93,20 +99,24 @@ const Navigation: React.FC<NavigationProps> = () => {
   const isDataSourcesSurfaceEnabled =
     isKnowledgeBasesEnabled || isDatasourcesEnabled || isCodeIndexingEnabled
   const upperItems = useMemo(() => {
-    const items: NavigationLinkItem[] = [
-      {
-        label: 'Chats',
-        icon: IconType.CHAT,
-        route: router.resolve({ path: '/chats' }).fullPath,
-      },
-      {
-        label: 'Assistants',
-        icon: IconType.ASSISTANT,
-        route: router.resolve({ name: 'assistants' }).fullPath,
-      },
-    ]
+    const items: NavigationLinkItem[] = []
 
-    if (isSkillsEnabled) {
+    if (isCoreAvailable) {
+      items.push(
+        {
+          label: 'Chats',
+          icon: IconType.CHAT,
+          route: router.resolve({ path: '/chats' }).fullPath,
+        },
+        {
+          label: 'Assistants',
+          icon: IconType.ASSISTANT,
+          route: router.resolve({ name: 'assistants' }).fullPath,
+        }
+      )
+    }
+
+    if (isCoreAvailable && isSkillsEnabled) {
       items.push({
         label: 'Skills',
         icon: IconType.SKILL,
@@ -114,11 +124,13 @@ const Navigation: React.FC<NavigationProps> = () => {
       })
     }
 
-    items.push({
-      label: 'Workflows',
-      icon: IconType.WORKFLOW,
-      route: router.resolve({ name: 'workflows' }).fullPath,
-    })
+    if (isCoreAvailable) {
+      items.push({
+        label: 'Workflows',
+        icon: IconType.WORKFLOW,
+        route: router.resolve({ name: 'workflows' }).fullPath,
+      })
+    }
 
     if (applications?.length || canViewHosted) {
       items.push({
@@ -131,7 +143,7 @@ const Navigation: React.FC<NavigationProps> = () => {
     }
 
     return items
-  }, [router, applications, isSkillsEnabled, canViewHosted])
+  }, [router, applications, isSkillsEnabled, canViewHosted, isCoreAvailable])
 
   const upperSecondaryItems = useMemo(() => {
     const items: NavigationLinkItem[] = [
@@ -156,7 +168,7 @@ const Navigation: React.FC<NavigationProps> = () => {
       route: router.resolve({ name: 'katas' }).fullPath,
     })
 
-    if (isSchedulersViewEnabled) {
+    if (isCoreAvailable && isSchedulersViewEnabled) {
       items.splice(2, 0, {
         label: 'Schedulers',
         icon: IconType.SCHEDULER,
@@ -172,11 +184,11 @@ const Navigation: React.FC<NavigationProps> = () => {
     })
 
     return items
-  }, [router, isSchedulersViewEnabled, isDataSourcesSurfaceEnabled])
+  }, [router, isCoreAvailable, isSchedulersViewEnabled, isDataSourcesSurfaceEnabled])
 
   const favoritesItems: NavigationLinkItem[] = useMemo(
     () =>
-      isFavoritesEnabled && isFavoritesPageEnabled
+      isCoreAvailable && isFavoritesEnabled && isFavoritesPageEnabled
         ? [
             {
               label: 'Favorites',
@@ -185,16 +197,22 @@ const Navigation: React.FC<NavigationProps> = () => {
             },
           ]
         : [],
-    [router, isFavoritesEnabled, isFavoritesPageEnabled]
+    [router, isCoreAvailable, isFavoritesEnabled, isFavoritesPageEnabled]
   )
 
-  const lowerItems: NavigationLinkItem[] = [
-    {
-      label: 'Help',
-      icon: IconType.INFO,
-      route: router.resolve({ name: 'help' }).fullPath,
-    },
-  ]
+  const lowerItems: NavigationLinkItem[] = useMemo(
+    () =>
+      isCoreAvailable
+        ? [
+            {
+              label: 'Help',
+              icon: IconType.INFO,
+              route: router.resolve({ name: 'help' }).fullPath,
+            },
+          ]
+        : [],
+    [router, isCoreAvailable]
+  )
 
   let backgroundClass = 'bg-surface-base-navigation'
   if (showGradient) {
@@ -239,9 +257,10 @@ const Navigation: React.FC<NavigationProps> = () => {
             scrollable column's available height tightens, e.g. at >100% browser zoom. */}
         <div className="h-px my-4 bg-border-primary mx-2 flex-shrink-0" />
         <NavigationSection items={upperSecondaryItems} />
-        {((isFavoritesEnabled && isFavoritesPageEnabled) || isPinnedAssistantsEnabled) && (
-          <div className="h-px my-4 bg-border-primary mx-2 flex-shrink-0" />
-        )}
+        {isCoreAvailable &&
+          ((isFavoritesEnabled && isFavoritesPageEnabled) || isPinnedAssistantsEnabled) && (
+            <div className="h-px my-4 bg-border-primary mx-2 flex-shrink-0" />
+          )}
         <NavigationSection items={favoritesItems} />
       </div>
 

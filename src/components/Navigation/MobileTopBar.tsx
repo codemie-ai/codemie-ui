@@ -24,6 +24,8 @@ import LogoDarkSvg from '@/assets/images/logo-dark.svg?react'
 import LogoLightSvg from '@/assets/images/logo-light.svg?react'
 import { MOBILE_TOP_BAR_BOTTOM_CSS_VAR } from '@/constants/mobileLayout'
 import { ROUTE_ID_TO_TITLE } from '@/constants/pageTitles'
+import { ANALYTICS } from '@/constants/routes'
+import { useCoreAvailable } from '@/hooks/useFeatureFlags'
 import { useTheme } from '@/hooks/useTheme'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
@@ -57,6 +59,7 @@ const SECTIONS: Record<string, { label: string; icon?: IconType }> = {
  */
 const MobileTopBar: FC = () => {
   const router = useVueRouter()
+  const isCoreAvailable = useCoreAvailable()
   const { pathname, search, key } = useLocation()
   const matches = useMatches()
   const { isDark, appearance } = useTheme()
@@ -121,6 +124,10 @@ const MobileTopBar: FC = () => {
   const showBorder = appearance?.navigationBorder ?? !isDark
 
   const handleCreateChat = async () => {
+    if (!isCoreAvailable) {
+      router.push({ name: ANALYTICS })
+      return
+    }
     await chatsStore.startNewChat('', '', false)
     router.push({ name: 'new-chat' })
   }

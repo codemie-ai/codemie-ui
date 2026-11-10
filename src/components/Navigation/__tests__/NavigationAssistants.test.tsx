@@ -70,6 +70,7 @@ vi.mock('@/constants/assistants', () => ({
 }))
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
+  useCoreAvailable: vi.fn(() => true),
   useFeatureFlag: vi.fn(() => [true, true]),
 }))
 

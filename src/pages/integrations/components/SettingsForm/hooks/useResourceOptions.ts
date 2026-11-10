@@ -15,6 +15,7 @@
 
 import { useState, useEffect } from 'react'
 
+import { useCoreAvailable } from '@/hooks/useFeatureFlags'
 import { assistantsStore } from '@/store/assistants'
 import { dataSourceStore } from '@/store/dataSources'
 import { workflowsStore } from '@/store/workflows'
@@ -32,9 +33,11 @@ export function useResourceOptions(
 } {
   const [options, setOptions] = useState<ResourceOption[]>([])
   const [loading, setLoading] = useState(false)
+  const isCoreOn = useCoreAvailable()
 
   useEffect(() => {
-    if (!resourceType) {
+    // assistants and workflows are core-only: no request when core is off
+    if (!resourceType || (!isCoreOn && resourceType !== 'datasource')) {
       setOptions([])
       setLoading(false)
       return () => {}
@@ -77,7 +80,7 @@ export function useResourceOptions(
     return () => {
       cancelled = true
     }
-  }, [resourceType, project, search, perPage])
+  }, [resourceType, project, search, perPage, isCoreOn])
 
   return { options, loading }
 }

@@ -1,0 +1,138 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; CR-002 stands (audit: analytics requests already skipErrorHandling)."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User: fix CR-001, CR-002."
+    },
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; CR-002 stands (audit: analytics requests already skipErrorHandling)."
+    }
+  ],
+  "reviewed_head": "f499b45a27045d20bc88802ff9a61312d04d515f",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "CR-001 resolved: WorkflowSelector now returns an empty list without a request when core is off (test added). CR-002 closed as won't-fix by the user at the check gate: the verifier could not accept a no-code-change decision for a code finding, but the audit (every request in analytics.ts already passes skipErrorHandling) and the browser run with core off (no toasts or failed requests on Analytics) support it. The audit covered the store, not the Analytics page components. Code after the reviewed head (CoreGuard moved to its own module, 34888c199) was covered by qa-gates, not by a review round.",
+  "confidence": "low",
+  "check_confidence": "low",
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 1,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 1
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/guardrails/GuardrailAssignmentPopup/GuardrailAssignmentEntitySelector.tsx",
+      "title": "Workflow selectors not gated on core availability",
+      "problem": "Spec AC6 requires selectors on visible pages to issue no assistants/workflows request when core is off. Only useResourceOptions and useGuardrailAssignmentOptions were gated; WorkflowSelector as used by GuardrailAssignmentEntitySelector and AwsAgentCoreRuntimeDetails is untouched.",
+      "impact": "In standalone mode these selectors may request workflows and show an error toast, violating AC6. Reachability unconfirmed.",
+      "recommendation": "Trace each remaining selector that loads assistants/workflows; skip the request and return an empty list when !isCoreAvailable(appInfoStore.configs).",
+      "status": "resolved",
+      "check_notes": "WorkflowSelector.tsx now short-circuits to an empty list when core is unavailable; AssistantSelector in the same popup not re-read.",
+      "fix": {
+        "change": "WorkflowSelector skips fetch and clears options when core is unavailable",
+        "test": "WorkflowSelector.test.tsx: issues no request when core is unavailable"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/analytics.ts",
+      "title": "Analytics requests not audited for core-off toasts",
+      "problem": "Spec AC5 requires tracing each Analytics tab request so none toasts when core is off. The diff changes nothing under analytics pages or store; only some calls in analytics.ts already use skipErrorHandling.",
+      "impact": "Landing on Analytics in standalone mode (now the default landing page) may show error toasts from core-dependent tab requests. Reachability unconfirmed.",
+      "recommendation": "Audit each Analytics tab and dashboard request; add skipErrorHandling or an empty state for any that depend on core.",
+      "status": "wont-fix",
+      "check_notes": "src/store/analytics.ts untouched; mapped evidence is a no-code-change decision, not source proof for a code finding.",
+      "fix": {
+        "change": "No change: every analytics store request (fetchWithState, leaderboard seasons/user) already passes skipErrorHandling: true; dashboards are localStorage",
+        "test": "n/a"
+      },
+      "disposition": {
+        "rationale": "Audit: every request in src/store/analytics.ts already passes skipErrorHandling: true and dashboards live in localStorage, so no source change was needed. Accepted by the user at the check gate.",
+        "source": "hitl"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Core signal helper, hook and constant",
+      "status": "pass",
+      "notes": "coreAvailability.ts, useFeatureFlags, featureFlags"
+    },
+    {
+      "kind": "spec",
+      "item": "Navigation, logo, pinned shortcuts, onboarding, routes, index redirect (AC1-AC4, AC7)",
+      "status": "pass",
+      "notes": "Gated via isCoreAvailable and CoreGuard"
+    },
+    {
+      "kind": "spec",
+      "item": "App-load skips core calls; kept calls do not toast",
+      "status": "pass",
+      "notes": "useInitialDataFetch, coreOffApiOptions"
+    },
+    {
+      "kind": "spec",
+      "item": "AC5 Analytics tab requests do not toast when core off",
+      "status": "pass",
+      "notes": "analytics.ts requests already skipErrorHandling (audit); browser run with core off showed no toasts or failed requests on Analytics. Page components not audited."
+    },
+    {
+      "kind": "spec",
+      "item": "AC6 selectors on visible pages issue no assistants/workflows request",
+      "status": "partial",
+      "notes": "useResourceOptions, guardrail options and WorkflowSelector gated; Integrations fields verified in the browser. AssistantSelector and AssistantMultiSelectField in the guardrail popup not re-read or exercised in the browser."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "1 commit subject in range matches the documented EPMCDME-XXXX: Capital sentence format"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "checked against security-patterns.md: no HTML sinks, redirects, postMessage, config/secret or suppression changes in the diff; new console.error calls in useInitialDataFetch log error objects only"
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "Acceptance reported partial on AC5 (Analytics tab requests) and AC6 (other assistant/workflow selectors); both kept as major with reachability unconfirmed. Lens items on pre-config-load flash, analytics landing access and missing tests were dismissed (about 20 noise); 0 deferred; no standards gap.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

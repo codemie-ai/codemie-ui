@@ -18,6 +18,8 @@ import { proxy } from 'valtio'
 import { Application } from '@/types/entity/application'
 import api from '@/utils/api'
 
+import { coreOffApiOptions } from './appInfo'
+
 interface ApplicationsStore {
   applications: Application[]
   fetchApplications: () => Promise<Application[]>
@@ -28,7 +30,7 @@ export const applicationsStore = proxy<ApplicationsStore>({
 
   async fetchApplications() {
     try {
-      const response = await api.get('v1/applications')
+      const response = await api.get('v1/applications', ...coreOffApiOptions())
       const apps = (await response.json()) as Application[]
       this.applications = apps
       return apps

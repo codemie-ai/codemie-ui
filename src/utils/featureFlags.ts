@@ -125,3 +125,18 @@ export const isMarketplaceManagementEnabled = (): boolean => {
 export const isMarketplaceApprovalGateEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.MARKETPLACE_APPROVAL_GATE)
 }
+
+/**
+ * Check if Mermaid diagram rendering is enabled (non-reactive utility)
+ *
+ * Unlike isFeatureEnabled()-based checks, this defaults to enabled: an absent
+ * flag (older backend) or a config not yet fetched both mean "available".
+ * Only an explicit `settings.enabled === false` disables it.
+ */
+export const isMermaidEnabled = (): boolean => {
+  if (!appInfoStore.configs) {
+    return true
+  }
+  const config = appInfoStore.configs.find((c) => c.id === FEATURE_FLAGS.MERMAID)
+  return config?.settings?.enabled !== false
+}

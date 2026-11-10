@@ -31,6 +31,7 @@ import {
   ConfigItem,
 } from '@/types/entity/configuration'
 import api from '@/utils/api'
+import { isCoreAvailable } from '@/utils/coreAvailability'
 
 const TOOL_CONFIG_FIELD_MAP: Record<string, { credentialType: string; fields: string[] }> = {
   jiraconfig: { credentialType: 'jira', fields: ['url', 'cloud'] },
@@ -200,6 +201,9 @@ const fetchAudioModels = async (): Promise<ModelOption[]> => {
     return []
   }
 }
+/** Standalone (core off) backends may reject core-adjacent calls: load silently, no toast. */
+export const coreOffApiOptions = (): [{ skipErrorHandling: true }] | [] =>
+  isCoreAvailable(appInfoStore.configs) ? [] : [{ skipErrorHandling: true }]
 
 export const appInfoStore = proxy<AppInfoStoreType>({
   configs: [],
@@ -385,9 +389,8 @@ export const appInfoStore = proxy<AppInfoStoreType>({
 
   async getLLMModels(projectId?: string) {
     try {
-      const response = await api.get(
-        projectId ? `v1/llm_models?project_id=${projectId}` : 'v1/llm_models'
-      )
+      const url = projectId ? `v1/llm_models?project_id=${projectId}` : 'v1/llm_models'
+      const response = await api.get(url, ...coreOffApiOptions())
       const data = await response.json()
 
       const routerEntries = data.filter((model: any) => model.is_router)
@@ -462,7 +465,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
 
   async getEmbeddingsModels() {
     try {
-      const response = await api.get('v1/embeddings_models')
+      const response = await api.get('v1/embeddings_models', ...coreOffApiOptions())
       const data = await response.json()
       appInfoStore.embeddingModels = data.map((model: any) => ({
         value: model.base_name,

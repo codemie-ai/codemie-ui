@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 20,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 24,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Gating spans navigation components, router, onboarding config, app-level popups, several stores/hooks and a new CoreGuard/coreAvailability util; many touch points but one repeated guard pattern." },
+    { "dimension": "file_change_estimate", "reason": "24 files per diffstat (16+ is XXL), though ~5 are tests and the edits are small (290 insertions, 98 deletions)." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

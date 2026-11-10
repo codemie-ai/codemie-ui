@@ -44,7 +44,7 @@ vi.mock('@/store/appInfo', () => ({
     api: { BASE_URL: 'https://test' },
     fetchCustomerConfig: vi.fn().mockResolvedValue(null),
     // Read by useFeatureFlag in SettingsForm
-    configs: [],
+    configs: [{ id: 'features:sharepointPkce', settings: { enabled: true } }],
     toolFieldDefaults: {},
     // The app-auth branch renders CredentialFields, which resolves placeholders here.
     toolFieldPlaceholders: {},

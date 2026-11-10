@@ -18,6 +18,7 @@ import { useSnapshot } from 'valtio'
 
 import { FeatureFlag } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
+import { notFoundError } from '@/utils/notFoundError'
 import { isConfigItemEnabled } from '@/utils/settings'
 
 interface FeatureGuardProps {
@@ -55,20 +56,7 @@ export const FeatureGuard: FC<FeatureGuardProps> = ({ featureFlags, match = 'all
   } else {
     isEnabled = isConfigItemEnabled(configs, featureFlags)
   }
-  if (!isEnabled) {
-    const error = new Error('Not Found')
-
-    // React Router redirects to 404 page only when error has these fields.
-    // No proper built-in way to throw 404 error is available in the lib
-    Object.assign(error, {
-      status: 404,
-      statusText: 'Not Found',
-      internal: false,
-      data: null,
-    })
-
-    throw error
-  }
+  if (!isEnabled) throw notFoundError()
 
   return children
 }

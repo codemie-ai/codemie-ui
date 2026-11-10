@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
-import { fireEvent, render } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { ABSENT_VALUE_MARKER } from '@/constants'
+import { INDEX_TYPES, SHAREPOINT_AUTH_TYPES } from '@/constants/dataSources'
+import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { dataSourceStore } from '@/store/dataSources'
 import { userStore } from '@/store/user'
 import { DataSourceDetailsResponse } from '@/types/entity/dataSource'
@@ -65,7 +67,15 @@ vi.mock('../DataSourceDetails/DetaSourceDetailsProvider', () => ({ default: () =
 
 vi.mock('../DataSourceDeleteModal', () => ({ default: () => null }))
 
-vi.mock('../SharePointReindexAuthPopup', () => ({ default: () => null }))
+vi.mock('../SharePointReindexAuthPopup', () => ({
+  default: ({ onSuccess }: { onSuccess: (token: string) => void }) => (
+    <button onClick={() => onSuccess('token-123')}>SP Reauth Success</button>
+  ),
+}))
+
+vi.mock('@/hooks/useFeatureFlags', () => ({
+  useFeatureFlag: vi.fn().mockReturnValue([true, true]),
+}))
 
 vi.mock('@/pages/dataSources/components/DataSourceTypeIcon', () => ({ default: () => null }))
 
@@ -307,5 +317,56 @@ describe('DataSourceDetails — clone button', () => {
     userStore.user = { isAdmin: false, applications: [] } as typeof userStore.user
     const { queryByRole } = render(<DataSourceDetails dataSource={dataSource} />)
     expect(queryByRole('button', { name: 'Clone' })).not.toBeInTheDocument()
+  })
+})
+
+describe('DataSourceDetails — SharePoint reauth fallback', () => {
+  const sharepointDataSource: DataSourceDetailsResponse = {
+    ...dataSource,
+    index_type: 'sharepoint',
+    sharepoint: {},
+  } as DataSourceDetailsResponse
+
+  beforeEach(() => {
+    vi.mocked(dataSourceStore.updateKBIndex).mockClear()
+  })
+
+  it('writes back INTEGRATION when sharepoint.auth_type is missing and PKCE is unavailable', () => {
+    vi.mocked(useFeatureFlag).mockReturnValue([false, true])
+    render(<DataSourceDetails dataSource={sharepointDataSource} />)
+
+    fireEvent.click(screen.getByText('SP Reauth Success'))
+
+    expect(dataSourceStore.updateKBIndex).toHaveBeenCalledWith(
+      INDEX_TYPES.SHAREPOINT,
+      expect.objectContaining({ auth_type: SHAREPOINT_AUTH_TYPES.INTEGRATION }),
+      true
+    )
+  })
+
+  it('writes back OAUTH_CODEMIE when sharepoint.auth_type is missing and PKCE is available', () => {
+    vi.mocked(useFeatureFlag).mockReturnValue([true, true])
+    render(<DataSourceDetails dataSource={sharepointDataSource} />)
+
+    fireEvent.click(screen.getByText('SP Reauth Success'))
+
+    expect(dataSourceStore.updateKBIndex).toHaveBeenCalledWith(
+      INDEX_TYPES.SHAREPOINT,
+      expect.objectContaining({ auth_type: SHAREPOINT_AUTH_TYPES.OAUTH_CODEMIE }),
+      true
+    )
+  })
+
+  it('writes back INTEGRATION when sharepoint.auth_type is missing and the flag is enabled but not yet loaded', () => {
+    vi.mocked(useFeatureFlag).mockReturnValue([true, false])
+    render(<DataSourceDetails dataSource={sharepointDataSource} />)
+
+    fireEvent.click(screen.getByText('SP Reauth Success'))
+
+    expect(dataSourceStore.updateKBIndex).toHaveBeenCalledWith(
+      INDEX_TYPES.SHAREPOINT,
+      expect.objectContaining({ auth_type: SHAREPOINT_AUTH_TYPES.INTEGRATION }),
+      true
+    )
   })
 })

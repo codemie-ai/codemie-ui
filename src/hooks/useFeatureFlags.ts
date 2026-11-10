@@ -25,6 +25,7 @@ import { useSnapshot } from 'valtio'
 
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { appInfoStore } from '@/store/appInfo'
+import { isCoreAvailable } from '@/utils/coreAvailability'
 
 /**
  * Result of feature flag check with loading state
@@ -143,4 +144,33 @@ export const useMarketplaceManagementEnabled = (): FeatureFlagResult => {
 
 export const useMarketplaceApprovalGateEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.MARKETPLACE_APPROVAL_GATE)
+}
+
+/**
+ * React hook to check if Mermaid diagram rendering is enabled (reactive)
+ *
+ * Independent of useFeatureFlag(): defaults to enabled when the flag is
+ * absent or not yet fetched (older backend), unlike every other flag here.
+ * Only an explicit `settings.enabled === false` disables it.
+ *
+ * @returns Tuple of [isEnabled, isLoaded] where isLoaded mirrors
+ *   appInfoStore.isConfigFetched.
+ */
+export const useMermaidEnabled = (): FeatureFlagResult => {
+  const { configs, isConfigFetched } = useSnapshot(appInfoStore)
+
+  return useMemo(() => {
+    const config = configs.find((c) => c.id === FEATURE_FLAGS.MERMAID)
+    const isEnabled = config?.settings?.enabled !== false
+    return [isEnabled, isConfigFetched]
+  }, [configs, isConfigFetched])
+}
+
+/**
+ * True unless `features:core` is present with `settings.enabled === false`.
+ * Absent item, empty configs or failed fetch all mean core is available.
+ */
+export const useCoreAvailable = (): boolean => {
+  const { configs } = useSnapshot(appInfoStore)
+  return isCoreAvailable(configs)
 }

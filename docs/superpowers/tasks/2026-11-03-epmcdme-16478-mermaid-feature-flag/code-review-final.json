@@ -1,0 +1,85 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "request-changes",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User reviewed fix-up diff for CR-001 (stale diagram race in WorkflowFormFields.tsx) and approved."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User reviewed brief: 1 finding (CR-001, stale diagram race in WorkflowFormFields.tsx:136), requested fix before re-approval."
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User reviewed fix-up diff for CR-001 (stale diagram race in WorkflowFormFields.tsx) and approved."
+    }
+  ],
+  "reviewed_head": "c474b5cf8cb2b4eea1e23c9ba3c3860b6dad7d8d",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "No story/spec artifact was dispatched this round so acceptance did not run (no-spec); blind and verification-gap are outside the compact profile's expected roster. The edge-case lens surfaced 8 candidates; verified against source, 6 were dismissed either because they match the ticket's own explicit default-enable design for the not-yet-fetched window, or because they describe a backend-type-contract trust gap (non-boolean/non-array config values) already shared, unaddressed, by every other existing feature-flag reader in this codebase. 0 defer. 1 real defect remains: WorkflowFormFields can render a stale diagram image alongside the 'not configured' hint when the Mermaid flag flips to disabled while a Visualize request is in flight. Confidence is low because the round has no spec backing.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 1,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/components/WorkflowFormFields.tsx",
+      "line": 136,
+      "title": "Stale diagram renders after Mermaid disabled mid-flight",
+      "problem": "generateDiagram() checks isMermaidAvailable only before firing the request; after workflowsStore.getWorkflowDiagram resolves it unconditionally calls setSchemaImage(json.data), and the image block (lines 345-355) renders schemaImage whenever it is set with no isMermaidAvailable guard and no effect that clears it when the flag flips to disabled.",
+      "impact": "If the Visualize request starts during the not-yet-fetched window (defaults to available per spec) or the flag flips to disabled while a request is in flight, the component ends up showing both the rendered diagram image and the 'Diagram rendering is not configured.' InfoBox simultaneously, contradicting the required 'preview is disabled/hidden with a hint' behavior.",
+      "recommendation": "Re-check isMermaidAvailable before calling setSchemaImage (or bail out of the .then branch), and add a useEffect that clears schemaImage when isMermaidAvailable becomes false; alternatively gate the image-render block itself on isMermaidAvailable.",
+      "status": "fixed",
+      "fix": {
+        "change": "generateDiagram now re-checks a live isMermaidAvailableRef after the async response resolves before calling setSchemaImage, and a useEffect clears/revokes schemaImage whenever isMermaidAvailable flips to false, so a diagram that resolves after the flag disables is discarded instead of rendered.",
+        "test": "npx vitest run --project unit src/pages/workflows/components/__tests__/WorkflowFormFields.test.tsx (new case: \"discards a diagram that resolves after Mermaid flips to unavailable mid-flight (regression)\")"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile/round."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile/round."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile/round."
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "No story/spec artifact was dispatched this round so acceptance did not run (no-spec); blind and verification-gap are outside the compact profile's expected roster. The edge-case lens surfaced 8 candidates; verified against source, 6 were dismissed either because they match the ticket's own explicit default-enable design for the not-yet-fetched window, or because they describe a backend-type-contract trust gap (non-boolean/non-array config values) already shared, unaddressed, by every other existing feature-flag reader in this codebase. 0 defer. 1 real defect remains: WorkflowFormFields can render a stale diagram image alongside the 'not configured' hint when the Mermaid flag flips to disabled while a Visualize request is in flight. Confidence is low because the round has no spec backing.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

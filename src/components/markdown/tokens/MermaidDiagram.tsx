@@ -24,6 +24,7 @@ import { unSanitizeMessage } from '@/components/markdown/Markdown.utils'
 import NavigationMore, { NavigationItem } from '@/components/NavigationMore/NavigationMore'
 import ZoomableImage from '@/components/ZoomableImage'
 import { ButtonType, ButtonSize } from '@/constants'
+import { useMermaidEnabled } from '@/hooks/useFeatureFlags'
 import { filesStore } from '@/store/files'
 
 import MermaidCodePopup from './MermaidCodePopup'
@@ -113,6 +114,7 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code }) => {
   const [renderedSvg, setRenderedSvg] = useState('')
   const [showCodePopup, setShowCodePopup] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [isMermaidAvailable] = useMermaidEnabled()
 
   const renderDiagram = useCallback(async () => {
     // Clear any existing timeout
@@ -145,14 +147,16 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code }) => {
   }, [code])
 
   useEffect(() => {
-    renderDiagram()
+    if (isMermaidAvailable) {
+      renderDiagram()
+    }
 
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [renderDiagram])
+  }, [renderDiagram, isMermaidAvailable])
 
   // Export to SVG
   const exportAsSvg = () => {
@@ -234,6 +238,14 @@ const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ code }) => {
       icon: <FileSvg className="w-[18px] h-[18px]" />,
     },
   ]
+
+  if (!isMermaidAvailable) {
+    return (
+      <div className="mermaid-diagram flex my-4 w-full overflow-x-auto relative">
+        <CodeBlock language="mermaid" text={cleanMermaidCode(code)} />
+      </div>
+    )
+  }
 
   if (hasError) {
     return (

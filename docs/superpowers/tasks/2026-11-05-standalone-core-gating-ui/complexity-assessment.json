@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "task": "Gate Chats/Assistants/Workflows/Skills/Help/Favorites/Schedulers UI (nav, routes, landing, onboarding) on backend core-availability so standalone deployments land on Analytics with no errors (EPMCDME-16885).",
+  "generated": "2026-11-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 2, "label": "S" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 22,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches router table, FeatureGuard, Navigation, NavigationLogo, MobileTopBar, NavigationPinnedSection, NavigationAssistants, HelpPanel, AutoPopupManager, onboarding flows, SignInPage, index landing route, and app-load fetching; every entry point to 7 core areas must be enumerated." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is useMermaidEnabled (absent = enabled) plus FeatureGuard 404, but existing helpers (useFeatureFlag, isConfigItemEnabled, FeatureGuard) default absent = off, so AC7 risks inconsistent rules. No precedent for conditional landing redirect beyond the workflows loader; post-login stored paths and app-load error toasts (AC5/AC6) are untraced; routing/auth landing is hard to roll back piecemeal. Test gaps for HelpPanel, AutoPopupManager, useInitialDataFetch, SignInPage." },
+    { "dimension": "file_change_estimate", "reason": "Roughly 12-20 source files across store/hooks/constants, router, shell components, auth, onboarding configs, excluding tests." }
+  ],
+  "red_flags_applied": [
+    "Component Scope: affects multiple workflows/entry points (nav, routes, landing, tours)",
+    "Technical Risk: affects navigation/post-login landing and auth redirect path"
+  ],
+  "split_recommendation": null
+}
