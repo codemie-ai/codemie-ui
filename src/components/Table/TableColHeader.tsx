@@ -24,7 +24,7 @@ export interface SelectionProps<T> {
   selected?: T[] | null
   isAllSelected: boolean
   isLazyMode: boolean
-  items: Array<T> | ReadonlyArray<T>
+  items: readonly T[]
   onSelectRow?: (value: T[]) => void
   onSelectAllChange?: (checked: boolean) => void
 }
@@ -95,7 +95,8 @@ const TableColHeader = <T,>({
   const headerClassName = cn(
     column.headClassNames,
     'text-left border-border-structural border-t border-b',
-    'px-4 py-2.5',
+    'py-2.5',
+    isSortableColumn ? 'pl-4 pr-2 cursor-pointer' : 'px-4 cursor-default',
     column.headerNoWrap !== false ? 'text-nowrap' : 'whitespace-normal break-words',
     {
       'rounded-tl-lg border-l': isFirst,
@@ -105,6 +106,9 @@ const TableColHeader = <T,>({
   )
 
   if (isExpandColumn) return <th key={column.key} className={headerClassName} />
+
+  const headerTitle =
+    column.tooltip || (typeof column.label === 'string' ? column.label : undefined)
 
   return (
     <th key={column.key} className={headerClassName}>
@@ -119,12 +123,12 @@ const TableColHeader = <T,>({
       {isSortableColumn ? (
         <button
           type="button"
-          className="inline-flex items-center cursor-pointer select-none bg-transparent border-none p-0 font-semibold text-inherit"
+          className="inline-flex items-center cursor-pointer w-full select-none bg-transparent border-none p-0 font-semibold text-inherit"
           onClick={handleSortClick}
-          title={column.tooltip}
+          title={headerTitle}
         >
-          <span>{column.label}</span>
-          <span className="inline-block ml-2 pointer-events-none">
+          <span className="min-w-0 overflow-hidden text-ellipsis">{column.label}</span>
+          <span className="pointer-events-none ml-2 shrink-0">
             <SortIcon
               order={sortProps!.sort.sortOrder}
               sorted={isSorted}
@@ -133,7 +137,9 @@ const TableColHeader = <T,>({
           </span>
         </button>
       ) : (
-        <span title={column.tooltip}>{column.label}</span>
+        <span className="block overflow-hidden text-ellipsis" title={headerTitle}>
+          {column.label}
+        </span>
       )}
     </th>
   )

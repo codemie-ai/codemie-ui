@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15751_table_head_overlaps",
+  "head": "5d61feb2f9b936bef41578ea59244d395a012778",
+  "runner": "npm",
+  "started_at": "2026-10-12T14:04:19Z",
+  "completed_at": "2026-10-12T14:21:00Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 33050,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 660,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2338 files, 0 missing license headers."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1680,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: output was '→ No staged files found.' lint-staged only checks the staged index and nothing is staged, so it checked no files. Lint and typecheck gates cover the branch sources; to run it locally, stage the branch changes and rerun before committing."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 27550,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 27560,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output: 'no leaks found'. Working tree scan only; git history not scanned."
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Guide skip condition met: no dependency added, removed, or moved (package.json and package-lock.json are not in the branch diff vs origin/main)."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 358450,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "Test Files 1 failed | 689 passed (690); Tests 2 failed | 6925 passed | 1 skipped (6928). Both failures in src/components/Table/__tests__/TableColHeader.test.tsx (TableColHeader constrained labels)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 129970,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 49 passed (49); Tests 558 passed | 1 skipped (559)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 358360,
+      "command": "npm run test-harness",
+      "exit_code": 1,
+      "notes": "Could not run against a live stack: ~/.codemie/test-harness.json is absent and nothing listens on http://localhost:5173/ (Page.goto net::ERR_CONNECTION_REFUSED). Result: 93 errors, 186 rerun. Environmental, not verified; needs the UI stack up and the harness config present."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "none configured",
+      "exit_code": null,
+      "notes": "UI surface changed (src/components/Table/TableColHeader.tsx, src/pages/settings/administration/projectsManagement/ProjectsManagementFull.tsx) but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 760,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 is not evidence of a scan. To run locally, set SONAR_TOKEN and rerun."
+    }
+  ],
+  "failures": {
+    "unit": "FAIL  |unit| src/components/Table/__tests__/TableColHeader.test.tsx > TableColHeader constrained labels > wraps sortable labels without shrinking the sort icon\nError: expect(element).toHaveClass(\"min-w-0 whitespace-normal\")\nExpected the element to have class:\n  min-w-0 whitespace-normal\nReceived:\n  truncate\n ❯ src/components/Table/__tests__/TableColHeader.test.tsx:53:19\n     53|     expect(label).toHaveClass('min-w-0', 'whitespace-normal')\n\nFAIL  |unit| src/components/Table/__tests__/TableColHeader.test.tsx > TableColHeader constrained labels > wraps constrained non-sortable labels while retaining the header nowrap default\nError: expect(element).toHaveClass(\"whitespace-normal\")\nExpected the element to have class:\n  whitespace-normal\nReceived:\n  block truncate\n ❯ src/components/Table/__tests__/TableColHeader.test.tsx:65:45\n     65|     expect(screen.getByText('Cost center')).toHaveClass('whitespace-normal')\n\n Test Files  1 failed | 689 passed (690)\n      Tests  2 failed | 6925 passed | 1 skipped (6928)\n   Start at  17:05:59\n   Duration  354.06s",
+    "test-harness": "ERROR tests/ui/skills/test_skills_marketplace.py::test_marketplace_search_skills_by_name[chromium] - playwright._impl._errors.Error: Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nERROR tests/ui/skills/test_import_skill.py::test_import_zip_bundle_with_multiple_md_files_shows_friendly_error[chromium] - playwright._impl._errors.Error: Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\nERROR tests/ui/workflows/test_workflows.py::test_workflows_page_basic_functionality[chromium] - playwright._impl._errors.Error: Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/\n================== 93 errors, 186 rerun in 327.78s (0:05:27) ===================\n2026-10-12 17:20:08,882 - codemie_test_harness.tests.conftest - INFO - Starting session cleanup...\n2026-10-12 17:20:09,178 - codemie_test_harness.tests.conftest - INFO - Session cleanup completed.\nEXIT=1"
+  }
+}

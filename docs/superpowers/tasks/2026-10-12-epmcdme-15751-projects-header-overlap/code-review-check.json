@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "gate_id": "code-review.check",
+  "decision": "approve",
+  "rationale": "Two read-only reviewer passes on origin/main...HEAD. Pass 1 (head 3f8fb8aa5) returned changes-requested: major - 'truncate' forced white-space:nowrap on header labels and broke headerNoWrap:false and [&_th]:whitespace-normal wrapping (UsersManagementPage, ProjectBudgetsSection); minor - tests asserted unchanged behavior; nits - misleading comment, no-op justify-self-end. All fixed in 3096cd76b and 08a0ea709 (labels inherit white-space from th, sort icon wrapper shrink-0 ml-2, behavior tests added). Pass 2 on the fixed diff: approve, no findings (static read only; no browser check). The code-review-orchestrator could not be used because this session has no subagent dispatch for its lens agents.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "truncate forced white-space:nowrap and overrode headerNoWrap:false and [&_th]:whitespace-normal wrapping. Fixed in 3096cd76b: labels inherit white-space from the th."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Tests asserted unchanged behavior. Rewritten to assert overflow classes, shrink-0 icon wrapper and headerNoWrap:false wrapping; cost-center test now asserts the changed widths."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "Misleading comment and no-op justify-self-end removed."
+    }
+  ]
+}

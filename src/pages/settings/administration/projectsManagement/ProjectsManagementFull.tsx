@@ -137,20 +137,19 @@ const columnDefinitions: ColumnDefinition[] = [
     key: COST_CENTER_COLUMN_KEY,
     label: 'Cost center',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[8%]',
+    headClassNames: 'w-[10%]',
   },
   {
     key: BUDGETS_COLUMN_KEY,
     label: 'Budgets',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[26%]',
   },
   {
     key: 'created_at',
     label: 'Created',
     type: DefinitionTypes.Date,
     sortable: true,
-    headClassNames: 'w-[9%]',
+    headClassNames: 'w-[10%]',
   },
   {
     key: 'assignments',

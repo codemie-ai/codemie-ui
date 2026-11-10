@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15751_table_head_overlaps",
+  "head": "6bf977fc1fbed67ffaa473e39bafa2f4dd6586cf",
+  "runner": "npm",
+  "started_at": "2026-10-12T11:53:21Z",
+  "completed_at": "2026-10-12T12:02:52Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 32700, "command": "npm run lint", "exit_code": 0},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 35600, "command": "npm run typecheck", "exit_code": 0, "notes": "Passed with the reported unstaged edits in Markdown.sanitize.ts and useChatPromptResize.ts plus its test present."},
+    {"id": "license-check", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": "npm run license-check", "exit_code": null, "notes": "Guide Skip if condition met: no dependency was added, removed, or moved in the branch diff."},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 29270, "command": "npm run secrets:check", "exit_code": 0, "notes": "Output: no leaks found."},
+    {"id": "unit", "source": "guide", "status": "PASS", "duration_ms": 562720, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "689 test files passed; 6,927 tests passed, 1 skipped."},
+    {"id": "integration", "source": "guide", "status": "PASS", "duration_ms": 267930, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "49 test files passed; 558 tests passed, 1 skipped."},
+    {"id": "lint-staged", "source": "hook", "status": "SKIPPED", "duration_ms": 1000, "command": "npx lint-staged", "exit_code": 0, "notes": "Self-skip: ‘No staged files found.’ Stage changes to run this staged-file gate; no files were staged or changed by this run."},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 940, "command": "npm run license-headers:check", "exit_code": 0, "notes": "Checked 2,332 files; 0 missing license headers."},
+    {"id": "sonar-local", "source": "hook", "status": "SKIPPED", "duration_ms": 490, "command": "npm run sonar-local", "exit_code": 0, "notes": "Self-skip: ‘Skipping Sonar scan because SONAR_TOKEN is not set.’ Provide SONAR_TOKEN to run the local Sonar scan."},
+    {"id": "ci-pipeline", "source": "ci", "status": "N/A", "duration_ms": 0, "command": "CI pipeline checks via GitLab external templates", "exit_code": null, "notes": "Requires a GitLab merge-request pipeline and external pre-ci-guard templates; unavailable as a local gate. CI must settle this check."},
+    {"id": "ui", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": null, "exit_code": null, "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision and was not run."}
+  ],
+  "failures": {}
+}

@@ -1,0 +1,429 @@
+pre-mr: codemie-ui EPMCDME-15751_table_head_overlaps @ e04733e2b, full stack confirmed
+
+pre-mr: >>> npm run lint
+
+> ai-assistant@0.0.0 lint
+> eslint . --ext .js,.jsx,.cjs,.mjs,.tsx,.ts --ignore-path .gitignore
+
+
+pre-mr: >>> npm run typecheck
+
+> ai-assistant@0.0.0 typecheck
+> tsc --noEmit
+
+
+pre-mr: >>> npm run license-check
+
+> ai-assistant@0.0.0 license-check
+> npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;Python-2.0;CC-BY-4.0;Apache*;(MIT OR CC0-1.0);MulanPSL-2.0;MPL-2.0;LGPL-3.0-only;UNLICENSED'
+
+├─ MIT: 1023
+├─ ISC: 50
+├─ Apache-2.0: 34
+├─ BSD-2-Clause: 20
+├─ BSD-3-Clause: 13
+├─ MPL-2.0: 3
+├─ (MIT OR CC0-1.0): 3
+├─ LGPL-3.0-only: 2
+├─ (MPL-2.0 OR Apache-2.0): 2
+├─ CC0-1.0: 2
+├─ MIT-0: 1
+├─ MulanPSL-2.0: 1
+├─ UNLICENSED: 1
+├─ Python-2.0: 1
+├─ CC-BY-4.0: 1
+├─ BlueOak-1.0.0: 1
+├─ (BSD-3-Clause OR GPL-2.0): 1
+└─ 0BSD: 1
+
+
+pre-mr: >>> npm run secrets:check
+
+> ai-assistant@0.0.0 secrets:check
+> node scripts/validate-secrets.mjs
+
+Checking for secrets with Gitleaks...
+[90m2:53PM[0m [32mINF[0m [1mscanned ~108593996 bytes (108.59 MB) in 15.5s[0m
+[90m2:53PM[0m [32mINF[0m [1mno leaks found[0m
+
+pre-mr: >>> npm run test:unit:slnt
+
+> ai-assistant@0.0.0 test:unit:slnt
+> vitest run --project unit --silent
+
+
+ RUN  v5.0.2 /Users/gokhan_ozdemir/codemie-dev/codemie-ui
+      Running tests with seed "1791903224976"
+
+
+warn - As of Tailwind CSS v3.3, the `@tailwindcss/line-clamp` plugin is now included by default.
+warn - Remove it from the `plugins` array in your configuration to eliminate this warning.
+
+ Test Files  690 passed (690)
+      Tests  6945 passed | 1 skipped (6946)
+   Start at  17:53:46
+   Duration  318.07s (import 46%, environment 19%, transform 14%, tests 13%, setup 8%)
+
+     Import  |unit| 2912 modules were evaluated 428083 times · 403.32s total, 46% of tracked time
+             ~132.16s faster with isolate: false — shared modules are evaluated once per worker instead of once per file
+             learn more: https://vitest.dev/guide/improving-performance#test-isolation
+
+
+pre-mr: >>> npm run test:integration:slnt
+
+> ai-assistant@0.0.0 test:integration:slnt
+> vitest run --project integration --silent
+
+
+ RUN  v5.0.2 /Users/gokhan_ozdemir/codemie-dev/codemie-ui
+      Running tests with seed "1791903546126"
+
+
+warn - As of Tailwind CSS v3.3, the `@tailwindcss/line-clamp` plugin is now included by default.
+warn - Remove it from the `plugins` array in your configuration to eliminate this warning.
+
+ Test Files  49 passed (49)
+      Tests  558 passed | 1 skipped (559)
+   Start at  17:59:07
+   Duration  98.98s (tests 46%, import 31%, transform 17%, environment 4%, setup 2%)
+
+     Import  |integration| 2256 modules were evaluated 102832 times · 90.30s total, 31% of tracked time
+             ~28.15s faster with isolate: false — shared modules are evaluated once per worker instead of once per file
+             learn more: https://vitest.dev/guide/improving-performance#test-isolation
+
+
+pre-mr: >>> oxmgr stop ui
+stopped ui (150)
+
+pre-mr: >>> npm run build:prod
+
+> ai-assistant@0.0.0 build:prod
+> npm run typecheck && vite build
+
+
+> ai-assistant@0.0.0 typecheck
+> tsc --noEmit
+
+vite v8.3.1 building client environment for production...
+transforming...
+<script src="/config.js"> in "/index.html" can't be bundled without type="module" attribute
+
+warn - As of Tailwind CSS v3.3, the `@tailwindcss/line-clamp` plugin is now included by default.
+warn - Remove it from the `plugins` array in your configuration to eliminate this warning.
+✓ 5033 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/assets/site-HQ9nXd-x.webmanifest                     0.50 kB
+dist/index.html                                           1.00 kB │ gzip:     0.50 kB
+dist/assets/favicon-BwTdc52u.svg                          1.52 kB │ gzip:     0.68 kB
+dist/assets/avatar-BCZBIQAY.jpg                           4.45 kB
+dist/assets/aws-datasource-DvFeLvdt.png                  20.85 kB
+dist/assets/aws-entity-jkqe-Dtx.png                      40.62 kB
+dist/assets/IBMPlexMono-Regular-Du0PCiXT.woff2           49.24 kB
+dist/assets/IBMPlexMono-Bold-DlFXw90w.woff2              50.38 kB
+dist/assets/content-gradient-BhEEWrS9.png                52.39 kB
+dist/assets/JetBrainsMono-Regular-CA-Os4ii.woff2         92.38 kB
+dist/assets/JetBrainsMono-Bold-CUogYd9I.woff2            94.62 kB
+dist/assets/favicon-g64rwTY9.ico                        113.35 kB
+dist/assets/bootstrap-icons-BtvjY1KL.woff2              130.39 kB
+dist/assets/GeistMono-VariableFont_wght-BlNDD6KS.ttf    137.80 kB
+dist/assets/Geist-VariableFont_wght-C2BNBXFg.ttf        148.83 kB
+dist/assets/gradient-light-CfeoMb3Z.png                 174.43 kB
+dist/assets/bootstrap-icons-BOrJxbIo.woff               176.03 kB
+dist/assets/gradient-B5UIHIAk.png                       262.24 kB
+dist/assets/gradient-modal-DOsNee3_.png                 417.83 kB
+dist/assets/right-gradient-D5-fhJ-G.png                 867.43 kB
+dist/assets/left-gradient-L6poTFMA.png                1,044.73 kB
+dist/assets/bottom-gradient-CKqQx8vM.png              1,056.00 kB
+dist/assets/ai-avatar-5-96eSAP.png                    3,163.17 kB
+dist/assets/index-wUFY8um1.css                          366.69 kB │ gzip:    59.66 kB
+dist/assets/prism-tomorrow-Du-x-vCz.js                    1.25 kB │ gzip:     0.57 kB
+dist/assets/prism-l0rGOrf4.js                             1.63 kB │ gzip:     0.64 kB
+dist/assets/index-8f9Tg5Jk.js                         7,532.52 kB │ gzip: 2,290.22 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0msrc/store/user.ts is dynamically imported by src/store/appInfo.ts but also statically imported by src/App.tsx, src/components/Navigation/NavigationProfile.tsx, src/components/ProjectSelector/ProjectSelector.tsx, src/components/UserEmailAutocomplete/UserEmailAutocomplete.tsx, src/components/UserFilter/UserFilter.tsx, ..., dynamic import will not move module into another chunk.
+
+[33m[INEFFECTIVE_DYNAMIC_IMPORT] [0msrc/store/chatGeneration.ts is dynamically imported by src/store/chats.ts but also statically imported by src/pages/chat/components/ChatControls.tsx, src/pages/chat/components/ChatEditOutputForm.tsx, src/pages/chat/components/ChatHistory/ChatAiMessage/ChatA2uiBlock.tsx, src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMcpAuthPrompt.tsx, src/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessage.tsx, ..., dynamic import will not move module into another chunk.
+
+✓ built in 9.14s
+[33m[PLUGIN_TIMINGS] [0mJavaScript callbacks ran for 8.0s of this 9.1s build (88%).
+The slowest callbacks, timed inside each callback (the wait before a callback starts is excluded, the time it awaits is included):
+  - plugin prismjs transform (24%, 2.1s, 5033 calls)
+  - plugin originjs:federation transform (17%, 1.6s, 5033 calls)
+Additional callback time came from the callbacks below and from callbacks under 1s.
+4 callbacks are listed without a time. Their calls overlapped, so the time inside one call includes work from other calls. To find their cost, profile the build with `node --cpu-prof`:
+  - plugin vite-plugin-svgr load (5032 calls)
+  - plugin vite:asset load (19 calls)
+  - plugin vite:css transform (23 calls)
+  … and 1 more
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+
+
+pre-mr: >>> oxmgr apply /Users/gokhan_ozdemir/codemie-dev/oxfile.toml --only ui-preview
+Apply complete: 1 created, 0 restarted, 0 updated, 0 unchanged, 0 pruned
+pre-mr: preview serving on :5173
+
+pre-mr: >>> npm run test-harness
+
+> ai-assistant@0.0.0 test-harness
+> uvx codemie-test-harness run sanity-ui -n 8
+
+Suite pytest args: --ui-headless
+Running test suite: sanity-ui - UI sanity suite - stable UI tests without 
+external service credentials
+Running: /Users/gokhan_ozdemir/.cache/uv/archive-v0/IgnmUbmN0hTitdYz/bin/python 
+-m pytest 
+/Users/gokhan_ozdemir/.cache/uv/archive-v0/IgnmUbmN0hTitdYz/lib/python3.12/site-
+packages/codemie_test_harness/tests -n 8 -m ui and sanity --reruns 2 --timeout 
+300 --ui-headless 
+--junitxml=/Users/gokhan_ozdemir/codemie-dev/codemie-ui/codemie-test-reports/jun
+it.xml -p codemie_test_harness.results_plugin 
+--results-json=/Users/gokhan_ozdemir/codemie-dev/codemie-ui/codemie-test-reports
+/results.json 
+(cwd=/Users/gokhan_ozdemir/.cache/uv/archive-v0/IgnmUbmN0hTitdYz/lib/python3.12/
+site-packages/codemie_test_harness)
+API Domain: http://localhost:8080
+AWS credentials: Not configured
+
+============================================================
+[pytest_configure] CODEMIE_API_DOMAIN: http://localhost:8080
+============================================================
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/gokhan_ozdemir/.cache/uv/archive-v0/IgnmUbmN0hTitdYz/lib/python3.12/site-packages/codemie_test_harness
+configfile: pytest.ini
+plugins: repeat-0.9.4, xdist-3.8.0, timeout-2.4.0, rerunfailures-15.1, reportportal-5.6.1, base-url-2.1.0, anyio-4.15.1, langsmith-0.14.8, playwright-0.8.0
+timeout: 300.0s
+timeout method: signal
+timeout func_only: True
+created: 8/8 workers
+8 workers [93 items]
+
+scheduling tests via LoadScheduling
+
+tests/ui/assistants/test_assistant_lifecycle.py::test_delete_assistant_with_confirmation[chromium] 
+tests/ui/assistants/test_assistant_marketplace_clone.py::test_clone_count_badge_visible_on_marketplace_card[chromium] 
+tests/ui/assistants/test_assistant_lifecycle.py::test_clone_existing_assistant[chromium] 
+tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_tools_interactions[chromium] 
+tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_by_name_reorders_list[chromium] 
+tests/ui/assistants/test_assistant_marketplace.py::test_publish_assistant_to_marketplace[chromium] 
+tests/ui/assistants/test_create_assistant.py::test_create_assistant_page_elements_visibility[chromium] 
+tests/ui/assistants/test_create_assistant.py::test_create_assistant_minimal_required_fields[chromium] 
+[gw0] [  1%] PASSED tests/ui/assistants/test_assistant_lifecycle.py::test_clone_existing_assistant[chromium] 
+tests/ui/assistants/test_assistant_marketplace.py::test_assistants_marketplace_page_elements_visibility[chromium] 
+[gw6] [  2%] PASSED tests/ui/assistants/test_create_assistant.py::test_create_assistant_minimal_required_fields[chromium] 
+tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_form_field_interactions[chromium] 
+[gw4] [  3%] PASSED tests/ui/assistants/test_assistant_marketplace_clone.py::test_clone_count_badge_visible_on_marketplace_card[chromium] 
+tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_controls_are_visible[chromium] 
+[gw5] [  4%] PASSED tests/ui/assistants/test_create_assistant.py::test_create_assistant_page_elements_visibility[chromium] 
+[gw2] [  5%] PASSED tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_by_name_reorders_list[chromium] 
+tests/ui/assistants/test_create_assistant.py::test_create_assistant_navigation_from_assistants_page[chromium] 
+tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_with_search_preserves_results[chromium] 
+[gw0] [  6%] PASSED tests/ui/assistants/test_assistant_marketplace.py::test_assistants_marketplace_page_elements_visibility[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_configuration_panel_visibility_and_access[chromium] 
+[gw1] [  7%] PASSED tests/ui/assistants/test_assistant_lifecycle.py::test_delete_assistant_with_confirmation[chromium] 
+[gw3] [  8%] PASSED tests/ui/assistants/test_assistant_marketplace.py::test_publish_assistant_to_marketplace[chromium] 
+tests/ui/assistants/test_assistant_lifecycle.py::test_cancel_assistant_deletion[chromium] 
+tests/ui/assistants/test_assistant_marketplace.py::test_marketplace_search_assistants_by_name[chromium] 
+[gw5] [  9%] PASSED tests/ui/assistants/test_create_assistant.py::test_create_assistant_navigation_from_assistants_page[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_stop_generation_button_css_state_and_halt_flow[chromium] 
+[gw4] [ 10%] PASSED tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_controls_are_visible[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_chat_page_elements_visibility[chromium] 
+[gw0] [ 11%] PASSED tests/ui/chats/test_chat_configuration.py::test_configuration_panel_visibility_and_access[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_configuration_panel_structure_and_elements[chromium] 
+[gw6] [ 12%] PASSED tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_form_field_interactions[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_chat_configuration_llm_update[chromium] 
+[gw1] [ 13%] PASSED tests/ui/assistants/test_assistant_lifecycle.py::test_cancel_assistant_deletion[chromium] 
+tests/ui/chats/test_chat_reload_during_generation.py::test_conversation_survives_reload_during_generation[chromium] 
+[gw2] [ 15%] PASSED tests/ui/assistants/test_assistant_marketplace_sorting.py::test_marketplace_sort_with_search_preserves_results[chromium] 
+tests/ui/chats/test_chat_input_field.py::test_chat_input_file_attachment[chromium] 
+[gw4] [ 16%] PASSED tests/ui/chats/test_chat_functionality.py::test_chat_page_elements_visibility[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_hover_sidebar_toggle_button_shows_and_hides_ctrl_b_tooltip[chromium] 
+[gw3] [ 17%] PASSED tests/ui/assistants/test_assistant_marketplace.py::test_marketplace_search_assistants_by_name[chromium] 
+tests/ui/chats/test_chat_input_field.py::test_chat_input_default_model_changing[chromium] 
+[gw5] [ 18%] PASSED tests/ui/chats/test_chat_functionality.py::test_stop_generation_button_css_state_and_halt_flow[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_stop_button_visible_after_resend_first_message_in_multi_message_chat[chromium] 
+[gw4] [ 19%] PASSED tests/ui/chats/test_chat_functionality.py::test_hover_sidebar_toggle_button_shows_and_hides_ctrl_b_tooltip[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_message_sending_functionality[chromium] 
+[gw6] [ 20%] PASSED tests/ui/chats/test_chat_configuration.py::test_chat_configuration_llm_update[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_save_button_functionality[chromium] 
+[gw0] [ 21%] PASSED tests/ui/chats/test_chat_configuration.py::test_configuration_panel_structure_and_elements[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_configuration_panel_closing_functionality[chromium] 
+[gw2] [ 22%] PASSED tests/ui/chats/test_chat_input_field.py::test_chat_input_file_attachment[chromium] 
+tests/ui/chats/test_chat_input_field.py::test_chat_input_dynamic_tools_adding_web_search[chromium] 
+[gw1] [ 23%] PASSED tests/ui/chats/test_chat_reload_during_generation.py::test_conversation_survives_reload_during_generation[chromium] 
+tests/ui/chats/test_chat_skills_navigation_persistence.py::test_chat_skills_survive_navigation_to_assistants_and_back[chromium] 
+[gw7] [ 24%] PASSED tests/ui/assistants/test_edit_assistant.py::test_edit_assistant_tools_interactions[chromium] 
+tests/ui/assistants/test_integration_verification.py::test_missing_integrations_dialog_displayed[chromium] 
+[gw3] [ 25%] PASSED tests/ui/chats/test_chat_input_field.py::test_chat_input_default_model_changing[chromium] 
+tests/ui/chats/test_chat_prompt_draft.py::test_draft_persists_until_sent_across_chat_navigation[chromium] 
+[gw0] [ 26%] PASSED tests/ui/chats/test_chat_configuration.py::test_configuration_panel_closing_functionality[chromium] 
+tests/ui/chats/test_image_allow_list.py::test_non_https_external_url_is_blocked[chromium] 
+[gw5] [ 27%] PASSED tests/ui/chats/test_chat_functionality.py::test_stop_button_visible_after_resend_first_message_in_multi_message_chat[chromium] 
+tests/ui/chats/test_chat_functionality.py::test_chat_displays_assistant_description[chromium] 
+[gw4] [ 29%] PASSED tests/ui/chats/test_chat_functionality.py::test_message_sending_functionality[chromium] 
+tests/ui/chats/test_image_allow_list.py::test_blocked_image_shows_badge_not_img_tag[chromium] 
+[gw6] [ 30%] PASSED tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_save_button_functionality[chromium] 
+tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_cancel_button_functionality[chromium] 
+[gw0] [ 31%] PASSED tests/ui/chats/test_image_allow_list.py::test_non_https_external_url_is_blocked[chromium] 
+tests/ui/chats/test_image_allow_list.py::test_https_backend_origin_image_renders[chromium] 
+[gw7] [ 32%] PASSED tests/ui/assistants/test_integration_verification.py::test_missing_integrations_dialog_displayed[chromium] 
+tests/ui/datasource/test_create_datasource.py::test_datasource_creation_validation[chromium] 
+[gw5] [ 33%] PASSED tests/ui/chats/test_chat_functionality.py::test_chat_displays_assistant_description[chromium] 
+[gw4] [ 34%] PASSED tests/ui/chats/test_image_allow_list.py::test_blocked_image_shows_badge_not_img_tag[chromium] 
+tests/ui/chats/test_image_allow_list.py::test_data_url_image_renders_without_badge[chromium] 
+tests/ui/datasource/test_datasource_page.py::test_datasource_sidebar_hiding_elements[chromium] 
+[gw2] [ 35%] PASSED tests/ui/chats/test_chat_input_field.py::test_chat_input_dynamic_tools_adding_web_search[chromium] 
+[gw1] [ 36%] PASSED tests/ui/chats/test_chat_skills_navigation_persistence.py::test_chat_skills_survive_navigation_to_assistants_and_back[chromium] 
+tests/ui/chats/test_chat_input_field.py::test_chat_input_dynamic_web_search_unavailable_when_disabled_via_customer_config[chromium] 
+tests/ui/chats/test_image_allow_list.py::test_multiple_images_mixed_allowed_and_blocked[chromium] 
+[gw0] [ 37%] PASSED tests/ui/chats/test_image_allow_list.py::test_https_backend_origin_image_renders[chromium] 
+tests/ui/integrations/test_alias_generation.py::test_alias_auto_generation_happy_path[chromium] 
+[gw5] [ 38%] PASSED tests/ui/datasource/test_datasource_page.py::test_datasource_sidebar_hiding_elements[chromium] 
+tests/ui/datasource/test_datasource_page.py::test_datasource_page_elements_visibility[chromium] 
+[gw3] [ 39%] PASSED tests/ui/chats/test_chat_prompt_draft.py::test_draft_persists_until_sent_across_chat_navigation[chromium] 
+tests/ui/datasource/test_create_datasource.py::test_create_file_datasource[chromium] 
+[gw4] [ 40%] PASSED tests/ui/chats/test_image_allow_list.py::test_data_url_image_renders_without_badge[chromium] 
+tests/ui/integrations/test_alias_generation.py::test_manual_alias_override_retained[chromium] 
+[gw6] [ 41%] PASSED tests/ui/chats/test_chat_configuration.py::test_assistant_configuration_cancel_button_functionality[chromium] 
+[gw7] [ 43%] PASSED tests/ui/datasource/test_create_datasource.py::test_datasource_creation_validation[chromium] 
+tests/ui/datasource/test_zip_file_datasource.py::test_zip_file_datasource_shows_extracted_files_after_creation[chromium] 
+tests/ui/datasource/test_create_datasource.py::test_datasource_name_not_autogenerated_on_creation[chromium] 
+[gw1] [ 44%] PASSED tests/ui/chats/test_image_allow_list.py::test_multiple_images_mixed_allowed_and_blocked[chromium] 
+tests/ui/datasource/test_create_datasource.py::test_open_create_datasource_page_and_elements[chromium] 
+[gw5] [ 45%] PASSED tests/ui/datasource/test_datasource_page.py::test_datasource_page_elements_visibility[chromium] 
+[gw2] [ 46%] PASSED tests/ui/chats/test_chat_input_field.py::test_chat_input_dynamic_web_search_unavailable_when_disabled_via_customer_config[chromium] 
+tests/ui/integrations/test_create_integration.py::test_form_reset_and_cancel_functionality[chromium] 
+tests/ui/integrations/test_alias_generation.py::test_datasource_alias_no_auto_population_and_successful_creation[chromium] 
+[gw0] [ 47%] PASSED tests/ui/integrations/test_alias_generation.py::test_alias_auto_generation_happy_path[chromium] 
+tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Git] 
+[gw4] [ 48%] PASSED tests/ui/integrations/test_alias_generation.py::test_manual_alias_override_retained[chromium] 
+tests/ui/integrations/test_create_integration.py::test_alias_field_validation_message[chromium] 
+[gw2] [ 49%] PASSED tests/ui/integrations/test_alias_generation.py::test_datasource_alias_no_auto_population_and_successful_creation[chromium] 
+tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_selection_persists_after_save_and_reload[chromium] 
+[gw7] [ 50%] PASSED tests/ui/datasource/test_create_datasource.py::test_datasource_name_not_autogenerated_on_creation[chromium] 
+tests/ui/integrations/test_delete_integration.py::test_delete_integration_with_confirmation[chromium] 
+[gw5] [ 51%] PASSED tests/ui/integrations/test_create_integration.py::test_form_reset_and_cancel_functionality[chromium] 
+tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_defaults_to_all_actions_checked[chromium] 
+[gw0] [ 52%] PASSED tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Git] 
+[gw4] [ 53%] PASSED tests/ui/integrations/test_create_integration.py::test_alias_field_validation_message[chromium] 
+tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_blocks_unchecking_last_action[chromium] 
+tests/ui/integrations/test_test_connection.py::test_test_connection_failure_with_error_message[chromium] 
+[gw3] [ 54%] PASSED tests/ui/datasource/test_create_datasource.py::test_create_file_datasource[chromium] 
+tests/ui/datasource/test_datasource_page.py::test_datasource_sidebar_interaction[chromium] 
+[gw5] [ 55%] PASSED tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_defaults_to_all_actions_checked[chromium] 
+tests/ui/integrations/test_webhook_form_structure.py::test_advanced_security_settings_accordion_collapsed_by_default_and_expands[chromium] 
+[gw6] [ 56%] PASSED tests/ui/datasource/test_zip_file_datasource.py::test_zip_file_datasource_shows_extracted_files_after_creation[chromium] 
+tests/ui/integrations/test_create_integration.py::test_credential_type_dropdown_shows_all_available_options[chromium] 
+[gw2] [ 58%] PASSED tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_selection_persists_after_save_and_reload[chromium] 
+tests/ui/integrations/test_webhook_form_structure.py::test_webhook_url_readonly_and_tracks_alias_slug[chromium-slug-with-spaces] 
+[gw7] [ 59%] PASSED tests/ui/integrations/test_delete_integration.py::test_delete_integration_with_confirmation[chromium] 
+tests/ui/integrations/test_webhook_form_structure.py::test_manual_webhook_id_edit_disables_alias_auto_sync[chromium] 
+[gw4] [ 60%] PASSED tests/ui/integrations/test_test_connection.py::test_test_connection_failure_with_error_message[chromium] 
+[gw6] [ 61%] PASSED tests/ui/integrations/test_create_integration.py::test_credential_type_dropdown_shows_all_available_options[chromium] 
+tests/ui/skills/test_create_skill.py::test_skills_page_elements_visibility[chromium] 
+tests/ui/integrations/test_webhook_resource_isolation.py::test_resource_dropdown_shows_only_project_scoped_resources[chromium] 
+[gw0] [ 62%] PASSED tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_blocks_unchecking_last_action[chromium] 
+tests/ui/integrations/test_webhook_form_structure.py::test_github_settings_accordion_collapsed_by_default_and_expands[chromium] 
+[gw5] [ 63%] PASSED tests/ui/integrations/test_webhook_form_structure.py::test_advanced_security_settings_accordion_collapsed_by_default_and_expands[chromium] 
+tests/ui/skills/test_attach_skills_to_assistant.py::test_detach_skill_from_assistant[chromium] 
+[gw3] [ 64%] PASSED tests/ui/datasource/test_datasource_page.py::test_datasource_sidebar_interaction[chromium] 
+tests/ui/skills/test_attach_skills_to_assistant.py::test_attach_skill_to_assistant[chromium] 
+[gw1] [ 65%] PASSED tests/ui/datasource/test_create_datasource.py::test_open_create_datasource_page_and_elements[chromium] 
+tests/ui/integrations/test_edit_integration.py::test_edit_integration_update_credentials[chromium] 
+[gw7] [ 66%] PASSED tests/ui/integrations/test_webhook_form_structure.py::test_manual_webhook_id_edit_disables_alias_auto_sync[chromium] 
+tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_minimal_fields[chromium] 
+[gw2] [ 67%] PASSED tests/ui/integrations/test_webhook_form_structure.py::test_webhook_url_readonly_and_tracks_alias_slug[chromium-slug-with-spaces] 
+tests/ui/skills/test_create_skill.py::test_create_skill_page_elements_visibility[chromium] 
+[gw6] [ 68%] PASSED tests/ui/skills/test_create_skill.py::test_skills_page_elements_visibility[chromium] 
+tests/ui/skills/test_import_skill.py::test_import_skill_from_markdown_and_verify_in_list[chromium] 
+[gw0] [ 69%] PASSED tests/ui/integrations/test_webhook_form_structure.py::test_github_settings_accordion_collapsed_by_default_and_expands[chromium] 
+tests/ui/skills/test_import_skill.py::test_import_zip_bundle_with_multiple_md_files_shows_friendly_error[chromium] 
+[gw2] [ 70%] PASSED tests/ui/skills/test_create_skill.py::test_create_skill_page_elements_visibility[chromium] 
+tests/ui/skills/test_skills_navigation.py::test_skills_navigation_from_main_menu[chromium] 
+[gw1] [ 72%] PASSED tests/ui/integrations/test_edit_integration.py::test_edit_integration_update_credentials[chromium] 
+tests/ui/skills/test_skills_marketplace.py::test_publish_private_skill_to_marketplace[chromium] 
+[gw7] [ 73%] PASSED tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_minimal_fields[chromium] 
+tests/ui/skills/test_skills_marketplace.py::test_marketplace_search_skills_by_name[chromium] 
+[gw2] [ 74%] PASSED tests/ui/skills/test_skills_navigation.py::test_skills_navigation_from_main_menu[chromium] 
+tests/ui/workflows/test_reset_context_keys.py::test_reset_context_keys_comma_entry_saved_to_yaml[chromium] 
+[gw6] [ 75%] PASSED tests/ui/skills/test_import_skill.py::test_import_skill_from_markdown_and_verify_in_list[chromium] 
+tests/ui/workflows/test_create_workflow.py::test_create_workflow_page_elements_visibility[chromium] 
+[gw0] [ 76%] PASSED tests/ui/skills/test_import_skill.py::test_import_zip_bundle_with_multiple_md_files_shows_friendly_error[chromium] 
+tests/ui/workflows/test_create_workflow.py::test_create_workflow_complete_workflow_creation[chromium] 
+[gw3] [ 77%] PASSED tests/ui/skills/test_attach_skills_to_assistant.py::test_attach_skill_to_assistant[chromium] 
+tests/ui/skills/test_skills_marketplace.py::test_skills_marketplace_page_elements_visibility[chromium] 
+[gw5] [ 78%] PASSED tests/ui/skills/test_attach_skills_to_assistant.py::test_detach_skill_from_assistant[chromium] 
+tests/ui/skills/test_skill_validation.py::test_skill_required_fields_validation[chromium] 
+[gw6] [ 79%] PASSED tests/ui/workflows/test_create_workflow.py::test_create_workflow_page_elements_visibility[chromium] 
+tests/ui/workflows/test_workflow_progress_restore_after_reload.py::test_workflow_execution_progress_restored_after_reload[chromium] 
+[gw3] [ 80%] PASSED tests/ui/skills/test_skills_marketplace.py::test_skills_marketplace_page_elements_visibility[chromium] 
+tests/ui/workflows/test_workflows.py::test_workflows_page_basic_functionality[chromium] 
+[gw2] [ 81%] PASSED tests/ui/workflows/test_reset_context_keys.py::test_reset_context_keys_comma_entry_saved_to_yaml[chromium] 
+tests/ui/workflows/test_workflow_progress_restore_after_reload.py::test_answer_node_shows_in_progress_thought_card_after_reload[chromium] 
+[gw1] [ 82%] PASSED tests/ui/skills/test_skills_marketplace.py::test_publish_private_skill_to_marketplace[chromium] 
+tests/ui/workflows/test_workflow_chat_description.py::test_workflow_chat_displays_description[chromium] 
+[gw0] [ 83%] PASSED tests/ui/workflows/test_create_workflow.py::test_create_workflow_complete_workflow_creation[chromium] 
+tests/ui/workflows/test_workflow_progress_restore_after_reload.py::test_restore_failed_message_shown_when_execution_state_cannot_be_restored[chromium] 
+[gw7] [ 84%] PASSED tests/ui/skills/test_skills_marketplace.py::test_marketplace_search_skills_by_name[chromium] 
+tests/ui/workflows/test_workflow_description.py::test_workflow_description_visible_and_read_only[chromium] 
+[gw5] [ 86%] PASSED tests/ui/skills/test_skill_validation.py::test_skill_required_fields_validation[chromium] 
+tests/ui/workflows/test_workflows.py::test_workflow_pagination[chromium] 
+[gw4] [ 87%] PASSED tests/ui/integrations/test_webhook_resource_isolation.py::test_resource_dropdown_shows_only_project_scoped_resources[chromium] 
+tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_all_fields[chromium] 
+[gw3] [ 88%] PASSED tests/ui/workflows/test_workflows.py::test_workflows_page_basic_functionality[chromium] 
+tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Jira] 
+[gw1] [ 89%] PASSED tests/ui/workflows/test_workflow_chat_description.py::test_workflow_chat_displays_description[chromium] 
+tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Confluence] 
+[gw7] [ 90%] PASSED tests/ui/workflows/test_workflow_description.py::test_workflow_description_visible_and_read_only[chromium] 
+[gw2] [ 91%] PASSED tests/ui/workflows/test_workflow_progress_restore_after_reload.py::test_answer_node_shows_in_progress_thought_card_after_reload[chromium] 
+tests/ui/integrations/test_webhook_form_structure.py::test_webhook_url_readonly_and_tracks_alias_slug[chromium-slug-with-number] 
+[gw5] [ 92%] PASSED tests/ui/workflows/test_workflows.py::test_workflow_pagination[chromium] 
+[gw0] [ 93%] PASSED tests/ui/workflows/test_workflow_progress_restore_after_reload.py::test_restore_failed_message_shown_when_execution_state_cannot_be_restored[chromium] 
+[gw4] [ 94%] PASSED tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_all_fields[chromium] 
+[gw2] [ 95%] PASSED tests/ui/integrations/test_webhook_form_structure.py::test_webhook_url_readonly_and_tracks_alias_slug[chromium-slug-with-number] 
+[gw6] [ 96%] PASSED tests/ui/workflows/test_workflow_progress_restore_after_reload.py::test_workflow_execution_progress_restored_after_reload[chromium] 
+tests/ui/workflows/test_workflows.py::test_workflow_filtering[chromium] 
+[gw3] [ 97%] PASSED tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Jira] 
+[gw6] [ 98%] PASSED tests/ui/workflows/test_workflows.py::test_workflow_filtering[chromium] 
+[gw1] [100%] PASSED tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Confluence] 
+---------------------------- live log sessionfinish ----------------------------
+2026-10-13 18:06:50 - codemie_test_harness.tests.conftest - INFO - Starting session cleanup...
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - 🔍 Fetching project integrations...
+2026-10-13 18:06:50 - codemie_sdk.utils.http - INFO - Successfully processed GET request to /v1/settings/project
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - ✓ No project integrations found
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - 🔍 Fetching user integrations...
+2026-10-13 18:06:50 - codemie_sdk.utils.http - INFO - Successfully processed GET request to /v1/settings/user
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - ✓ No user integrations found
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - 🔍 Fetching assistants...
+2026-10-13 18:06:50 - codemie_sdk.utils.http - INFO - Successfully processed GET request to /v1/assistants
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - ✓ No assistants found
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - 🔍 Fetching skills...
+2026-10-13 18:06:50 - codemie_sdk.utils.http - INFO - Successfully processed GET request to /v1/skills
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - ✓ No skills found
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - 🔍 Fetching datasources...
+2026-10-13 18:06:50 - codemie_sdk.utils.http - INFO - Successfully processed GET request to /v1/index
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - ✓ No datasources found
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - Fetching workflows...
+2026-10-13 18:06:50 - codemie_sdk.utils.http - INFO - Successfully processed GET request to /v1/workflows
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - No workflows found
+2026-10-13 18:06:50 - codemie_sdk.utils.http - INFO - Successfully processed GET request to /v1/projects
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - 🔍 Fetching providers...
+2026-10-13 18:06:50 - codemie_sdk.utils.http - INFO - Successfully processed GET request to /v1/providers
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - ✓ No providers found
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - 🔍 Fetching cost centers...
+2026-10-13 18:06:50 - codemie_sdk.utils.http - INFO - Successfully processed GET request to /v1/admin/cost-centers
+2026-10-13 18:06:50 - codemie_test_harness.tests.utils.cleanup_utils - INFO - ✓ No cost centers found
+2026-10-13 18:06:50 - codemie_test_harness.tests.conftest - INFO - Session cleanup completed.
+
+
+- generated xml file: /Users/gokhan_ozdemir/codemie-dev/codemie-ui/codemie-test-reports/junit.xml -
+======================== 93 passed in 325.38s (0:05:25) ========================
+2026-10-13 18:06:50,391 - codemie_test_harness.tests.conftest - INFO - Starting session cleanup...
+2026-10-13 18:06:50,679 - codemie_test_harness.tests.conftest - INFO - Session cleanup completed.

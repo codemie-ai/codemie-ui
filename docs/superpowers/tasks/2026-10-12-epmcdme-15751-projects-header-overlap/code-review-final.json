@@ -1,0 +1,8 @@
+{
+  "verdict": "safe-fail",
+  "gate_id": "code-review.final",
+  "confidence": "low",
+  "findings": [],
+  "reason": "code-review-orchestrator could not dispatch sdlc-factory:review-triage (no agent-dispatch tool in session), on two attempts. No review was performed. Diff: 6db743d157c23d28992abe5aff25d8580d9aaba7ed45facc7c7136cababef246, base 19a69dd355132aea5cd4c01b23e115df7d071b5b, head 6bf977fc1fbed67ffaa473e39bafa2f4dd6586cf.",
+  "status": "error"
+}
