@@ -1,0 +1,20 @@
+{
+  "decision": "approve",
+  "rationale": "Targeted check of the single prior blocking finding (CR-001): the Git textarea rows are now derived from the 10-line placeholder (GIT_FILE_FILTER_ROWS = 10), so no example is clipped, and the tests were updated to match. No defers were re-checked and no new findings were sought.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of this profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of this profile." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "IndexTypeGit.tsx now passes rows={GIT_FILE_FILTER_ROWS}; the constant is trimEnd().split('\\n').length of the 10-line placeholder, i.e. 10, which shows the any-depth example. Test asserts rows equals the derived value."
+    }
+  ]
+}

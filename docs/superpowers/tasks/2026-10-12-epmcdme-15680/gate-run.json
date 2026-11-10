@@ -1,0 +1,12 @@
+{"schema":1,"branch":"EPMCDME-15680_git-filters","head":"44268b8899079c9fc639a0e8c7ed951b52d086ef","runner":"npm","started_at":"2026-10-12T13:55:00Z","completed_at":"2026-10-12T14:05:00Z","status":"PASSED","drift_detected":false,
+"gates":[
+{"id":"lint","source":"guide","status":"PASS","duration_ms":13000,"command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":10000,"command":"npm run typecheck","exit_code":0},
+{"id":"license-check","source":"guide","status":"N/A","duration_ms":0,"command":"npm run license-check","exit_code":null,"notes":"Skip if: no dependency added/removed/moved; diff touches no package files."},
+{"id":"secrets","source":"guide","status":"PASS","duration_ms":3000,"command":"npm run secrets:check","exit_code":0,"notes":"Output: no leaks found."},
+{"id":"unit","source":"guide","status":"PASS","duration_ms":203000,"command":"npm run test:unit:slnt","exit_code":0,"notes":"689 files, 6929 passed, 1 skipped"},
+{"id":"integration","source":"guide","status":"PASS","duration_ms":63000,"command":"npm run test:integration:slnt","exit_code":0,"notes":"49 files, 558 passed, 1 skipped"},
+{"id":"test-harness","source":"guide","status":"N/A","duration_ms":0,"command":"npm run test-harness","exit_code":null,"notes":"Needs running stack and ~/.codemie/test-harness.json; unverified, still owed for MR compliance section."},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":1000,"command":"npm run license-headers:check","exit_code":0,"notes":"2337 files, 0 missing headers. Pre-commit hook gate not listed in guide gate list."},
+{"id":"sonar-local","source":"hook","status":"SKIPPED","duration_ms":0,"command":"npm run sonar-local","exit_code":0,"notes":"Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN to run locally; CI/Sonar must settle it."}
+],"failures":{}}

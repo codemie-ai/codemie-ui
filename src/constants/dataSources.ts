@@ -117,6 +117,22 @@ export const FILE_FILTER_PLACEHOLDER = `*.py
 debug.log*
 `
 
+// Git-only placeholder; the shared one above stays for SVN, FAQ and SharePoint.
+export const GIT_FILE_FILTER_PLACEHOLDER = `# Files with this name or extension, in any folder
+*.py
+*.txt
+debug.log*
+# Everything inside a folder
+/<folder_name>/*
+# .cs files exactly one folder below it
+/<folder_name>/*/*.cs
+# .cs files at any depth below it
+/<folder_name>/**/*.cs
+`
+
+// One row per placeholder line; textarea placeholders do not scroll, so fewer rows clip examples.
+export const GIT_FILE_FILTER_ROWS = GIT_FILE_FILTER_PLACEHOLDER.trimEnd().split('\n').length
+
 export const FILES_FILTER_TOOLTIP = `Supported formats (one entry per line):
 
 Glob patterns:

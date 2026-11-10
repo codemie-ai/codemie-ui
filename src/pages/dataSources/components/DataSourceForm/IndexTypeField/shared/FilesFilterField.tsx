@@ -31,6 +31,7 @@ interface Props {
   helperText?: string
   tooltip?: string
   placeholder?: string
+  rows?: number
 }
 
 const FilesFilterField: FC<Props> = ({
@@ -40,6 +41,7 @@ const FilesFilterField: FC<Props> = ({
   helperText = 'Specify file extensions or names to include in indexing. Leaving empty will index all files.',
   tooltip = FILES_FILTER_TOOLTIP,
   placeholder = FILE_FILTER_PLACEHOLDER,
+  rows = 4,
 }) => (
   <>
     <Controller
@@ -50,7 +52,7 @@ const FilesFilterField: FC<Props> = ({
           id="filesFilter"
           name="filesFilter"
           label={label}
-          rows={4}
+          rows={rows}
           value={field.value}
           onBlur={field.onBlur}
           error={errors.filesFilter?.message}

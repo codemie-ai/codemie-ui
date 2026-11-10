@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "Compact profile with no spec/story, so acceptance did not run and confidence is low; the edge-case lens ran and its 2.3 reachability pass was completed. One real defect survives: the Git textarea shows 9 rows for a 10-line placeholder, clipping the any-depth example. 2 findings dismissed as noise (the backend parse_files_filter skips '#' comment lines, so the comment labels are safe; the local tooltip gap is guidance polish below the emission floor). No defers.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of this profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of this profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/dataSources/components/DataSourceForm/IndexTypeField/IndexTypeGit.tsx",
+      "line": 137,
+      "title": "Git filter textarea clips last placeholder example",
+      "problem": "GIT_FILE_FILTER_PLACEHOLDER (src/constants/dataSources.ts) contains 10 lines (4 comment labels plus 6 pattern lines, with a trailing newline), but FilesFilterField is rendered with rows={9}. The 10th line, `/<folder_name>/**/*.cs`, falls outside the visible area, and textarea placeholders are not scrollable.",
+      "impact": "Users cannot see the any-depth `/<folder_name>/**/*.cs` example, which is the one that clarifies the one-level-only behavior of `/<folder_name>/*/*.cs`. This undercuts the ticket's purpose of accurate, readable examples. The path is live because every Git data source form renders this component.",
+      "recommendation": "Set rows={10} in IndexTypeGit.tsx and update any test that asserts rows=9. Check that the trailing newline in the placeholder does not need an 11th row."
+    }
+  ]
+}

@@ -21,7 +21,11 @@ import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
-import { REPO_INDEX_TYPE_OPTIONS } from '@/constants/dataSources'
+import {
+  GIT_FILE_FILTER_PLACEHOLDER,
+  GIT_FILE_FILTER_ROWS,
+  REPO_INDEX_TYPE_OPTIONS,
+} from '@/constants/dataSources'
 import { cn } from '@/utils/utils'
 
 import EmbeddingsModelField from './shared/EmbeddingsModelField'
@@ -130,7 +134,12 @@ const IndexTypeGit: FC<Props> = ({
       ></InfoBox>
 
       <div className="form-wrapper">
-        <FilesFilterField control={control} errors={errors} />
+        <FilesFilterField
+          control={control}
+          errors={errors}
+          placeholder={GIT_FILE_FILTER_PLACEHOLDER}
+          rows={GIT_FILE_FILTER_ROWS}
+        />
 
         <div className={cn('grid gap-3 mt-3', isCodeSummarization ? 'grid-cols-2' : 'grid-cols-1')}>
           <div className="flex flex-col gap-2">

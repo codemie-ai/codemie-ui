@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-13T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "diffstat reports 4 files (constants/dataSources.ts, IndexTypeGit.tsx, FilesFilterField.tsx, FilesFilterField.test.tsx), 111 insertions / 3 deletions; mapped to M by file count, though the change is localized under the dataSources feature and mostly placeholder copy plus one new test file."},
+    { "dimension": "component_scope", "reason": "Three small UI touchpoints: a Git-only placeholder/rows constant, an optional rows prop (default 4, backward compatible) on the shared FilesFilterField, and IndexTypeGit passing the new props. No new abstractions; shared component default behavior unchanged for SVN, FAQ and SharePoint."}
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
