@@ -110,6 +110,8 @@ describe('SessionsView', () => {
       'REPOSITORY',
       'BRANCH',
       'FRAMEWORK',
+      'SUBSCRIPTION',
+      'PROJECT ORIGIN',
       'TURNS',
       'NET LINES',
       'INPUT',
@@ -143,6 +145,32 @@ describe('SessionsView', () => {
     render(<SessionsView filters={MOCK_FILTERS} />)
 
     expect(screen.getAllByRole('cell').some((c) => c.textContent === text)).toBe(true)
+  })
+
+  it.each([
+    ['codemie', 'default_project', 'CodeMie', 'Default project'],
+    ['personal', 'legacy_project', 'Personal', 'Legacy project adoption'],
+    [undefined, undefined, 'Unknown', 'Not recorded'],
+    ['other', 'other', 'Other', 'Other'],
+    ['mystery-plan', 'mystery-origin', 'mystery-plan', 'mystery-origin'],
+  ])('renders subscription %s / origin %s as %s / %s', (sub, origin, subText, originText) => {
+    vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+      displayRows: [{ ...MOCK_ROW, subscription_type: sub, project_origin: origin }],
+      loading: false,
+      error: null,
+      page: 1,
+      totalPages: 1,
+      perPage: 20,
+      setPage: vi.fn(),
+      search: '',
+      setSearch: vi.fn(),
+    })
+
+    render(<SessionsView filters={MOCK_FILTERS} />)
+
+    const cells = screen.getAllByRole('cell').map((c) => c.textContent)
+    expect(cells).toContain(subText)
+    expect(cells).toContain(originText)
   })
 
   it('renders a search input with correct placeholder', () => {

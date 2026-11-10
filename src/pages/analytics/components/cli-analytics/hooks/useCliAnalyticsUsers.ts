@@ -50,7 +50,26 @@ export function useCliAnalyticsUsers(
     users,
     projects,
     repositories: repositoriesParam,
+    subscription_type,
+    project_origin,
   } = buildCliAnalyticsParams(filters, repositories)
+
+  // Reset the page while rendering, so no request goes out with the new filters and the old page.
+  const filterKey = JSON.stringify([
+    time_period,
+    start_date,
+    end_date,
+    users,
+    projects,
+    repositoriesParam,
+    subscription_type,
+    project_origin,
+  ])
+  const [pageFilterKey, setPageFilterKey] = useState(filterKey)
+  if (pageFilterKey !== filterKey) {
+    setPageFilterKey(filterKey)
+    setCurrentPage(0)
+  }
 
   useEffect(() => {
     cliAnalyticsStore.fetchUsersCharts({
@@ -60,11 +79,22 @@ export function useCliAnalyticsUsers(
       users,
       projects,
       repositories: repositoriesParam,
+      subscription_type,
+      project_origin,
     })
     return () => {
       cliAnalyticsStore.abortControllers.get('usersCharts')?.abort()
     }
-  }, [time_period, start_date, end_date, users, projects, repositoriesParam])
+  }, [
+    time_period,
+    start_date,
+    end_date,
+    users,
+    projects,
+    repositoriesParam,
+    subscription_type,
+    project_origin,
+  ])
 
   useEffect(() => {
     cliAnalyticsStore.fetchUsersTable({
@@ -74,13 +104,25 @@ export function useCliAnalyticsUsers(
       users,
       projects,
       repositories: repositoriesParam,
+      subscription_type,
+      project_origin,
       page: currentPage,
       per_page: PAGE_SIZE,
     })
     return () => {
       cliAnalyticsStore.abortControllers.get('usersTable')?.abort()
     }
-  }, [time_period, start_date, end_date, users, projects, repositoriesParam, currentPage])
+  }, [
+    time_period,
+    start_date,
+    end_date,
+    users,
+    projects,
+    repositoriesParam,
+    subscription_type,
+    project_origin,
+    currentPage,
+  ])
 
   const handleSetPage = useCallback((page: number) => {
     setCurrentPage(Math.max(0, page))
@@ -93,8 +135,8 @@ export function useCliAnalyticsUsers(
     currentPage,
     pageSize: PAGE_SIZE,
     avgSessionDurationMs: snap.users?.table?.avg_session_duration_ms ?? null,
-    loading: (snap.loading.userCharts ?? false) || (snap.loading.userTable ?? false),
-    error: snap.error.userCharts?.message ?? snap.error.userTable?.message ?? null,
+    loading: (snap.loading.usersCharts ?? false) || (snap.loading.usersTable ?? false),
+    error: snap.error.usersCharts?.message ?? snap.error.usersTable?.message ?? null,
     setPage: handleSetPage,
   }
 }

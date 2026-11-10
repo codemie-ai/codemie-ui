@@ -13,6 +13,11 @@
 // limitations under the License.
 //
 
+import {
+  PROJECT_ORIGIN_LABELS,
+  ROUTE_NOTE_LABELS,
+  SUBSCRIPTION_LABELS,
+} from '@/constants/cliAnalytics'
 import { ColumnType, MetricFormat, type Metric } from '@/types/analytics'
 import type { RepositoryRow, SessionRow, SessionSummaryMetric } from '@/types/cliAnalytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
@@ -189,4 +194,30 @@ export function formatLines(value: number | null | undefined): string {
 
 export function linesTitle(value: number | null | undefined): string | undefined {
   return value == null ? LINES_NOT_REPORTED_TITLE : undefined
+}
+
+// Known values get a fixed label; anything else is shown as received (never mapped to a known class),
+// and a missing value reads as unclassified.
+const known = (labels: Record<string, string>, value: string) =>
+  Object.hasOwn(labels, value) ? labels[value] : value
+
+const labelOf = (
+  labels: Record<string, string>,
+  value: string | null | undefined,
+  missing: string
+) => (value ? known(labels, value) : missing)
+
+export const subscriptionLabel = (value: string | null | undefined) =>
+  labelOf(SUBSCRIPTION_LABELS, value, SUBSCRIPTION_LABELS.unknown)
+
+export const projectOriginLabel = (value: string | null | undefined) =>
+  labelOf(PROJECT_ORIGIN_LABELS, value, PROJECT_ORIGIN_LABELS.none)
+
+// The backend's label wins when it sends a nonblank one (shown sentence-cased: the backend sends it
+// lowercase). Otherwise the note is mapped; a note this UI does not know is shown as received.
+// Neither => undefined (no warning).
+export const routeWarning = (label: string | null | undefined, note: string | null | undefined) => {
+  const text = label?.trim()
+  if (text) return text[0].toUpperCase() + text.slice(1)
+  return note ? known(ROUTE_NOTE_LABELS, note) : undefined
 }

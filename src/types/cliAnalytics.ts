@@ -76,6 +76,13 @@ export interface SessionRow {
   cost_available?: boolean
   // Models the session used that have no usable catalog price; a non-empty list understates cost_usd.
   unpriced_models?: string[]
+  // Absent on older backends: rendered as unclassified, never as a known class.
+  subscription_type?: string | null
+  project_origin?: string | null
+  route_note?: string | null
+  // Readable label from the backend; set only for a default-project session that fell back from a
+  // folder link. Absent or null on other sessions and on older backends.
+  routing_label?: string | null
 }
 
 export interface SessionEvent {

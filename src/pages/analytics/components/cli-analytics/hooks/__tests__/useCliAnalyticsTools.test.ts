@@ -50,6 +50,20 @@ describe('useCliAnalyticsTools', () => {
     })
   })
 
+  it('refetches with subscription_type and project_origin when they change', async () => {
+    const { rerender } = renderHook(({ f }) => useCliAnalyticsTools(f), {
+      initialProps: { f: BASE_FILTERS },
+    })
+    rerender({
+      f: { ...BASE_FILTERS, subscription_type: ['codemie'], project_origin: ['profile'] },
+    })
+    await waitFor(() =>
+      expect(cliAnalyticsStore.fetchTools).toHaveBeenLastCalledWith(
+        expect.objectContaining({ subscription_type: 'codemie', project_origin: 'profile' })
+      )
+    )
+  })
+
   it('returns empty arrays when tools is null', () => {
     const { result } = renderHook(() => useCliAnalyticsTools(BASE_FILTERS))
     expect(result.current.toolUsage).toEqual([])

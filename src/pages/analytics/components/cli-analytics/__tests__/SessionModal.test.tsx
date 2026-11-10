@@ -21,8 +21,17 @@ import type { SessionDetail } from '@/types/cliAnalytics'
 import SessionModal from '../views/SessionModal'
 
 vi.mock('@/components/Popup', () => ({
-  default: ({ headerContent }: { headerContent?: React.ReactNode }) => (
-    <div data-testid="popup">{headerContent}</div>
+  default: ({
+    headerContent,
+    children,
+  }: {
+    headerContent?: React.ReactNode
+    children?: React.ReactNode
+  }) => (
+    <div data-testid="popup">
+      {headerContent}
+      {children}
+    </div>
   ),
 }))
 
@@ -56,6 +65,91 @@ const MOCK_SESSION: SessionDetail = {
   prompt: 'Explain why the payment retry logic drops events under load and propose a fix',
   events: [],
 }
+
+describe('SessionModal routing', () => {
+  const show = (extra: Partial<SessionDetail>) => {
+    mockUseCliAnalyticsSession.mockReturnValue({
+      session: { ...MOCK_SESSION, ...extra },
+      loading: false,
+      error: null,
+    })
+    render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
+  }
+
+  it('shows readable subscription and origin labels', () => {
+    show({ subscription_type: 'personal', project_origin: 'registered_repository' })
+    expect(screen.getByText('Personal')).toBeInTheDocument()
+    expect(screen.getByText('Registered repository')).toBeInTheDocument()
+  })
+
+  it('shows Folder not linked to a project for folder_not_linked', () => {
+    show({
+      subscription_type: 'corporate',
+      project_origin: 'default_project',
+      route_note: 'folder_not_linked',
+    })
+    expect(screen.getByText('Folder not linked to a project')).toBeInTheDocument()
+  })
+
+  it('shows a readable label for other known notes', () => {
+    show({ route_note: 'registration_ambiguous' })
+    expect(screen.getByText('Repository registration ambiguous')).toBeInTheDocument()
+  })
+
+  it('prefers the backend routing label over the mapped note, and shows it without a note', () => {
+    show({ route_note: 'folder_not_linked', routing_label: 'folder not linked to a project' })
+    expect(screen.getByText('Folder not linked to a project')).toBeInTheDocument()
+    expect(screen.queryByText('folder not linked to a project')).toBeNull()
+  })
+
+  it('shows a label-only warning when the backend sends no note', () => {
+    show({ route_note: null, routing_label: 'folder not linked to a project' })
+    expect(screen.getByText('Folder not linked to a project')).toBeInTheDocument()
+  })
+
+  it('shows a trimmed, sentence-cased backend label', () => {
+    show({ route_note: null, routing_label: '  registration needs review ' })
+    expect(screen.getByText('Registration needs review')).toBeInTheDocument()
+  })
+
+  it.each([null, undefined, '   '])(
+    'falls back to the mapped note when the routing label is %j',
+    (routing_label) => {
+      show({ route_note: 'linked_project_unavailable', routing_label })
+      expect(screen.getByText('Linked project unavailable')).toBeInTheDocument()
+    }
+  )
+
+  it('shows an inherited-key note as received instead of an inherited property', () => {
+    show({ route_note: 'constructor', routing_label: null, project_origin: 'profile' })
+    expect(screen.getByText('constructor')).toBeInTheDocument()
+  })
+
+  it('shows no warning when the label is blank and there is no note', () => {
+    show({ route_note: null, routing_label: ' ' })
+    expect(screen.queryByText(/not linked|unavailable|inaccessible|ambiguous/i)).toBeNull()
+  })
+
+  it('shows no warning when the note is absent and labels missing values as unclassified', () => {
+    show({ subscription_type: undefined, project_origin: undefined, route_note: null })
+    expect(screen.queryByText(/not linked|unavailable|inaccessible|ambiguous/i)).toBeNull()
+    expect(screen.getByText('Unknown')).toBeInTheDocument()
+    expect(screen.getByText('Not recorded')).toBeInTheDocument()
+  })
+
+  it('keeps an unrecognized value as received instead of mapping it to a known class', () => {
+    show({ subscription_type: 'mystery', project_origin: 'constructor' })
+    expect(screen.getByText('mystery')).toBeInTheDocument()
+    expect(screen.getByText('constructor')).toBeInTheDocument()
+  })
+
+  it('does not imply a personal project for a Personal subscription in a shared origin', () => {
+    show({ subscription_type: 'personal', project_origin: 'default_project' })
+    expect(screen.getByText('Personal')).toBeInTheDocument()
+    expect(screen.getByText('Default project')).toBeInTheDocument()
+    expect(screen.queryByText('Personal project')).toBeNull()
+  })
+})
 
 describe('SessionModal', () => {
   it('renders the session harness_name in the subtitle, not a hardcoded value', () => {

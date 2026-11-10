@@ -23,7 +23,12 @@ export interface CliAnalyticsParams {
   projects: string | undefined
   repositories: string | undefined
   branch: string | undefined
+  subscription_type: string | undefined
+  project_origin: string | undefined
 }
+
+const joined = (values: unknown) =>
+  Array.isArray(values) && values.length ? values.join(',') : undefined
 
 export function buildCliAnalyticsParams(
   filters: AnalyticsQueryParams,
@@ -38,5 +43,8 @@ export function buildCliAnalyticsParams(
     projects: filters.projects?.length ? filters.projects.join(',') : undefined,
     repositories: repositories?.length ? repositories.join(',') : undefined,
     branch: branch || undefined,
+    // CLI-only filters carried on `filters` by CliAnalyticsTab; comma-separated, omitted when empty.
+    subscription_type: joined(filters.subscription_type),
+    project_origin: joined(filters.project_origin),
   }
 }

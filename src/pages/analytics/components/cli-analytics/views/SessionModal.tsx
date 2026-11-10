@@ -15,13 +15,16 @@
 
 import { useRef, type FC } from 'react'
 
+import InfoWarning from '@/components/InfoWarning/InfoWarning'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import Tooltip from '@/components/Tooltip'
+import { InfoWarningType } from '@/constants'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { truncateInput } from '@/utils/helpers'
 
 import SessionBody from './SessionBody'
+import { projectOriginLabel, routeWarning, subscriptionLabel } from '../format'
 import { useCliAnalyticsSession } from '../hooks/useCliAnalyticsSession'
 
 interface SessionModalProps {
@@ -102,6 +105,7 @@ const SessionSubtitle: FC<SessionSubtitleProps> = ({ traceId, subtitle }) => {
 
 const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
   const { session, loading, error } = useCliAnalyticsSession(traceId)
+  const routeNote = routeWarning(session?.routing_label, session?.route_note)
 
   const title = truncateInput(session?.prompt, MAX_TITLE_LENGTH, 'Session')
   const subtitle = [
@@ -139,7 +143,26 @@ const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
       {!loading && !error && !session && (
         <p className="text-sm py-8 text-center text-text-secondary">No data for this session.</p>
       )}
-      {session && !loading && !error && <SessionBody session={session} />}
+      {session && !loading && !error && (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-text-secondary">
+            <span>
+              Subscription:{' '}
+              <span className="text-text-primary">
+                {subscriptionLabel(session.subscription_type)}
+              </span>
+            </span>
+            <span>
+              Project origin:{' '}
+              <span className="text-text-primary">
+                {projectOriginLabel(session.project_origin)}
+              </span>
+            </span>
+          </div>
+          {routeNote && <InfoWarning type={InfoWarningType.WARNING} message={routeNote} />}
+          <SessionBody session={session} />
+        </div>
+      )}
     </Popup>
   )
 }

@@ -15,7 +15,9 @@
 
 import { FC, useMemo, useState } from 'react'
 
+import MultiSelect from '@/components/form/MultiSelect'
 import { type Tab } from '@/components/Tabs/Tabs'
+import { PROJECT_ORIGIN_OPTIONS, SUBSCRIPTION_OPTIONS } from '@/constants/cliAnalytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 import { cn } from '@/utils/utils'
 
@@ -32,8 +34,20 @@ interface CliAnalyticsTabProps {
   filters: AnalyticsQueryParams
 }
 
-const CliAnalyticsTab: FC<CliAnalyticsTabProps> = ({ filters }) => {
+const CliAnalyticsTab: FC<CliAnalyticsTabProps> = ({ filters: pageFilters }) => {
   const [activeSection, setActiveSection] = useState('overview')
+  const [subscriptionTypes, setSubscriptionTypes] = useState<string[]>([])
+  const [projectOrigins, setProjectOrigins] = useState<string[]>([])
+
+  // CLI-only filters ride along with the page filters so every view and hook sees one object.
+  const filters = useMemo<AnalyticsQueryParams>(
+    () => ({
+      ...pageFilters,
+      subscription_type: subscriptionTypes,
+      project_origin: projectOrigins,
+    }),
+    [pageFilters, subscriptionTypes, projectOrigins]
+  )
 
   const tabs: Tab<string>[] = useMemo(
     () => [
@@ -85,6 +99,28 @@ const CliAnalyticsTab: FC<CliAnalyticsTabProps> = ({ filters }) => {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-3">
+        <MultiSelect
+          id="cli-analytics-subscription"
+          label="Subscription"
+          hideLabel
+          value={subscriptionTypes}
+          options={SUBSCRIPTION_OPTIONS}
+          onChange={(e) => setSubscriptionTypes(e.value ?? [])}
+          placeholder="All subscriptions"
+          className="w-56"
+        />
+        <MultiSelect
+          id="cli-analytics-project-origin"
+          label="Project origin"
+          hideLabel
+          value={projectOrigins}
+          options={PROJECT_ORIGIN_OPTIONS}
+          onChange={(e) => setProjectOrigins(e.value ?? [])}
+          placeholder="All project origins"
+          className="w-64"
+        />
+      </div>
       <div className="flex flex-wrap overflow-hidden rounded-lg border border-border-structural w-fit">
         {tabs.map((tab) => (
           <button

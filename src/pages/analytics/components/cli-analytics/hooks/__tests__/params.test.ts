@@ -22,6 +22,24 @@ import { buildCliAnalyticsParams } from '../params'
 const BASE: AnalyticsQueryParams = { time_period: 'last_hour' } as AnalyticsQueryParams
 
 describe('buildCliAnalyticsParams', () => {
+  it('joins subscription_type and project_origin as comma-separated strings', () => {
+    const result = buildCliAnalyticsParams({
+      ...BASE,
+      subscription_type: ['codemie', 'personal'],
+      project_origin: ['linked_folder', 'none'],
+    })
+    expect(result.subscription_type).toBe('codemie,personal')
+    expect(result.project_origin).toBe('linked_folder,none')
+  })
+
+  it('omits subscription_type and project_origin when empty or not set', () => {
+    expect(buildCliAnalyticsParams({ ...BASE, subscription_type: [], project_origin: [] })).toEqual(
+      expect.objectContaining({ subscription_type: undefined, project_origin: undefined })
+    )
+    expect(buildCliAnalyticsParams(BASE).subscription_type).toBeUndefined()
+    expect(buildCliAnalyticsParams(BASE).project_origin).toBeUndefined()
+  })
+
   it('extracts time_period and leaves dates undefined when not set', () => {
     const result = buildCliAnalyticsParams(BASE)
     expect(result.time_period).toBe('last_hour')

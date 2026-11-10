@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 
 import type { AnalyticsQueryParams } from '@/types/analytics'
@@ -45,7 +45,41 @@ vi.mock('../views/UsersView', () => ({
 }))
 
 vi.mock('../views/SessionsView', () => ({
-  default: () => <div data-testid="sessions-view" />,
+  default: ({ filters }: { filters: unknown }) => (
+    <div data-testid="sessions-view">{JSON.stringify(filters)}</div>
+  ),
+}))
+
+// Native stand-in for the PrimeReact multiselect: one option click toggles a value.
+vi.mock('@/components/form/MultiSelect', () => ({
+  default: ({
+    id,
+    value,
+    options,
+    onChange,
+  }: {
+    id: string
+    value: string[]
+    options: { label: string; value: string }[]
+    onChange: (e: { value: string[] }) => void
+  }) => (
+    <div data-testid={id}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-label={`${id}:${o.label}`}
+          onClick={() =>
+            onChange({
+              value: value.includes(o.value)
+                ? value.filter((v) => v !== o.value)
+                : [...value, o.value],
+            })
+          }
+        />
+      ))}
+    </div>
+  ),
 }))
 
 const MOCK_FILTERS: AnalyticsQueryParams = { start_date: '2026-07-01', end_date: '2026-07-17' }
@@ -53,7 +87,7 @@ const MOCK_FILTERS: AnalyticsQueryParams = { start_date: '2026-07-01', end_date:
 describe('CliAnalyticsTab', () => {
   it('renders all 8 section buttons', () => {
     render(<CliAnalyticsTab filters={MOCK_FILTERS} />)
-    expect(screen.getAllByRole('button')).toHaveLength(8)
+    expect(screen.getAllByRole('button', { name: /^[A-Z][\w &]+$/ })).toHaveLength(8)
   })
 
   it('renders all 8 section tab labels', () => {
@@ -76,6 +110,45 @@ describe('CliAnalyticsTab', () => {
   it('shows overview view as the default active tab', () => {
     render(<CliAnalyticsTab filters={MOCK_FILTERS} />)
     expect(screen.getByTestId('overview-view')).toBeInTheDocument()
+  })
+
+  it('offers the documented subscription and origin options', () => {
+    render(<CliAnalyticsTab filters={MOCK_FILTERS} />)
+    for (const l of ['CodeMie', 'Corporate', 'Personal', 'Unknown']) {
+      expect(screen.getByLabelText(`cli-analytics-subscription:${l}`)).toBeInTheDocument()
+    }
+    for (const l of [
+      'Linked folder',
+      'Selected profile',
+      'Registered repository',
+      'Default project',
+      'Personal project',
+      'Legacy project adoption',
+      'Not recorded',
+    ]) {
+      expect(screen.getByLabelText(`cli-analytics-project-origin:${l}`)).toBeInTheDocument()
+    }
+  })
+
+  it('passes both selections to the views next to the page filters, and drops them on clear', () => {
+    render(<CliAnalyticsTab filters={{ ...MOCK_FILTERS, users: ['a@co.com'] }} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Sessions' }))
+
+    fireEvent.click(screen.getByLabelText('cli-analytics-subscription:CodeMie'))
+    fireEvent.click(screen.getByLabelText('cli-analytics-subscription:Unknown'))
+    fireEvent.click(screen.getByLabelText('cli-analytics-project-origin:Linked folder'))
+
+    const passed = () => JSON.parse(screen.getByTestId('sessions-view').textContent ?? '{}')
+    expect(passed()).toEqual({
+      ...MOCK_FILTERS,
+      users: ['a@co.com'],
+      subscription_type: ['codemie', 'unknown'],
+      project_origin: ['linked_folder'],
+    })
+
+    fireEvent.click(screen.getByLabelText('cli-analytics-subscription:CodeMie'))
+    fireEvent.click(screen.getByLabelText('cli-analytics-subscription:Unknown'))
+    expect(passed().subscription_type).toEqual([])
   })
 
   it('does not render header content', () => {

@@ -46,6 +46,65 @@ describe('useCliAnalyticsRepositories', () => {
     expect(result.current.perPage).toBe(20)
   })
 
+  it('sends subscription_type and project_origin and resets page when they change', async () => {
+    const fetchRepositories = vi
+      .spyOn(cliAnalyticsStore, 'fetchRepositories')
+      .mockResolvedValue(undefined)
+
+    const { result, rerender } = renderHook(
+      (props: { filters: AnalyticsQueryParams }) => useCliAnalyticsRepositories(props.filters),
+      { initialProps: { filters: BASE_FILTERS } }
+    )
+    act(() => result.current.setPage(3))
+
+    rerender({
+      filters: { ...BASE_FILTERS, subscription_type: ['personal'], project_origin: ['none'] },
+    })
+
+    await waitFor(() => expect(result.current.page).toBe(1))
+    expect(fetchRepositories).toHaveBeenLastCalledWith(
+      expect.objectContaining({ subscription_type: 'personal', project_origin: 'none', page: 0 })
+    )
+    // The page resets with the filters: no request carries the new filters with the old page.
+    expect(fetchRepositories).not.toHaveBeenCalledWith(
+      expect.objectContaining({ subscription_type: 'personal', page: 2 })
+    )
+  })
+
+  it('sends no request with the old page when the search changes, and none in fetch-all mode', async () => {
+    const fetchRepositories = vi
+      .spyOn(cliAnalyticsStore, 'fetchRepositories')
+      .mockResolvedValue(undefined)
+
+    const { result } = renderHook(() => useCliAnalyticsRepositories(BASE_FILTERS))
+    act(() => result.current.setPage(3))
+    act(() => result.current.setSearch('repo'))
+    await waitFor(() =>
+      expect(fetchRepositories).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: 'repo', page: 0 })
+      )
+    )
+    expect(fetchRepositories).not.toHaveBeenCalledWith(
+      expect.objectContaining({ search: 'repo', page: 2 })
+    )
+
+    fetchRepositories.mockClear()
+    const all = renderHook(
+      (props: { filters: AnalyticsQueryParams }) =>
+        useCliAnalyticsRepositories(props.filters, undefined, false, 0),
+      { initialProps: { filters: BASE_FILTERS } }
+    )
+    all.rerender({ filters: { ...BASE_FILTERS, subscription_type: ['personal'] } })
+    await waitFor(() =>
+      expect(fetchRepositories).toHaveBeenLastCalledWith(
+        expect.objectContaining({ subscription_type: 'personal' })
+      )
+    )
+    expect(fetchRepositories).not.toHaveBeenCalledWith(
+      expect.objectContaining({ page: expect.anything() })
+    )
+  })
+
   it('calls fetchRepositories with 0-indexed page param', async () => {
     const fetchRepositories = vi
       .spyOn(cliAnalyticsStore, 'fetchRepositories')

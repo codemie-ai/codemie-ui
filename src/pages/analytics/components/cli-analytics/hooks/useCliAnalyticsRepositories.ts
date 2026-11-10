@@ -51,6 +51,8 @@ export function useCliAnalyticsRepositories(
     users,
     projects,
     repositories: repositoriesParam,
+    subscription_type,
+    project_origin,
   } = buildCliAnalyticsParams(filters, repositories)
 
   const [page, setPage] = useState(1)
@@ -67,9 +69,23 @@ export function useCliAnalyticsRepositories(
     }
   }, [search])
 
-  useEffect(() => {
+  // Reset the page while rendering, so no request goes out with the new filters and the old page.
+  const filterKey = JSON.stringify([
+    time_period,
+    start_date,
+    end_date,
+    users,
+    projects,
+    repositoriesParam,
+    subscription_type,
+    project_origin,
+    debouncedSearch,
+  ])
+  const [pageFilterKey, setPageFilterKey] = useState(filterKey)
+  if (pageFilterKey !== filterKey) {
+    setPageFilterKey(filterKey)
     setPage(1)
-  }, [time_period, start_date, end_date, users, projects, repositoriesParam, debouncedSearch])
+  }
 
   // The `repositories` slot is shared with the Repositories view, which uses a different
   // request shape. Drop whatever it left behind when this hook mounts or its variant changes.
@@ -85,6 +101,8 @@ export function useCliAnalyticsRepositories(
       users,
       projects,
       repositories: repositoriesParam,
+      subscription_type,
+      project_origin,
       search: debouncedSearch || undefined,
     }
     if (!fetchAll) {
@@ -105,6 +123,8 @@ export function useCliAnalyticsRepositories(
     users,
     projects,
     repositoriesParam,
+    subscription_type,
+    project_origin,
     page,
     perPage,
     includeBranches,

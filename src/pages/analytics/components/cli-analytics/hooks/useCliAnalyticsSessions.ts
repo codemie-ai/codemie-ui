@@ -57,6 +57,8 @@ export function useCliAnalyticsSessions(
     projects: filterProjects,
     repositories: repositoriesParam,
     branch: branchParam,
+    subscription_type,
+    project_origin,
   } = buildCliAnalyticsParams(filters, repositories, options?.branch)
 
   // A clicked project group overrides the project filter; the null project sends the flag only.
@@ -78,9 +80,8 @@ export function useCliAnalyticsSessions(
     }
   }, [search])
 
-  useEffect(() => {
-    setPage(1)
-  }, [
+  // Reset the page while rendering, so no request goes out with the new filters and the old page.
+  const filterKey = JSON.stringify([
     time_period,
     start_date,
     end_date,
@@ -88,11 +89,18 @@ export function useCliAnalyticsSessions(
     projects,
     repositoriesParam,
     branchParam,
+    subscription_type,
+    project_origin,
     debouncedSearch,
     options?.framework,
     options?.isUnattributed,
     options?.isProjectUnattributed,
   ])
+  const [pageFilterKey, setPageFilterKey] = useState(filterKey)
+  if (pageFilterKey !== filterKey) {
+    setPageFilterKey(filterKey)
+    setPage(1)
+  }
 
   useEffect(() => {
     cliAnalyticsStore.fetchSessions({
@@ -103,6 +111,8 @@ export function useCliAnalyticsSessions(
       projects,
       repositories: repositoriesParam,
       branch: branchParam,
+      subscription_type,
+      project_origin,
       page: page - 1,
       per_page: perPage,
       sort_by: options?.sort_by,
@@ -123,6 +133,8 @@ export function useCliAnalyticsSessions(
     projects,
     repositoriesParam,
     branchParam,
+    subscription_type,
+    project_origin,
     page,
     perPage,
     debouncedSearch,

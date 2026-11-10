@@ -51,6 +51,8 @@ export function useCliAnalyticsSlice<T>(
     users,
     projects,
     repositories: repositoriesParam,
+    subscription_type,
+    project_origin,
   } = buildCliAnalyticsParams(filters, repositories)
 
   useEffect(() => {
@@ -61,11 +63,23 @@ export function useCliAnalyticsSlice<T>(
       users,
       projects,
       repositories: repositoriesParam,
+      subscription_type,
+      project_origin,
     })
     return () => {
       cliAnalyticsStore.abortControllers.get(key)?.abort()
     }
-  }, [key, time_period, start_date, end_date, users, projects, repositoriesParam])
+  }, [
+    key,
+    time_period,
+    start_date,
+    end_date,
+    users,
+    projects,
+    repositoriesParam,
+    subscription_type,
+    project_origin,
+  ])
 
   return {
     data: snap[key] as T | null,

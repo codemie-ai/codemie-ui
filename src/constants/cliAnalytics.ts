@@ -14,3 +14,37 @@
 
 export const NOT_REPORTED_LABEL = 'Not reported'
 export const UNATTRIBUTED_LABEL = 'Unattributed'
+
+// Values and filter names follow the backend response vocabulary (scope.py PROJECT_ORIGINS / subscription types).
+// `other` = a stored value outside the vocabulary, `unknown` / `none` = a missing one.
+export const SUBSCRIPTION_LABELS: Record<string, string> = {
+  codemie: 'CodeMie',
+  corporate: 'Corporate',
+  personal: 'Personal',
+  unknown: 'Unknown',
+  other: 'Other',
+}
+
+export const PROJECT_ORIGIN_LABELS: Record<string, string> = {
+  linked_folder: 'Linked folder',
+  profile: 'Selected profile',
+  registered_repository: 'Registered repository',
+  default_project: 'Default project',
+  personal: 'Personal project',
+  legacy_project: 'Legacy project adoption',
+  none: 'Not recorded',
+  other: 'Other',
+}
+
+export const ROUTE_NOTE_LABELS: Record<string, string> = {
+  folder_not_linked: 'Folder not linked to a project',
+  linked_project_unavailable: 'Linked project unavailable',
+  registered_project_inaccessible: 'Registered project inaccessible',
+  registration_ambiguous: 'Repository registration ambiguous',
+}
+
+const toOptions = (labels: Record<string, string>) =>
+  Object.entries(labels).map(([value, label]) => ({ label, value }))
+
+export const SUBSCRIPTION_OPTIONS = toOptions(SUBSCRIPTION_LABELS)
+export const PROJECT_ORIGIN_OPTIONS = toOptions(PROJECT_ORIGIN_LABELS)

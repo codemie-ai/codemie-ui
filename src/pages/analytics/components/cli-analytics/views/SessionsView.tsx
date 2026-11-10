@@ -29,7 +29,13 @@ import { formatDateTime } from '@/utils/helpers'
 import SessionCostValue from './SessionCostValue'
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
-import { describeSessionCount, formatLines, linesTitle } from '../format'
+import {
+  describeSessionCount,
+  formatLines,
+  linesTitle,
+  projectOriginLabel,
+  subscriptionLabel,
+} from '../format'
 import { useCliAnalyticsFrameworks } from '../hooks/useCliAnalyticsFrameworks'
 import { useCliAnalyticsSessions } from '../hooks/useCliAnalyticsSessions'
 import { useSessionModal } from '../hooks/useSessionModal'
@@ -67,6 +73,18 @@ const BranchCell: FC<{ row: SessionRow }> = ({ row }) => (
 const DeliveryFrameworkCell: FC<{ row: SessionRow }> = ({ row }) => (
   <div className="truncate max-w-[200px]" title={row.delivery_framework ?? ''}>
     {row.delivery_framework || '—'}
+  </div>
+)
+
+const SubscriptionCell: FC<{ row: SessionRow }> = ({ row }) => (
+  <div className="truncate max-w-[140px]" title={subscriptionLabel(row.subscription_type)}>
+    {subscriptionLabel(row.subscription_type)}
+  </div>
+)
+
+const ProjectOriginCell: FC<{ row: SessionRow }> = ({ row }) => (
+  <div className="truncate max-w-[180px]" title={projectOriginLabel(row.project_origin)}>
+    {projectOriginLabel(row.project_origin)}
   </div>
 )
 
@@ -117,6 +135,8 @@ const SESSION_CELL_RENDERERS = {
   repository: (r: SessionRow) => <RepositoryCell row={r} />,
   branch: (r: SessionRow) => <BranchCell row={r} />,
   delivery_framework: (r: SessionRow) => <DeliveryFrameworkCell row={r} />,
+  subscription_type: (r: SessionRow) => <SubscriptionCell row={r} />,
+  project_origin: (r: SessionRow) => <ProjectOriginCell row={r} />,
   turns: (r: SessionRow) => <TurnsCell row={r} />,
   net_lines: (r: SessionRow) => <NetLinesCell row={r} />,
   input_tokens: (r: SessionRow) => <InputTokensCell row={r} />,
@@ -211,6 +231,20 @@ const SessionsView: FC<SessionsViewProps> = ({
       {
         key: 'delivery_framework',
         label: 'FRAMEWORK',
+        type: DefinitionTypes.Custom,
+        sortable: false,
+        headClassNames: '',
+      },
+      {
+        key: 'subscription_type',
+        label: 'SUBSCRIPTION',
+        type: DefinitionTypes.Custom,
+        sortable: false,
+        headClassNames: '',
+      },
+      {
+        key: 'project_origin',
+        label: 'PROJECT ORIGIN',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: '',
