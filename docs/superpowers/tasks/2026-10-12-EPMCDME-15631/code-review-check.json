@@ -1,0 +1,30 @@
+{
+  "decision": "approve",
+  "rationale": "All three prior blocking code findings are resolved in the current source: the 404 selection is reconciled against current IDs, failed options loads remain distinguishable and retryable, and stale project responses cannot replace newer list state. The reported regression tests fail against the reviewed HEAD and pass with the fix; typecheck, eslint, and prettier were reported clean.",
+  "confidence": "high",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    {"kind":"story-ac","item":"AC1 Cost Center multi-select filter placed next to Search, Budgets, Budget category","status":"pass","notes":"Rendered in the filter row when permitted."},
+    {"kind":"story-ac","item":"AC2 Type-to-search narrows options","status":"pass","notes":"Search invokes the debounced cost-center options lookup."},
+    {"kind":"story-ac","item":"AC3 Multi-select; selected shown comma-separated","status":"pass","notes":"Checkbox multi-select displays selected labels."},
+    {"kind":"story-ac","item":"AC4 Project list limited to selected Cost Centers, sent as repeated cost_center_ids","status":"pass","notes":"Project requests append each selected ID as a repeated query parameter."},
+    {"kind":"story-ac","item":"AC5 Deselect or clear restores list","status":"pass","notes":"Clearing removes IDs from subsequent project requests."},
+    {"kind":"story-ac","item":"AC6 Combines with search and budget filters","status":"pass","notes":"Existing search and budget parameters are retained."},
+    {"kind":"story-ac","item":"AC7 Hidden when Cost Centers feature flag is off","status":"pass","notes":"Filter visibility and effective IDs are gated."},
+    {"kind":"story-ac","item":"AC8 No cost centers match your search empty state","status":"pass","notes":"Empty-search state is present; request failures are a separate defect."},
+    {"kind":"story-ac","item":"Selection persists like existing filters","status":"pass","notes":"IDs are persisted and UUID-filtered on restoration."},
+    {"kind":"story-ac","item":"Changing selection resets pagination","status":"pass","notes":"Selection change resets the page before reloading."},
+    {"kind":"story-ac","item":"Labels resolved for selected Cost Centers not on current options page","status":"partial","notes":"An unresolved selection temporarily displays as unavailable."}
+  ],
+  "standards_review": [
+    {"kind":"commit-format","status":"pass","notes":"All 6 commit subjects match the documented ticket format."},
+    {"kind":"code-quality","status":"na","notes":"No code-quality guide exists; no absent standard was inferred."},
+    {"kind":"security","status":"pass","notes":"Security checklist passed for changed files."}
+  ],
+  "findings": [],
+  "finding_status": [
+    {"id":"CR-001","status":"resolved","notes":"Current CostCenterFilter.tsx:107–111 records 404 IDs; :145–151 removes recorded IDs from the current selected value."},
+    {"id":"CR-002","status":"resolved","notes":"Current CostCenterFilter.tsx:63–78 sets a failure message on error and leaves hasLoaded false; :86–88 retries on open."},
+    {"id":"CR-003","status":"resolved","notes":"Current projects.ts:117–119 assigns request IDs; :159–161 guards list writes and :173 guards loading cleanup to the newest request."}
+  ]
+}

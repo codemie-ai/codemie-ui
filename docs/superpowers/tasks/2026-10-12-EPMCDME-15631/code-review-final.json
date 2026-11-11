@@ -1,0 +1,50 @@
+{
+  "decision": "request-changes",
+  "rationale": "Three reachable defects remain: a 404 lookup can leave a deleted ID selected, options-load failure is misrepresented as an empty list and marked loaded, and overlapping project requests can let stale results replace the active filter results. Seven speculative, unconfirmed, stylistic, or low-impact candidates were dismissed; verification-gap lens output was not supplied, so coverage is incomplete and confidence is low.",
+  "confidence": "low",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    {"kind":"story-ac","item":"AC1 Cost Center multi-select filter placed next to Search, Budgets, Budget category","status":"pass","notes":"Rendered in the filter row when permitted."},
+    {"kind":"story-ac","item":"AC2 Type-to-search narrows options","status":"pass","notes":"Search invokes the debounced cost-center options lookup."},
+    {"kind":"story-ac","item":"AC3 Multi-select; selected shown comma-separated","status":"pass","notes":"Checkbox multi-select displays selected labels."},
+    {"kind":"story-ac","item":"AC4 Project list limited to selected Cost Centers, sent as repeated cost_center_ids","status":"pass","notes":"Project requests append each selected ID as a repeated query parameter."},
+    {"kind":"story-ac","item":"AC5 Deselect or clear restores list","status":"pass","notes":"Clearing removes IDs from subsequent project requests."},
+    {"kind":"story-ac","item":"AC6 Combines with search and budget filters","status":"pass","notes":"Existing search and budget parameters are retained."},
+    {"kind":"story-ac","item":"AC7 Hidden when Cost Centers feature flag is off","status":"pass","notes":"Filter visibility and effective IDs are gated."},
+    {"kind":"story-ac","item":"AC8 No cost centers match your search empty state","status":"pass","notes":"Empty-search state is present; request failures are a separate defect."},
+    {"kind":"story-ac","item":"Selection persists like existing filters","status":"pass","notes":"IDs are persisted and UUID-filtered on restoration."},
+    {"kind":"story-ac","item":"Changing selection resets pagination","status":"pass","notes":"Selection change resets the page before reloading."},
+    {"kind":"story-ac","item":"Labels resolved for selected Cost Centers not on current options page","status":"partial","notes":"An unresolved selection temporarily displays as unavailable."}
+  ],
+  "standards_review": [
+    {"kind":"commit-format","status":"pass","notes":"All 6 commit subjects match the documented ticket format."},
+    {"kind":"code-quality","status":"na","notes":"No code-quality guide exists; no absent standard was inferred."},
+    {"kind":"security","status":"pass","notes":"Security checklist passed for changed files."}
+  ],
+  "findings": [
+    {
+      "id":"CR-001","kind":"code","severity":"major","triage":"patch",
+      "file":"src/pages/settings/administration/projectsManagement/components/CostCenterFilter.tsx","line":121,
+      "title":"Stale 404 lookup leaves selection",
+      "problem":"When a selected value changes while its missing-label lookup is in flight, effect cleanup sets active=false. A later 404 yields no label state update and its removal callback is discarded; resolvingIdsRef is cleared without retriggering the effect.",
+      "impact":"The stale cost-center ID remains selected and is sent as cost_center_ids, so the project list can be filtered by a deleted center.",
+      "recommendation":"Reconcile the 404 against the current selected IDs when the lookup settles, rather than discarding it because the originating effect was cleaned up."
+    },
+    {
+      "id":"CR-002","kind":"code","severity":"major","triage":"patch",
+      "file":"src/pages/settings/administration/projectsManagement/components/CostCenterFilter.tsx","line":62,
+      "title":"Failed options request appears empty",
+      "problem":"The loadOptions catch clears options; finally then marks hasLoaded true. The UI consequently renders its ordinary no-results/empty message and handleShow will not automatically retry.",
+      "impact":"A server/network failure is presented to users as a valid empty cost-center list and leaves no normal reopen retry path.",
+      "recommendation":"Expose the load failure distinctly and keep the option list retryable instead of treating failure as a successful empty result."
+    },
+    {
+      "id":"CR-003","kind":"code","severity":"major","triage":"patch",
+      "file":"src/store/projects.ts","line":142,
+      "title":"Stale project response overwrites active filter",
+      "problem":"indexProjects unconditionally writes each response to shared projects and pagination state; there is no ordering guard. ProjectsManagementFull can issue a new request on selection change while a prior request remains in flight.",
+      "impact":"If the older response resolves last, the visible project list no longer matches the selected cost-center filter.",
+      "recommendation":"Prevent a stale indexProjects response from replacing the projects and pagination state produced by a newer request."
+    }
+  ]
+}

@@ -44,9 +44,9 @@ export const costCentersStore = {
       .then((response) => response.json())
   },
 
-  getCostCenter(id: string): Promise<CostCenterDetail> {
+  getCostCenter(id: string, options?: { skipErrorHandling?: boolean }): Promise<CostCenterDetail> {
     return api
-      .get(`${COST_CENTERS_BASE_URL}/${encodeURIComponent(id)}`)
+      .get(`${COST_CENTERS_BASE_URL}/${encodeURIComponent(id)}`, options)
       .then((response) => response.json())
   },
 

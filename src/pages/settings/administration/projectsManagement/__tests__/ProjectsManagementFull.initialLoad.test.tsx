@@ -13,10 +13,10 @@
 // limitations under the License.
 //
 
-import { act, render } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
+import { useBudgetManagementEnabled, useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import { getFilters } from '@/utils/filters'
@@ -24,7 +24,14 @@ import { getFilters } from '@/utils/filters'
 import ProjectsManagementFull from '../ProjectsManagementFull'
 
 const mockGet = vi.fn()
+let triggerCostCenterChange: ((ids: string[]) => void) | null = null
 vi.mock('@/utils/api', () => ({ default: { get: (...args: unknown[]) => mockGet(...args) } }))
+vi.mock('@/pages/settings/administration/projectsManagement/components/CostCenterFilter', () => ({
+  default: ({ onChange }: { onChange: (ids: string[]) => void }) => {
+    triggerCostCenterChange = onChange
+    return <div data-testid="cost-center-filter" />
+  },
+}))
 
 // importOriginal spreads all real exports (including FILTER_ENTITY enum) and overrides only
 // getFilters and setFilters — a plain factory would drop FILTER_ENTITY, crashing useProjectsFilters.
@@ -125,8 +132,17 @@ const mockResponse = {
 beforeEach(() => {
   mockGet.mockReset() // vitest.config does not set clearMocks — reset to prevent cross-test accumulation
   mockGet.mockResolvedValue(mockResponse)
-  vi.mocked(getFilters).mockReturnValue({ budget_assignment: 'assigned' } as any)
+  vi.mocked(getFilters).mockReturnValue({
+    search: '',
+    budget_assignment: 'assigned',
+    budget_category: 'all',
+  } as never)
+  triggerCostCenterChange = null
   triggerBudgetChange = null
+  vi.mocked(useFeatureFlag).mockImplementation(((flag: string) => [
+    flag === 'features:costCenters',
+    true,
+  ]) as typeof useFeatureFlag)
   projectsStore.projects = []
   projectsStore.pagination = { page: 0, perPage: 10, totalPages: 0, totalCount: 0 } as any
   userStore.user = { platform_role: 'admin', isAdmin: true } as any
@@ -168,5 +184,81 @@ describe('ProjectsManagementFull — initial load deduplication', () => {
     })
     // Exactly one corrective refetch with budget params now that the flag is enabled
     expect(mockGet).toHaveBeenCalledTimes(1)
+  })
+})
+describe('ProjectsManagementFull — cost-center filter access', () => {
+  it.each([
+    [{ platform_role: 'admin', isAdmin: true }, true],
+    [{ platform_role: 'maintainer', isMaintainer: true }, true],
+    [{ platform_role: 'user', isAdmin: false }, false],
+  ])('renders the filter for permitted roles: %s', async (user, visible) => {
+    userStore.user = user as typeof userStore.user
+    await act(async () => {
+      render(<ProjectsManagementFull />)
+    })
+    if (visible) expect(screen.getByTestId('cost-center-filter')).toBeInTheDocument()
+    else expect(screen.queryByTestId('cost-center-filter')).not.toBeInTheDocument()
+  })
+  it('omits the cost-center filter and request parameter when the flag is off', async () => {
+    vi.mocked(useFeatureFlag).mockImplementation(((flag: string) => [
+      flag !== 'features:costCenters',
+      true,
+    ]) as typeof useFeatureFlag)
+    await act(async () => {
+      render(<ProjectsManagementFull />)
+    })
+    expect(screen.queryByTestId('cost-center-filter')).not.toBeInTheDocument()
+    const requestUrl = String(mockGet.mock.calls.at(-1)?.[0])
+    expect(new URLSearchParams(requestUrl.split('?')[1]).has('cost_center_ids')).toBe(false)
+  })
+
+  it('sends selected IDs as repeated parameters and clears them on selection removal', async () => {
+    await act(async () => {
+      render(<ProjectsManagementFull />)
+    })
+    projectsStore.pagination.page = 2
+    await act(async () => {
+      triggerCostCenterChange?.(['center-a', 'center-b'])
+    })
+    expect(projectsStore.pagination.page).toBe(0)
+    let requestUrl = String(mockGet.mock.calls.at(-1)?.[0])
+    expect(new URLSearchParams(requestUrl.split('?')[1]).getAll('cost_center_ids')).toEqual([
+      'center-a',
+      'center-b',
+    ])
+    mockGet.mockClear()
+    await act(async () => {
+      triggerCostCenterChange?.([])
+    })
+    requestUrl = String(mockGet.mock.calls.at(-1)?.[0])
+    expect(new URLSearchParams(requestUrl.split('?')[1]).has('cost_center_ids')).toBe(false)
+  })
+  it('combines selected cost centers with search and budget filters on subsequent requests', async () => {
+    vi.mocked(getFilters).mockReturnValue({
+      search: 'cod',
+      budget_assignment: 'assigned',
+      budget_category: 'premium_models',
+    } as never)
+    await act(async () => {
+      render(<ProjectsManagementFull />)
+    })
+    mockGet.mockClear()
+    await act(async () => {
+      triggerCostCenterChange?.(['center-a'])
+    })
+    let requestUrl = String(mockGet.mock.calls.at(-1)?.[0])
+    let params = new URLSearchParams(requestUrl.split('?')[1])
+    expect(params.get('search')).toBe('cod')
+    expect(params.get('has_assigned_budgets')).toBe('true')
+    expect(params.get('budget_category')).toBe('premium_models')
+    expect(params.getAll('cost_center_ids')).toEqual(['center-a'])
+
+    mockGet.mockClear()
+    await act(async () => {
+      triggerBudgetChange?.('all')
+    })
+    requestUrl = String(mockGet.mock.calls.at(-1)?.[0])
+    params = new URLSearchParams(requestUrl.split('?')[1])
+    expect(params.getAll('cost_center_ids')).toEqual(['center-a'])
   })
 })

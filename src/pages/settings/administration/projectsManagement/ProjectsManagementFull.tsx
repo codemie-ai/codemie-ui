@@ -56,6 +56,7 @@ import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
+import CostCenterFilter from './components/CostCenterFilter'
 import { useProjectsFilters } from './hooks/useProjectsFilters'
 import ProjectModal, { ProjectFormData } from './ProjectModal'
 import ProjectResourceCounters from './ProjectResourceCounters'
@@ -208,11 +209,13 @@ const ProjectsManagementFull: FC = () => {
     search,
     budgetAssignmentFilter,
     budgetCategory,
+    costCenterIds,
     setSearch,
     setBudgetAssignmentFilter,
     setBudgetCategory,
     sort,
     setSort,
+    setCostCenterIds,
   } = useProjectsFilters()
   const [showModal, setShowModal] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | ProjectDetail | null>(null)
@@ -237,6 +240,16 @@ const ProjectsManagementFull: FC = () => {
     FEATURE_FLAG_PROJECT_CREATION
   )
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
+  const canFilterByCostCenter =
+    isCostCentersEnabled && !!(currentUser?.isAdmin || currentUser?.isMaintainer)
+  const effectiveCostCenterIds = useMemo(
+    () => (canFilterByCostCenter ? costCenterIds : []),
+    [canFilterByCostCenter, costCenterIds]
+  )
+  const effectiveCostCenterIdsRef = useRef(effectiveCostCenterIds)
+  useEffect(() => {
+    effectiveCostCenterIdsRef.current = effectiveCostCenterIds
+  }, [effectiveCostCenterIds])
 
   const budgetQueryParams = useMemo(
     () =>
@@ -295,7 +308,8 @@ const ProjectsManagementFull: FC = () => {
         nextSortKey,
         nextSortOrder,
         false,
-        nextBudgetParams
+        nextBudgetParams,
+        effectiveCostCenterIdsRef.current
       ),
     []
   )
@@ -380,6 +394,43 @@ const ProjectsManagementFull: FC = () => {
     budgetAssignmentFilter,
     budgetCategory,
     isBudgetManagementEnabled,
+    loadProjects,
+    pagination.perPage,
+    search,
+    sort.sortKey,
+    sort.sortOrder,
+  ])
+
+  const previousCostCenterSelectionRef = useRef({
+    ids: effectiveCostCenterIds,
+    canFilter: canFilterByCostCenter,
+  })
+
+  useEffect(() => {
+    const previous = previousCostCenterSelectionRef.current
+    const changed =
+      previous.canFilter !== canFilterByCostCenter ||
+      previous.ids.length !== effectiveCostCenterIds.length ||
+      previous.ids.some((id, index) => id !== effectiveCostCenterIds[index])
+    previousCostCenterSelectionRef.current = {
+      ids: effectiveCostCenterIds,
+      canFilter: canFilterByCostCenter,
+    }
+    if (!changed) return
+
+    if (projectsStore.pagination.page !== 0) {
+      skipPaginationReloadRef.current = true
+      projectsStore.pagination.page = 0
+    }
+
+    loadProjects(0, pagination.perPage, search || undefined, sort.sortKey, sort.sortOrder).catch(
+      (error) => {
+        console.error('Failed to load projects:', error)
+      }
+    )
+  }, [
+    canFilterByCostCenter,
+    effectiveCostCenterIds,
     loadProjects,
     pagination.perPage,
     search,
@@ -695,6 +746,11 @@ const ProjectsManagementFull: FC = () => {
                 />
               </div>
             </>
+          )}
+          {canFilterByCostCenter && (
+            <div className="w-48 max-sm:w-full">
+              <CostCenterFilter value={costCenterIds} onChange={setCostCenterIds} />
+            </div>
           )}
         </div>
         <Table

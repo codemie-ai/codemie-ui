@@ -52,7 +52,8 @@ interface ProjectsStore {
       includeBudgets?: boolean
       hasAssignedBudgets?: boolean
       budgetCategory?: BudgetCategory | null
-    }
+    },
+    costCenterIds?: string[]
   ) => Promise<Project[]>
   searchProjects: (
     search: string,
@@ -92,6 +93,9 @@ interface ProjectsStore {
 const DEFAULT_PAGE = 0
 const DEFAULT_PER_PAGE = 10
 
+// Only the newest indexProjects call may write list state; filters can fire overlapping requests.
+let latestIndexRequestId = 0
+
 export const projectsStore = proxy<ProjectsStore>({
   projects: [],
   selectedProject: null,
@@ -115,8 +119,11 @@ export const projectsStore = proxy<ProjectsStore>({
       includeBudgets?: boolean
       hasAssignedBudgets?: boolean
       budgetCategory?: BudgetCategory | null
-    } = {}
+    } = {},
+    costCenterIds: string[] = []
   ) {
+    latestIndexRequestId += 1
+    const requestId = latestIndexRequestId
     this.loading = true
     this.error = null
 
@@ -141,6 +148,7 @@ export const projectsStore = proxy<ProjectsStore>({
           queryParams.append(key, String(value))
         }
       })
+      costCenterIds.forEach((id) => queryParams.append('cost_center_ids', id))
       const queryString = queryParams.toString()
       const url = queryString ? `v1/projects?${queryString}` : 'v1/projects'
 
@@ -153,6 +161,7 @@ export const projectsStore = proxy<ProjectsStore>({
       }))
 
       const pagination = responseData.pagination || {}
+      if (requestId !== latestIndexRequestId) return projects
       this.projects = projects
       this.pagination = {
         page: pagination.page ?? page,
@@ -163,12 +172,13 @@ export const projectsStore = proxy<ProjectsStore>({
 
       return projects
     } catch (error: any) {
+      if (requestId !== latestIndexRequestId) throw error
       const contextualError = error.response?.data?.message ?? error.message
       this.error = `Failed to load projects: ${contextualError}`
       console.error('Projects Store Error (indexProjects):', error)
       throw error
     } finally {
-      this.loading = false
+      if (requestId === latestIndexRequestId) this.loading = false
     }
   },
 

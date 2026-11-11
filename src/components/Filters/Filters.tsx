@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 
-import isEmpty from 'lodash/isEmpty'
 import { Accordion, AccordionTab } from 'primereact/accordion'
 import React, { useState, useEffect, FormEvent, useMemo, useCallback, useRef } from 'react'
 
@@ -22,10 +21,10 @@ import ChevronRightIcon from '@/assets/icons/chevron-right.svg?react'
 import CrossIcon from '@/assets/icons/cross.svg?react'
 import SearchIcon from '@/assets/icons/search.svg?react'
 import Button from '@/components/Button'
+import FilterMultiSelect from '@/components/Filters/FilterMultiSelect'
 import Autocomplete from '@/components/form/Autocomplete'
 import { Checkbox } from '@/components/form/Checkbox'
 import Input from '@/components/form/Input'
-import MultiSelect from '@/components/form/MultiSelect'
 import RadioGroup from '@/components/form/RadioGroup/RadioGroup'
 import Select from '@/components/form/Select'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
@@ -280,39 +279,22 @@ const Filters: React.FC<FiltersProps> = ({
                   />
                 )}
                 {definition.type === FilterDefinitionType.Multiselect && (
-                  <div className="relative w-full">
-                    <MultiSelect
-                      showCheckbox
-                      value={(filters[definition.name] as string[]) || []}
-                      onChange={(value) => handleInputChange(definition.name, value.value)}
-                      options={multiselectOptions[definition.name]}
-                      placeholder={
-                        definition.placeholder ?? definition.label ?? humanize(definition.name)
-                      }
-                      className="w-full h-[35px] tracking-normal"
-                      scrollHeight="200px"
-                      renderOption={
-                        definition.config?.renderOption as (option: any) => React.ReactNode
-                      }
-                      onFilter={
-                        definition.config?.onFilter as ((filter: string) => void) | undefined
-                      }
-                      filterPlaceholder={definition.config?.filterPlaceholder as string | undefined}
-                      loading={definition.config?.loading as boolean | undefined}
-                      emptyFilterMessage={
-                        definition.config?.emptyFilterMessage as string | undefined
-                      }
-                      {...(definition.config as Pick<MultiSelectProps, 'label' | 'id' | 'name'>)}
-                    />
-                    {!isEmpty((filters[definition.name] as string[]) || []) && (
-                      <div className="multiselect-clear !top-[10px] !right-[29px]">
-                        <CrossIcon
-                          className="w-3.5 h-3.5"
-                          onClick={() => handleInputChange(definition.name, [])}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  <FilterMultiSelect
+                    value={(filters[definition.name] as string[]) || []}
+                    onChange={(value) => handleInputChange(definition.name, value)}
+                    options={multiselectOptions[definition.name]}
+                    placeholder={
+                      definition.placeholder ?? definition.label ?? humanize(definition.name)
+                    }
+                    renderOption={
+                      definition.config?.renderOption as MultiSelectProps['renderOption']
+                    }
+                    onFilter={definition.config?.onFilter as ((filter: string) => void) | undefined}
+                    filterPlaceholder={definition.config?.filterPlaceholder as string | undefined}
+                    loading={definition.config?.loading as boolean | undefined}
+                    emptyFilterMessage={definition.config?.emptyFilterMessage as string | undefined}
+                    {...(definition.config as Pick<MultiSelectProps, 'label' | 'id' | 'name'>)}
+                  />
                 )}
                 {definition.type === FilterDefinitionType.Autocomplete && (
                   <Autocomplete

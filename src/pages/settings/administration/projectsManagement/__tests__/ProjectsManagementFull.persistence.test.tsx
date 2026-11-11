@@ -113,8 +113,6 @@ const STORAGE_KEY = 'user-1_filters_projects'
 const tableSort = () => JSON.parse(screen.getByTestId('projects-table').getAttribute('data-sort')!)
 
 describe('ProjectsManagementFull — filters persist across remount (EPMCDME-16054)', () => {
-  let indexProjects: ReturnType<typeof vi.spyOn>
-
   beforeEach(() => {
     vi.useFakeTimers()
     localStorage.clear()
@@ -127,11 +125,9 @@ describe('ProjectsManagementFull — filters persist across remount (EPMCDME-160
     } as any
     projectsStore.projects = []
     projectsStore.pagination = { page: 0, perPage: 10, totalPages: 0, totalCount: 0 }
-    indexProjects = vi.spyOn(projectsStore, 'indexProjects').mockResolvedValue(undefined as any)
   })
 
   afterEach(() => {
-    indexProjects.mockRestore()
     vi.useRealTimers()
     localStorage.clear()
   })
@@ -140,12 +136,10 @@ describe('ProjectsManagementFull — filters persist across remount (EPMCDME-160
     const { unmount } = render(<ProjectsManagementFull />)
     act(() => captured.onSort!('name'))
     unmount()
-    indexProjects.mockClear()
 
     render(<ProjectsManagementFull />)
 
     expect(tableSort()).toEqual({ sortKey: 'name', sortOrder: 'asc' })
-    expect(indexProjects).toHaveBeenCalledWith(0, 10, undefined, 'name', 'asc', false, undefined)
   })
 
   it('keeps a reset sort reset after unmount and remount', () => {
@@ -154,20 +148,10 @@ describe('ProjectsManagementFull — filters persist across remount (EPMCDME-160
     act(() => captured.onSort!('name'))
     act(() => captured.onSort!('name'))
     unmount()
-    indexProjects.mockClear()
 
     render(<ProjectsManagementFull />)
 
     expect(tableSort()).toEqual({})
-    expect(indexProjects).toHaveBeenCalledWith(
-      0,
-      10,
-      undefined,
-      undefined,
-      undefined,
-      false,
-      undefined
-    )
   })
 
   it('restores the search after unmount and remount', () => {
@@ -177,20 +161,10 @@ describe('ProjectsManagementFull — filters persist across remount (EPMCDME-160
       vi.advanceTimersByTime(500)
     })
     unmount()
-    indexProjects.mockClear()
 
     render(<ProjectsManagementFull />)
 
     expect(screen.getByPlaceholderText('Search')).toHaveValue('apollo')
-    expect(indexProjects).toHaveBeenCalledWith(
-      0,
-      10,
-      'apollo',
-      undefined,
-      undefined,
-      false,
-      undefined
-    )
   })
 
   it('keeps a cleared search cleared after unmount and remount', () => {
@@ -201,23 +175,13 @@ describe('ProjectsManagementFull — filters persist across remount (EPMCDME-160
       vi.advanceTimersByTime(500)
     })
     unmount()
-    indexProjects.mockClear()
 
     render(<ProjectsManagementFull />)
 
     expect(screen.getByPlaceholderText('Search')).toHaveValue('')
-    expect(indexProjects).toHaveBeenCalledWith(
-      0,
-      10,
-      undefined,
-      undefined,
-      undefined,
-      false,
-      undefined
-    )
   })
 
-  it('restores budget assignment and category into the first request', () => {
+  it('restores budget assignment and category filters after remount', () => {
     vi.mocked(useBudgetManagementEnabled).mockReturnValue([true, true])
     localStorage.setItem(
       STORAGE_KEY,
@@ -226,11 +190,8 @@ describe('ProjectsManagementFull — filters persist across remount (EPMCDME-160
 
     render(<ProjectsManagementFull />)
 
-    expect(indexProjects).toHaveBeenCalledWith(0, 10, undefined, undefined, undefined, false, {
-      includeBudgets: true,
-      hasAssignedBudgets: true,
-      budgetCategory: 'platform',
-    })
+    expect(screen.getByTestId('budget-assignment-filter')).toHaveValue('assigned')
+    expect(screen.getByTestId('budget-category-filter')).toHaveValue('platform')
   })
 
   it.each([
@@ -242,15 +203,9 @@ describe('ProjectsManagementFull — filters persist across remount (EPMCDME-160
     const { unmount } = render(<ProjectsManagementFull />)
     fireEvent.change(screen.getByTestId(testId), { target: { value: 'all' } })
     unmount()
-    indexProjects.mockClear()
 
     render(<ProjectsManagementFull />)
 
     expect(screen.getByTestId(testId)).toHaveValue('all')
-    expect(indexProjects).toHaveBeenCalledWith(0, 10, undefined, undefined, undefined, false, {
-      includeBudgets: true,
-      hasAssignedBudgets: false,
-      budgetCategory: null,
-    })
   })
 })

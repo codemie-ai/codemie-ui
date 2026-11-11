@@ -160,4 +160,24 @@ describe('useProjectsFilters', () => {
     })
     expect(filterStore).toEqual({ search: 'foo' })
   })
+  it('restores and persists valid cost-center UUID selections', () => {
+    Object.assign(filterStore, {
+      cost_center_ids: [
+        '11111111-1111-4111-8111-111111111111',
+        '22222222-2222-4222-8222-222222222222',
+        'not-a-uuid',
+      ],
+    })
+    const { result } = renderHook(() => useProjectsFilters())
+    expect(result.current.costCenterIds).toEqual([
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222',
+    ])
+
+    act(() => result.current.setCostCenterIds(['22222222-2222-4222-8222-222222222222']))
+    expect(filterStore.cost_center_ids).toEqual(['22222222-2222-4222-8222-222222222222'])
+
+    act(() => result.current.setCostCenterIds([]))
+    expect(filterStore.cost_center_ids).toBeUndefined()
+  })
 })

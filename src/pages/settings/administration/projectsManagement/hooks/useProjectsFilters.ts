@@ -26,7 +26,7 @@ import { FILTER_ENTITY, FilterKeys, getFilters, setFilters } from '@/utils/filte
 const PROJECT_FILTER_KEYS: FilterKeys = {
   simple: ['search', 'budget_assignment', 'budget_category', 'sort_by', 'sort_order'],
   boolean: [],
-  multiple: [],
+  multiple: ['cost_center_ids'],
 }
 
 interface StoredProjectFilters {
@@ -35,6 +35,7 @@ interface StoredProjectFilters {
   budget_category?: string
   sort_by?: string
   sort_order?: string
+  cost_center_ids?: string[]
 }
 
 const parseBudgetAssignment = (value: unknown): 'all' | 'assigned' =>
@@ -48,6 +49,9 @@ const parseSort = (sortBy: unknown, sortOrder: unknown): SortState =>
     ? { sortKey: sortBy, sortOrder }
     : {}
 
+const isUuid = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 const getInitialFilters = () => {
   const saved = getFilters<StoredProjectFilters>(FILTER_ENTITY.PROJECTS, PROJECT_FILTER_KEYS)
   return {
@@ -55,6 +59,7 @@ const getInitialFilters = () => {
     budgetAssignmentFilter: parseBudgetAssignment(saved.budget_assignment),
     budgetCategory: parseBudgetCategory(saved.budget_category),
     sort: parseSort(saved.sort_by, saved.sort_order),
+    costCenterIds: Array.isArray(saved.cost_center_ids) ? saved.cost_center_ids.filter(isUuid) : [],
   }
 }
 
@@ -65,6 +70,7 @@ export const useProjectsFilters = () => {
       budgetAssignmentFilter: initialAssignment,
       budgetCategory: initialCategory,
       sort: initialSort,
+      costCenterIds: initialCostCenterIds,
     },
   ] = useState(getInitialFilters)
 
@@ -74,6 +80,7 @@ export const useProjectsFilters = () => {
   )
   const [budgetCategory, setBudgetCategory] = useState<BudgetCategoryFilter>(initialCategory)
   const [sort, setSort] = useState<SortState>(initialSort)
+  const [costCenterIds, setCostCenterIds] = useState<string[]>(initialCostCenterIds)
 
   const isMounted = useRef(false)
 
@@ -90,8 +97,9 @@ export const useProjectsFilters = () => {
       toStore.sort_by = sort.sortKey
       toStore.sort_order = sort.sortOrder
     }
+    if (costCenterIds.length) toStore.cost_center_ids = costCenterIds
     setFilters(FILTER_ENTITY.PROJECTS, toStore)
-  }, [search, budgetAssignmentFilter, budgetCategory, sort.sortKey, sort.sortOrder])
+  }, [search, budgetAssignmentFilter, budgetCategory, sort.sortKey, sort.sortOrder, costCenterIds])
 
   const handleSetSearch = useCallback((value: string) => setSearch(value), [])
   const handleSetBudgetAssignmentFilter = useCallback(
@@ -102,15 +110,18 @@ export const useProjectsFilters = () => {
     (value: BudgetCategoryFilter) => setBudgetCategory(value),
     []
   )
+  const handleSetCostCenterIds = useCallback((value: string[]) => setCostCenterIds(value), [])
 
   return {
     search,
     budgetAssignmentFilter,
     budgetCategory,
     sort,
+    costCenterIds,
     setSearch: handleSetSearch,
     setBudgetAssignmentFilter: handleSetBudgetAssignmentFilter,
     setBudgetCategory: handleSetBudgetCategory,
     setSort,
+    setCostCenterIds: handleSetCostCenterIds,
   }
 }

@@ -169,6 +169,57 @@ describe('projectsStore', () => {
       expect(result).toEqual([])
       expect(projectsStore.projects).toHaveLength(0)
     })
+    it('serializes each cost-center ID as a repeated query parameter', async () => {
+      mockGet.mockResolvedValue({ json: async () => ({ data: [], pagination: {} }) })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.indexProjects(0, 10, undefined, undefined, undefined, false, {}, [
+        '11111111-1111-4111-8111-111111111111',
+        '22222222-2222-4222-8222-222222222222',
+      ])
+
+      const params = new URLSearchParams((mockGet.mock.calls[0][0] as string).split('?')[1])
+      expect(params.getAll('cost_center_ids')).toEqual([
+        '11111111-1111-4111-8111-111111111111',
+        '22222222-2222-4222-8222-222222222222',
+      ])
+    })
+
+    it('omits cost-center query parameters when no IDs are selected', async () => {
+      mockGet.mockResolvedValue({ json: async () => ({ data: [], pagination: {} }) })
+
+      const { projectsStore } = await import('@/store/projects')
+      await projectsStore.indexProjects(0, 10, undefined, undefined, undefined, false, {}, [])
+
+      expect(mockGet.mock.calls[0][0]).not.toContain('cost_center_ids=')
+    })
+
+    it('keeps the newest response when an older request settles last', async () => {
+      let resolveOlder: (value: unknown) => void = () => undefined
+      const older = new Promise((resolve) => {
+        resolveOlder = resolve
+      })
+      mockGet.mockReturnValueOnce(older).mockResolvedValueOnce({
+        json: async () => ({ data: [{ name: 'filtered' }], pagination: { total: 1 } }),
+      })
+
+      const { projectsStore } = await import('@/store/projects')
+      const olderRequest = projectsStore.indexProjects()
+      await projectsStore.indexProjects(0, 10, undefined, undefined, undefined, false, {}, [
+        '11111111-1111-4111-8111-111111111111',
+      ])
+      resolveOlder({
+        json: async () => ({
+          data: [{ name: 'stale-a' }, { name: 'stale-b' }],
+          pagination: { total: 2 },
+        }),
+      })
+      await olderRequest
+
+      expect(projectsStore.projects.map((project) => project.name)).toEqual(['filtered'])
+      expect(projectsStore.pagination.totalCount).toBe(1)
+      expect(projectsStore.loading).toBe(false)
+    })
   })
 
   describe('createProject', () => {
