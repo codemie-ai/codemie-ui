@@ -20,6 +20,7 @@ import { ColumnType, type AnalyticsQueryParams, type TabularResponse } from '@/t
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { WEEKDAYS_MON_FIRST } from '../../utils/usagePatterns'
 import BarChartWidget from '../../widgets/BarChartWidget'
+import { browserUtcOffsetMinutes, shiftActivityToLocal } from '../activityTimezone'
 import { useCliAnalyticsActivity } from '../hooks/useCliAnalyticsActivity'
 
 const WEEKDAYS = WEEKDAYS_MON_FIRST
@@ -32,8 +33,13 @@ interface ActivityViewProps {
 
 const ActivityView: FC<ActivityViewProps> = ({ filters, repositories }) => {
   const { data, loading, error } = useCliAnalyticsActivity(filters, repositories)
+  // The API buckets by UTC weekday/hour; show them in the browser's local time.
+  const localData = useMemo(
+    () => (data ? shiftActivityToLocal(data, browserUtcOffsetMinutes()) : data),
+    [data]
+  )
 
-  const maxCell = useMemo(() => Math.max(...(data?.heat.flat() ?? []), 1), [data])
+  const maxCell = useMemo(() => Math.max(...(localData?.heat.flat() ?? []), 1), [localData])
 
   const errorDetails = error ? { message: error } : null
 
@@ -44,12 +50,12 @@ const ActivityView: FC<ActivityViewProps> = ({ filters, repositories }) => {
           { id: 'hour', label: 'Hour', type: ColumnType.STRING },
           { id: 'session_count', label: 'Sessions', type: ColumnType.INTEGER },
         ],
-        rows: HOURS.map((h, i) => ({ hour: String(h), session_count: data?.by_hour[i] ?? 0 })),
+        rows: HOURS.map((h, i) => ({ hour: String(h), session_count: localData?.by_hour[i] ?? 0 })),
       },
       metadata: { timestamp: '', data_as_of: '' },
       pagination: { page: 0, per_page: 24, total_count: 24, has_more: false },
     }),
-    [data]
+    [localData]
   )
 
   const weekdayTabularData: TabularResponse = useMemo(
@@ -59,12 +65,15 @@ const ActivityView: FC<ActivityViewProps> = ({ filters, repositories }) => {
           { id: 'weekday', label: 'Weekday', type: ColumnType.STRING },
           { id: 'session_count', label: 'Sessions', type: ColumnType.INTEGER },
         ],
-        rows: WEEKDAYS.map((d, i) => ({ weekday: d, session_count: data?.by_weekday[i] ?? 0 })),
+        rows: WEEKDAYS.map((d, i) => ({
+          weekday: d,
+          session_count: localData?.by_weekday[i] ?? 0,
+        })),
       },
       metadata: { timestamp: '', data_as_of: '' },
       pagination: { page: 0, per_page: 7, total_count: 7, has_more: false },
     }),
-    [data]
+    [localData]
   )
 
   return (
@@ -96,7 +105,7 @@ const ActivityView: FC<ActivityViewProps> = ({ filters, repositories }) => {
               <React.Fragment key={day}>
                 <div className="flex items-center text-[10px] text-text-secondary pr-2">{day}</div>
                 {HOURS.map((h) => {
-                  const v = data?.heat[wd]?.[h] ?? 0
+                  const v = localData?.heat[wd]?.[h] ?? 0
                   const alpha = v > 0 ? 0.15 + (v / maxCell) * 0.85 : 0
                   const sessionLabel = v === 1 ? 'session' : 'sessions'
                   const title = v > 0 ? `${day} ${h}:00 — ${v} ${sessionLabel}` : undefined

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-11-10T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 11,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 4 files changed (200 insertions, 7 deletions). The actual-mode mapping puts 4-6 files at M. Two are new (activityTimezone helper and its unit test) and two were modified (ActivityView and its test), all in the cli-analytics directory." },
+    { "dimension": "component_scope", "reason": "One new pure helper (shiftActivityToLocal plus browserUtcOffsetMinutes) used by one existing view (ActivityView) through a useMemo. Everything is in the UI layer, with no store, API or hook changes." },
+    { "dimension": "requirements_clarity", "reason": "Clear UI-only fix with one small decision settled during implementation: non-whole-hour offsets round down to the hour the bucket starts in." },
+    { "dimension": "technical_risk", "reason": "Pure client-side modular arithmetic over a 7x24 matrix, with wrapping across weekdays. It has no security, performance or persistence impact and rolls back trivially. Unit tests cover the forward and backward shifts, zero offset and week wrap-around. This matches the bundled S example epmcdme-10102 (total 11)." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

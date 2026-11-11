@@ -1,0 +1,61 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; 0 findings"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; 0 findings"
+    }
+  ],
+  "reviewed_head": "f71f3607d68181b2780ccce216d04a6bb65f1ad1",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Compact profile: the edge-case lens ran; acceptance did not run because no spec/story existed (no-spec, confidence low), and no standards audit was expected. All 3 edge-case candidates were dismissed after reading the source: DST changes inside the range and non-whole-hour offsets rounding down are limitations the user accepted, and a stale offset when the browser zone changes while the view stays mounted is too minor to block and falls under the same DST limitation. 0 deferred, 3 dismissed; the shift-and-wrap logic in activityTimezone.ts is correct for both positive and negative offsets.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Compact profile: the edge-case lens ran; acceptance did not run because no spec/story existed (no-spec, confidence low), and no standards audit was expected. All 3 edge-case candidates were dismissed after reading the source: DST changes inside the range and non-whole-hour offsets rounding down are limitations the user accepted, and a stale offset when the browser zone changes while the view stays mounted is too minor to block and falls under the same DST limitation. 0 deferred, 3 dismissed; the shift-and-wrap logic in activityTimezone.ts is correct for both positive and negative offsets.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

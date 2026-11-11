@@ -14,7 +14,7 @@
 //
 
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
@@ -118,5 +118,31 @@ describe('ActivityView', () => {
     render(<ActivityView filters={MOCK_FILTERS} repositories={['repo-a']} />)
 
     expect(vi.mocked(useCliAnalyticsActivity)).toHaveBeenCalledWith(MOCK_FILTERS, ['repo-a'])
+  })
+
+  describe('in a non-UTC browser', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('renders heatmap cells in the browser local hour', () => {
+      vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
+      const heat = Array.from({ length: 7 }, () => Array(24).fill(0))
+      heat[5][18] = 1
+      const by_hour = Array(24).fill(0)
+      by_hour[18] = 1
+      const by_weekday = Array(7).fill(0)
+      by_weekday[5] = 1
+      vi.mocked(useCliAnalyticsActivity).mockReturnValueOnce({
+        data: { heat, by_hour, by_weekday },
+        loading: false,
+        error: null,
+      })
+
+      render(<ActivityView filters={MOCK_FILTERS} />)
+
+      expect(screen.getByTitle('Sat 19:00 — 1 session')).toBeInTheDocument()
+      expect(screen.queryByTitle('Sat 18:00 — 1 session')).not.toBeInTheDocument()
+    })
   })
 })

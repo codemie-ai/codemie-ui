@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16994_activity-local-timezone",
+  "head": "f71f3607d68181b2780ccce216d04a6bb65f1ad1",
+  "runner": "custom",
+  "started_at": "2026-11-10T15:09:31Z",
+  "completed_at": "2026-11-10T15:44:28Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 109705,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "npm ci not re-run: lock file unchanged since previous run's npm ci at this HEAD; npm ls --depth=0 exit 0"
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 85383,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "notes": "Guide Skip-if met: diff vs merge base touches no package.json/package-lock.json"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 34470,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output contains 'no leaks found'; working tree only, not git history"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 452014,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  846 passed (846); Tests 8778 passed | 1 skipped (8779)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 283271,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  58 passed (58); Tests 659 passed | 1 skipped (660)"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 1318000,
+      "command": "npm run test-harness",
+      "exit_code": 1,
+      "notes": "'91 errors, 182 rerun in 1312.55s'; 0 passed. Single cause: all 91 errored at setup in the UI login fixture: 'Locator.fill: Timeout 30000ms exceeded ... waiting for get_by_role(\"textbox\", name=\"Email address\")'. Backend API calls succeeded (localhost:8080 up); frontend :5173 returned 200. Full log: test-harness.local.log"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 3944,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: '→ No staged files found.' eslint/tsc covered by lint/typecheck gates; prettier runs only at commit time on staged files"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1922,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2627 files, 0 missing license headers"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 797,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Export SONAR_TOKEN (or set it in .env.local) to run locally; otherwise only the server-side KubeRocketCI 'sonar' task settles it"
+    },
+    {
+      "id": "ci-external-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": ".gitlab-ci.yml (pre-ci-guard wait-ci-init)",
+      "notes": "Guide mismatch: verification.md says no .gitlab-ci.yml exists, but one does; it only waits on external contexts ci-pipeline/compliance-report (KubeRocketCI gitleaks-scan, dockerfile-lint, dockerbuild-verify, sonar) defined outside the repo and not runnable locally"
+    }
+  ],
+  "failures": {
+    "test-harness": "ERROR tests/ui/integrations/test_alias_generation.py::test_manual_alias_override_retained[chromium]\nERROR tests/ui/datasource/test_create_datasource.py::test_datasource_creation_validation[chromium]\nERROR tests/ui/datasource/test_create_datasource.py::test_create_file_datasource[chromium]\nERROR tests/ui/datasource/test_datasource_page.py::test_datasource_sidebar_hiding_elements[chromium]\nERROR tests/ui/integrations/test_alias_generation.py::test_datasource_alias_no_auto_population_and_successful_creation[chromium]\nERROR tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Git]\nERROR tests/ui/integrations/test_create_integration.py::test_alias_field_validation_message[chromium]\nERROR tests/ui/integrations/test_create_integration.py::test_credential_type_dropdown_shows_all_available_options[chromium]\nERROR tests/ui/integrations/test_create_integration.py::test_form_reset_and_cancel_functionality[chromium]\nERROR tests/ui/integrations/test_delete_integration.py::test_delete_integration_with_confirmation[chromium]\nERROR tests/ui/integrations/test_edit_integration.py::test_edit_integration_update_credentials[chromium]\nERROR tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_defaults_to_all_actions_checked[chromium]\nERROR tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_selection_persists_after_save_and_reload[chromium]\nERROR tests/ui/integrations/test_gitlab_webhook_filter.py::test_gitlab_mr_filter_blocks_unchecking_last_action[chromium]\nERROR tests/ui/integrations/test_test_connection.py::test_test_connection_failure_with_error_message[chromium]\nERROR tests/ui/integrations/test_webhook_form_structure.py::test_webhook_url_readonly_and_tracks_alias_slug[chromium-slug-with-spaces]\nERROR tests/ui/integrations/test_webhook_form_structure.py::test_github_settings_accordion_collapsed_by_default_and_expands[chromium]\nERROR tests/ui/integrations/test_webhook_form_structure.py::test_manual_webhook_id_edit_disables_alias_auto_sync[chromium]\nERROR tests/ui/integrations/test_webhook_form_structure.py::test_advanced_security_settings_accordion_collapsed_by_default_and_expands[chromium]2026-11-10 17:31:28,516 - codemie_test_harness.tests.conftest - INFO - Starting session cleanup...\n2026-11-10 17:31:29,025 - codemie_test_harness.tests.conftest - INFO - Session cleanup completed.\n\nERROR tests/ui/integrations/test_webhook_resource_isolation.py::test_resource_dropdown_shows_only_project_scoped_resources[chromium]\nERROR tests/ui/skills/test_attach_skills_to_assistant.py::test_detach_skill_from_assistant[chromium]\nERROR tests/ui/skills/test_attach_skills_to_assistant.py::test_attach_skill_to_assistant[chromium]\nERROR tests/ui/skills/test_create_skill.py::test_create_skill_page_elements_visibility[chromium]\nERROR tests/ui/skills/test_create_skill.py::test_skills_page_elements_visibility[chromium]\nERROR tests/ui/skills/test_import_skill.py::test_import_skill_from_markdown_and_verify_in_list[chromium]\nERROR tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_all_fields[chromium]\nERROR tests/ui/skills/test_create_skill.py::test_create_skill_via_web_form_minimal_fields[chromium]\nERROR tests/ui/skills/test_import_skill.py::test_import_zip_bundle_with_multiple_md_files_shows_friendly_error[chromium]\nERROR tests/ui/skills/test_skill_validation.py::test_skill_required_fields_validation[chromium]\nERROR tests/ui/skills/test_skills_marketplace.py::test_skills_marketplace_page_elements_visibility[chromium]\nERROR tests/ui/skills/test_skills_marketplace.py::test_publish_private_skill_to_marketplace[chromium]\nERROR tests/ui/skills/test_skills_marketplace.py::test_marketplace_search_skills_by_name[chromium]\nERROR tests/ui/skills/test_skills_navigation.py::test_skills_navigation_from_main_menu[chromium]\nERROR tests/ui/workflows/test_create_workflow.py::test_create_workflow_complete_workflow_creation[chromium]\nERROR tests/ui/workflows/test_create_workflow.py::test_create_workflow_page_elements_visibility[chromium]\nERROR tests/ui/workflows/test_reset_context_keys.py::test_reset_context_keys_comma_entry_saved_to_yaml[chromium]\nERROR tests/ui/workflows/test_workflow_description.py::test_workflow_description_visible_and_read_only[chromium]\nERROR tests/ui/workflows/test_workflow_chat_description.py::test_workflow_chat_displays_description[chromium]\nERROR tests/ui/workflows/test_workflow_progress_restore_after_reload.py::test_workflow_execution_progress_restored_after_reload[chromium]\nERROR tests/ui/workflows/test_workflow_progress_restore_after_reload.py::test_answer_node_shows_in_progress_thought_card_after_reload[chromium]\nERROR tests/ui/workflows/test_workflow_progress_restore_after_reload.py::test_restore_failed_message_shown_when_execution_state_cannot_be_restored[chromium]\nERROR tests/ui/workflows/test_workflows.py::test_workflows_page_basic_functionality[chromium]\nERROR tests/ui/workflows/test_workflows.py::test_workflow_pagination[chromium]\nERROR tests/ui/workflows/test_workflows.py::test_workflow_filtering[chromium]\nERROR tests/ui/integrations/test_webhook_form_structure.py::test_webhook_url_readonly_and_tracks_alias_slug[chromium-slug-with-number]\nERROR tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Jira]\nERROR tests/ui/integrations/test_create_integration.py::test_create_integration_type_form_fields[chromium-Confluence]\n================== 91 errors, 182 rerun in 1312.55s (0:21:52) =================="
+  }
+}
