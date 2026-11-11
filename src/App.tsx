@@ -14,7 +14,7 @@
 //
 
 import { PrimeReactProvider } from 'primereact/api'
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Outlet } from 'react-router'
 import { useSnapshot } from 'valtio'
 
@@ -38,6 +38,7 @@ import useInitialDataFetch from '@/hooks/appLevel/useInitialDataFetch'
 import { usePageTitle } from '@/hooks/appLevel/usePageTitle'
 import usePrismThemeToggle from '@/hooks/appLevel/usePrismThemeToggle'
 import { useResponseReadyTab } from '@/hooks/appLevel/useResponseReadyTab'
+import { useKatasEnabled } from '@/hooks/useFeatureFlags'
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useTheme } from '@/hooks/useTheme'
 import { UnsavedChangesProvider } from '@/hooks/useUnsavedChangesWarning'
@@ -50,6 +51,8 @@ import { appInfoStore } from './store/appInfo'
 const App: React.FC = () => {
   const { user } = useSnapshot(userStore)
   const { isConfigFetched, mobileNavigationOpen } = useSnapshot(appInfoStore)
+  const [katasEnabled] = useKatasEnabled()
+  const kataLoadedFor = useRef<string | undefined>(undefined)
   const { appearance } = useTheme()
   const isMobileLayout = useIsMobileLayout()
 
@@ -64,11 +67,19 @@ const App: React.FC = () => {
   // Load per-user localStorage state after user is loaded
   useEffect(() => {
     if (user) {
-      floatingKataStore.loadFromLocalStorage()
       setChatViewSettingsUserId(user.userId)
       chatViewSettingsStore.loadFromLocalStorage()
     }
   }, [user])
+
+  // Katas are off by default: restore the floating window only once config says they are on.
+  // A config refetch flips isConfigFetched off and on, so load once per user, not per flip.
+  useEffect(() => {
+    if (user && isConfigFetched && katasEnabled && kataLoadedFor.current !== user.userId) {
+      kataLoadedFor.current = user.userId
+      floatingKataStore.loadFromLocalStorage()
+    }
+  }, [user, isConfigFetched, katasEnabled])
 
   return (
     <PrimeReactProvider value={primeReactPtOptions}>
@@ -100,7 +111,7 @@ const App: React.FC = () => {
           {user && (
             <>
               <AutoPopupManager />
-              <FloatingKataWindow />
+              {katasEnabled && <FloatingKataWindow />}
               <UnsavedChangesPopup />
               {/* Its floating button would cover primary actions on small screens and its
                   product tours target the desktop layout; Help stays in the navigation menu. */}

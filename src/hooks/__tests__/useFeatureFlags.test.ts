@@ -22,7 +22,8 @@ import { appInfoStore } from '@/store/appInfo'
 import { useMermaidEnabled } from '../useFeatureFlags'
 
 // Return the store as-is so the hook reads the mocked appInfoStore directly.
-vi.mock('valtio', () => ({
+vi.mock('valtio', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('valtio')>()),
   useSnapshot: <T>(store: T): T => store,
 }))
 

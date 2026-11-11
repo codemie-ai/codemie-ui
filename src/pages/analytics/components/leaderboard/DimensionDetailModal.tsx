@@ -16,12 +16,14 @@
 import { FC } from 'react'
 
 import Popup from '@/components/Popup'
+import { useKatasEnabled } from '@/hooks/useFeatureFlags'
 import type {
   LeaderboardFrameworkDimension,
   LeaderboardFrameworkComponent,
 } from '@/types/analytics'
 
 import { resolveFrameworkDimensionIcon } from './helpers'
+import { filterComponentsObject } from './katasFilter'
 
 interface DimensionDetailModalProps {
   dimension: LeaderboardFrameworkDimension | null
@@ -29,8 +31,13 @@ interface DimensionDetailModalProps {
 }
 
 const DimensionDetailModal: FC<DimensionDetailModalProps> = ({ dimension, onHide }) => {
-  const components = dimension ? Object.entries(dimension.components) : []
-  const totalWeight = components.reduce((sum, [, c]) => sum + c.weight, 0)
+  const [katasEnabled] = useKatasEnabled()
+  const allComponents = dimension ? Object.entries(dimension.components) : []
+  // Shares stay against the unfiltered total: hiding a row must not rescale the others.
+  const totalWeight = allComponents.reduce((sum, [, c]) => sum + c.weight, 0)
+  const components = dimension
+    ? Object.entries(filterComponentsObject(katasEnabled, dimension.components))
+    : []
 
   return (
     <Popup

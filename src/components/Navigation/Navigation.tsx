@@ -25,6 +25,7 @@ import {
   useFeatureFlag,
   useFavoritesEnabled,
   useFavoritesPageEnabled,
+  useKatasEnabled,
   usePinnedAssistantsEnabled,
   useSchedulersViewEnabled,
 } from '@/hooks/useFeatureFlags'
@@ -93,6 +94,7 @@ const Navigation: React.FC<NavigationProps> = () => {
   const [isSchedulersViewEnabled] = useSchedulersViewEnabled()
   const [isHostedApplicationsEnabled] = useFeatureFlag(FEATURE_FLAGS.HOSTED_APPLICATIONS)
   const canViewHosted = isHostedApplicationsEnabled && !!hosted.capabilities?.view
+  const [isKatasEnabled] = useKatasEnabled()
   const [isKnowledgeBasesEnabled] = useFeatureFlag(FEATURE_FLAGS.KNOWLEDGE_BASES)
   const [isDatasourcesEnabled] = useFeatureFlag(FEATURE_FLAGS.DATASOURCES)
   const [isCodeIndexingEnabled] = useFeatureFlag(FEATURE_FLAGS.CODE_INDEXING)
@@ -162,11 +164,13 @@ const Navigation: React.FC<NavigationProps> = () => {
       })
     }
 
-    items.push({
-      label: 'AI Katas',
-      icon: IconType.KATA,
-      route: router.resolve({ name: 'katas' }).fullPath,
-    })
+    if (isKatasEnabled) {
+      items.push({
+        label: 'AI Katas',
+        icon: IconType.KATA,
+        route: router.resolve({ name: 'katas' }).fullPath,
+      })
+    }
 
     if (isCoreAvailable && isSchedulersViewEnabled) {
       items.splice(2, 0, {
@@ -184,7 +188,13 @@ const Navigation: React.FC<NavigationProps> = () => {
     })
 
     return items
-  }, [router, isCoreAvailable, isSchedulersViewEnabled, isDataSourcesSurfaceEnabled])
+  }, [
+    router,
+    isCoreAvailable,
+    isSchedulersViewEnabled,
+    isDataSourcesSurfaceEnabled,
+    isKatasEnabled,
+  ])
 
   const favoritesItems: NavigationLinkItem[] = useMemo(
     () =>

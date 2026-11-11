@@ -288,7 +288,14 @@ describe('Navigation', () => {
     expect(screen.getByText('Analytics').closest('a')).not.toHaveTextContent('NEW')
   })
 
+  it('hides AI Katas when the katas feature is off', () => {
+    mockAppInfoStore.configs = []
+    renderWithRouter(<Navigation />)
+    expect(screen.queryByText('AI Katas')).not.toBeInTheDocument()
+  })
+
   it('does not show a NEW badge on AI Katas', () => {
+    mockAppInfoStore.configs = [{ id: 'features:katas', settings: { enabled: true } }] as any
     renderWithRouter(<Navigation />)
     expect(screen.getByText('AI Katas').closest('a')).not.toHaveTextContent('NEW')
   })

@@ -15,9 +15,11 @@
 
 import { FC, useState } from 'react'
 
+import { useKatasEnabled } from '@/hooks/useFeatureFlags'
 import type { LeaderboardDimension } from '@/types/analytics'
 
 import { DIMENSION_COLORS, ICON_MAP } from './constants'
+import { filterComponentsArray } from './katasFilter'
 
 interface LeaderboardDimensionCardProps {
   dim: LeaderboardDimension
@@ -26,6 +28,10 @@ interface LeaderboardDimensionCardProps {
 const LeaderboardDimensionCard: FC<LeaderboardDimensionCardProps> = ({ dim }) => {
   const [open, setOpen] = useState(false)
   const [showCalc, setShowCalc] = useState(false)
+  const [katasEnabled] = useKatasEnabled()
+  const components = Array.isArray(dim.components)
+    ? filterComponentsArray(katasEnabled, dim.components)
+    : []
   const color = dim.color ?? DIMENSION_COLORS[dim.id] ?? '#6b7280'
   const rawIcon = dim.icon ?? ''
   const icon = ICON_MAP[rawIcon] ?? rawIcon
@@ -72,9 +78,9 @@ const LeaderboardDimensionCard: FC<LeaderboardDimensionCardProps> = ({ dim }) =>
             <p className="mb-3 text-xs leading-relaxed text-text-quaternary">{dim.description}</p>
           )}
 
-          {Array.isArray(dim.components) && dim.components.length > 0 && (
+          {components.length > 0 && (
             <div className="flex flex-col gap-3">
-              {dim.components.map((component) => (
+              {components.map((component) => (
                 <div
                   key={component.key}
                   className="border-t border-border-structural/30 pt-3 first:border-t-0 first:pt-0"
@@ -123,7 +129,7 @@ const LeaderboardDimensionCard: FC<LeaderboardDimensionCardProps> = ({ dim }) =>
             </div>
           )}
 
-          {dim.components?.some((component) => component.calc || component.evidence) && (
+          {components.some((component) => component.calc || component.evidence) && (
             <button
               type="button"
               className="mt-3 text-[11px] font-semibold text-border-interactive hover:underline"

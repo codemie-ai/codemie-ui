@@ -30,6 +30,7 @@ const { mockUserStore, mockAppInfoStore } = vi.hoisted(() => {
     mockAppInfoStore: {
       isConfigFetched: false,
       mobileNavigationOpen: false,
+      configs: [] as any[],
     },
   }
 })
@@ -48,8 +49,18 @@ vi.mock('@/store/appInfo', () => ({
   appInfoStore: mockAppInfoStore,
 }))
 
+const { mockLoadKata, mockLoadChatView } = vi.hoisted(() => ({
+  mockLoadKata: vi.fn(),
+  mockLoadChatView: vi.fn(),
+}))
+
 vi.mock('@/store/floatingKata', () => ({
-  floatingKataStore: { loadFromLocalStorage: vi.fn() },
+  floatingKataStore: { loadFromLocalStorage: mockLoadKata },
+}))
+
+vi.mock('@/store/chatViewSettings', () => ({
+  chatViewSettingsStore: { loadFromLocalStorage: mockLoadChatView },
+  setChatViewSettingsUserId: vi.fn(),
 }))
 
 vi.mock('@/hooks/appLevel/useHistoryStack', () => ({
@@ -86,7 +97,9 @@ vi.mock('@/components/appLevel/Gradient', () => ({ default: () => null }))
 vi.mock('@/components/appLevel/SessionExpiredPopup', () => ({ default: () => null }))
 vi.mock('@/components/appLevel/ToastContainer', () => ({ default: () => null }))
 vi.mock('@/components/appLevel/UnsavedChangesPopup', () => ({ UnsavedChangesPopup: () => null }))
-vi.mock('@/components/FloatingKataWindow', () => ({ default: () => null }))
+vi.mock('@/components/FloatingKataWindow', () => ({
+  default: () => <div data-testid="kata-window" />,
+}))
 vi.mock('@/components/HelpLauncher', () => ({ HelpPanel: () => null }))
 vi.mock('@/components/Navigation/Navigation', () => ({ default: () => null }))
 vi.mock('@/components/Navigation/MobileTopBar', () => ({ default: () => null }))
@@ -106,6 +119,7 @@ describe('App', () => {
     mockUserStore.user = null
     mockAppInfoStore.isConfigFetched = false
     mockAppInfoStore.mobileNavigationOpen = false
+    mockAppInfoStore.configs = []
   })
 
   it('does not render the skip link while the app is loading (no user, config not fetched)', () => {
@@ -153,5 +167,69 @@ describe('App', () => {
     const { container } = render(<App />)
 
     expect(container.querySelector('[data-app-content]')).not.toHaveAttribute('inert')
+  })
+
+  describe('floating kata window', () => {
+    const katasOn = [{ id: 'features:katas', settings: { enabled: true } }]
+
+    it('neither restores nor renders the window when katas are off', () => {
+      mockUserStore.user = { id: 'u1', userId: 'u1' } as any
+      mockAppInfoStore.isConfigFetched = true
+
+      render(<App />)
+
+      expect(mockLoadKata).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('kata-window')).not.toBeInTheDocument()
+      expect(mockLoadChatView).toHaveBeenCalledTimes(1)
+    })
+
+    it('restores once and renders the window when katas are on', () => {
+      mockUserStore.user = { id: 'u1', userId: 'u1' } as any
+      mockAppInfoStore.isConfigFetched = true
+      mockAppInfoStore.configs = katasOn
+
+      render(<App />)
+
+      expect(mockLoadKata).toHaveBeenCalledTimes(1)
+      expect(screen.getByTestId('kata-window')).toBeInTheDocument()
+    })
+
+    it('restores after config arrives later with katas on', () => {
+      mockUserStore.user = { id: 'u1', userId: 'u1' } as any
+      const { rerender } = render(<App />)
+      expect(mockLoadKata).not.toHaveBeenCalled()
+
+      mockAppInfoStore.isConfigFetched = true
+      mockAppInfoStore.configs = katasOn
+      rerender(<App />)
+
+      expect(mockLoadKata).toHaveBeenCalledTimes(1)
+    })
+
+    it('never restores when config arrives with katas off', () => {
+      mockUserStore.user = { id: 'u1', userId: 'u1' } as any
+      const { rerender } = render(<App />)
+
+      mockAppInfoStore.isConfigFetched = true
+      rerender(<App />)
+
+      expect(mockLoadKata).not.toHaveBeenCalled()
+    })
+
+    it('does not reset state when config is refetched with katas still on', () => {
+      mockUserStore.user = { id: 'u1', userId: 'u1' } as any
+      mockAppInfoStore.isConfigFetched = true
+      mockAppInfoStore.configs = katasOn
+      const { rerender } = render(<App />)
+
+      mockAppInfoStore.isConfigFetched = false
+      rerender(<App />)
+      mockAppInfoStore.isConfigFetched = true
+      mockAppInfoStore.configs = [...katasOn]
+      rerender(<App />)
+
+      expect(mockLoadKata).toHaveBeenCalledTimes(1)
+      expect(mockLoadChatView).toHaveBeenCalledTimes(1)
+    })
   })
 })

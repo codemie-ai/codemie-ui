@@ -420,39 +420,48 @@ const schedulerRoutes: RouteObject[] = [
 
 const katasRoutes: RouteObject[] = [
   {
-    id: 'katas',
-    path: 'katas',
-    Component: KatasPage,
-  },
-  {
-    id: 'new-kata',
-    path: 'katas/new',
-    Component: NewKataPage,
-  },
-  {
-    id: 'edit-kata',
-    path: 'katas/:kataId/edit',
-    Component: EditKataPage,
-  },
-  {
-    id: 'katas-in-progress',
-    path: 'katas/in-progress',
-    element: <KatasPage category={KatasCategory.IN_PROGRESS} />,
-  },
-  {
-    id: 'katas-completed',
-    path: 'katas/completed',
-    element: <KatasPage category={KatasCategory.COMPLETED} />,
-  },
-  {
-    id: 'katas-leaderboard',
-    path: 'katas/leaderboard',
-    element: <KatasPage category={KatasCategory.LEADERBOARD} />,
-  },
-  {
-    id: 'kata-detail',
-    path: 'katas/:kataId',
-    Component: KataDetailView,
+    element: (
+      <FeatureGuard featureFlags={FEATURE_FLAGS.KATAS}>
+        <Outlet />
+      </FeatureGuard>
+    ),
+    children: [
+      {
+        id: 'katas',
+        path: 'katas',
+        Component: KatasPage,
+      },
+      {
+        id: 'new-kata',
+        path: 'katas/new',
+        Component: NewKataPage,
+      },
+      {
+        id: 'edit-kata',
+        path: 'katas/:kataId/edit',
+        Component: EditKataPage,
+      },
+      {
+        id: 'katas-in-progress',
+        path: 'katas/in-progress',
+        element: <KatasPage category={KatasCategory.IN_PROGRESS} />,
+      },
+      {
+        id: 'katas-completed',
+        path: 'katas/completed',
+        element: <KatasPage category={KatasCategory.COMPLETED} />,
+      },
+      {
+        id: 'katas-leaderboard',
+        path: 'katas/leaderboard',
+        element: <KatasPage category={KatasCategory.LEADERBOARD} />,
+      },
+      {
+        id: 'kata-detail',
+        path: 'katas/:kataId',
+        Component: KataDetailView,
+      },
+    ],
   },
 ]
 

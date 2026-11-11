@@ -26,6 +26,7 @@ import { useSnapshot } from 'valtio'
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { appInfoStore } from '@/store/appInfo'
 import { isCoreAvailable } from '@/utils/coreAvailability'
+import { isConfigItemEnabled } from '@/utils/settings'
 
 /**
  * Result of feature flag check with loading state
@@ -132,6 +133,14 @@ export const useBudgetSoftLimitEmailEnabled = (): FeatureFlagResult => {
 
 export const useSchedulersViewEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.SCHEDULERS_VIEW)
+}
+
+export const useKatasEnabled = (): FeatureFlagResult => {
+  const { configs, isConfigFetched } = useSnapshot(appInfoStore)
+  return useMemo(
+    () => [isConfigItemEnabled(configs, FEATURE_FLAGS.KATAS), isConfigFetched],
+    [configs, isConfigFetched]
+  )
 }
 
 export const useWorkspaceScriptBridgeEnabled = (): FeatureFlagResult => {

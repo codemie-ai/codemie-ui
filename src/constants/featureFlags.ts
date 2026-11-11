@@ -41,6 +41,7 @@ export const FEATURE_FLAGS = {
   CONFLUENCE_OAUTH: 'features:confluenceOauth',
   GOOGLE_OAUTH: 'features:googleOauth',
   SCHEDULERS_VIEW: 'features:schedulersView',
+  KATAS: 'features:katas',
   ROUTING_ANALYTICS: 'features:routingAnalytics',
   KNOWLEDGE_BASES: 'features:knowledgeBases',
   DATASOURCES: 'features:datasources',

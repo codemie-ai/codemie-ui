@@ -39,6 +39,7 @@ vi.mock('@/hooks/useFeatureFlags', () => ({
   useFavoritesPageEnabled: () => [false],
   usePinnedAssistantsEnabled: () => [false],
   useSchedulersViewEnabled: () => [false],
+  useKatasEnabled: () => [false],
 }))
 vi.mock('@/utils/enterpriseEdition', () => ({ isEnterpriseEdition: () => false }))
 vi.mock('@/components/Navigation/useNavigationExpanded', () => ({

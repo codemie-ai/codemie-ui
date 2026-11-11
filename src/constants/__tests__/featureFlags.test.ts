@@ -21,4 +21,8 @@ describe('FEATURE_FLAGS', () => {
   it('SCHEDULERS_VIEW has the correct value', () => {
     expect(FEATURE_FLAGS.SCHEDULERS_VIEW).toBe('features:schedulersView')
   })
+
+  it('KATAS has the correct value', () => {
+    expect(FEATURE_FLAGS.KATAS).toBe('features:katas')
+  })
 })

@@ -15,10 +15,12 @@
 
 import { FC } from 'react'
 
+import { useKatasEnabled } from '@/hooks/useFeatureFlags'
 import { formatSpend } from '@/utils/currency'
 import { SPEND_QUALIFICATION_FIELDS } from '@/utils/spendQualification'
 
 import { METRIC_LABELS, CURRENCY_METRIC_KEYS } from './constants'
+import { filterSummaryMetrics } from './katasFilter'
 
 type SummaryMetricValue = number | boolean | null
 
@@ -57,11 +59,14 @@ const formatCurrencyMetric = (value: SummaryMetricValue): string =>
   formatSpend(typeof value === 'number' ? value : null)
 
 const LeaderboardSummaryMetrics: FC<LeaderboardSummaryMetricsProps> = ({ summaryMetrics }) => {
+  const [katasEnabled] = useKatasEnabled()
   if (!summaryMetrics || Object.keys(summaryMetrics).length === 0) {
     return null
   }
 
-  const metricEntries = Object.entries(summaryMetrics).filter(([key]) => !isSpendAnnotationKey(key))
+  const metricEntries = Object.entries(filterSummaryMetrics(katasEnabled, summaryMetrics)).filter(
+    ([key]) => !isSpendAnnotationKey(key)
+  )
 
   return (
     <div>

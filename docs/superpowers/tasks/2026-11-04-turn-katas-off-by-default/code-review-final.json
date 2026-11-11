@@ -1,0 +1,140 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "Approved, 0 findings"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "Approved, 0 findings"
+    }
+  ],
+  "reviewed_head": "1e98abc99927f2aeea42141241633067f0f882c5",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "All six story criteria and the spec requirements pass; standards clean. Two edge-case reports (empty Key Metrics grid or empty subdimension list when only kata data remains) were read and dismissed as cosmetic with no realistic trigger; 2 filtered as noise, 0 deferred. Minor unverified note: Navigation.test.tsx:131 flag mock.",
+  "confidence": "high",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "1. Off: no katas nav item (desktop and mobile), no floating window, no tour step",
+      "status": "pass",
+      "notes": "Navigation and App gated on katas flag"
+    },
+    {
+      "kind": "story-ac",
+      "item": "2. Off and window was open before: does not restore, including when config arrives after user",
+      "status": "pass",
+      "notes": "Restore effect gated on user && isConfigFetched && katasEnabled"
+    },
+    {
+      "kind": "story-ac",
+      "item": "3. Off and katas URL opened directly: no kata content, same 404",
+      "status": "pass",
+      "notes": "katasRoutes wrapped in FeatureGuard"
+    },
+    {
+      "kind": "story-ac",
+      "item": "4. Off: leaderboard hides Kata Completion part and Katas Completed metric",
+      "status": "pass",
+      "notes": "katasFilter used in four leaderboard components"
+    },
+    {
+      "kind": "story-ac",
+      "item": "5. On: everything works as today",
+      "status": "pass",
+      "notes": "Filters pass input through when on"
+    },
+    {
+      "kind": "story-ac",
+      "item": "6. No features:katas entry: reads off, nothing throws",
+      "status": "pass",
+      "notes": "useKatasEnabled via isConfigItemEnabled"
+    },
+    {
+      "kind": "spec",
+      "item": "Flag KATAS in FEATURE_FLAGS and useKatasEnabled wrapper",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "kind": "spec",
+      "item": "Floating window restore gating; chat-view settings ungated",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "kind": "spec",
+      "item": "Stored kata state left untouched",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "kind": "spec",
+      "item": "Mobile top-bar label and onboarding tour step unchanged",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "kind": "spec",
+      "item": "Leaderboard seam: pure katasFilter module, store untouched",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "kind": "spec",
+      "item": "Server totals not recomputed; top-performers and radar untouched",
+      "status": "pass",
+      "notes": ""
+    },
+    {
+      "kind": "spec",
+      "item": "Tests required by spec present",
+      "status": "pass",
+      "notes": "Navigation.test.tsx:131 update not visible in diff, unverified"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "6 subjects in range all match EPMCDME-XXXX: Capital sentence, non-zero ticket, no trailing period"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard, not a gap"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "changed files are feature-flag gating; none touch HTML sinks, redirects, cross-window messages, config or secrets"
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "All six story criteria and the spec requirements pass; standards clean. Two edge-case reports (empty Key Metrics grid or empty subdimension list when only kata data remains) were read and dismissed as cosmetic with no realistic trigger; 2 filtered as noise, 0 deferred. Minor unverified note: Navigation.test.tsx:131 flag mock.",
+    "confidence": "high",
+    "risk_flags": []
+  }
+}

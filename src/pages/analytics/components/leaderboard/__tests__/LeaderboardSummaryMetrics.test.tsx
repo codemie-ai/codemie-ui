@@ -14,9 +14,10 @@
 //
 
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
 
 import { ABSENT_VALUE_MARKER } from '@/constants'
+import { appInfoStore } from '@/store/appInfo'
 
 import LeaderboardSummaryMetrics from '../LeaderboardSummaryMetrics'
 
@@ -42,6 +43,22 @@ const tileValue = (label: string): string | null =>
   screen.queryByText(label)?.nextElementSibling?.textContent ?? null
 
 describe('LeaderboardSummaryMetrics', () => {
+  beforeEach(() => {
+    appInfoStore.configs = [{ id: 'features:katas', settings: { enabled: true } }] as any
+  })
+
+  it('hides Katas Completed only when katas are off', () => {
+    const metrics = buildSummaryMetrics({ kata_completed: 3 })
+    const { unmount } = render(<LeaderboardSummaryMetrics summaryMetrics={metrics} />)
+    expect(tileValue('Katas Completed')).toBe('3')
+    unmount()
+
+    appInfoStore.configs = []
+    render(<LeaderboardSummaryMetrics summaryMetrics={metrics} />)
+    expect(tileValue('Katas Completed')).toBeNull()
+    expect(tileValue('Total Spend')).toBe('$1,234.50')
+  })
+
   it('renders a priced figure as currency', () => {
     render(<LeaderboardSummaryMetrics summaryMetrics={buildSummaryMetrics()} />)
 

@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16851_turn-katas-off-by-default",
+  "head": "1e98abc99927f2aeea42141241633067f0f882c5",
+  "runner": "npm",
+  "started_at": "2026-11-04T19:03:15Z",
+  "completed_at": "2026-11-04T19:36:38.099839Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 68861,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 54190,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 4511,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 26818,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "output: no leaks found"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 731464,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "835 files, 8495 passed, 1 skipped"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 418644,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "57 files, 650 passed, 1 skipped"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs stack up and ~/.codemie/test-harness.json; unverified, owed before MR"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 330,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 262,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "'Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN to run locally; CI will run it."
+    }
+  ],
+  "failures": {}
+}

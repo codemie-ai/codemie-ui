@@ -15,9 +15,11 @@
 
 import { FC } from 'react'
 
+import { useKatasEnabled } from '@/hooks/useFeatureFlags'
 import type { LeaderboardFrameworkDimension } from '@/types/analytics'
 
 import { resolveFrameworkDimensionIcon } from './helpers'
+import { filterComponentsObject } from './katasFilter'
 
 interface FrameworkDimensionCardProps {
   dimension: LeaderboardFrameworkDimension
@@ -25,7 +27,10 @@ interface FrameworkDimensionCardProps {
 }
 
 const FrameworkDimensionCard: FC<FrameworkDimensionCardProps> = ({ dimension, onClick }) => {
-  const componentEntries = Object.entries(dimension.components)
+  const [katasEnabled] = useKatasEnabled()
+  const componentEntries = Object.entries(
+    filterComponentsObject(katasEnabled, dimension.components)
+  )
 
   return (
     <button
