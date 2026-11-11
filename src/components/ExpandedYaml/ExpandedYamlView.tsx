@@ -47,9 +47,13 @@ const ExpandedYamlView = ({
 }: ExpandedYamlViewProps) => (
   <ExpandedYamlShell visible={visible} onCollapse={onCollapse} label={label}>
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {validationError && (
-        <div className="text-failed-secondary text-xs">YAML Error: {validationError}</div>
-      )}
+      <div
+        data-testid="yaml-validation-error"
+        className="h-4 shrink-0 truncate text-failed-secondary text-xs"
+        title={validationError ?? undefined}
+      >
+        {validationError && `YAML Error: ${validationError}`}
+      </div>
       <ExpandedYamlFrame title={title} actions={actions} invalid={Boolean(validationError)}>
         <AceEditor
           value={value}

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Fix the expanded YAML editor in the workflow editor dropping typed text and keeping only the last character (EPMCDME-16708).",
+  "generated": "2026-11-04T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 15,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Root cause is unreproduced; analysis lists competing hypotheses (AceEditor value-sync clobber vs ConfigPanel key-driven YamlPanel remount vs YamlPanel yaml-prop reset effect), so design decisions are open and rework risk is real." },
+    { "dimension": "technical_risk", "reason": "No exact precedent; the likely fix is in shared AceEditor (used by many screens) and existing tests mock ace entirely, so the feedback loop cannot be covered by the current test template. Regression likely introduced by the EPMCDME-15809 ExpandedYaml refactor." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: may touch core shared utility AceEditor consumed by multiple screens"
+  ],
+  "split_recommendation": null
+}

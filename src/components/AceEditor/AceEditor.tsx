@@ -61,6 +61,7 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
     const containerRef = useRef<HTMLDivElement>(null)
     const editorRef = useRef<ace.Ace.Editor | null>(null)
     const valueRef = useRef(value)
+    const isApplyingValueRef = useRef(false)
 
     useEffect(() => {
       valueRef.current = value
@@ -102,6 +103,7 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
       })
 
       editor.on('change', () => {
+        if (isApplyingValueRef.current) return
         const newValue = editor.getValue()
         if (onChange && newValue !== valueRef.current) {
           onChange(newValue)
@@ -122,7 +124,12 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
     useEffect(() => {
       if (editorRef.current && value !== editorRef.current.getValue()) {
         const cursorPosition = editorRef.current.getCursorPosition()
-        editorRef.current.setValue(value, -1)
+        isApplyingValueRef.current = true
+        try {
+          editorRef.current.setValue(value, -1)
+        } finally {
+          isApplyingValueRef.current = false
+        }
         editorRef.current.moveCursorToPosition(cursorPosition)
       }
     }, [value])

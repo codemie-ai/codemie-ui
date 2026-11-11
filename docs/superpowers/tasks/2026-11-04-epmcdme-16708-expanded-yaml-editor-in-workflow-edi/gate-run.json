@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16708_yaml-editor-typing",
+  "head": "472154d37a37a1787edb6571344b05071df809e3",
+  "runner": "npm",
+  "started_at": "2026-11-06T09:32:23Z",
+  "completed_at": "2026-11-06T09:50:41Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 67612,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 37463,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "notes": "Skip if: no dependency added, removed or moved; diff touches only src/ files."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 24836,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output: no leaks found"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 538539,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 833 passed (833)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 312885,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 57 passed (57)"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "notes": "Needs the platform stack up and uvx codemie-test-harness; not run locally. Still owed before MR (MR compliance check)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 417,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2602 files, 0 missing license headers"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 300,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN to run locally."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "notes": "No staged files; lint covered by full lint gate."
+    },
+    {
+      "id": "ci-pre-ci-guard",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(.gitlab-ci.yml pre-ci-guard / ci-pipeline / compliance-report)",
+      "notes": "Remote GitLab template and bot checks; cannot run locally."
+    }
+  ],
+  "failures": {}
+}

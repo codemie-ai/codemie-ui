@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-06T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "Fix adds an isApplyingValueRef re-entrancy guard around the prop-driven setValue in the shared AceEditor component, so the change-event feedback loop is suppressed. No exact precedent for the guard, and the component is reused across editor panels. There is no security or performance sensitivity and the change is trivially reversible." },
+    { "dimension": "file_change_estimate", "reason": "4 files changed (292 insertions, 1 deletion) in two directories under src/. Only AceEditor.tsx is production code. The other three are a sync test, a fakeAce test helper and a YamlPanel expanded regression test." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

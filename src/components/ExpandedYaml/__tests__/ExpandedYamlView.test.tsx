@@ -93,6 +93,21 @@ describe('ExpandedYamlView', () => {
     expect(screen.getByText('YAML Error: bad indent')).toBeInTheDocument()
   })
 
+  it('reserves the error row with a fixed height so the editor does not resize', () => {
+    const { rerender } = render(<ExpandedYamlView {...baseProps} />)
+
+    const row = screen.getByTestId('yaml-validation-error')
+    expect(row).toBeEmptyDOMElement()
+    expect(row).toHaveClass('h-4', 'shrink-0')
+
+    rerender(<ExpandedYamlView {...baseProps} validationError="bad indent" />)
+
+    expect(screen.getByTestId('yaml-validation-error')).toBe(row)
+    expect(row).toHaveTextContent('YAML Error: bad indent')
+    expect(row).toHaveAttribute('title', 'bad indent')
+    expect(row).toHaveClass('h-4', 'shrink-0')
+  })
+
   it('calls onCollapse when the Collapse button is clicked', () => {
     const onCollapse = vi.fn()
     render(<ExpandedYamlView {...baseProps} onCollapse={onCollapse} />)

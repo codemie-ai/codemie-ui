@@ -1,0 +1,104 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; review verdict approve, 0 findings. Browser check still pending (Stage 7)."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; review verdict approve, 0 findings. Browser check still pending (Stage 7)."
+    }
+  ],
+  "reviewed_head": "472154d37a37a1787edb6571344b05071df809e3",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Both required lenses ran and standards audit was clean; no AC failed (AC6 pending-stage-7). 2 edge candidates dismissed as noise (weak '?? expected' test fallback covered by AceEditor.sync.test.tsx; undefined value prop is pre-existing and unreachable from typed callers). Manual browser confirmation of expanded typing is not evidenced.",
+  "confidence": "high",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "AC1: Typing several characters in a row in the expanded YAML editor keeps all of them",
+      "status": "pass",
+      "notes": "isApplyingValueRef guard; sync and expanded tests"
+    },
+    {
+      "kind": "spec",
+      "item": "AC2: Text typed in expanded editor appears in inline editor after collapse, and the reverse",
+      "status": "pass",
+      "notes": "sync effect retained; sync test asserts equal text"
+    },
+    {
+      "kind": "spec",
+      "item": "AC3: AceEditor calls onChange only for edits made in that editor",
+      "status": "pass",
+      "notes": "flag around setValue in try/finally"
+    },
+    {
+      "kind": "spec",
+      "item": "AC4: External value change still updates editor text and restores cursor",
+      "status": "pass",
+      "notes": "setValue and moveCursorToPosition retained"
+    },
+    {
+      "kind": "spec",
+      "item": "AC5: Regression test fails on old code; two AceEditors bound to one value",
+      "status": "pass",
+      "notes": "carried by AceEditor.sync.test.tsx"
+    },
+    {
+      "kind": "spec",
+      "item": "AC6: Existing AceEditor, YamlPanel, YamlExpandedModal, ExpandedYaml tests still pass",
+      "status": "pending-stage-7",
+      "notes": "needs test-suite execution"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goals: no public prop change or refactor",
+      "status": "pass",
+      "notes": "change limited to AceEditor internal ref"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "2 subjects in range match the documented EPMCDME-XXXX: Capital sentence format, no trailing period"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in this repo and no ref passed; absent standard, not a gap"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "changes touch none of the security-patterns areas; no concrete security issue seen"
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Both required lenses ran and standards audit was clean; no AC failed (AC6 pending-stage-7). 2 edge candidates dismissed as noise (weak '?? expected' test fallback covered by AceEditor.sync.test.tsx; undefined value prop is pre-existing and unreachable from typed callers). Manual browser confirmation of expanded typing is not evidenced.",
+    "confidence": "high",
+    "risk_flags": []
+  }
+}
