@@ -38,7 +38,7 @@
 
 **Status**: configured
 **Adapter**: `glab` CLI, authenticated against the GitLab host in `git remote -v`.
-**Instructions**: Open the MR against `main`. The description must carry the full `npm run test-harness` log and must ask a reviewer to post `/sanity`; requirements are in `.gitlab/merge_request_templates/Default.md` and `security/README.md` § MR handoff.
+**Instructions**: Open the MR against `main` as a Draft (`glab mr create --draft`; mark it Ready with `glab mr update <id> --ready` when the work is complete and the companion MRs exist, see `standards/git-workflow.md` § MR State: Draft First). The description must carry the full `npm run test-harness` log and must ask a reviewer to post `/sanity`; requirements are in `.gitlab/merge_request_templates/Default.md` and `security/README.md` § MR handoff.
 **Body Template**: .gitlab/merge_request_templates/Default.md
 
 ## Complexity Scoring

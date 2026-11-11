@@ -95,3 +95,6 @@ Checked, all as expected:
 - [ ] Screenshots attached for every scenario in `Verified locally` (or `N/A` — the diff cannot alter UI, reason given there)
 - [ ] No breaking changes (or clearly documented above)
 - [ ] Dependency, Dockerfile or security-relevant change: reviewer asked to post `/sanity`
+
+<!-- Opens the MR as Draft (EPMCDME-16799); GitLab runs this quick action on creation and removes it. -->
+/draft

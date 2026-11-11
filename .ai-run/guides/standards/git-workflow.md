@@ -27,6 +27,15 @@ Examples: `EPMCDME-16522: Mark unknown and understated session cost in CLI Analy
 ### Rules
 - R1. Squash-merge a branch into `main` so it lands as one commit whose subject follows the commit format. Evidence: recorded user decision
 
+## MR State: Draft First
+
+Open every MR as **Draft**. Ready is a decision: mark it Ready when the work is complete and the
+companion MRs of the same ticket (UI, SDK, backend) exist, because that is the moment automatic review starts.
+Autoreview and the review pipeline skip Draft MRs. With `glab` add `--draft`. In the GitLab UI the default
+template `.gitlab/merge_request_templates/Default.md` ends with the `/draft` quick action, so an MR created from it
+is Draft (GitLab runs the action on creation and removes it, so later description edits keep the state). Mark it
+Ready with `glab mr update <id> --ready` or the "Mark as ready" button.
+
 ## Anti-Patterns
 
 - Never commit directly to `main`; branch from it with the ticket key.
