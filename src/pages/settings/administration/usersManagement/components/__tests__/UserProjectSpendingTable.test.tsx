@@ -91,30 +91,6 @@ describe('UserProjectSpendingTable', () => {
     expect(await screen.findByText(/could not load project spending/i)).toBeInTheDocument()
   })
 
-  it('qualifies only the category the backend flagged', async () => {
-    // The annotations arrive prefixed with the category column id, because one row carries every
-    // category's figure.
-    vi.spyOn(analyticsStore, 'fetchUserProjectSpending').mockResolvedValue({
-      ...response,
-      data: {
-        columns: [],
-        rows: [
-          {
-            ...response.data.rows[0],
-            platform_spend_partial: true,
-            platform_spend_missing_amount: 3.5,
-          },
-        ],
-      },
-    } as never)
-
-    render(<UserProjectSpendingTable userEmail="jane@epam.com" />)
-
-    expect(await screen.findByText('$120.50 / $500.00')).toBeInTheDocument()
-    expect(screen.getByText('$40.00 / -')).toBeInTheDocument()
-    expect(screen.getByText('$0.00 / -')).toBeInTheDocument()
-  })
-
   it('falls back to the project name when no display name is set', async () => {
     vi.spyOn(analyticsStore, 'fetchUserProjectSpending').mockResolvedValue({
       ...response,

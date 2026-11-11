@@ -1082,17 +1082,4 @@ describe('CostCenterBudgetRollupCard with unknown or qualified spend', () => {
     expect(hint).toContain('removed')
     expect(hint).not.toContain('API key')
   })
-
-  it('qualifies a partial total', async () => {
-    await renderWith({
-      current_spending: 15.0,
-      budget_limit: 20.0,
-      total_percent: 75.0,
-      spend_partial: true,
-      spend_missing_amount: 2.0,
-      budgets: [category({ current_spending: 15.0 })],
-    })
-
-    expect(screen.getAllByText('$15.00').length).toBeGreaterThan(0)
-  })
 })

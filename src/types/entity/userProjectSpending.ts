@@ -13,27 +13,13 @@
 // limitations under the License.
 //
 
-import { SpendQualification } from '@/types/analytics'
-import { readSpendQualification } from '@/utils/spendQualification'
-
 import { BudgetCategory } from './budget'
 
 /** Category keys, in display order. Mirrors BUDGET_CATEGORY_ORDER used by BudgetSpendCell. */
 export const SPENDING_CATEGORY_KEYS: BudgetCategory[] = ['platform', 'cli', 'premium_models']
 
-/**
- * The three spend annotations as the backend writes them onto these rows: prefixed with the category
- * column id (`platform_spend_partial`, `cli_spend_unavailable`, ...). One row carries every
- * category's figure, so a single unprefixed triple could not say which figure it qualifies - see
- * `_build_row` in the backend's `service/analytics/handlers/member_spend_service.py`. Mapped rather
- * than spelled out so the nine keys cannot drift from `BudgetCategory` and `SpendQualification`.
- */
-type CategorySpendQualifications = {
-  [Key in `${BudgetCategory}_${keyof SpendQualification}`]?: boolean | number | null
-}
-
 /** One row of `user-project-spending`: a user's spend inside one project, per category. */
-export interface UserProjectSpendingRow extends CategorySpendQualifications {
+export interface UserProjectSpendingRow {
   project_name: string
   display_name?: string | null
   platform?: number | null
@@ -45,7 +31,7 @@ export interface UserProjectSpendingRow extends CategorySpendQualifications {
 }
 
 /** One row of `project-member-spending`: one member's spend in the current project. */
-export interface ProjectMemberSpendingRow extends CategorySpendQualifications {
+export interface ProjectMemberSpendingRow {
   user_id: string
   platform?: number | null
   cli?: number | null
@@ -66,12 +52,3 @@ export const getCategoryLimit = (
   row: UserProjectSpendingRow | ProjectMemberSpendingRow,
   category: BudgetCategory
 ): number | null | undefined => row[`${category}_limit`]
-
-/**
- * Reads the annotations qualifying a category's spend on a row, so the figure can be rendered with
- * the doubt it actually carries instead of looking exact.
- */
-export const getCategoryQualification = (
-  row: CategorySpendQualifications,
-  category: BudgetCategory
-): SpendQualification => readSpendQualification(row, `${category}_`)

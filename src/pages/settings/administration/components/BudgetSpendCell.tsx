@@ -16,14 +16,12 @@
 import { FC } from 'react'
 
 import { getHardLimitSpendColor } from '@/pages/settings/administration/projectsManagement/components/budgetSpending'
-import { SpendQualification } from '@/types/analytics'
 import { BudgetCategory, getBudgetCategoryLabel } from '@/types/entity/budget'
-import { formatSpendQualificationSuffix } from '@/utils/analyticsFormatters'
 import { formatCurrency, formatSpend } from '@/utils/currency'
 
 const BUDGET_CATEGORY_ORDER: BudgetCategory[] = ['platform', 'cli', 'premium_models']
 
-export interface BudgetSpendCellItem extends SpendQualification {
+export interface BudgetSpendCellItem {
   key: string
   category: BudgetCategory
   max_budget?: number | null
@@ -33,36 +31,6 @@ export interface BudgetSpendCellItem extends SpendQualification {
 
 interface BudgetSpendCellProps {
   items?: BudgetSpendCellItem[] | null
-}
-
-/**
- * One qualification over several parts, mirroring `combine_rendered_spend` in the backend's
- * `service/spend/rendering.py` so a total means the same thing on both sides of the wire.
- *
- * Two different holes make a total less than whole and both must be reported: a part that says it
- * is partial or has no coverage, and a part whose figure is absent entirely while others resolved -
- * the second is the one this cell used to produce silently, summing the parts that happened to
- * resolve into something indistinguishable from a whole total. The missing amount is summed only
- * when every partial part knows its own, because a hole whose size nobody knows must not be
- * reported as the computable half of itself.
- */
-const combineQualifications = (items: BudgetSpendCellItem[]): SpendQualification => {
-  const partials = items.filter((item) => item.spend_partial)
-  const knownMissingAmounts = partials
-    .map((item) => item.spend_missing_amount)
-    .filter((amount): amount is number => amount != null)
-  const hasAnyFigure = items.some((item) => item.current_spending != null)
-  const hasAbsentFigure = items.some((item) => item.current_spending == null)
-  const missingAmountIsUnknown =
-    partials.some((item) => item.spend_missing_amount == null) || !knownMissingAmounts.length
-
-  return {
-    spend_unavailable: items.some((item) => item.spend_unavailable === true),
-    spend_partial: partials.length > 0 || (hasAnyFigure && hasAbsentFigure),
-    spend_missing_amount: missingAmountIsUnknown
-      ? null
-      : knownMissingAmounts.reduce((sum, amount) => sum + amount, 0),
-  }
 }
 
 const BudgetSpendCell: FC<BudgetSpendCellProps> = ({ items }) => {
@@ -83,8 +51,6 @@ const BudgetSpendCell: FC<BudgetSpendCellProps> = ({ items }) => {
   const totalSpend = trackedSpends.length
     ? formatCurrency(trackedSpends.reduce((sum, value) => sum + value, 0))
     : '-'
-  const qualifiedTotalSpend =
-    totalSpend + formatSpendQualificationSuffix(combineQualifications(budgets))
   const totalSpendRaw = trackedSpends.reduce((sum, value) => sum + value, 0)
   const totalColor =
     trackedSpends.length > 0
@@ -99,7 +65,7 @@ const BudgetSpendCell: FC<BudgetSpendCellProps> = ({ items }) => {
           className="whitespace-nowrap text-text-primary"
           style={totalColor ? { color: totalColor } : undefined}
         >
-          {qualifiedTotalSpend} / {formatSpend(hasBudgetLimit ? totalBudgetRaw : null)}
+          {totalSpend} / {formatSpend(hasBudgetLimit ? totalBudgetRaw : null)}
         </span>
       </div>
       {budgets.map((budget) => {
@@ -122,8 +88,7 @@ const BudgetSpendCell: FC<BudgetSpendCellProps> = ({ items }) => {
               className="text-text-primary whitespace-nowrap"
               style={budgetColor ? { color: budgetColor } : undefined}
             >
-              {formatSpend(budget.current_spending) + formatSpendQualificationSuffix(budget)} /{' '}
-              {formatSpend(budget.max_budget)}
+              {formatSpend(budget.current_spending)} / {formatSpend(budget.max_budget)}
             </span>
           </div>
         )

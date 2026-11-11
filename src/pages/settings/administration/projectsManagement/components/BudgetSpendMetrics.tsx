@@ -16,8 +16,6 @@
 import { FC } from 'react'
 
 import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingProgressBar'
-import { SpendQualification } from '@/types/analytics'
-import { formatSpendQualificationSuffix } from '@/utils/analyticsFormatters'
 
 import {
   DETAIL_WARNING_THRESHOLD,
@@ -33,7 +31,6 @@ export interface BudgetSpendMetricsProps {
   max: number
   soft: number | null
   remaining: number | null
-  spendQualification?: SpendQualification
 }
 
 /**
@@ -42,13 +39,7 @@ export interface BudgetSpendMetricsProps {
  * budget detail card and the cost-center rollup's category card so a threshold, colour, or
  * zero-limit rule change lands in both places at once instead of drifting between two copies.
  */
-const BudgetSpendMetrics: FC<BudgetSpendMetricsProps> = ({
-  spent,
-  max,
-  soft,
-  remaining,
-  spendQualification = {},
-}) => {
+const BudgetSpendMetrics: FC<BudgetSpendMetricsProps> = ({ spent, max, soft, remaining }) => {
   const percentage = getSpendPercentage(spent, max)
   const spendColor = getSpendColor(percentage)
 
@@ -59,7 +50,6 @@ const BudgetSpendMetrics: FC<BudgetSpendMetricsProps> = ({
         <div className="mt-1 whitespace-nowrap text-base">
           <span className="font-semibold" style={spendColor ? { color: spendColor } : undefined}>
             {formatCurrency(spent)}
-            {formatSpendQualificationSuffix(spendQualification)}
           </span>
           <span className="font-normal text-text-primary"> / {formatCurrency(max)}</span>
         </div>

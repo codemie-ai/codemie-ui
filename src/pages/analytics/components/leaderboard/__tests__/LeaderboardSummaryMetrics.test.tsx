@@ -65,31 +65,6 @@ describe('LeaderboardSummaryMetrics', () => {
     expect(tileValue('CLI Spend')).toBe('$0.00')
   })
 
-  it('annotates a partial figure on its own tile', () => {
-    render(
-      <LeaderboardSummaryMetrics
-        summaryMetrics={buildSummaryMetrics({
-          total_spend_partial: true,
-          total_spend_missing_amount: 12.5,
-        })}
-      />
-    )
-
-    expect(tileValue('Total Spend')).toBe('$1,234.50')
-    // The annotation qualifies one figure only; the other must not inherit it.
-    expect(tileValue('CLI Spend')).toBe('$4.25')
-  })
-
-  it('annotates an unavailable figure it could still partly price', () => {
-    render(
-      <LeaderboardSummaryMetrics
-        summaryMetrics={buildSummaryMetrics({ cli_spend_unavailable: true })}
-      />
-    )
-
-    expect(tileValue('CLI Spend')).toBe('$4.25')
-  })
-
   it('does not render the annotation keys as metric tiles of their own', () => {
     render(
       <LeaderboardSummaryMetrics

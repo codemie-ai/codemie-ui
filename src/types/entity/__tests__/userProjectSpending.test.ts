@@ -24,7 +24,6 @@ import { describe, expect, it } from 'vitest'
 // the real cause. Do not add an `@/...` import above this one.
 import {
   getCategoryLimit,
-  getCategoryQualification,
   getCategorySpend,
   SPENDING_CATEGORY_KEYS,
   UserProjectSpendingRow,
@@ -40,33 +39,9 @@ describe('userProjectSpending loaded as the first application module', () => {
       project_name: 'alpha',
       platform: 12.5,
       platform_limit: 100,
-      platform_spend_partial: true,
-      platform_spend_missing_amount: 3.25,
     }
 
     expect(getCategorySpend(row, 'platform')).toBe(12.5)
     expect(getCategoryLimit(row, 'platform')).toBe(100)
-    expect(getCategoryQualification(row, 'platform')).toStrictEqual({
-      spend_unavailable: false,
-      spend_partial: true,
-      spend_missing_amount: 3.25,
-    })
-  })
-
-  it('qualifies each category off its own prefixed annotations', () => {
-    const row: UserProjectSpendingRow = {
-      project_name: 'alpha',
-      platform_spend_unavailable: true,
-      cli_spend_partial: true,
-    }
-
-    expect(getCategoryQualification(row, 'platform').spend_unavailable).toBe(true)
-    expect(getCategoryQualification(row, 'platform').spend_partial).toBe(false)
-    expect(getCategoryQualification(row, 'cli').spend_partial).toBe(true)
-    expect(getCategoryQualification(row, 'premium_models')).toStrictEqual({
-      spend_unavailable: false,
-      spend_partial: false,
-      spend_missing_amount: null,
-    })
   })
 })

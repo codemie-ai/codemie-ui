@@ -13,8 +13,6 @@
 // limitations under the License.
 //
 
-import { SpendQualification } from '@/types/analytics'
-
 export type BudgetCategory = 'platform' | 'cli' | 'premium_models'
 export type BudgetCategoryFilter = BudgetCategory | 'all'
 
@@ -53,12 +51,8 @@ export interface BudgetPayload {
   soft_limit_notification_enabled?: boolean
 }
 
-/**
- * One category's budget slot for a user. Extends `SpendQualification` because `current_spending`
- * cannot say by itself that it is a floor or that part of the window has no coverage, and a figure
- * rendered without that qualification is indistinguishable from an exact one.
- */
-export interface BudgetAssignment extends SpendQualification {
+/** One category's budget slot for a user. */
+export interface BudgetAssignment {
   category: BudgetCategory
   budget_id: string | null
   budget_name?: string | null

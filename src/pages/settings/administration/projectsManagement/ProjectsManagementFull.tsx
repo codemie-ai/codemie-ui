@@ -550,11 +550,6 @@ const ProjectsManagementFull: FC = () => {
             category: budget.budget_category,
             max_budget: budget.max_budget,
             current_spending: budget.current_spending,
-            // The qualifying triple travels with the figure, or the Total below would be summed
-            // from whatever resolved and still look whole.
-            spend_unavailable: budget.spend_unavailable,
-            spend_partial: budget.spend_partial,
-            spend_missing_amount: budget.spend_missing_amount,
             tooltip: `Spend: ${formatSpend(budget.current_spending)} · Soft: ${formatCurrency(
               budget.soft_budget
             )} · Duration: ${budget.budget_duration} · Sync: ${

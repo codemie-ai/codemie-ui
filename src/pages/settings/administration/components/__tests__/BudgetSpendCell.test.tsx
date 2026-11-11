@@ -27,7 +27,7 @@ const item = (overrides: Partial<BudgetSpendCellItem>): BudgetSpendCellItem => (
 })
 
 describe('BudgetSpendCell', () => {
-  it('renders a whole total unqualified when every part resolved', () => {
+  it('renders a whole total when every part resolved', () => {
     render(
       <BudgetSpendCell
         items={[
@@ -38,13 +38,10 @@ describe('BudgetSpendCell', () => {
     )
 
     expect(screen.getByText('$15.00 / $150.00')).toBeInTheDocument()
-    expect(screen.queryByText(/at least/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/incomplete data/)).not.toBeInTheDocument()
   })
 
-  it('qualifies the Total when one category has no figure and the others do', () => {
-    // The headline defect: the sum of the two that resolved used to render indistinguishably
-    // from a whole total.
+  it("sums only the resolved parts, against every part's limit", () => {
+    // premium_models has no figure but its limit still counts toward the total limit.
     render(
       <BudgetSpendCell
         items={[
@@ -58,76 +55,7 @@ describe('BudgetSpendCell', () => {
     expect(screen.getByText('$15.00 / $175.00')).toBeInTheDocument()
   })
 
-  it('inherits a partial part and names the summed unattributed amount', () => {
-    render(
-      <BudgetSpendCell
-        items={[
-          item({
-            category: 'platform',
-            current_spending: 10,
-            max_budget: 100,
-            spend_partial: true,
-            spend_missing_amount: 2,
-          }),
-          item({
-            category: 'cli',
-            current_spending: 5,
-            max_budget: 50,
-            spend_partial: true,
-            spend_missing_amount: 3,
-          }),
-        ]}
-      />
-    )
-
-    expect(screen.getByText('$15.00 / $150.00')).toBeInTheDocument()
-  })
-
-  it('names no amount when one contributing part does not know its own', () => {
-    // An unknown hole must not be reported as the computable half of itself.
-    render(
-      <BudgetSpendCell
-        items={[
-          item({
-            category: 'platform',
-            current_spending: 10,
-            max_budget: 100,
-            spend_partial: true,
-            spend_missing_amount: 2,
-          }),
-          item({
-            category: 'cli',
-            current_spending: 5,
-            max_budget: 50,
-            spend_partial: true,
-            spend_missing_amount: null,
-          }),
-        ]}
-      />
-    )
-
-    expect(screen.getByText('$15.00 / $150.00')).toBeInTheDocument()
-  })
-
-  it('marks the Total incomplete when a part had no coverage', () => {
-    render(
-      <BudgetSpendCell
-        items={[
-          item({ category: 'platform', current_spending: 10, max_budget: 100 }),
-          item({
-            category: 'cli',
-            current_spending: 5,
-            max_budget: 50,
-            spend_unavailable: true,
-          }),
-        ]}
-      />
-    )
-
-    expect(screen.getByText('$15.00 / $150.00')).toBeInTheDocument()
-  })
-
-  it('renders a dash and no suffix when every category is absent', () => {
+  it('renders a dash when every category is absent', () => {
     render(
       <BudgetSpendCell
         items={[
@@ -138,20 +66,13 @@ describe('BudgetSpendCell', () => {
     )
 
     expect(screen.getByText('- / $150.00')).toBeInTheDocument()
-    expect(screen.queryByText(/at least/)).not.toBeInTheDocument()
   })
 
-  it('qualifies the category row that is partial and leaves the others alone', () => {
+  it('renders each category row with its own spend and limit', () => {
     render(
       <BudgetSpendCell
         items={[
-          item({
-            category: 'platform',
-            current_spending: 10,
-            max_budget: 100,
-            spend_partial: true,
-            spend_missing_amount: 2,
-          }),
+          item({ category: 'platform', current_spending: 10, max_budget: 100 }),
           item({ category: 'cli', current_spending: 5, max_budget: 50 }),
         ]}
       />

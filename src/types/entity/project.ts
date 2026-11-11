@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 
-import { SpendQualification } from '@/types/analytics'
 import { BudgetCategory } from '@/types/entity/budget'
 
 export interface ProjectCounters {
@@ -24,20 +23,14 @@ export interface ProjectCounters {
   skills_count: number
 }
 
-export interface ProjectSpendingSummaryCompact extends SpendQualification {
+export interface ProjectSpendingSummaryCompact {
   current_spending: number | null
   budget_limit: number | null
   total_percent: number | null
 }
 
-/**
- * One assigned budget on a project list row. `extends SpendQualification` because
- * `current_spending` comes from the spend port and a figure cannot say by itself that it is
- * truncated or dimension-incomplete - the backend sends the triple beside it
- * (`rest_api/routers/projects.py`), and a consumer summing these rows without it would present a
- * total assembled from only the budgets that resolved as though it were whole.
- */
-export interface ProjectAssignedBudgetSummary extends SpendQualification {
+/** One assigned budget on a project list row. */
+export interface ProjectAssignedBudgetSummary {
   budget_id: string
   name: string
   budget_category: BudgetCategory

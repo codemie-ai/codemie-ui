@@ -16,32 +16,23 @@
 import { FC } from 'react'
 
 import { getHardLimitSpendColor } from '@/pages/settings/administration/projectsManagement/components/budgetSpending'
-import { SpendQualification } from '@/types/analytics'
-import { formatSpendQualificationSuffix } from '@/utils/analyticsFormatters'
 import { formatSpend } from '@/utils/currency'
 
 interface SpendingAmountProps {
   spend?: number | null
   limit?: number | null
-  qualification?: SpendQualification
 }
 
 /**
  * One category's spend and limit, rendered inline as `spend / limit` and colored against
  * the limit. No limit configured means no threshold color — never a false "over budget" signal.
  */
-const SpendingAmount: FC<SpendingAmountProps> = ({ spend, limit, qualification }) => {
-  // A *partial* spend keeps its threshold color: the figure is a floor, so a color derived from it
-  // understates the risk rather than overstating it. Suppressing the color would instead hide a
-  // user who is already over their limit.
+const SpendingAmount: FC<SpendingAmountProps> = ({ spend, limit }) => {
   const color = spend != null ? getHardLimitSpendColor(spend, limit) : null
-  // The suffix belongs to the spend half. A limit is budget policy and is never partial, so a
-  // suffix trailing the whole `spend / limit` pair would misattribute the doubt to the limit.
-  const qualifiedSpend = formatSpend(spend) + formatSpendQualificationSuffix(qualification ?? {})
 
   return (
     <span className="whitespace-nowrap text-text-primary" style={color ? { color } : undefined}>
-      {qualifiedSpend} / {formatSpend(limit)}
+      {formatSpend(spend)} / {formatSpend(limit)}
     </span>
   )
 }

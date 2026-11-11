@@ -24,7 +24,6 @@ import { ProjectType } from '@/types/entity/project'
 import { BudgetSyncStatus, ProjectBudget } from '@/types/entity/projectBudget'
 import { ProjectDetail, ProjectSpendingWidgetRow } from '@/types/entity/projectManagement'
 import { computeAnalyticsBudgetPeriod } from '@/utils/analyticsBudgetPeriod'
-import { formatSpendQualificationSuffix } from '@/utils/analyticsFormatters'
 import { formatDateTime, pluralize } from '@/utils/helpers'
 import { displayValue } from '@/utils/utils'
 
@@ -124,7 +123,6 @@ const BudgetSummaryCard: FC<BudgetSummaryCardProps> = ({ category, budget, spend
               <span className="text-text-quaternary">Spend</span>
               <span className="ml-2 text-text-primary">
                 {formatCurrency(spendingRow.current_spending)}
-                {formatSpendQualificationSuffix(spendingRow)}
               </span>
             </div>
 
@@ -171,7 +169,6 @@ const BudgetSummaryCard: FC<BudgetSummaryCardProps> = ({ category, budget, spend
             style={spendColor ? { color: spendColor } : undefined}
           >
             {formatCurrency(spendingRow?.current_spending)}
-            {formatSpendQualificationSuffix(spendingRow ?? {})}
           </span>
           <span className="text-base font-normal text-text-primary">
             / {formatCurrency(budget.max_budget)}
@@ -456,9 +453,7 @@ const ProjectOverviewSection: FC<Props> = ({
               <div className="grid grid-cols-2 content-start gap-x-5 gap-y-5">
                 <InfoItem
                   label="Budget period spend"
-                  value={`${formatCurrency(
-                    spending?.current_spending
-                  )}${formatSpendQualificationSuffix(spending ?? {})}`}
+                  value={formatCurrency(spending?.current_spending)}
                 />
                 <InfoItem
                   label="Budget reset"

@@ -15,12 +15,8 @@
 
 import { FC } from 'react'
 
-import {
-  SPEND_QUALIFICATION_FIELDS,
-  formatSpendQualificationSuffix,
-  readSpendQualification,
-} from '@/utils/analyticsFormatters'
 import { formatSpend } from '@/utils/currency'
+import { SPEND_QUALIFICATION_FIELDS } from '@/utils/spendQualification'
 
 import { METRIC_LABELS, CURRENCY_METRIC_KEYS } from './constants'
 
@@ -43,8 +39,7 @@ const spendAnnotationPrefix = (currencyKey: string): string => currencyKey.repla
 
 /**
  * The annotations arrive in the same flat map as the metrics. Iterated blindly they render as tiles
- * of their own - "Total Spend Unavailable" with the value "true" - so they are filtered out here and
- * shown where they belong: on the tile of the figure they qualify.
+ * of their own - "Total Spend Unavailable" with the value "true" - so they are filtered out here.
  */
 const isSpendAnnotationKey = (key: string): boolean =>
   CURRENCY_METRIC_KEYS.some((currencyKey) =>
@@ -54,18 +49,12 @@ const isSpendAnnotationKey = (key: string): boolean =>
   )
 
 /**
- * One money tile's text: the figure, or the absent marker when the backend priced nothing, plus the
- * annotation qualifying it. A measured `0` stays `$0.00` - `formatSpend` draws that line - so "spent
- * nothing" never renders like "we don't know".
+ * One money tile's text: the figure, or the absent marker when the backend priced nothing. A
+ * measured `0` stays `$0.00` - `formatSpend` draws that line - so "spent nothing" never renders
+ * like "we don't know".
  */
-const formatCurrencyMetric = (
-  key: string,
-  value: SummaryMetricValue,
-  summaryMetrics: Record<string, SummaryMetricValue>
-): string =>
-  `${formatSpend(typeof value === 'number' ? value : null)}${formatSpendQualificationSuffix(
-    readSpendQualification(summaryMetrics, spendAnnotationPrefix(key))
-  )}`
+const formatCurrencyMetric = (value: SummaryMetricValue): string =>
+  formatSpend(typeof value === 'number' ? value : null)
 
 const LeaderboardSummaryMetrics: FC<LeaderboardSummaryMetricsProps> = ({ summaryMetrics }) => {
   if (!summaryMetrics || Object.keys(summaryMetrics).length === 0) {
@@ -83,7 +72,7 @@ const LeaderboardSummaryMetrics: FC<LeaderboardSummaryMetricsProps> = ({ summary
         {metricEntries.map(([key, value]) => {
           const label = METRIC_LABELS[key] ?? key.replace(/_/g, ' ')
           const formattedValue = CURRENCY_METRIC_KEYS.includes(key)
-            ? formatCurrencyMetric(key, value, summaryMetrics)
+            ? formatCurrencyMetric(value)
             : String(value)
 
           return (

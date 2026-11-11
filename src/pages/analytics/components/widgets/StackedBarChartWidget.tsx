@@ -30,11 +30,7 @@ import { useSnapshot } from 'valtio'
 import { ABSENT_VALUE_MARKER } from '@/constants'
 import { analyticsStore } from '@/store/analytics'
 import type { TabularMetricType, TabularResponse, AnalyticsQueryParams } from '@/types/analytics'
-import {
-  formatChartSpendQualificationSuffix,
-  readSpendQualification,
-  toSeriesPoint,
-} from '@/utils/analyticsFormatters'
+import { toSeriesPoint } from '@/utils/analyticsFormatters'
 import { generateChartColors } from '@/utils/chartColors'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
@@ -271,17 +267,6 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
     }
   }, [gridColor, textColor, data, labelField, valueFormat, series])
 
-  // One qualification for the whole chart, not one per tooltip: the backend puts the window's
-  // residue on every bucket and series.
-  const chartQualification = useMemo(() => {
-    if (valueFormat !== 'currency') return ''
-    return formatChartSpendQualificationSuffix(
-      (data?.data.rows ?? []).flatMap((row) =>
-        series.map((s) => readSpendQualification(row, `${s.field}_`))
-      )
-    )
-  }, [data, series, valueFormat])
-
   const hasData = chartData.datasets.some((ds) => ds.data.some((v) => v !== null && v > 0))
 
   const renderChartContent = () => {
@@ -294,16 +279,9 @@ const StackedBarChartWidget: FC<StackedBarChartWidgetProps> = ({
     }
 
     return (
-      <>
-        <div className="w-full h-[400px] p-4">
-          <Bar data={chartData} options={chartOptions} />
-        </div>
-        {chartQualification && (
-          <p className="px-4 pb-2 text-[11px] leading-4 text-text-quaternary">
-            Bars show spend{chartQualification}
-          </p>
-        )}
-      </>
+      <div className="w-full h-[400px] p-4">
+        <Bar data={chartData} options={chartOptions} />
+      </div>
     )
   }
 

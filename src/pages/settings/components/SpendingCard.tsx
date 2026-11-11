@@ -45,11 +45,7 @@ import {
   MetricValue,
   TabularResponse,
 } from '@/types/analytics'
-import {
-  formatMetricValue,
-  formatSpendQualificationSuffix,
-  readSpendQualification,
-} from '@/utils/analyticsFormatters'
+import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
 import InfoCard from './InfoCard'
@@ -104,9 +100,6 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
           format: column.format,
           description: column.description,
           value: row[column.id] as MetricValue,
-          // budget_usage annotates the row, not the column, so carry those annotations onto the
-          // money metric; a floor figure must not be shown as an exact one.
-          ...(column.format === MetricFormat.CURRENCY ? readSpendQualification(row) : {}),
         })),
       },
       metadata: keySpendingData.metadata,
@@ -222,10 +215,7 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
 
                 <div className="text-right flex-shrink-0">
                   <span className="text-sm leading-lg font-normal text-text-primary whitespace-nowrap">
-                    {`${formatMetricValue(
-                      metric.value,
-                      metric.format
-                    )}${formatSpendQualificationSuffix(metric)}`}
+                    {formatMetricValue(metric.value, metric.format)}
                   </span>
                 </div>
               </div>

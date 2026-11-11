@@ -149,29 +149,6 @@ describe('ProjectMembersManager — merged Spending column', () => {
     expect(screen.queryByText('$250.00')).not.toBeInTheDocument()
   })
 
-  it('qualifies the spend half when the backend flags that category as partial', async () => {
-    vi.spyOn(analyticsStore, 'fetchProjectMemberSpending').mockResolvedValue({
-      data: {
-        rows: [
-          {
-            user_id: 'u-1',
-            platform: 120.5,
-            platform_limit: 500,
-            platform_spend_partial: true,
-            platform_spend_missing_amount: 4,
-          },
-        ],
-      },
-    } as never)
-
-    render(<ProjectMembersManager project={mockProject} budgets={mockBudgets} />)
-
-    await waitFor(() => {
-      expect(screen.getByText('$120.50')).toBeInTheDocument()
-      expect(screen.getByText('$0.00')).toBeInTheDocument()
-    })
-  })
-
   it('does not show a category the project has no budget for, even if the user has a personal one', async () => {
     userStore.getUsers = vi
       .fn()

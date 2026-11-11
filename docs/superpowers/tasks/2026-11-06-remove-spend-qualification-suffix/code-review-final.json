@@ -1,0 +1,61 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "Review approved by user; 0 findings"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "Review approved by user; 0 findings"
+    }
+  ],
+  "reviewed_head": "7c3f7609432eb7c57a710bcaed3ad60ecaa98a80",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case and verification-gap lenses returned nothing; the blind lens's 9 concerns were filtered as noise (3 are the ticket's intended removal, the leftover-import and dependency-array checks were confirmed clean by reading the code, the rest are below the emission floor). Acceptance did not run (no spec), so confidence is low; 0 deferred.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "4 subjects in the review range all match the documented EPMCDME-XXXX: Capital sentence format (non-zero ticket id, uppercase first word, no trailing period)"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard, nothing to adjudicate against"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "security-patterns.md checked against the added lines in src/: no HTML sinks, redirects, postMessage, VITE_/window._env_ reads, credentials, or nosonar suppressions introduced"
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case and verification-gap lenses returned nothing; the blind lens's 9 concerns were filtered as noise (3 are the ticket's intended removal, the leftover-import and dependency-array checks were confirmed clean by reading the code, the rest are below the emission floor). Acceptance did not run (no spec), so confidence is low; 0 deferred.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

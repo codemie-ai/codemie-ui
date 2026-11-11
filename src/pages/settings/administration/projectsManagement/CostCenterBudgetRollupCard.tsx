@@ -27,7 +27,6 @@ import {
   getBudgetCategoryLabel,
 } from '@/types/entity/budget'
 import { CostCenterAssignedBudgetSummary, CostCenterBudgetSummary } from '@/types/entity/costCenter'
-import { formatSpendQualificationSuffix, readSpendQualification } from '@/utils/analyticsFormatters'
 
 import BudgetSpendMetrics from './components/BudgetSpendMetrics'
 import { formatCurrency, formatResetPeriod } from './components/spendPresentation'
@@ -101,7 +100,6 @@ const CategoryCard: FC<{
                 ? null
                 : Math.max(0, budgetData.max_budget - budgetData.current_spending)
             }
-            spendQualification={readSpendQualification({ ...budgetData })}
           />
 
           <div className="mt-auto text-xs text-text-quaternary">
@@ -267,7 +265,6 @@ const CostCenterBudgetRollupCard: FC<CostCenterBudgetRollupCardProps> = ({
             </div>
             <div className="text-base font-semibold">
               {formatCurrency(summary.current_spending)}
-              {formatSpendQualificationSuffix(readSpendQualification({ ...summary }))}
             </div>
           </div>
           <div>

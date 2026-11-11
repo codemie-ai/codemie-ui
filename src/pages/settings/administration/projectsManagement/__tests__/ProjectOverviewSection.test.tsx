@@ -109,8 +109,8 @@ describe('ProjectOverviewSection - CLI Analytics status (EPMCDME-16025)', () => 
   })
 })
 
-describe('ProjectOverviewSection spend qualification', () => {
-  it('qualifies a partial budget period spend and shows no retired lifetime figure', async () => {
+describe('ProjectOverviewSection budget period spend', () => {
+  it('shows no retired lifetime figure', async () => {
     render(
       <ProjectOverviewSection
         project={
@@ -126,8 +126,6 @@ describe('ProjectOverviewSection spend qualification', () => {
               time_until_reset: null,
               budget_limit: null,
               total: null,
-              spend_partial: true,
-              spend_missing_amount: 1.5,
             },
           } as ProjectDetail
         }

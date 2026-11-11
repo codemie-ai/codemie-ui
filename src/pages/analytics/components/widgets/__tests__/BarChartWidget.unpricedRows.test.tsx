@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { ColumnType, MetricFormat } from '@/types/analytics'
@@ -66,13 +66,13 @@ const buildResponse = (rows: Record<string, unknown>[]): TabularResponse => ({
   pagination: { page: 0, per_page: 100, total_count: rows.length, has_more: false },
 })
 
-const renderChart = (rows: Record<string, unknown>[], valueField = 'total_cost') => {
+const renderChart = (rows: Record<string, unknown>[]) => {
   render(
     <BarChartWidget
       title="Top Users by Cost"
       labelField="user_name"
-      valueField={valueField}
-      yAxisLabel={valueField}
+      valueField="total_cost"
+      yAxisLabel="total_cost"
       horizontal
       dataOverride={buildResponse(rows)}
     />
@@ -91,44 +91,28 @@ const tooltipLabel = (dataIndex: number): string => {
   return callback.call({} as never, context as never) as string
 }
 
-// The CLI insights rows: the money cell is qualified by the unprefixed, row-level annotations.
+// The CLI insights rows: priced rows and one row nobody could price.
 const ROWS = [
   {
     user_name: 'MK Testuser',
     session_count: 10,
     total_cost: 0.37,
-    spend_unavailable: false,
-    spend_partial: true,
-    spend_missing_amount: null,
   },
   {
     user_name: 'Whole User',
     session_count: 4,
     total_cost: 0.12,
-    spend_unavailable: false,
-    spend_partial: false,
-    spend_missing_amount: null,
   },
   {
     user_name: 'Unpriced User',
     session_count: 2,
     total_cost: null,
-    spend_unavailable: true,
-    spend_partial: false,
-    spend_missing_amount: null,
   },
 ]
 
-describe('BarChartWidget spend qualification', () => {
+describe('BarChartWidget unpriced rows', () => {
   beforeEach(() => {
     chartProps.current = null
-  })
-
-  it("qualifies a partial row's bar in its tooltip, as the tables qualify the same cell", () => {
-    renderChart(ROWS)
-
-    expect(tooltipLabel(0)).toBe(' Total Cost: $0.37')
-    expect(tooltipLabel(1)).toBe(' Total Cost: $0.12')
   })
 
   it('draws an unpriced row as no bar and never labels it a measured $0.00', () => {
@@ -136,24 +120,5 @@ describe('BarChartWidget spend qualification', () => {
 
     expect(barValues()).toStrictEqual([0.37, 0.12, null])
     expect(tooltipLabel(2)).toBe(' Total Cost: -')
-  })
-
-  it('says once, under the chart, that the bars are a floor', () => {
-    renderChart(ROWS)
-
-    expect(screen.queryByText(/Bars show spend/)).not.toBeInTheDocument()
-  })
-
-  it('adds no note to a chart whose figures are whole', () => {
-    renderChart([ROWS[1]])
-
-    expect(screen.queryByText(/Bars show spend/)).not.toBeInTheDocument()
-  })
-
-  it('leaves a count chart unqualified, since the row-level annotation describes the money cell', () => {
-    renderChart(ROWS, 'session_count')
-
-    expect(tooltipLabel(0)).toBe(' Sessions: 10')
-    expect(screen.queryByText(/Bars show spend/)).not.toBeInTheDocument()
   })
 })

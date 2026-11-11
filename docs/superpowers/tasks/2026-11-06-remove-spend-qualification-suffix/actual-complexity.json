@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-11-06T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 17,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 41,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Removal touches analytics widgets (BarChart, StackedBarChart, Table, MetricCard, RatioWidget, leaderboard summary) and settings budget views (BudgetSpendCell, SpendingAmount, UsersManagementPage, project budget/overview/rollup sections), plus shared utils (spendQualification, analyticsFormatters) and types. Many components across two subsystems, but the change is subtractive and mechanical with no new abstractions, so held at L rather than XL." },
+    { "dimension": "file_change_estimate", "reason": "41 files changed (143 insertions, 1116 deletions), well above the 16+ XXL threshold. Most are test files and call sites losing the suffix, not new logic." }
+  ],
+  "red_flags_applied": [
+    "Touches core shared utilities (analyticsFormatters, spendQualification, shared types): considered for a Component Scope bump, not applied because the change is pure removal of a self-contained formatter with no behavioural change to remaining callers"
+  ],
+  "split_recommendation": null
+}

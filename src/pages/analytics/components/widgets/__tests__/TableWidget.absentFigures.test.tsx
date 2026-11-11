@@ -45,10 +45,9 @@ const MONEY_COLUMNS = [
 
 const buildResponse = (
   rows: Record<string, unknown>[],
-  totals?: Record<string, unknown> | null,
-  columns = MONEY_COLUMNS
+  totals?: Record<string, unknown> | null
 ): TabularResponse => ({
-  data: { columns, rows, totals: totals ?? null },
+  data: { columns: MONEY_COLUMNS, rows, totals: totals ?? null },
   metadata: { timestamp: '2026-08-27T00:00:00Z', data_as_of: '2026-08-27T00:00:00Z' },
   pagination: { page: 0, per_page: 10, total_count: rows.length, has_more: false },
 })
@@ -64,7 +63,7 @@ const renderWidget = (data: TabularResponse) =>
     />
   )
 
-describe('TableWidget spend qualification', () => {
+describe('TableWidget absent figures', () => {
   it('renders an absent money figure as the absent marker, never as $0.00', () => {
     renderWidget(buildResponse([{ user: 'alice', cost: null }]))
 
@@ -78,69 +77,6 @@ describe('TableWidget spend qualification', () => {
 
     expect(screen.getByText('$0.00')).toBeInTheDocument()
     expect(screen.queryByText('-')).not.toBeInTheDocument()
-  })
-
-  it('qualifies a partial figure with the unattributed amount when it is known', () => {
-    renderWidget(
-      buildResponse([
-        { user: 'alice', cost: 12.5, spend_partial: true, spend_missing_amount: 3.25 },
-      ])
-    )
-
-    expect(screen.getByText('$12.50')).toBeInTheDocument()
-  })
-
-  it('qualifies a partial figure without an amount when the size of the hole is unknown', () => {
-    renderWidget(
-      buildResponse([
-        { user: 'alice', cost: 12.5, spend_partial: true, spend_missing_amount: null },
-      ])
-    )
-
-    expect(screen.getByText('$12.50')).toBeInTheDocument()
-  })
-
-  it('honours the column-prefixed annotation form', () => {
-    renderWidget(
-      buildResponse([
-        { user: 'alice', cost: 12.5, cost_spend_partial: true, cost_spend_missing_amount: 3.25 },
-      ])
-    )
-
-    expect(screen.getByText('$12.50')).toBeInTheDocument()
-  })
-
-  it('applies each column-prefixed annotation only to the column it names', () => {
-    const columns = [
-      ...MONEY_COLUMNS,
-      { id: 'premium', label: 'Premium', type: ColumnType.NUMBER, format: MetricFormat.CURRENCY },
-    ]
-    renderWidget(
-      buildResponse(
-        [{ user: 'alice', cost: 12.5, premium: 40, premium_spend_unavailable: true }],
-        null,
-        columns
-      )
-    )
-
-    expect(screen.getByText('$12.50')).toBeInTheDocument()
-    expect(screen.getByText('$40.00')).toBeInTheDocument()
-  })
-
-  it('never attaches a row-level annotation to a non-money column', () => {
-    renderWidget(buildResponse([{ user: 'alice', cost: 12.5, spend_unavailable: true }]))
-
-    expect(screen.getByText('alice')).toBeInTheDocument()
-    expect(screen.getByText('$12.50')).toBeInTheDocument()
-  })
-
-  it('qualifies a footer total summed from only the rows that resolved', () => {
-    renderWidget(
-      buildResponse([{ user: 'alice', cost: 12.5 }], { cost: 30, cost_spend_partial: true })
-    )
-
-    expect(screen.getByText('Total')).toBeInTheDocument()
-    expect(screen.getByText('$30.00')).toBeInTheDocument()
   })
 
   it('renders nothing in a footer slot the backend sends neither a total nor a flag for', () => {

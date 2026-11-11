@@ -13,7 +13,6 @@
 // limitations under the License.
 //
 
-import { SpendQualification } from '@/types/analytics'
 import { BudgetCategory } from '@/types/entity/budget'
 import { ChargebackAttribution } from '@/types/entity/project'
 
@@ -66,10 +65,9 @@ export interface ProjectDetail extends ProjectListItem {
 /**
  * Both money figures are nullable because the backend declares them `Optional[float] = None`: a
  * figure the spend port could not produce is absent, and a consumer must handle that rather than be
- * told by the type that it cannot happen. The qualification travels with them for the same reason
- * `BudgetAssignment` carries it.
+ * told by the type that it cannot happen.
  */
-export interface ProjectSpendingSummary extends SpendQualification {
+export interface ProjectSpendingSummary {
   current_spending: number | null
   budget_reset_at: string | null
   time_until_reset: string | null
@@ -86,10 +84,10 @@ export interface ProjectSpendingWidgetColumn {
 }
 
 /**
- * One budget's row in the project spending widget. Nullable and qualified for the same reasons as
+ * One budget's row in the project spending widget. Nullable for the same reason as
  * `ProjectSpendingSummary` above.
  */
-export interface ProjectSpendingWidgetRow extends SpendQualification {
+export interface ProjectSpendingWidgetRow {
   budget_id: string
   budget_category: BudgetCategory | null
   is_assigned: boolean

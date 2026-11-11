@@ -24,12 +24,7 @@ import type { AnalyticsPaginatedRequestParams, TabularResponse } from '@/types/a
 import { TabularMetricType, ColumnType, MetricFormat } from '@/types/analytics'
 import type { ColumnDefinition, SortState } from '@/types/table'
 import { DefinitionTypes } from '@/types/table'
-import {
-  formatMetricValue,
-  formatSpendQualificationSuffix,
-  readCellSpendQualification,
-  readSpendQualification,
-} from '@/utils/analyticsFormatters'
+import { formatMetricValue } from '@/utils/analyticsFormatters'
 import { cn } from '@/utils/utils'
 
 import AnalyticsWidget from '../AnalyticsWidget'
@@ -210,7 +205,7 @@ const TableWidget: FC<TableWidgetProps> = ({
     }
   })
 
-  const formatCellValue = (col: any, rawValue: any, row: Record<string, unknown>): unknown => {
+  const formatCellValue = (col: any, rawValue: any): unknown => {
     if (rawValue === null || rawValue === undefined) return ABSENT_VALUE_MARKER
 
     if (
@@ -221,10 +216,7 @@ const TableWidget: FC<TableWidgetProps> = ({
       return rawValue as number
     }
 
-    return `${formatMetricValue(
-      rawValue as string | number | boolean,
-      col.format
-    )}${formatSpendQualificationSuffix(readCellSpendQualification(row, col))}`
+    return formatMetricValue(rawValue as string | number | boolean, col.format)
   }
 
   // Format table items with proper value formatting
@@ -238,7 +230,7 @@ const TableWidget: FC<TableWidgetProps> = ({
           return
         }
 
-        formattedRow[col.id] = formatCellValue(col, row[col.id], row)
+        formattedRow[col.id] = formatCellValue(col, row[col.id])
       })
 
       return formattedRow
@@ -295,15 +287,7 @@ const TableWidget: FC<TableWidgetProps> = ({
           } else if (totalIsUnknown) {
             displayValue = ABSENT_VALUE_MARKER
           } else if (hasTotal) {
-            // A total summed from only the rows that resolved is otherwise indistinguishable from a
-            // whole one, and the backend has no other way to say so.
-            const qualificationSuffix = formatSpendQualificationSuffix(
-              readSpendQualification(data.data.totals, `${col.key}_`)
-            )
-            displayValue = `${formatMetricValue(
-              totalValue as string | number,
-              originalCol?.format
-            )}${qualificationSuffix}`
+            displayValue = formatMetricValue(totalValue as string | number, originalCol?.format)
           }
 
           return (

@@ -35,13 +35,7 @@ import type {
   TabularMetricType,
   TabularResponse,
 } from '@/types/analytics'
-import {
-  formatChartSpendQualificationSuffix,
-  formatMetricValue,
-  formatSpendQualificationSuffix,
-  readCellSpendQualification,
-  toSeriesPoint,
-} from '@/utils/analyticsFormatters'
+import { formatMetricValue, toSeriesPoint } from '@/utils/analyticsFormatters'
 import { generateChartColors } from '@/utils/chartColors'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
@@ -179,12 +173,6 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
 
   const yAxisLabelValue = data?.data.columns.find((c) => c.id === yAxisLabel)?.label
   const valueFormat = data?.data.columns.find((c) => c.id === valueField)?.format
-  // Each bar's figure is qualified exactly as the tables qualify the same cell.
-  const qualifications =
-    data?.data.rows.map((row) =>
-      readCellSpendQualification(row, { id: valueField, format: valueFormat })
-    ) ?? []
-  const chartQualification = formatChartSpendQualificationSuffix(qualifications)
 
   const chartOptions: ChartOptions<'bar'> = useMemo(
     () => ({
@@ -231,10 +219,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
             },
             label: (context) => {
               const value = horizontal ? context.parsed.x : context.parsed.y
-              const qualification = formatSpendQualificationSuffix(
-                qualifications[context.dataIndex]
-              )
-              return ` ${yAxisLabelValue}: ${formatMetricValue(value, valueFormat)}${qualification}`
+              return ` ${yAxisLabelValue}: ${formatMetricValue(value, valueFormat)}`
             },
           },
         },
@@ -320,16 +305,9 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     }
 
     return (
-      <>
-        <div className="w-full h-[400px] p-4">
-          <Bar data={chartData} options={chartOptions} />
-        </div>
-        {chartQualification && (
-          <p className="px-4 pb-2 text-[11px] leading-4 text-text-quaternary">
-            Bars show spend{chartQualification}
-          </p>
-        )}
-      </>
+      <div className="w-full h-[400px] p-4">
+        <Bar data={chartData} options={chartOptions} />
+      </div>
     )
   }
 

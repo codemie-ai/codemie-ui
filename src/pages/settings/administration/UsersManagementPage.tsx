@@ -397,11 +397,6 @@ const UsersManagementPage: FC = () => {
               category: assignment.category,
               max_budget: assignment.max_budget,
               current_spending: assignment.current_spending,
-              // The figure's qualification travels with it, or the Total below sums whatever
-              // resolved and renders indistinguishably from a whole one.
-              spend_unavailable: assignment.spend_unavailable,
-              spend_partial: assignment.spend_partial,
-              spend_missing_amount: assignment.spend_missing_amount,
               tooltip: `Budget: ${assignment.budget_name || assignment.budget_id} · Duration: ${
                 assignment.budget_duration ?? '-'
               } · Reset: ${assignment.budget_reset_at ?? '-'}`,

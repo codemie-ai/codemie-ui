@@ -14,10 +14,9 @@
 //
 
 import { ABSENT_VALUE_MARKER } from '@/constants'
-import { Metric, MetricFormat, SpendQualification } from '@/types/analytics'
+import { MetricFormat } from '@/types/analytics'
 import { formatCurrency, formatMoneySpent } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
-import { readSpendQualification } from '@/utils/spendQualification'
 
 // Compact token counts (K/M/B). Mirrors the analytics reference app's `fmtTokens`.
 export const formatTokens = (n: number): string => {
@@ -97,55 +96,3 @@ export const humanizeAnalyticsLabel = (value: string): string =>
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
-
-// Re-exported so the analytics screens keep one import site for reading a qualification and
-// formatting it. They live in a leaf module because `types/entity/userProjectSpending` needs the
-// reader and must not inherit this module's `@/utils/helpers` -> `@/router` dependency.
-export { SPEND_QUALIFICATION_FIELDS, readSpendQualification } from '@/utils/spendQualification'
-
-export const formatSpendQualificationSuffix = (_qualification: SpendQualification): string => ''
-
-/**
- * What qualifies one row's figure in one column. The `<columnId>_`-prefixed form names its column,
- * so it wins; the unprefixed form is row-level and describes the row's money figure, which is why
- * it is only applied to a currency column - appending it to a name, a count or a date would
- * misattribute it.
- */
-export const readCellSpendQualification = (
-  row: Record<string, unknown>,
-  column: { id: string; format?: MetricFormat }
-): SpendQualification => {
-  const prefixed = readSpendQualification(row, `${column.id}_`)
-  if (prefixed.spend_partial || prefixed.spend_unavailable) return prefixed
-
-  return column.format === MetricFormat.CURRENCY ? readSpendQualification(row) : {}
-}
-
-/**
- * One qualification for a whole chart, for the note under it. Its amount is named only when every
- * partial cell names the same one: the backend repeats a window's residue on each cell, so adding
- * them would overstate it, and amounts that differ name no single figure.
- */
-export const formatChartSpendQualificationSuffix = (
-  qualifications: SpendQualification[]
-): string => {
-  const partial = qualifications.filter((qualification) => qualification.spend_partial)
-  if (partial.length === 0) return ''
-  const amounts = new Set(partial.map((qualification) => qualification.spend_missing_amount))
-  return formatSpendQualificationSuffix({
-    spend_partial: true,
-    spend_missing_amount: amounts.size === 1 ? partial[0].spend_missing_amount : null,
-  })
-}
-
-/**
- * A metric's value with the annotation that qualifies it. Only a currency metric is annotated: the
- * qualification describes a money figure, so appending it to a count, a duration or a timestamp
- * would misattribute it - the rule `TableWidget` already applies per column.
- */
-export const formatQualifiedMetricValue = (metric: Metric): string =>
-  `${formatMetricValue(metric.value, metric.format)}${formatMetricQualification(metric)}`
-
-/** The annotation alone, for a screen that sets it apart from the figure - empty for a non-currency metric. */
-export const formatMetricQualification = (metric: Metric): string =>
-  metric.format === MetricFormat.CURRENCY ? formatSpendQualificationSuffix(metric) : ''

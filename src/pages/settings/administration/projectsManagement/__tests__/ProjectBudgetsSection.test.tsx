@@ -200,36 +200,14 @@ describe('ProjectBudgetsSection zero member limit warning', () => {
   })
 })
 
-describe('ProjectBudgetsSection spend qualification', () => {
+describe('ProjectBudgetsSection project spend', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     listProjectBudgets.mockResolvedValue([platformBudget()])
     listProjectBudgetGroups.mockResolvedValue([])
   })
 
-  it('qualifies a partial category spend', async () => {
-    render(
-      <ProjectBudgetsSection
-        projectName="p1"
-        access="view"
-        spendingRows={[
-          {
-            ...unassignedPremiumRow,
-            budget_id: 'p1-platform',
-            budget_category: 'platform',
-            is_assigned: true,
-            current_spending: 0.1,
-            spend_partial: true,
-            spend_missing_amount: 1.5,
-          },
-        ]}
-      />
-    )
-
-    expect(await screen.findByText('$0.10')).toBeInTheDocument()
-  })
-
-  it('qualifies the project spend and shows no retired lifetime figure', async () => {
+  it('shows no retired lifetime figure', async () => {
     render(
       <ProjectBudgetsSection
         projectName="p1"
@@ -240,8 +218,6 @@ describe('ProjectBudgetsSection spend qualification', () => {
           time_until_reset: null,
           budget_limit: null,
           total: null,
-          spend_partial: true,
-          spend_missing_amount: 1.5,
         }}
       />
     )
