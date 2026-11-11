@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "generated": "2026-11-03T15:19:37Z",
+  "dimensions": {
+    "component_scope": { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk": { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 1, "label": "XS" }
+  },
+  "total": 13,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 5,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "The final diff from 6cda5408f to 6a1b07d1b changes ThoughtMessage tool identification and the shared TextBlock renderer, plus three test suites. Base S is bumped to M for the shared rendering utility: Thought Input and WorkflowStateOutput also consume TextBlock, so default-off compatibility matters. Their callers, hydration, exports, stores, and configuration remain unchanged; preserving multiple workflows is not a separate workflow-change bump."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The supplied final scope and implementation agree on opt-in plain-text tool Results, a 60-rendered-line threshold, first/last 20 lines, exact hidden counts, full-width disclosure controls, streaming choice retention, and exclusions for Input, Markdown, WorkflowState JSON, documents, media, and assistant copy. Human approval resolves the final UX decisions; no open acceptance decision is evident."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Closest existing pattern: ThoughtDocument uses local React disclosure state, a native full-width button, and cn styling; TextBlock retains its existing newline splitting/filtering and React text rendering. Base S is bumped to M because the prior ThoughtDocument and ThoughtMessage suites do not cover the new threshold boundary, metadata variants, or focus transfer between relocated controls; the final diff adds parameterized boundary/variant suites and keyboard-focus assertions. Streaming then bumps M to L: incoming text must update the tail/count without resetting expansion. No new HTML sink, sanitization surface, auth path, or external integration is introduced. Calibration remains S overall, comparable to epmcdme-10102-add-validation-to-form-field.json (11), but with greater streaming/defensive risk and file count; unlike the adjacent epmcdme-10203-add-rest-endpoint-with-business-logic.json (15), this change has explicit final criteria and only one architectural layer."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "The actual-mode file-count mapping assigns M to five files. Git name-status confirms four modified files and one new TextBlock.test.tsx across Thought and markdown component directories, all under src/components. The aggregate diff exactly matches the supplied final scope: 617 insertions and 14 deletions; the earlier implementation freeze is not used."
+    },
+    {
+      "dimension": "dependencies",
+      "reason": "No manifest, lockfile, version, environment, or configuration change appears in the final diff. React hooks, the existing chevron asset, cn, and installed testing libraries are reused."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Only the UI layer changes. Local disclosure state does not add a Service layer; tests invoking existing hydration and clipboard paths do not change API or External layers. No persistence, migration, infrastructure, or cross-system coordination is introduced."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: touches the shared TextBlock rendering utility used by tool Results, Inputs, and workflow state output.",
+    "Technical Risk bumped from S to M: explicit threshold, metadata-variant, and relocated-control focus cases lack an adequate pre-existing defensive test template.",
+    "Technical Risk bumped from M to L: streaming requirements require live tail/count updates while retaining the user's disclosure choice."
+  ],
+  "split_recommendation": null
+}

@@ -13,11 +13,13 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent, { UserEvent } from '@testing-library/user-event'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-import { Thought as ThoughtType, ThoughtAuthorType } from '@/types/entity/conversation'
+import Markdown from '@/components/markdown/Markdown'
+import ChatAiMessageActions from '@/pages/chat/components/ChatHistory/ChatAiMessage/ChatAiMessageActions'
+import { ChatMessage, Thought as ThoughtType, ThoughtAuthorType } from '@/types/entity/conversation'
 
 import Thought from '../Thought'
 
@@ -28,6 +30,23 @@ const createMockThought = (overrides?: Partial<ThoughtType>): ThoughtType => ({
   message: 'Test message',
   in_progress: false,
   ...overrides,
+})
+
+const resultLines = (count: number, prefix = 'Result') =>
+  Array.from({ length: count }, (_, index) => `${prefix} ${index + 1}`).join('\n')
+
+const readBlob = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read blob'))
+    reader.readAsText(blob)
+  })
+
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe('Thought', () => {
@@ -323,5 +342,144 @@ describe('Thought', () => {
       )
       expect(screen.getByRole('status', { hidden: true })).toHaveTextContent('Waiting')
     })
+  })
+
+  it('leaves long Input full while previewing only the tool Result', () => {
+    render(
+      <Thought
+        defaultExpanded
+        thought={createMockThought({
+          input_text: resultLines(100, 'Input'),
+          message: resultLines(100),
+        })}
+      />
+    )
+    expect(screen.getByText('Input 21')).toBeInTheDocument()
+    expect(screen.getByText('Input 100')).toBeInTheDocument()
+    expect(screen.queryByText('Result 21')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Show 60 hidden lines' })).toHaveLength(1)
+  })
+
+  it('retains same-id streaming expansion and updates the collapsed latest tail', async () => {
+    const thought = createMockThought({ in_progress: true, message: resultLines(59) })
+    const { rerender } = render(<Thought thought={thought} />)
+    expect(screen.queryByRole('button', { name: /Show \d+ hidden lines/ })).toBeNull()
+    rerender(<Thought thought={{ ...thought, message: resultLines(60) }} />)
+    expect(screen.getByRole('button', { name: 'Show 20 hidden lines' })).toBeInTheDocument()
+    rerender(<Thought thought={{ ...thought, message: resultLines(100) }} />)
+    expect(screen.queryByText('Result 41')).not.toBeInTheDocument()
+    expect(screen.getByText('Result 81')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Show 60 hidden lines' }))
+    rerender(<Thought thought={{ ...thought, message: resultLines(101) }} />)
+    expect(screen.getByRole('button', { name: 'Collapse' })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+    expect(screen.getByText('Result 21')).toBeInTheDocument()
+    expect(screen.getByText('Result 101')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Test Tool' }))
+    expect(screen.getByRole('button', { name: 'Collapse' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Collapse' }))
+    expect(screen.getByRole('button', { name: 'Show 61 hidden lines' })).toBeInTheDocument()
+    expect(screen.queryByText('Result 81')).not.toBeInTheDocument()
+    expect(screen.getByText('Result 82')).toBeInTheDocument()
+  })
+
+  it('resets disclosure when a completed card is closed and reopened', async () => {
+    render(<Thought defaultExpanded thought={createMockThought({ message: resultLines(100) })} />)
+    await user.click(screen.getByRole('button', { name: 'Show 60 hidden lines' }))
+    expect(screen.getByText('Result 21')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Test Tool' }))
+    expect(screen.queryByText('Result:')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Test Tool' }))
+    expect(screen.getByRole('button', { name: 'Show 60 hidden lines' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
+    expect(screen.queryByText('Result 21')).not.toBeInTheDocument()
+  })
+
+  it('previews nested missing-author tool data without affecting its parent Result', async () => {
+    render(
+      <Thought
+        defaultExpanded
+        thought={createMockThought({
+          author_type: ThoughtAuthorType.Assistant,
+          message: resultLines(100, 'Parent'),
+          children: [
+            createMockThought({
+              id: 'child',
+              author_name: undefined,
+              author_type: undefined,
+              tool_name: 'search',
+              message: resultLines(100),
+            }),
+          ],
+        })}
+      />
+    )
+    expect(screen.getByText('Parent 21')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Show \d+ hidden lines/ })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'search' }))
+    expect(screen.getByRole('button', { name: 'Show 60 hidden lines' })).toBeInTheDocument()
+    expect(screen.queryByText('Result 21')).not.toBeInTheDocument()
+    expect(screen.getByText('Parent 21')).toBeInTheDocument()
+  })
+
+  it('copies only the unchanged assistant reply in both formats across tool disclosure states', async () => {
+    vi.stubGlobal(
+      'ClipboardItem',
+      class {
+        private readonly data: Record<string, Blob>
+
+        constructor(data: Record<string, Blob>) {
+          this.data = data
+        }
+
+        getType(type: string) {
+          return Promise.resolve(this.data[type])
+        }
+      }
+    )
+    const write = vi.spyOn(navigator.clipboard, 'write').mockResolvedValue(undefined)
+    const thought = createMockThought({ message: resultLines(100) })
+    const message: ChatMessage = {
+      role: 'Assistant',
+      response: 'Assistant **reply**',
+      createdAt: '',
+      assistant: { id: 'assistant', name: 'Assistant' },
+      executionId: null,
+      thoughts: [thought],
+    }
+    render(
+      <>
+        <Thought defaultExpanded thought={thought} />
+        <Markdown content={message.response} />
+        <ChatAiMessageActions
+          isEditing
+          indexes={{ historyIndex: 0, messageIndex: 0 }}
+          message={message}
+          totalMessages={1}
+          onCancelEditing={() => {}}
+          onConfirmEditing={() => {}}
+          onStartEditing={() => {}}
+          onChangeMessageIndex={() => {}}
+        />
+      </>
+    )
+    const assertCopiedReply = async () => {
+      await user.click(screen.getByRole('button', { name: 'Copy message' }))
+      const item = write.mock.calls.at(-1)![0][0]
+      expect(await readBlob(await item.getType('text/plain'))).toBe('Assistant **reply**')
+      expect(await readBlob(await item.getType('text/html'))).toBe(
+        '<p>Assistant <strong>reply</strong></p>'
+      )
+      expect(screen.getByText('reply', { selector: 'strong' })).toBeInTheDocument()
+    }
+    await assertCopiedReply()
+    await user.click(screen.getByRole('button', { name: 'Show 60 hidden lines' }))
+    await assertCopiedReply()
+    await user.click(screen.getByRole('button', { name: 'Collapse' }))
+    await assertCopiedReply()
   })
 })

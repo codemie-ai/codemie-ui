@@ -1,0 +1,291 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16459_tool-output",
+  "head": "6a1b07d1b037d6ed762711cc75b370af19806475",
+  "runner": "npm",
+  "started_at": "2026-11-03T13:50:34.342631+00:00",
+  "completed_at": "2026-11-03T14:00:46.513449+00:00",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "command": "npm run lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 48844,
+      "exit_code": 0,
+      "output_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/gate-lint.local.log"
+    },
+    {
+      "id": "typecheck",
+      "command": "npm run typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 35653,
+      "exit_code": 0,
+      "output_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/gate-typecheck.local.log"
+    },
+    {
+      "id": "license",
+      "command": "npm run license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "Guide Skip if applies: no dependency was added, removed, or moved."
+    },
+    {
+      "id": "secrets",
+      "command": "npm run secrets:check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 15599,
+      "exit_code": 0,
+      "output_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/gate-secrets-retry.local.log",
+      "attempts": [
+        "gate-secrets.local.log",
+        "gate-secrets-retry.local.log"
+      ],
+      "notes": " Retried outside sandbox after docker info reported \"set sticky bit on: chmod /run/user/1000/libpod: read-only file system\"; initial secrets gate did not scan."
+    },
+    {
+      "id": "unit",
+      "command": "npm run test:unit:slnt",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 344281,
+      "exit_code": 0,
+      "output_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/gate-unit.local.log",
+      "notes": "\"Test Files  810 passed (810)\"; \"Tests  8260 passed | 1 skipped (8261)\""
+    },
+    {
+      "id": "integration",
+      "command": "npm run test:integration:slnt",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 165187,
+      "exit_code": 0,
+      "output_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/gate-integration.local.log",
+      "notes": "\"Test Files  55 passed (55)\"; \"Tests  627 passed | 1 skipped (628)\""
+    },
+    {
+      "id": "test-harness",
+      "command": "npm run test-harness",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 302190,
+      "exit_code": null,
+      "notes": "PASS from user-supplied successful full npm run test-harness log (sanity-ui -n8): 91 passed, 1 rerun in 302.19s, ending 2026-11-03 17:16:09 local. Clone passed first attempt on gw1 at 3%; test_delete_integration_with_confirmation[chromium] passed after rerun. Earlier targeted clone run: 1 passed in 20.61s, no rerun. Not independently executed; manual run SHA and exit code were not supplied. Current checkout HEAD does not establish manual-run provenance. Original failure preserved under manual_evidence_update.historical_harness_failure.",
+      "evidence": {
+        "status": "PASS",
+        "provenance": "user-supplied successful full harness log; not independently executed or verified",
+        "command": "npm run test-harness",
+        "harness_arguments": "sanity-ui -n8",
+        "date": "2026-11-03",
+        "ended_at_local": "2026-11-03T17:16:09",
+        "summary": "91 passed, 1 rerun in 302.19s",
+        "passed": 91,
+        "reruns": 1,
+        "duration_seconds": 302.19,
+        "clone_test": "tests/ui/assistants/test_assistant_lifecycle.py::test_clone_existing_assistant[chromium] passed first attempt on gw1 at 3%.",
+        "rerun_test": "test_delete_integration_with_confirmation[chromium] subsequently passed.",
+        "api_endpoint": "localhost:8080",
+        "reported_branch_prompt": "EPMCDME-16459_tool-output",
+        "exit_code": null,
+        "manual_head": null,
+        "current_checkout_head_observed": "6a1b07d1b037d6ed762711cc75b370af19806475",
+        "head_provenance": "git rev-parse HEAD corroborates the current checkout only; the manual run SHA was not supplied or independently verified."
+      }
+    },
+    {
+      "id": "lint-staged",
+      "command": "npx lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 535,
+      "exit_code": 0,
+      "output_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/gate-lint-staged.local.log",
+      "notes": "No staged files on final committed code; hook formatter/linter had no input and performed no checks. Whole-tree lint/typecheck and license-header gate run separately."
+    },
+    {
+      "id": "license-headers",
+      "command": "npm run license-headers:check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 446,
+      "exit_code": 0,
+      "output_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/gate-license-headers.local.log"
+    },
+    {
+      "id": "sonar",
+      "command": "npm run sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 386,
+      "exit_code": 0,
+      "output_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/gate-sonar.local.log",
+      "notes": "\"[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.\"; set SONAR_TOKEN and reach SonarQube to enable SAST and its coverage generation. CI Sonar remains owed."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; parent is separately delegating consented focused Chrome DevTools verification. This runner used no browser tools. Mandatory sanity-ui harness remains separately UNVERIFIED/BLOCKED pending the user's manual result."
+    },
+    {
+      "id": "ci-pre-guard",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": ".gitlab-ci.yml includes external epm-cdme/codemie-gitlab-templates /templates/pre-ci-guard.yml at 0.1.2. wait-ci-init requires MR/server pipeline contexts ci-pipeline and compliance-report; no locally executable check available. No MR or pipeline actions performed."
+    },
+    {
+      "id": "build",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "Guide-first resolution: quality-gates.md defines typecheck but no separate build Run field; no build command invented. Built artifact remains unverified."
+    },
+    {
+      "id": "coverage",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "Coverage is generated by sonar-local only when SONAR_TOKEN is present and SonarQube reachable. Token is unset, so no fresh coverage generation was executed; unit/integration results do not imply coverage."
+    }
+  ],
+  "failures": {},
+  "prerequisite": {
+    "command": "npm ci --cache /tmp/codemie-ui-npm-cache",
+    "status": "PASS",
+    "attempts": [
+      "npm-ci.local.log",
+      "npm-ci-retry.local.log"
+    ],
+    "notes": "Retried with escalation after Husky could not lock read-only .git/config; retry completed successfully. npm reports 61 vulnerabilities (3 low, 29 moderate, 27 high, 2 critical); no audit fixes or dependency edits performed."
+  },
+  "integrity": {
+    "approved_head": "6a1b07d1b037d6ed762711cc75b370af19806475",
+    "reviewed_head": "6a1b07d1b037d6ed762711cc75b370af19806475",
+    "completed_head": "6a1b07d1b037d6ed762711cc75b370af19806475",
+    "tracked_changes": [],
+    "staged_changes": []
+  },
+  "manual_evidence_update": {
+    "date": "2026-11-03",
+    "manual_streaming": {
+      "status": "PASS",
+      "head": "6a1b07d1b037d6ed762711cc75b370af19806475",
+      "provenance": "user-reported manual verification",
+      "verbatim": "ok, I've tested streaming manually - works as expected, show all / collapse are honoured",
+      "scope": "Streaming works as expected; show all / collapse are honoured, as reported by the user.",
+      "automated_streaming_evidence": false,
+      "browser_agent_streaming_evidence": false,
+      "notes": "No additional cases, counts, screenshots, or stand SHA supplied or inferred. Does not change any gate verdict."
+    },
+    "modal_investigation": {
+      "evidence_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/evidence.local/verification/harness-clone-modal-investigation.json",
+      "screenshot_path": "docs/superpowers/tasks/2026-11-02-epmcdme-16459-tool-output/evidence.local/screenshots/harness-clone-guided-tour-mask.png",
+      "provenance": "existing browser-agent investigation artifact",
+      "observation": "Existing disposable assistant list > More options > Clone reproduced Guided Tour Available mask intercepting enabled Save before name entry.",
+      "probable_historical_cause": "Harness cached fixture uses localStorage-only suppression while the UI uses server-profile preference; consistent with the reproduced symptom, not definitive proof of the historical failed-run dialog.",
+      "failed_run_screenshot_supplied": false,
+      "user_acknowledgment": "User acknowledged the suppression mismatch, not a setup mistake.",
+      "side_effect": "Automatic navigation PUT marked assistants visited in server profile; no assistant save or create, and no rollback attempted.",
+      "result": "FAIL",
+      "blocking": true,
+      "current_blocking": false,
+      "notes": "Original investigation FAIL/blocking fields describe the preserved historical artifact, not a current harness blocker. Successful full and targeted harness runs supersede the clone failure; historical cause remains probable, not definitive."
+    },
+    "preserved_baseline": {
+      "config_js_404": "Strict browser failure retained; baseline environment issue with no demonstrated feature impact. Explicitly accepted as an exception on 2026-11-03, not passed.",
+      "input_nesting": "Strict browser failure retained; pre-existing Input HTML nesting. Explicitly accepted as an exception on 2026-11-03, not passed."
+    },
+    "human_exception": {
+      "approved": true,
+      "disposition": "approved_with_exceptions",
+      "date": "2026-11-03",
+      "provenance": "Explicit user approval reported by parent; parent recorded sdlc-gate feature.verification approve with rationale approving exceptions, not passing checks.",
+      "accepted_exceptions": [
+        "Baseline config.js 404; no demonstrated feature impact.",
+        "Pre-existing Input HTML nesting."
+      ],
+      "remaining_blockers": [],
+      "notes": "Approval is limited to these two baseline exceptions. Strict browser failures and historical errors remain failures; raw gate-run status stays BLOCKED. This is human acceptance to finish QA, not evidence of passed checks or approval of any other exception."
+    },
+    "execution": "Metadata update only; no gates, dependency installation, browser use, source edits, harness execution, or recovery.",
+    "manual_harness": {
+      "full_run": {
+        "status": "PASS",
+        "provenance": "user-supplied successful full harness log; not independently executed or verified",
+        "command": "npm run test-harness",
+        "harness_arguments": "sanity-ui -n8",
+        "date": "2026-11-03",
+        "ended_at_local": "2026-11-03T17:16:09",
+        "summary": "91 passed, 1 rerun in 302.19s",
+        "passed": 91,
+        "reruns": 1,
+        "duration_seconds": 302.19,
+        "clone_test": "tests/ui/assistants/test_assistant_lifecycle.py::test_clone_existing_assistant[chromium] passed first attempt on gw1 at 3%.",
+        "rerun_test": "test_delete_integration_with_confirmation[chromium] subsequently passed.",
+        "api_endpoint": "localhost:8080",
+        "reported_branch_prompt": "EPMCDME-16459_tool-output",
+        "exit_code": null,
+        "manual_head": null,
+        "current_checkout_head_observed": "6a1b07d1b037d6ed762711cc75b370af19806475",
+        "head_provenance": "git rev-parse HEAD corroborates the current checkout only; the manual run SHA was not supplied or independently verified."
+      },
+      "targeted_clone_run": {
+        "status": "PASS",
+        "provenance": "user-supplied targeted harness run",
+        "arguments": "-n1 -- -k 'test_clone_existing_assistant and chromium'",
+        "date": "2026-11-03",
+        "ended_at_local": "2026-11-03T17:06:54",
+        "summary": "1 passed in 20.61s",
+        "passed": 1,
+        "reruns": 0,
+        "duration_seconds": 20.61,
+        "exit_code": null,
+        "manual_head": null
+      }
+    },
+    "historical_harness_failure": {
+      "gate": {
+        "id": "test-harness",
+        "command": "npm run test-harness",
+        "source": "guide",
+        "status": "FAIL",
+        "duration_ms": null,
+        "exit_code": null,
+        "notes": "Manual harness FAIL per user-supplied excerpt, not runner execution. tests/ui/assistants/test_assistant_lifecycle.py::test_clone_existing_assistant[chromium]: Playwright Locator.click timed out after 30000ms at tests/ui/pageobject/assistants/create_edit_assistant_page.py:1207 in click_save (save_button.click). The Save button was visible, enabled, and stable, but a p-dialog-mask overlay intercepted pointer events across 58 retries. Full log, final total test summary, exit code, duration, and recorded manual HEAD were not supplied; the preserved run head does not establish manual evidence provenance. No resource slowdown, flakiness, or unrelated-failure classification is justified. No gates, dependency install, browser use, or recovery attempted.",
+        "evidence": {
+          "provenance": "user-supplied excerpt",
+          "test": "tests/ui/assistants/test_assistant_lifecycle.py::test_clone_existing_assistant[chromium]",
+          "location": "tests/ui/pageobject/assistants/create_edit_assistant_page.py:1207",
+          "operation": "click_save calls save_button.click",
+          "error": "Playwright Locator.click Timeout 30000ms",
+          "locator": "div.min-h-layout-header .get_by_role(button,name=Save,exact=True)",
+          "observation": "Locator resolved a visible, enabled, stable Save button; p-dialog-mask overlay with data-pc-section=mask and class p-dialog-mask p-component-overlay ... intercepted pointer events across 58 retries.",
+          "full_log": null,
+          "final_total_test_summary": null,
+          "exit_code": null,
+          "manual_head": null
+        }
+      },
+      "failure_summary": "User-supplied excerpt reports failure: tests/ui/assistants/test_assistant_lifecycle.py::test_clone_existing_assistant[chromium]. At tests/ui/pageobject/assistants/create_edit_assistant_page.py:1207, click_save calls save_button.click; Playwright Locator.click Timeout 30000ms. Locator div.min-h-layout-header .get_by_role(button,name=Save,exact=True) resolved a visible, enabled, stable Save button, but p-dialog-mask overlay (data-pc-section=mask; class p-dialog-mask p-component-overlay ...) intercepted pointer events across 58 retries. Blocking dialog identity/root cause is not established; insufficient evidence to classify as resource slowdown, flaky, or unrelated. Full log, final total test summary, exit code, and recorded manual HEAD not supplied. This is user evidence, not runner execution or a fabricated complete log.",
+      "current_blocking": false,
+      "notes": "Preserved original failed run; superseded for current harness outcome by user-supplied successful targeted and full runs. Historical manual SHA and exit code remain unknown."
+    },
+    "qa_disposition": "approved_with_exceptions"
+  }
+}

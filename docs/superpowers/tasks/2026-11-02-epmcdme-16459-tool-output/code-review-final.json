@@ -1,0 +1,73 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved final neutral colours and behavior-preserving predicate simplification and explicitly requested proceeding to QA. Additional standalone review of preceding fix-up approved with no findings."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User approved fix-up: explicit preview/full branches, local named line-limit constants, distinct middle expansion row, one non-sticky top Collapse control above uninterrupted full output; preserve keyboard focus and all existing behavior. Proceed according to factory."
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User explicitly approved an additional narrowly scoped human fix pass after escalation of the one-fix-pass limit; agreed HUMAN-5..9 in user-review.local.md, including isClickedButtonFocused and chevrons on both disclosure rows. No second automated review; final implemented fix remains subject to user approval."
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved final neutral colours and behavior-preserving predicate simplification and explicitly requested proceeding to QA. Additional standalone review of preceding fix-up approved with no findings."
+    }
+  ],
+  "reviewed_head": "6a1b07d1b037d6ed762711cc75b370af19806475",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "The applicable compact-profile edge-case lens ran with parseable output and reported no candidates, so no reachability verification was required; 0 findings were dismissed and 0 deferred. Acceptance was intentionally skipped because no story/spec artifact exists, which limits confidence to low; blind, verification-gap, and standards were intentionally omitted by the compact profile, with no failed lens or standards coverage gap. QA/browser verification remains pending and was not executed by triage; this is a real no-findings outcome, not a safe-fail or human gate approval.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards intentionally omitted by compact profile; standards_expected is false."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards intentionally omitted by compact profile; standards_expected is false."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards intentionally omitted by compact profile; standards_expected is false."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "The applicable compact-profile edge-case lens ran with parseable output and reported no candidates, so no reachability verification was required; 0 findings were dismissed and 0 deferred. Acceptance was intentionally skipped because no story/spec artifact exists, which limits confidence to low; blind, verification-gap, and standards were intentionally omitted by the compact profile, with no failed lens or standards coverage gap. QA/browser verification remains pending and was not executed by triage; this is a real no-findings outcome, not a safe-fail or human gate approval.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

@@ -23,7 +23,7 @@ import TextBlock from '@/components/markdown/TextBlock'
 import { DOCUMENT_SOURCE_KEY, MARKDOWN_ENABLED_AUTHORS } from '@/constants'
 import { WORKFLOW_OUTPUT_FORMATS } from '@/constants/workflows'
 import { appInfoStore } from '@/store/appInfo'
-import { Thought } from '@/types/entity/conversation'
+import { Thought, ThoughtAuthorType } from '@/types/entity/conversation'
 import { isImageAllowed } from '@/utils/imageAllowList'
 import { tryParseJsonObjectOrArray } from '@/utils/jsonHelpers'
 import { isValidMessageArray, parseValidatedMessageArray } from '@/utils/messageFormat'
@@ -76,6 +76,9 @@ interface ThoughtMessageProps {
 
 const ThoughtMessage: FC<ThoughtMessageProps> = ({ thought }) => {
   const { configs } = useSnapshot(appInfoStore)
+  const isToolResult =
+    thought.author_type === ThoughtAuthorType.Tool ||
+    (thought.author_type == null && !!thought.tool_name?.trim())
 
   // Check if renderStateOutputAsMarkdown feature is enabled
   const isRenderAsMarkdownEnabled = useMemo(() => {
@@ -127,7 +130,7 @@ const ThoughtMessage: FC<ThoughtMessageProps> = ({ thought }) => {
         (isMarkdownThought ? (
           <Markdown content={segment.content} />
         ) : (
-          <TextBlock className="break-all" text={segment.content} />
+          <TextBlock className="break-all" text={segment.content} collapsible={isToolResult} />
         ))}
 
       {segment.type === 'image' &&
