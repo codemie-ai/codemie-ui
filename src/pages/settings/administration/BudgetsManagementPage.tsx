@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router'
 import { useSnapshot } from 'valtio'
 
 import EditSvg from '@/assets/icons/edit.svg?react'
+import InfoSvg from '@/assets/icons/info.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import RefreshSvg from '@/assets/icons/refresh.svg?react'
 import Button from '@/components/Button'
@@ -25,6 +26,7 @@ import Select from '@/components/form/Select/Select'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Table from '@/components/Table'
 import { ButtonSize, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
+import BudgetDetailsPopup from '@/pages/settings/administration/components/BudgetDetailsPopup'
 import BudgetModal from '@/pages/settings/administration/components/BudgetModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { budgetsStore } from '@/store/budgets'
@@ -35,6 +37,7 @@ import {
   BudgetCategoryFilter,
   BudgetPayload,
   getBudgetCategoryLabel,
+  getBudgetCreatorDisplay,
 } from '@/types/entity/budget'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 import { formatCurrency } from '@/utils/currency'
@@ -47,49 +50,55 @@ const columnDefinitions: ColumnDefinition[] = [
     key: 'budget_id',
     label: 'Budget ID',
     type: DefinitionTypes.String,
-    headClassNames: 'w-[16%]',
+    headClassNames: 'w-[14%]',
   },
   {
     key: 'name',
     label: 'Name',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[18%]',
+    headClassNames: 'w-[16%]',
   },
   {
     key: 'budget_category',
     label: 'Category',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[12%]',
+    headClassNames: 'w-[10%]',
   },
   {
     key: 'limits',
     label: 'Limits',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[14%]',
+    headClassNames: 'w-[13%]',
   },
   {
     key: 'budget_duration',
     label: 'Duration',
     type: DefinitionTypes.String,
-    headClassNames: 'w-[10%]',
+    headClassNames: 'w-[8%]',
   },
   {
     key: 'budget_reset_at',
     label: 'Reset',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[14%]',
+    headClassNames: 'w-[13%]',
+  },
+  {
+    key: 'created_by',
+    label: 'Created By',
+    type: DefinitionTypes.Custom,
+    headClassNames: 'w-[12%]',
   },
   {
     key: 'updated_at',
     label: 'Updated',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[12%]',
+    headClassNames: 'w-[10%]',
   },
   {
     key: 'actions',
     label: 'Actions',
     type: DefinitionTypes.Custom,
-    headClassNames: 'w-[6%]',
+    headClassNames: 'w-[4%]',
   },
 ]
 
@@ -101,6 +110,37 @@ const categoryFilterOptions = [
 const renderBudgetNameCell = (item: Budget) => (
   <span id={`budget-mgmt-name-${item.budget_id}`}>{item.name}</span>
 )
+
+const renderBudgetCreatedByCell = (item: Budget) => (
+  <span className="text-text-primary">{getBudgetCreatorDisplay(item)}</span>
+)
+
+interface BudgetActionsCellProps {
+  budget: Budget
+  canEdit: boolean
+  onViewDetails: (budget: Budget) => void
+  onEdit: (budget: Budget) => void
+}
+
+const BudgetActionsCell: FC<BudgetActionsCellProps> = ({
+  budget,
+  canEdit,
+  onViewDetails,
+  onEdit,
+}) => (
+  <div className="flex justify-end">
+    <NavigationMore
+      hideOnClickInside
+      contextId={`budget-mgmt-name-${budget.budget_id}`}
+      items={[
+        { title: 'View details', icon: <InfoSvg />, onClick: () => onViewDetails(budget) },
+        ...(canEdit ? [{ title: 'Edit', icon: <EditSvg />, onClick: () => onEdit(budget) }] : []),
+      ]}
+    />
+  </div>
+)
+
+const renderBudgetActionsCell = (props: BudgetActionsCellProps) => <BudgetActionsCell {...props} />
 
 const BudgetsManagementPage: FC = () => {
   const navigate = useNavigate()
@@ -114,6 +154,7 @@ const BudgetsManagementPage: FC = () => {
   const [category, setCategory] = useState<BudgetCategoryFilter>('all')
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [detailsBudget, setDetailsBudget] = useState<Budget | null>(null)
 
   useEffect(() => {
     if (currentUser && !canViewBudgets) {
@@ -213,31 +254,21 @@ const BudgetsManagementPage: FC = () => {
           {displayValue(formatDateTime(item.budget_reset_at))}
         </span>
       ),
+      created_by: renderBudgetCreatedByCell,
       updated_at: (item: Budget) => (
         <span className="whitespace-nowrap text-text-primary">
           {displayValue(formatDateTime(item.updated_at || item.created_at))}
         </span>
       ),
       actions: (item: Budget) =>
-        item.is_preconfigured ? null : (
-          <div className="flex justify-end">
-            <NavigationMore
-              hideOnClickInside
-              contextId={`budget-mgmt-name-${item.budget_id}`}
-              items={[{ title: 'Edit', icon: <EditSvg />, onClick: () => handleEdit(item) }]}
-            />
-          </div>
-        ),
+        renderBudgetActionsCell({
+          budget: item,
+          canEdit: canManageBudgets && !item.is_preconfigured,
+          onViewDetails: setDetailsBudget,
+          onEdit: handleEdit,
+        }),
     }),
-    [handleEdit]
-  )
-
-  const visibleColumnDefinitions = useMemo(
-    () =>
-      canManageBudgets
-        ? columnDefinitions
-        : columnDefinitions.filter((columnDefinition) => columnDefinition.key !== 'actions'),
-    [canManageBudgets]
+    [canManageBudgets, handleEdit]
   )
 
   const rightContent = useMemo(
@@ -275,7 +306,7 @@ const BudgetsManagementPage: FC = () => {
 
       <Table
         items={budgets || []}
-        columnDefinitions={visibleColumnDefinitions}
+        columnDefinitions={columnDefinitions}
         customRenderColumns={customRenderColumns}
         loading={loading}
         pagination={{
@@ -295,6 +326,8 @@ const BudgetsManagementPage: FC = () => {
           onSubmit={handleModalSubmit}
         />
       ) : null}
+
+      <BudgetDetailsPopup budget={detailsBudget} onHide={() => setDetailsBudget(null)} />
     </div>
   )
 

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "task": "Show the budget creator (\"Created By\", falling back to N/A) in the budgets management list and in the budget edit modal in codemie-ui, following the existing data-source Created By display pattern.",
+  "generated": "2026-10-15T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 11,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Core AC is clear (Created By column in BudgetsManagementPage, read-only line in BudgetModal edit mode, N/A fallback), but there are open details: the task text describes created_by as a user-id string or \"system\", whereas technical-analysis says the backend now returns an object {id, username, name} or null; the spec must also decide whether to reuse the shared CreatedBy type (which requires email) or loosen it, and how to rebalance column widths that already sum to 102%. That is 1-2 questions with minor assumptions, so M." },
+    { "dimension": "technical_risk", "reason": "Closest patterns are in the same files: Custom column cells in BudgetsManagementPage's customRenderColumns, the Budget ID read-only block in BudgetModal, and the name || 'N/A' fallback in DataSourceDetails. The shared createdBy() helper (returns 'System' for null) must be avoided, not changed. React escapes the rendered text, so there is no security gap. This would be XS (copy and adapt), but it is bumped to S because the AC calls for missing/unknown-creator handling and no test template covers it: the page tests mock Table and BudgetModal, and BudgetModal has no tests." },
+    { "dimension": "file_change_estimate", "reason": "3 files modified, 0 new: types/entity/budget.ts, BudgetsManagementPage.tsx and BudgetModal.tsx. No other readers of Budget.created_by and no string-typed Budget fixtures to update. Scored S, consistent with the bundled S example epmcdme-10102 (3 modified files, total 11)." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

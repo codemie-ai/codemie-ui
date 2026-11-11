@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "generated": "2026-10-26T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 2, "label": "S" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 13,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 10,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "10 files (git diff -w origin/main...HEAD -- src): 4 source files with 174 insertions and 22 deletions (BudgetsManagementPage, new BudgetDetailsPopup, budgets store, budget type), plus 6 test files with 404 insertions. BudgetModal.tsx is identical to main." },
+    { "dimension": "component_scope", "reason": "Budgets management page, a new read-only details popup and the budgets store; UI-only, no API change." },
+    { "dimension": "requirements_clarity", "reason": "The ticket assumed the API value was displayable and that a detail view existed; it had to be resolved as UI-only creator lookup plus a new details view." },
+    { "dimension": "technical_risk", "reason": "New per-creator lookups through GET v1/admin/users/{id}: role access, soft-deleted users and transient-error caching had to be handled." },
+    { "dimension": "dependencies", "reason": "Relies on the existing users endpoint and its access rules (admin, maintainer, auditor)." },
+    { "dimension": "affected_layers", "reason": "Store plus page/component layers." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

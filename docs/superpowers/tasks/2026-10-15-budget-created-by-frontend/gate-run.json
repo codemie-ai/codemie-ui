@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15628_show-budget-creator",
+  "head": "b93a4793d7a19761e7222e1fb9b2f55861b2ff78",
+  "runner": "npm",
+  "started_at": "2026-10-26T12:10:00Z",
+  "completed_at": "2026-10-26T12:48:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "note": "Run on a git-archive export of HEAD under /Users: the container engine cannot mount the temporary worktree path. gitleaks: no leaks found."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "note": "src/pages/analytics/__tests__/AnalyticsPage.test.tsx is intermittently flaky on origin/main too (2 of 6 runs fail); not touched by this branch."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "PASS",
+      "command": "uvx codemie-test-harness@0.1.743 run sanity-ui -n 2",
+      "exit_code": 0,
+      "note": "91 passed, 3 rerun. Pinned to 0.1.743: 0.1.744 pins codemie-sdk-python 0.1.702, which lacks MCPConfigCloneRequest, and fails collecting 2 MCP modules. -n 2 because -n 8 overloaded the local backend."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "note": "Runs in the husky pre-commit hook on each commit; not run separately."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "note": "Runs in the husky pre-commit hook on each commit; not run separately."
+    }
+  ],
+  "failures": {}
+}

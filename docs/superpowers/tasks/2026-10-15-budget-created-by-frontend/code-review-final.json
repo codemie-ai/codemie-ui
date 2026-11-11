@@ -1,0 +1,107 @@
+{
+  "decision": "approve",
+  "rationale": "Compact profile: edge-case and acceptance lenses ran cleanly against the spec; all 4 story ACs and 4 spec decisions pass, with browser layout/live lookup verification pending Stage 7, and standards were not audited (not in compact profile). 0 deferred; 4 edge-case candidates dismissed after reading src/store/budgets.ts and src/utils/api.ts: they only affect the Created By display (dash or stale name, no wrong attribution, no data impact), and the popup open or a list reload re-triggers resolveCreators, so all are below the emission floor.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: Created By visible in budget list/management view as a table column",
+      "status": "pass",
+      "notes": "created_by column added; rendered via getBudgetCreatorDisplay with names from budgetsStore.creatorNames"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: Creator shown in detail view for human creator",
+      "status": "pass",
+      "notes": "BudgetDetailsPopup renders 'Created by' via getBudgetCreatorDisplay and triggers resolveCreators for the creator"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: Config/predefined budget without human creator handled gracefully",
+      "status": "pass",
+      "notes": "'System' for is_preconfigured or created_by === 'system', '—' otherwise; 'system' id skipped from lookups"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: created_by capture and storage unchanged",
+      "status": "pass",
+      "notes": "No create/update payload or store write path touched; read-side lookup only"
+    },
+    {
+      "kind": "spec",
+      "item": "UI-only; resolve creator id via existing GET v1/admin/users/{id}",
+      "status": "pass",
+      "notes": "resolveCreators calls api.get('v1/admin/users/<encoded id>', { skipErrorHandling: true }); no backend change"
+    },
+    {
+      "kind": "spec",
+      "item": "Config budgets show 'System'; unknown or soft-deleted creators show '—'",
+      "status": "pass",
+      "notes": "deleted_at -> null, permanent 4xx -> null, null renders '—'; transient failures leave id unresolved, also '—'"
+    },
+    {
+      "kind": "spec",
+      "item": "Read-only 'Budget details' popup via 'View details' row action for admin, maintainer, auditor, incl. preconfigured budgets",
+      "status": "pass",
+      "notes": "Actions column no longer gated by canManageBudgets; View details always present; Edit gated by canManageBudgets && !is_preconfigured"
+    },
+    {
+      "kind": "spec",
+      "item": "Table layout otherwise unchanged from main (only Created By column added)",
+      "status": "pass",
+      "notes": "Column order unchanged with Created By inserted; widths rebalanced; Actions shown to non-managers per View details decision"
+    },
+    {
+      "kind": "spec",
+      "item": "Rendered table/popup layout and live user lookups in browser",
+      "status": "pending-stage-7",
+      "notes": "Column width fit, popup appearance and network behavior need browser/screenshot evidence"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of compact profile"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of compact profile"
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of compact profile"
+    }
+  ],
+  "findings": [],
+  "reviewed": {
+    "branch": "EPMCDME-15628_show-budget-creator",
+    "base": "71ae725410dd04914d678e37a05693098bb52e4a",
+    "head": "b93a4793d7a19761e7222e1fb9b2f55861b2ff78",
+    "profile": "compact (edge-case + acceptance against the ticket spec)",
+    "reviewer": "sdlc-factory code-review-orchestrator (automated); human review pending",
+    "rounds": [
+      {
+        "head": "db603f7e0",
+        "decision": "request-changes",
+        "finding": "CR-001: transient lookup failures cached as unknown for the session",
+        "fixed_in": "8845cca7f"
+      },
+      {
+        "head": "8845cca7f",
+        "decision": "request-changes",
+        "finding": "CR-001: permanent-failure check used HttpError, but api.get rejects with a Response",
+        "fixed_in": "b93a4793d"
+      },
+      {
+        "head": "b93a4793d",
+        "decision": "approve",
+        "finding": null,
+        "fixed_in": null
+      }
+    ]
+  }
+}

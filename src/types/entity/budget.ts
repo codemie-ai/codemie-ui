@@ -32,6 +32,7 @@ export interface Budget {
   soft_limit_notification_enabled?: boolean
   is_preconfigured?: boolean
   created_by?: string | null
+  created_by_name?: string | null
   created_at?: string | null
   updated_at?: string | null
 }
@@ -91,6 +92,15 @@ export const BUDGET_CATEGORY_OPTIONS: Array<{ label: string; value: BudgetCatego
 
 export const getBudgetCategoryLabel = (category: BudgetCategory): string =>
   BUDGET_CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? category
+
+export const SYSTEM_BUDGET_CREATOR = 'system'
+
+export const getBudgetCreatorDisplay = (
+  budget: Pick<Budget, 'created_by' | 'created_by_name' | 'is_preconfigured'>
+): string => {
+  if (budget.created_by_name) return budget.created_by_name
+  return budget.is_preconfigured || budget.created_by === SYSTEM_BUDGET_CREATOR ? 'System' : '—'
+}
 
 /**
  * Derives a budget_id slug from a human-readable name.
