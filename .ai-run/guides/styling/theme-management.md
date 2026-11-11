@@ -31,7 +31,7 @@ setTheme(isDark ? 'codemieLight' : 'codemieDark')
 const label = isDark ? 'Dark mode' : 'Light mode'
 ```
 
-`theme` is `'codemieDark' | 'codemieLight'`. `isDark` is a boolean convenience alias.
+`theme` is `'codemieDark'`, `'codemieLight'` or `'codemieCustom'` (`src/constants/index.ts::CUSTOM_THEME_KEY`). Under the custom theme `appearance` holds the active preset's values and `isDark` follows its `baseTheme` (`src/hooks/useTheme.ts::useTheme`).
 
 ---
 

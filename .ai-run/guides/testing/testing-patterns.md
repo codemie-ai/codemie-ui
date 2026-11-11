@@ -35,7 +35,7 @@ Projects config: `test.projects` in `vite.config.ts` — two projects with separ
 ### Setup Files
 
 - **Unit** — loads `setupTests.tsx` + `setupTests.unit.ts` (mocks `useSnapshot` and `@/utils/api`)
-- **Integration** — loads `setupTests.tsx` only (valtio and real fetch are never mocked)
+- **Integration** — loads `setupTests.tsx` + `setupTests.integration.ts` (real Valtio and the global fetch stub; the integration setup bypasses `FeatureGuard` and raises `asyncUtilTimeout` to 15 000 ms)
 
 `SettingsLayout` and `useVueRouter` are mocked globally in `setupTests.tsx`; do not re-mock them in individual test files.
 
@@ -145,7 +145,7 @@ Integration tests use **real Valtio reactivity** — store state changes trigger
 | Export | Purpose |
 |---|---|
 | `renderPage(path)` | Renders full app at route via `createMemoryRouter` |
-| `mockAPI(method, url, data, statusOrParams?)` | Registers fetch mock for one test |
+| `mockAPI(method, url, data, statusOrParams?)` | Stores a JSON `Response` factory under `METHOD:url` in `requestRegistry`; a number is the status, an object the params (`src/test-utils/integration.tsx::mockAPI`) |
 | `navigate` | `vi.fn()` spy replacing `useNavigate` globally |
 
 ### `mockAPI` Matching Rules

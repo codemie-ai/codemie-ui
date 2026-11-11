@@ -1,122 +1,45 @@
-# Git Workflow — codemie-ui
+# Git Workflow
+
+**Project**: CodeMie UI · **Stack**: TypeScript React 19.2.8 · **Scope**: branch names, commit subjects, merge policy and their recovery steps; exact gate commands live in `.ai-run/guides/quality-gates.md`, the MR adapter in `.ai-run/guides/project.md`
 
 ## Branch Naming Convention
 
-**Pattern**: `EPMCDME-XXXX_short-description`
+- base branch: main
+- pattern: `EPMCDME-<n>_<short-description>`
 
-| ✅ Valid | ❌ Invalid |
-|---|---|
-| `EPMCDME-12399_add-hint-text` | `feature/add-hint-text` (no ticket) |
-| `EPMCDME-9000_fix-auth-redirect` | `EPMCDME-0_fix-auth` (zero ID rejected by CI) |
-| `EPMCDME-11960_fix-budget-popup` | `epmcdme-1234_my-fix` (wrong case) |
-
-Create from `main`:
-
-```bash
-git checkout main && git pull
-git checkout -b EPMCDME-XXXX_short-description
-```
-
----
+### Rules
+- R1. Name the branch `EPMCDME-<n>_<short-description>` off `main`, with a non-zero ticket number.
 
 ## Commit Message Format
 
-**Pattern**: `EPMCDME-XXXX: Capital sentence`
-
-Enforced by Tekton CI — the pipeline blocks on violations. Full regex:
-
 ```
-^((EPMCDME)-(?!0+)\d+:\s[A-Z][a-z]*.*|Generate release notes for version \d+\.\d+\.\d+|Revert "(EPMCDME)-(?!0+)\d+:\s[A-Z][a-z]*.*")$
+EPMCDME-<n>: <Capitalised sentence>
 ```
 
-| ✅ Valid | ❌ Invalid |
-|---|---|
-| `EPMCDME-123: Fix authentication bug` | `EPMCDME-123: fix bug` (lowercase first word) |
-| `EPMCDME-9359: Fix DOM-Based XSS in filename handling` | `EPMCDME-0: Fix bug` (zero ID) |
-| `EPMCDME-11910: Make WIQL Query attribute optional` | `feat: add feature` (wrong format) |
-| `Generate release notes for version 2.28.0` | `EPMCDME-12399` (no colon + description) |
+Examples: `EPMCDME-16718: Fix session modal subtitle overflow`, `EPMCDME-16832: Fix inconsistent typography in CLI Analytics Session Details widgets`, `Generate release notes for version 2.65.0`
 
-**Rules:**
-- First word after colon must start with uppercase (`Fix`, `Add`, `Make`, `Update`, `Remove`, `Refactor`)
-- No period at end
-- Body is optional; separate from subject with a blank line
-
----
+### Rules
+- R1. Write the subject as `EPMCDME-<n>: <Sentence>`: a non-zero ticket number, a space after the colon, a capitalised first word (prefer the imperative: `Fix`, `Add`, `Show`) and no trailing period.
+- R2. Use `Generate release notes for version X.Y.Z` for a release-notes commit and `Revert "EPMCDME-<n>: …"` for a revert; the last 200 subjects on `main` use no other form.
+- R3. State the commit-subject format as a convention; enforcement by the external pre-ci-guard is not readable in this repository.
 
 ## Merge Strategy
 
-**Squash merge** into `main`.
-
-- Each feature branch becomes one commit on `main`
-- The squash commit subject should follow the same `EPMCDME-XXXX: Capital sentence` format
-- Delete the feature branch after merge
-
-```bash
-# After MR approved and squash-merged via GitLab UI / glab CLI:
-git branch -d EPMCDME-XXXX_short-description
-```
-
----
+### Rules
+- R1. Land the MR on `main` as one squashed commit whose subject follows the commit format; the history of `main` holds no merge commits so far. Evidence: recorded user decision
+- R2. Open the MR against `main` through the MR adapter in `project.md` or the GitLab UI, with the title in the commit-subject format and the description filled from `.gitlab/merge_request_templates/Default.md`.
+- R3. Keep the template's `## Test harness` heading and fenced block and paste only the summary `npm run test-harness` actually produced; put browser scenarios and their screenshots under `## Verified locally`.
+- R4. Write `Closes EPMCDME-<n>` under the description's `## Overview`.
+- R5. Expect an MR into `main` to wait on the `ci-pipeline` and `compliance-report` contexts (`wait-ci-init` in `.gitlab-ci.yml`); an MR into any other branch runs only the `no-op` job.
 
 ## Anti-Patterns
 
-| ❌ Avoid | ✅ Do instead |
-|---|---|
-| `git commit -m "fix stuff"` | `git commit -m 'EPMCDME-123: Fix authentication redirect loop'` |
-| Committing directly to `main` | Always branch from `main` with ticket prefix |
-| `git push --force` on shared branches | Rebase locally, push normally |
-| Mixing unrelated changes in one commit | One logical change per commit |
-| `git commit --no-verify` | Fix the pre-commit hook issue instead |
-| Using zero ID: `EPMCDME-0` | Use the real Jira ticket number |
-
----
-
-## Pre-commit Hooks (Husky)
-
-Runs automatically on every `git commit` — see `.husky/pre-commit`:
-
-| Hook | Command | Blocks commit? |
-|---|---|---|
-| Staged file formatting | `npx lint-staged` | Yes |
-| License headers | `npm run license-headers:check` | Yes |
-| Secret detection | `npm run secrets:check` | Yes |
-| Sonar local scan | `npm run sonar-local` | Yes |
-
-Fix hook failures before re-committing. Never skip with `--no-verify`.
-
----
-
-## Merge Request (MR) Workflow
-
-1. Push branch: `git push -u origin EPMCDME-XXXX_short-description`
-2. Run `npm run test-harness` locally and capture the full console output — the MR description **must** include this log (see "MR description" below). The gitbud compliance bot enforces it; the MR will not merge without the harness section.
-3. Open MR against `main` via GitLab UI or `glab mr create`.
-4. MR title format: `EPMCDME-XXXX: Capital sentence` (same as commit).
-5. Wait for CI pipeline to pass (Tekton).
-6. Resolve reviewer comments.
-7. Squash and merge.
-
-### MR description
-
-Follow [.gitlab/merge_request_templates/Default.md](../../../.gitlab/merge_request_templates/Default.md) — it is the single source of truth and its comments carry the filling rules. Do not restate it here. With `glab`, pass the filled template via `--description`.
-
-What the compliance bot and reviewers rely on:
-
-- **`## Test harness`** — the heading and the fenced block with the pasted `npm run test-harness` summary are mandatory. Screenshots are not accepted there; unit tests do not substitute for the harness run.
-- **`## Verified locally`** — a short list of the checked scenarios on top and, in a collapsed `<details>` block, one subsection per scenario with **mandatory** screenshots of every user-visible state; how to run and record it: [local-verification.md](../testing/local-verification.md). Mark `N/A` with a reason only when the diff cannot alter UI.
-- **Ticket link** — `Closes EPMCDME-XXXX`.
-
-If `npm run test-harness` cannot run locally (missing `~/.codemie/test-harness.json`, stack not up, `ENV=local` prerequisites missing), fix the setup rather than skipping — the compliance bot checks the harness log, and every change requires a fresh run regardless of scope.
-
----
+- Never commit with `--no-verify`; fix the failing hook step and commit again.
+- Never commit to `main` directly; branch from `main` and land the change through an MR.
 
 ## Troubleshooting
 
-| Issue | Solution |
-|---|---|
-| CI rejects commit message | Check format: `EPMCDME-XXXX: Capital sentence`. No zero ID, no lowercase first word. |
-| Pre-commit hook fails on lint | Run `npm run lint:fix`, re-stage, re-commit |
-| Pre-commit hook fails on license headers | Run `npm run license-headers:fix`, re-stage |
-| Pre-commit hook fails on secrets | Remove the flagged secret, never commit credentials |
-| Push rejected on `main` | Branch from `main`, do not commit directly to it |
-| Merge conflict | `git fetch origin && git rebase origin/main` on feature branch |
+- Expect `git commit` to source `.env.local`, then run `npx lint-staged`, `npm run license-headers:check`, `npm run secrets:check` and `npm run sonar-local` in that order (`.husky/pre-commit`); lint-staged rewrites staged files with prettier, eslint --fix and licence headers and runs a full `tsc --noEmit`.
+- When the hook stops at `secrets:check` with `No container engine found - skipping secrets detection` or `daemon is not running`, start Docker, Podman or Apple Containers and commit again: the script exits 1 there without scanning.
+- When the hook prints `Missing license header`, run `npm run license-headers:fix`, stage the files it reports and commit again.
+- When `sonar-local` fails in the hook, read the quality-gate conditions, hotspots and issues it prints; with `SONAR_TOKEN` set it runs the whole `test:coverage` suite first, and on a detached HEAD it exits 1 even without a token unless `SONAR_BRANCH_NAME` is set.

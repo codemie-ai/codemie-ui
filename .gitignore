@@ -130,3 +130,7 @@ output/playwright
 
 # Code-review diff artifacts
 *.diff
+
+docs/superpowers/tasks/*/**/*.local/
+docs/superpowers/tasks/*/**/task-*-brief.md
+docs/superpowers/tasks/*/**/task-*-report.md

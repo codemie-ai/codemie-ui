@@ -70,6 +70,9 @@ export const featureStore = proxy<FeatureStore>({
 
 ## Every Async Method Pattern
 
+Do not copy the catch blocks of `src/store/projects.ts::projectsStore`: they read `error.response?.data?.message`, an Axios
+shape `src/utils/api.ts` never sets. Read the rejected response's `parsedError` (`src/utils/api.ts::ResponseWithParsedError`) as below.
+
 ```
 this.loading = true
 this.error = null
@@ -78,7 +81,7 @@ try {
   const data = await res.json()   // MANDATORY
   // update this.*
 } catch (err: any) {
-  const msg = err.response?.data?.message ?? err.message
+  const msg = err.parsedError?.message ?? err.message   // api.ts rejects with parsedError; err.response is always undefined
   this.error = `Failed to <action>: ${msg}`
   console.error('Store Error (<methodName>):', err)
   throw err  // re-throw only if component needs to react
@@ -188,7 +191,7 @@ useEffect(() => {
 
 - [ ] Store file in `src/store/`, exported as named `proxy`
 - [ ] TypeScript interface on every `proxy<T>(...)`
-- [ ] Every async method: `loading = true`, `error = null`, `finally { loading = false }`
+- [ ] New list-fetching action: `loading = true`, `error = null`, `finally { loading = false }`
 - [ ] Every response parsed with `await response.json()` (not `.data`)
 - [ ] No direct `api.*` calls in component files
 - [ ] `useSnapshot` used in components, not raw proxy
