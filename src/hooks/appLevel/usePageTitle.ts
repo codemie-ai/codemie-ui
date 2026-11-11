@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 import { useEffect } from 'react'
 import { useMatches } from 'react-router'
+import { useSnapshot } from 'valtio'
 
 import { APP_TITLE, ROUTE_ID_TO_TITLE } from '@/constants/pageTitles'
+import { responseReadyStore } from '@/store/responseReady'
+import { formatDocumentTitle } from '@/utils/responseReady'
 
 export const usePageTitle = () => {
   const matches = useMatches()
+  const { pending } = useSnapshot(responseReadyStore)
 
   useEffect(() => {
     // Find the most-specific (deepest) route with a known title by scanning
@@ -27,7 +30,8 @@ export const usePageTitle = () => {
     // in AutoPopupManager.tsx.
     const match = [...matches].reverse().find(({ id }) => id && ROUTE_ID_TO_TITLE[id])
     const pageTitle = match ? ROUTE_ID_TO_TITLE[match.id] : undefined
+    const routeTitle = pageTitle ? `${APP_TITLE} - ${pageTitle}` : APP_TITLE
 
-    document.title = pageTitle ? `${APP_TITLE} - ${pageTitle}` : APP_TITLE
-  }, [matches])
+    document.title = formatDocumentTitle(routeTitle, pending)
+  }, [matches, pending])
 }

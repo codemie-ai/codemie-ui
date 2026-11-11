@@ -42,6 +42,7 @@ import { assistantsStore, userStore } from '@/store'
 import { appInfoStore } from '@/store/appInfo'
 import { chatGenerationStore } from '@/store/chatGeneration'
 import { chatsStore } from '@/store/chats'
+import { responseReadyStore } from '@/store/responseReady'
 import { collectWaitingSteps } from '@/utils/thoughtTree'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
@@ -184,6 +185,9 @@ const ChatPrompt: FC<ChatPromptProps> = ({
 
   const handleSubmit = () => {
     if (!canSubmit) return
+
+    // Runs inside the user's click/keydown, the only place browsers accept a permission prompt.
+    responseReadyStore.requestNotificationPermission()
 
     if (isInterrupted) {
       const userInput = prompt.message.trim() || undefined

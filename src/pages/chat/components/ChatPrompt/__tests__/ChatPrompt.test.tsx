@@ -453,4 +453,84 @@ describe('ChatPrompt', () => {
       expect(mockChatGenerationStore.createChatGeneration).not.toHaveBeenCalled()
     })
   })
+
+  describe('notification permission', () => {
+    const interruptedChat = () => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [],
+        isInterrupted: true,
+        isWorkflow: true,
+        assistantIds: ['assistant-1'],
+      }
+    }
+
+    beforeEach(() => {
+      vi.clearAllMocks()
+      interruptedChat()
+      mockUseChatPromptDraft.initial = { message: '', messageRaw: '' }
+    })
+
+    afterEach(() => {
+      mockChatsStore.currentChat = {
+        id: 'chat-1',
+        history: [[{ inProgress: true }]],
+        isInterrupted: false,
+        isWorkflow: false,
+        assistantIds: ['assistant-1'],
+      }
+      delete (window as any).Notification
+    })
+
+    const stubNotification = (
+      permission: NotificationPermission,
+      requestPermission: () => unknown
+    ) => {
+      Object.defineProperty(window, 'Notification', {
+        configurable: true,
+        writable: true,
+        value: Object.assign(vi.fn(), { permission, requestPermission }),
+      })
+    }
+
+    it('does not request permission on mount', () => {
+      const request = vi.fn().mockResolvedValue('granted')
+      stubNotification('default', request)
+
+      render(<ChatPrompt />)
+
+      expect(request).not.toHaveBeenCalled()
+    })
+
+    it('requests permission once when a prompt is submitted with permission default', () => {
+      const request = vi.fn().mockResolvedValue('granted')
+      stubNotification('default', request)
+      render(<ChatPrompt />)
+
+      fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+
+      expect(request).toHaveBeenCalledOnce()
+      expect(mockChatGenerationStore.resumeWorkflowExecution).toHaveBeenCalledOnce()
+    })
+
+    it('still submits when the permission request rejects', () => {
+      stubNotification('default', () => Promise.reject(new Error('blocked')))
+      render(<ChatPrompt />)
+
+      fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+
+      expect(mockChatGenerationStore.resumeWorkflowExecution).toHaveBeenCalledOnce()
+    })
+
+    it('does not request permission when it is already denied', () => {
+      const request = vi.fn()
+      stubNotification('denied', request)
+      render(<ChatPrompt />)
+
+      fireEvent.click(screen.getByRole('button', { name: /continue/i }))
+
+      expect(request).not.toHaveBeenCalled()
+      expect(mockChatGenerationStore.resumeWorkflowExecution).toHaveBeenCalledOnce()
+    })
+  })
 })

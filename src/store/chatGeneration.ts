@@ -69,6 +69,7 @@ import { watchSignInWindow } from '@/utils/watchSignInWindow'
 
 import { assistantsStore } from './assistants'
 import { chatsStore } from './chats'
+import { responseReadyStore } from './responseReady'
 import { userStore } from './user'
 import { workflowExecutionsStore } from './workflowExecutions'
 import { workflowsStore } from './workflows'
@@ -2009,6 +2010,13 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
       // pendingRename was already set true in _updateChatNameIfNeeded, before
       // the stream started — this just picks up polling for the real name.
       chatGenerationStore._pollForRenamedChat(chat.id, chat.name)
+    }
+
+    // Only a finished, non-aborted, non-stopped, non-failed turn counts as a completed response.
+    // The backend ends failed generations with `last: true` plus `execution_error` or an error thought.
+    const isFailedTurn = Boolean(response?.execution_error || response?.thought?.error)
+    if (hasCompletedTurn && !isFailedTurn && !response?.aborted && !historyItem.generationStopped) {
+      responseReadyStore.markResponseReady()
     }
 
     return response

@@ -29,6 +29,7 @@ import { HelpPanel } from '@/components/HelpLauncher'
 import MobileTopBar from '@/components/Navigation/MobileTopBar'
 import Navigation from '@/components/Navigation/Navigation'
 import { OnboardingProvider } from '@/components/Onboarding'
+import ResponseReadyAnnouncer from '@/components/ResponseReadyAnnouncer'
 import SkipLink from '@/components/SkipLink/SkipLink'
 import Spinner from '@/components/Spinner'
 import { primeReactPtOptions } from '@/constants/theme'
@@ -36,6 +37,7 @@ import { useHistoryStack } from '@/hooks/appLevel/useHistoryStack'
 import useInitialDataFetch from '@/hooks/appLevel/useInitialDataFetch'
 import { usePageTitle } from '@/hooks/appLevel/usePageTitle'
 import usePrismThemeToggle from '@/hooks/appLevel/usePrismThemeToggle'
+import { useResponseReadyTab } from '@/hooks/appLevel/useResponseReadyTab'
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useTheme } from '@/hooks/useTheme'
 import { UnsavedChangesProvider } from '@/hooks/useUnsavedChangesWarning'
@@ -55,6 +57,7 @@ const App: React.FC = () => {
   usePrismThemeToggle()
   useInitialDataFetch()
   usePageTitle()
+  useResponseReadyTab()
 
   const showGradient = appearance?.gradients ?? true
 
@@ -74,6 +77,7 @@ const App: React.FC = () => {
           {user && isConfigFetched && <SkipLink />}
           <Banner />
           <ToastContainer />
+          <ResponseReadyAnnouncer />
 
           {!user || !isConfigFetched ? (
             <Spinner className="w-20 h-20" />

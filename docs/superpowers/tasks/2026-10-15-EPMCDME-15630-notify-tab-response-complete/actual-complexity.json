@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "generated": "2026-10-15T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 19,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 15,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches a new responseReady store, the chatGeneration and chats stores (stream completion and poll completion both call markResponseReady), two app-level hooks (useResponseReadyTab, usePageTitle), the ResponseReadyAnnouncer component, App.tsx and ChatPrompt.tsx. Four or more components across store and UI layers." },
+    { "dimension": "technical_risk", "reason": "No exact precedent for browser Notification API handling in this codebase: permission state, session-level decline memory, and try/catch so a notification failure cannot escape stream completion. Concurrency between stream completion and polling paths adds moderate risk. Rollback is trivial (flag and title). No security or compliance surface." },
+    { "dimension": "file_change_estimate", "reason": "15 files changed (diffstat), 753 insertions. Roughly 3 new source modules plus about 5 to 6 new or modified test files, and 5 modified source files across src/App.tsx, src/store/, src/hooks/appLevel/, src/components/ and src/pages/chat/. Per the diffstat mapping (11-15 files = XL)." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

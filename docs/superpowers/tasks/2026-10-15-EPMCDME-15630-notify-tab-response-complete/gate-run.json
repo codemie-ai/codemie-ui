@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15630-notify-users-after-llm-response",
+  "head": "30ea2c7dd53f0e51548d9f7f3c101b69231612ea",
+  "runner": "npm",
+  "started_at": "2026-10-16T12:40:16Z",
+  "completed_at": "2026-10-16T13:41:35.904Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 101855,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 67388,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5891,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 33319,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1186960,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Vitest: 700 files passed, 7075 tests passed, 1 skipped. Duration from Vitest summary (wall clock not captured)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 391103,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Vitest: 49 files passed, 558 tests passed, 1 skipped."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 898930,
+      "command": "npm run test-harness",
+      "exit_code": 0,
+      "notes": "pytest: 93 passed, 17 rerun in 898.93s (0:14:58), run locally by the user. An earlier run of the same suite had 1 failure (test_chat_input_dynamic_tools_adding_web_search[chromium]); the 17 reruns indicate flaky UI tests."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 990,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Output: \"No staged files found.\" Nothing was staged, so no staged file was linted. Enable by staging files and rerunning, or let the pre-commit hook run on commit."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 824,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 210,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Output: \"[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.\" Enable locally by exporting SONAR_TOKEN (pre-commit sources .env.local). CI must settle Sonar."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "none (no ui gate in plan)",
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    }
+  ],
+  "failures": {}
+}

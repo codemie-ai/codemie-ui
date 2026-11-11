@@ -207,6 +207,7 @@ function transformHistoryGroup(
       processingTime: isAssistantInProgress ? undefined : assistantItem.responseTime, // Add FE response
       userMark: assistantItem.userMark, // Include userMark data from backend
       inProgress: isAssistantInProgress,
+      status: assistantItem.status,
       stream: null,
       executionId: assistantItem.executionId,
       executionStatus: assistantItem.executionStatus ?? null,

@@ -13,11 +13,12 @@
 // limitations under the License.
 //
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { APP_TITLE, ROUTE_ID_TO_TITLE } from '@/constants/pageTitles'
 import * as ROUTES from '@/constants/routes'
+import { responseReadyStore } from '@/store/responseReady'
 
 import { usePageTitle } from '../usePageTitle'
 
@@ -137,5 +138,50 @@ describe('usePageTitle', () => {
     const titled = Object.keys(ROUTE_ID_TO_TITLE).filter((id) => id.startsWith('hosted-'))
     const byName = (a: string, b: string) => a.localeCompare(b)
     expect(titled.toSorted(byName)).toEqual(routeIds.toSorted(byName))
+  })
+
+  describe('response-ready indicator', () => {
+    const chatsMatches = [
+      { id: 'root', pathname: '/', params: {}, data: null, handle: null },
+      { id: 'chats', pathname: '/chats', params: {}, data: null, handle: null },
+    ] as UIMatch[]
+
+    beforeEach(() => {
+      responseReadyStore.pending = false
+    })
+
+    it('prefixes the route title while a response is ready', () => {
+      mockUseMatches.mockReturnValue(chatsMatches)
+      const { rerender } = renderHook(() => usePageTitle())
+      act(() => {
+        responseReadyStore.pending = true
+      })
+      rerender()
+      expect(document.title).toBe('Response ready - EPAM AI/Run CodeMie - Chats')
+    })
+
+    it('restores the plain route title after the indicator is cleared', () => {
+      mockUseMatches.mockReturnValue(chatsMatches)
+      renderHook(() => usePageTitle())
+      act(() => {
+        responseReadyStore.pending = true
+      })
+      act(() => responseReadyStore.clearResponseReady())
+      expect(document.title).toBe('EPAM AI/Run CodeMie - Chats')
+    })
+
+    it('keeps the prefix when the route changes while pending', () => {
+      mockUseMatches.mockReturnValue(chatsMatches)
+      const { rerender } = renderHook(() => usePageTitle())
+      act(() => {
+        responseReadyStore.pending = true
+      })
+      mockUseMatches.mockReturnValue([
+        { id: 'root', pathname: '/', params: {}, data: null, handle: null },
+        { id: 'help', pathname: '/help', params: {}, data: null, handle: null },
+      ] as UIMatch[])
+      rerender()
+      expect(document.title).toBe('Response ready - EPAM AI/Run CodeMie - Help')
+    })
   })
 })

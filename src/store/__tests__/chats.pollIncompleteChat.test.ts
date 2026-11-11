@@ -15,9 +15,10 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-import { CHAT_POLL_INTERVAL_MS } from '@/constants/chats'
+import { CHAT_POLL_INTERVAL_MS, MAX_CHAT_POLL_ATTEMPTS } from '@/constants/chats'
 import { pausedHistoryItemBackend } from '@/store/__tests__/fixtures/toolCallResume.fixtures'
 import { chatGenerationStore } from '@/store/chatGeneration'
+import { responseReadyStore } from '@/store/responseReady'
 import api from '@/utils/api'
 
 import { chatsStore } from '../chats'
@@ -364,5 +365,92 @@ describe('pollIncompleteChat and stopChatGeneration', () => {
     await advancePolls(152)
 
     expect(chatsStore.currentChat?.history[0][0].inProgress).toBe(false)
+  })
+
+  describe('response-ready signal', () => {
+    const openRunningChat = () => {
+      const chat = {
+        id: 'chat-r',
+        name: 'Running',
+        history: [[{ request: 'Hi', response: '', inProgress: true }]],
+      }
+      chatsStore.openedChatsHistory = [chat as any]
+      chatsStore.currentChat = chat as any
+    }
+
+    const backendChat = (assistantMessage: string, inProgress: boolean, status?: string) => ({
+      id: 'chat-r',
+      conversation_name: 'Running',
+      history: [
+        { historyIndex: 0, message: 'Hi', date: '2026-10-15T12:00:00Z' },
+        {
+          historyIndex: 0,
+          message: assistantMessage,
+          date: '2026-10-15T12:00:01Z',
+          in_progress: inProgress,
+          status,
+        },
+      ],
+    })
+
+    it.each(['error', 'interrupted'])(
+      'does not mark ready when the finished turn has status %s',
+      async (status) => {
+        const markSpy = vi.spyOn(responseReadyStore, 'markResponseReady')
+        openRunningChat()
+        vi.mocked(api.get).mockResolvedValueOnce({
+          json: () => Promise.resolve(backendChat('Rate limit exceeded', false, status)),
+        } as any)
+
+        chatsStore.pollIncompleteChat('chat-r')
+        await vi.advanceTimersByTimeAsync(CHAT_POLL_INTERVAL_MS)
+
+        expect(markSpy).not.toHaveBeenCalled()
+        markSpy.mockRestore()
+      }
+    )
+
+    it('marks the response ready once when polling sees the chat complete', async () => {
+      const markSpy = vi.spyOn(responseReadyStore, 'markResponseReady')
+      openRunningChat()
+      vi.mocked(api.get).mockResolvedValueOnce({
+        json: () => Promise.resolve(backendChat('Done', false)),
+      } as any)
+
+      chatsStore.pollIncompleteChat('chat-r')
+      await vi.advanceTimersByTimeAsync(CHAT_POLL_INTERVAL_MS)
+
+      expect(markSpy).toHaveBeenCalledTimes(1)
+      markSpy.mockRestore()
+    })
+
+    it('does not mark ready when the finished message carries no response', async () => {
+      const markSpy = vi.spyOn(responseReadyStore, 'markResponseReady')
+      openRunningChat()
+      vi.mocked(api.get).mockResolvedValueOnce({
+        json: () => Promise.resolve(backendChat('', false)),
+      } as any)
+
+      chatsStore.pollIncompleteChat('chat-r')
+      await vi.advanceTimersByTimeAsync(CHAT_POLL_INTERVAL_MS)
+
+      expect(markSpy).not.toHaveBeenCalled()
+      markSpy.mockRestore()
+    })
+
+    it('does not mark ready when the poll gives up on a still-running chat', async () => {
+      const markSpy = vi.spyOn(responseReadyStore, 'markResponseReady')
+      openRunningChat()
+      vi.mocked(api.get).mockResolvedValue({
+        json: () => Promise.resolve(backendChat('', true)),
+      } as any)
+
+      chatsStore.pollIncompleteChat('chat-r', true)
+      await advancePolls(MAX_CHAT_POLL_ATTEMPTS + 2)
+
+      expect(markSpy).not.toHaveBeenCalled()
+      markSpy.mockRestore()
+      vi.mocked(api.get).mockReset()
+    })
   })
 })

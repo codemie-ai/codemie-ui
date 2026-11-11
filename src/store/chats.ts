@@ -38,6 +38,7 @@ import {
   FolderListItem,
 } from '@/types/entity'
 import { LLMRouterOption, ModelOption } from '@/types/entity/configuration'
+import { MessageStatus } from '@/types/entity/conversation'
 import api, { sanitizeFileName } from '@/utils/api'
 import { transformChatBEtoFE } from '@/utils/chatHelpers'
 import { chatSkillsKey, removeChatStorage, sweepOrphanedChatKeys } from '@/utils/chatStorageUtils'
@@ -52,6 +53,7 @@ import { moveOrderStore } from './moveOrder'
 import { pinOrderStore } from './pinOrder'
 import { premiumModelTipStore } from './premiumModelTip'
 import { recentChatsStore } from './recentChats'
+import { responseReadyStore } from './responseReady'
 import { userStore } from './user'
 import {
   getChatBEMessageIndex,
@@ -294,6 +296,20 @@ const syncPolledChatHistory = (id: string, freshChat: Conversation): void => {
   }
 }
 
+// The turn that just finished is the last message; an older successful reply elsewhere in the chat does not count.
+// ponytail: text-less (A2UI-only) turns stay silent here; the poll payload cannot tell them from a failed turn.
+const lastTurnFinishedWithResponse = (chat: Conversation): boolean => {
+  const last = chat.history.at(-1)?.at(-1)
+  return Boolean(
+    last &&
+      !last.inProgress &&
+      last.response &&
+      !last.generationStopped &&
+      last.status !== MessageStatus.Error &&
+      last.status !== MessageStatus.Interrupted
+  )
+}
+
 const finalizeTimedOutPoll = (id: string, freshChat: Conversation): void => {
   freshChat.history.forEach((group) => {
     group.forEach((msg) => {
@@ -440,6 +456,7 @@ export const chatsStore = proxy<ChatsStoreType>({
         } else {
           chatPollTimeouts.delete(id)
           chatsStore.updateChatListItem(freshChat)
+          if (lastTurnFinishedWithResponse(freshChat)) responseReadyStore.markResponseReady()
         }
       } catch (err) {
         console.error(`Error polling incomplete chat ${id}:`, err)

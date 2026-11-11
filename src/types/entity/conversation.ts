@@ -38,6 +38,12 @@ export enum MessageRole {
   Assistant = 'Assistant',
 }
 
+export enum MessageStatus {
+  Success = 'success',
+  Error = 'error',
+  Interrupted = 'interrupted',
+}
+
 export enum MessageAuthor {
   User = 'user',
   Operator = 'operator',
@@ -172,6 +178,8 @@ export interface ChatMessage {
   inProgress?: boolean
   /** In-memory only: user hit Stop on this page. Reload hydrates progress again. */
   generationStopped?: boolean
+  /** Backend turn status (`success` / `error` / `interrupted`); absent for turns created locally. */
+  status?: string
   processingTime?: number
   thoughts?: Thought[]
   fileNames?: string[]

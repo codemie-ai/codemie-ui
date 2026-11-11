@@ -1,0 +1,41 @@
+{
+  "decision": "approve",
+  "rationale": "All four prior findings are addressed: CR-001 (ResponseReadyAnnouncer.tsx always renders the live region and fills text only while pending), CR-003 (responseReady.ts wraps showNotification() in try/catch inside markResponseReady, so no throw escapes stream completion), CR-004 (responseReady.ts records a non-granted permission result in a session flag and skips further requests). CR-002 (A2UI-only completion observed through polling stays silent) is an accepted gap by user decision, not a fix: the text guard in lastTurnFinishedWithResponse is intentionally unchanged because it is what keeps a failed generation from signalling, and the poll payload carries no terminal-completion flag. No new findings raised; this round verifies only the prior ids per contract.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Tab is signalled when a response completes while the document is hidden", "status": "pass", "notes": "markResponseReady sets pending only when document.hidden; stream finalize, reconnect and poll paths all reach it." },
+    { "kind": "spec", "item": "Signal is accessible, not color-only", "status": "pass", "notes": "ResponseReadyAnnouncer keeps the sr-only <output> mounted and renders 'AI response ready' only while pending (CR-001 fixed)." },
+    { "kind": "spec", "item": "Feature must not disrupt streaming or error handling", "status": "pass", "notes": "Notification construction is guarded by try/catch in markResponseReady (CR-003 fixed); permission request failures are caught." },
+    { "kind": "spec", "item": "Permission prompt does not interrupt on every submit", "status": "pass", "notes": "notificationDeclinedThisSession short-circuits requestNotificationPermission after a dismissed or denied result (CR-004 fixed)." },
+    { "kind": "out-of-scope", "item": "A2UI-only (text-less) completion via polling does not signal ready (CR-002)", "status": "acknowledged-not-fixed", "notes": "Accepted gap by user decision. The empty-text guard separates a failed generation from a completed one when the poll payload carries no completion flag; the stream path is unaffected and still signals on the terminal last chunk. Recorded by a comment at src/store/chats.ts above lastTurnFinishedWithResponse." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards review not run for the re-check round (intentional); passed in the initial review." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards review not run for the re-check round (intentional)." },
+    { "kind": "security", "status": "na", "notes": "Standards review not run for the re-check round (intentional); passed in the initial review." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "src/components/ResponseReadyAnnouncer.tsx:26 renders an always-mounted <output className=\"sr-only\"> whose text is 'AI response ready' only while pending."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "Accepted gap by user decision, not a code fix: the text guard in lastTurnFinishedWithResponse (src/store/chats.ts) is unchanged and the A2UI-only polling case is documented in source."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "src/store/responseReady.ts markResponseReady wraps showNotification() in try/catch, leaving the pending indicator set; covers the stream finalize, reconnect and poll callers. responseReady.ts is included in changed_files for this round."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "src/store/responseReady.ts requestNotificationPermission returns early when notificationDeclinedThisSession is set, and sets it on any non-granted result. responseReady.ts is included in changed_files for this round."
+    }
+  ]
+}

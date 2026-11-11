@@ -1,0 +1,19 @@
+{
+  "decision": "approve",
+  "rationale": "Full-branch review re-run against the final implementation. The four blocking findings from the earlier round are addressed: CR-001 (always-mounted live region in ResponseReadyAnnouncer.tsx), CR-003 (try/catch around showNotification() in markResponseReady, so a Notification constructor throw on mobile Chrome cannot escape stream completion), and CR-004 (session flag stops repeated permission prompts after a dismissal). CR-002 (an A2UI-only, text-less completion observed through polling does not signal ready) is an accepted gap by user decision: the empty-text guard in lastTurnFinishedWithResponse is what keeps a failed generation from signalling, the poll payload carries no terminal-completion flag, and the stream path still signals on the terminal last chunk. No spec was supplied, so acceptance was skipped. No other findings.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Tab is signalled when a response completes while the document is hidden", "status": "pass", "notes": "markResponseReady sets pending only when document.hidden; stream finalize, reconnect and poll paths all reach it." },
+    { "kind": "spec", "item": "Signal is accessible, not color-only", "status": "pass", "notes": "ResponseReadyAnnouncer keeps the sr-only <output> mounted and fills 'AI response ready' only while pending (CR-001 fixed)." },
+    { "kind": "spec", "item": "Feature must not disrupt streaming or error handling", "status": "pass", "notes": "showNotification() is guarded by try/catch inside markResponseReady (CR-003 fixed); requestPermission rejections are caught." },
+    { "kind": "spec", "item": "Permission prompt does not interrupt on every submit", "status": "pass", "notes": "notificationDeclinedThisSession short-circuits requestNotificationPermission after a dismissed or denied result (CR-004 fixed)." },
+    { "kind": "out-of-scope", "item": "A2UI-only (text-less) completion via polling does not signal ready (CR-002, src/store/chats.ts)", "status": "acknowledged-not-fixed", "notes": "Accepted gap by user decision. The empty-text guard in lastTurnFinishedWithResponse separates a failed generation from a completed one because the poll payload has no completion flag; the gap is recorded by a comment in source and is not a regression." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 5 subjects in 19ddec0a..HEAD match the documented EPMCDME-XXXX: Capital sentence format (regex from git-workflow.md)" },
+    { "kind": "code-quality", "status": "na", "notes": "Guide .ai-run/guides/standards/code-quality.md is absent from the repo and no ref was passed; no standard to adjudicate against" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checked on the 9 changed src files: no HTML sinks, postMessage listeners, untrusted navigation, config secrets or logged credentials; notification text is constant" }
+  ],
+  "findings": []
+}
