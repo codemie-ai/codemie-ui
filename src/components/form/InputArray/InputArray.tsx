@@ -104,18 +104,17 @@ const InputArray = forwardRef<HTMLInputElement, InputArrayProps>(
       <div ref={ref} className={className}>
         <div className="flex items-end">
           {label && (
-            <label
-              htmlFor={id}
-              className="text-sm font-mono text-text-quaternary flex items-center gap-2"
-            >
-              {label}
-              {required && (
-                <span className="text-text-error input-label-required ml-0.5" aria-hidden="true">
-                  *
-                </span>
-              )}
+            <div className="flex items-center gap-x-1">
+              <label htmlFor={id} className="flex items-center text-xs text-text-quaternary">
+                {label}
+                {required && (
+                  <span className="text-text-error input-label-required ml-0.5" aria-hidden="true">
+                    *
+                  </span>
+                )}
+              </label>
               {hint && <TooltipButton content={hint} />}
-            </label>
+            </div>
           )}
           <Button
             type="secondary"
