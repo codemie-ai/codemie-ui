@@ -139,3 +139,32 @@ describe('ProjectOverviewSection budget period spend', () => {
     expect(screen.queryByText(/lifetime spend/i)).not.toBeInTheDocument()
   })
 })
+
+describe('ProjectOverviewSection budget figures without budget access', () => {
+  it('hides budget figures, member spend limits and the active budgets section', () => {
+    renderOverview({
+      enforce_member_spend_limits: true,
+      spending: {
+        current_spending: 4,
+        budget_reset_at: '2026-12-01T00:00:00Z',
+        time_until_reset: '3 days',
+        budget_limit: 10,
+        total: 4,
+        spend_partial: false,
+        spend_missing_amount: 0,
+      },
+    } as Partial<ProjectDetail>)
+
+    for (const label of [
+      'Total budget',
+      'Budget period spend',
+      'Budget reset',
+      'Time until reset',
+      'Reset period',
+      'Member spend limits',
+    ]) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument()
+    }
+    expect(screen.queryByText('Active budgets')).not.toBeInTheDocument()
+  })
+})

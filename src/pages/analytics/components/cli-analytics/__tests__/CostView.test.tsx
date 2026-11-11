@@ -249,4 +249,59 @@ describe('CostView', () => {
 
     expect(screen.queryByTestId('session-modal')).not.toBeInTheDocument()
   })
+
+  describe('session cost cell', () => {
+    const renderSessionRow = (row: Partial<SessionRow>) => {
+      vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+        displayRows: [{ ...MOCK_ROW, ...row }],
+        loading: false,
+        error: null,
+        page: 1,
+        totalPages: 1,
+        perPage: 10,
+        setPage: vi.fn(),
+        search: '',
+        setSearch: vi.fn(),
+      })
+      return render(<CostView filters={MOCK_FILTERS} />)
+    }
+    const costCell = () => screen.getAllByRole('cell').at(-1) as HTMLElement
+
+    it('shows an unknown cost as a dash naming the unpriced models, never $0.00', () => {
+      renderSessionRow({
+        cost_usd: 0,
+        cost_available: false,
+        unpriced_models: ['mai-code-1.1-flash'],
+      })
+
+      expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+      expect(costCell()).toHaveTextContent(/^-/)
+      expect(costCell().querySelector('[data-tooltip-content]')).toHaveAttribute(
+        'data-tooltip-content',
+        'Cost unknown: no price for mai-code-1.1-flash'
+      )
+      expect(screen.getByText('Cost unknown: no price for mai-code-1.1-flash')).toBeInTheDocument()
+    })
+
+    it('marks a partly priced cost as understated', () => {
+      renderSessionRow({
+        cost_usd: 0.01617,
+        cost_available: true,
+        unpriced_models: ['mai-code-1.1-flash'],
+      })
+
+      expect(costCell()).toHaveTextContent('$0.02')
+      expect(screen.getByTestId('unpriced-cost-marker')).toHaveAttribute(
+        'data-tooltip-content',
+        'Understated: no price for mai-code-1.1-flash'
+      )
+    })
+
+    it('renders a legacy null cost as a dash, not $0.00', () => {
+      renderSessionRow({ cost_usd: null as unknown as number })
+
+      expect(costCell()).toHaveTextContent(/^-$/)
+      expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+    })
+  })
 })

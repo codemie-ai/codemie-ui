@@ -24,8 +24,9 @@ import ProjectModal from '../ProjectModal'
 
 // ─── Module mocks ──────────────────────────────────────────────────────────────
 
-const { useFeatureFlagMock, userStoreMock } = vi.hoisted(() => ({
+const { useFeatureFlagMock, budgetManagementMock, userStoreMock } = vi.hoisted(() => ({
   useFeatureFlagMock: vi.fn(() => [false, true] as [boolean, boolean]),
+  budgetManagementMock: vi.fn(() => [true, true] as [boolean, boolean]),
   userStoreMock: { user: { isAdmin: false, isMaintainer: false } },
 }))
 
@@ -41,6 +42,7 @@ vi.mock('@/store/costCenters', () => ({
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
   useFeatureFlag: () => useFeatureFlagMock(),
+  useBudgetManagementEnabled: () => budgetManagementMock(),
 }))
 
 vi.mock('@/components/Popup', () => ({
@@ -751,6 +753,47 @@ describe('ProjectModal — enforce member spend limits hint (EPMCDME-15634)', ()
 
   afterEach(() => {
     userStoreMock.user.isMaintainer = false
+    budgetManagementMock.mockReturnValue([true, true])
+  })
+
+  it('hides the enforce toggle from maintainers when budget management is disabled', () => {
+    budgetManagementMock.mockReturnValue([false, true])
+
+    renderModal({
+      project: {
+        id: 'proj-1',
+        name: 'existing-project',
+        display_name: 'Existing Project',
+        description: 'desc',
+        project_type: 'shared',
+        user_count: 2,
+        admin_count: 1,
+      } as any,
+    })
+
+    expect(screen.queryByTestId('switch-enforce_member_spend_limits-hint')).toBeNull()
+  })
+
+  it('shows a disabled stored-enforced toggle with the off hint when budget management is disabled', () => {
+    budgetManagementMock.mockReturnValue([false, true])
+
+    renderModal({
+      project: {
+        id: 'proj-1',
+        name: 'existing-project',
+        display_name: 'Existing Project',
+        description: 'desc',
+        project_type: 'shared',
+        user_count: 2,
+        admin_count: 1,
+        enforce_member_spend_limits: true,
+      } as any,
+    })
+
+    expect(screen.getByTestId('switch-input-enforce_member_spend_limits')).toBeDisabled()
+    expect(screen.getByTestId('switch-enforce_member_spend_limits-hint')).toHaveTextContent(
+      'Budget management is off'
+    )
   })
 
   it('states that individual overrides are always enforced and drops the "no individual cap" wording', () => {

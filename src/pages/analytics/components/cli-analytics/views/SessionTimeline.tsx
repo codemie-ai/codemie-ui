@@ -22,6 +22,7 @@ import { adjustLightness, getStatusColors } from '@/utils/chartColors'
 import { formatSpend } from '@/utils/currency'
 import { cn } from '@/utils/utils'
 
+import SessionCostValue from './SessionCostValue'
 import { formatDuration } from '../format'
 import { SESSION_STAT_LABEL_CLASS, SESSION_STAT_VALUE_CLASS } from '../sessionTypography'
 
@@ -56,12 +57,14 @@ interface SessionTimelineProps {
   sessionDurationMs: number
   // false when the session has no priced model: a dispatch's 0 cost is then unknown, not $0.
   costAvailable?: boolean
+  unpricedModels?: string[]
 }
 
 const SessionTimeline: FC<SessionTimelineProps> = ({
   dispatches,
   sessionDurationMs,
   costAvailable,
+  unpricedModels = [],
 }) => {
   const formatDispatchCost = (cost: number) =>
     costAvailable === false ? ABSENT_VALUE_MARKER : formatSpend(cost)
@@ -186,7 +189,6 @@ const SessionTimeline: FC<SessionTimelineProps> = ({
                     (dispatch.cache_creation_tokens ?? 0)
                 )
               : '—'
-          const costLabel = dispatch.cost_usd != null ? formatDispatchCost(dispatch.cost_usd) : '—'
           const hasBreakdown =
             dispatch.input_tokens != null ||
             dispatch.output_tokens != null ||
@@ -211,7 +213,13 @@ const SessionTimeline: FC<SessionTimelineProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className={SESSION_STAT_LABEL_CLASS}>Cost</p>
-                  <p className={SESSION_STAT_VALUE_CLASS}>{costLabel}</p>
+                  <p className={SESSION_STAT_VALUE_CLASS}>
+                    <SessionCostValue
+                      value={dispatch.cost_usd}
+                      costAvailable={costAvailable}
+                      unpricedModels={costAvailable === false ? unpricedModels : undefined}
+                    />
+                  </p>
                 </div>
                 <div>
                   <p className={SESSION_STAT_LABEL_CLASS}>Tokens</p>

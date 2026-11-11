@@ -34,27 +34,29 @@ const SessionCostValue: FC<SessionCostValueProps> = ({
 }) => {
   const names = unpricedModels.join(', ')
   if (costAvailable === false) {
-    const tooltip = names
+    const unknownLabel = names
       ? `Cost unknown: no price for ${names}`
       : 'Cost unknown: no price for this model'
     return (
-      <span data-tooltip-id="react-tooltip" data-tooltip-content={tooltip}>
+      <span data-tooltip-id="react-tooltip" data-tooltip-content={unknownLabel}>
         {ABSENT_VALUE_MARKER}
+        <span className="sr-only">{unknownLabel}</span>
       </span>
     )
   }
   const text = value != null ? formatSpend(value) : ABSENT_VALUE_MARKER
   if (!unpricedModels.length) return <>{text}</>
+  const understatedLabel = `Understated: no price for ${names}`
   return (
     <span className="inline-flex items-center gap-1">
       {text}
       <span
         data-testid="unpriced-cost-marker"
-        aria-label="Cost understated"
         data-tooltip-id="react-tooltip"
-        data-tooltip-content={`Understated: no price for ${names}`}
+        data-tooltip-content={understatedLabel}
       >
-        <AlertIcon className="w-3 h-3" />
+        <AlertIcon className="w-3 h-3" aria-hidden="true" />
+        <span className="sr-only">{understatedLabel}</span>
       </span>
     </span>
   )

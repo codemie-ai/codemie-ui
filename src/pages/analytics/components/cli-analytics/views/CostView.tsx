@@ -27,8 +27,8 @@ import {
 } from '@/types/analytics'
 import type { SessionRow } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
-import { formatSpend } from '@/utils/currency'
 
+import SessionCostValue from './SessionCostValue'
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
@@ -99,7 +99,13 @@ const TotalTokensCell: FC<{ row: SessionRow }> = ({ row }) => (
 )
 
 const CostCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="text-right">{formatSpend(row.cost_usd)}</div>
+  <div className="text-right">
+    <SessionCostValue
+      value={row.cost_usd}
+      costAvailable={row.cost_available}
+      unpricedModels={row.unpriced_models}
+    />
+  </div>
 )
 
 const SESSION_CELL_RENDERERS = {

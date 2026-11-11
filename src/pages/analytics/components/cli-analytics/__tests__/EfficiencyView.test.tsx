@@ -17,6 +17,7 @@ import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AnalyticsQueryParams } from '@/types/analytics'
+import type { SessionRow } from '@/types/cliAnalytics'
 
 import { useCliAnalyticsEfficiency } from '../hooks/useCliAnalyticsEfficiency'
 import { useCliAnalyticsSessions } from '../hooks/useCliAnalyticsSessions'
@@ -359,5 +360,74 @@ describe('EfficiencyView', () => {
     })
     render(<EfficiencyView filters={MOCK_FILTERS} />)
     expect(screen.getByTestId('metric-net_lines-value')).toHaveTextContent(expected)
+  })
+
+  describe('session cost cell', () => {
+    const MOCK_ROW: SessionRow = {
+      trace_id: 's1',
+      developer_name: 'dev',
+      repository: null,
+      start_time: '2026-07-01T00:00:00Z',
+      duration_ms: 1000,
+      model_name: 'mai-code-1.1-flash',
+      input_tokens: 10,
+      output_tokens: 10,
+      cost_usd: 0.01617,
+      tool_call_count: 0,
+      branch: null,
+      turns: 1,
+      ctx_per_call: 5,
+    }
+
+    const renderSessionRow = (row: Partial<SessionRow>) => {
+      vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+        displayRows: [{ ...MOCK_ROW, ...row }],
+        loading: false,
+        error: null,
+        page: 1,
+        totalPages: 1,
+        perPage: 10,
+        setPage: vi.fn(),
+        search: '',
+        setSearch: vi.fn(),
+      })
+      return render(<EfficiencyView filters={MOCK_FILTERS} />)
+    }
+    const costCell = () => {
+      const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
+      return screen.getAllByRole('cell')[headers.indexOf('Est. Cost')]
+    }
+
+    it('shows an unknown cost as a dash naming the unpriced models, never $0.00', () => {
+      renderSessionRow({
+        cost_usd: 0,
+        cost_available: false,
+        unpriced_models: ['mai-code-1.1-flash'],
+      })
+
+      expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+      expect(costCell()).toHaveTextContent(/^-/)
+      expect(costCell().querySelector('[data-tooltip-content]')).toHaveAttribute(
+        'data-tooltip-content',
+        'Cost unknown: no price for mai-code-1.1-flash'
+      )
+    })
+
+    it('marks a partly priced cost as understated', () => {
+      renderSessionRow({ cost_available: true, unpriced_models: ['mai-code-1.1-flash'] })
+
+      expect(costCell()).toHaveTextContent('$0.02')
+      expect(screen.getByTestId('unpriced-cost-marker')).toHaveAttribute(
+        'data-tooltip-content',
+        'Understated: no price for mai-code-1.1-flash'
+      )
+    })
+
+    it('renders a legacy null cost as a dash, not $0.00', () => {
+      renderSessionRow({ cost_usd: null as unknown as number })
+
+      expect(costCell()).toHaveTextContent(/^-$/)
+      expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+    })
   })
 })

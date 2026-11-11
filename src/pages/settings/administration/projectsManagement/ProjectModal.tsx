@@ -25,7 +25,7 @@ import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import Popup from '@/components/Popup'
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
-import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+import { useBudgetManagementEnabled, useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { costCentersStore } from '@/store/costCenters'
 import { userStore } from '@/store/user'
 import { ChargebackAttribution, Project, ProjectType } from '@/types/entity/project'
@@ -85,12 +85,14 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
     project.project_type !== ProjectType.PERSONAL
   const canWriteCliAnalytics = isAdmin || isMaintainer
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAGS.COST_CENTERS)
+  const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const [costCenterOptions, setCostCenterOptions] = useState<FilterOption[]>([])
 
   const {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ProjectModalFormValues>({
     resolver: yupResolver(validationSchema) as any,
@@ -103,6 +105,8 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
       cli_analytics_enabled: false,
     },
   })
+
+  const enforceMemberSpendLimits = watch('enforce_member_spend_limits')
 
   useEffect(() => {
     if (visible && project) {
@@ -296,7 +300,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
           />
         )}
 
-        {isEdit && isMaintainer && (
+        {isEdit && isMaintainer && (isBudgetManagementEnabled || enforceMemberSpendLimits) && (
           <Controller
             name="enforce_member_spend_limits"
             control={control}
@@ -304,8 +308,13 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
               <Switch
                 id="enforce_member_spend_limits"
                 label="Enforce member spend limits"
-                hint="Disabled: members draw from the shared project budget, unless a member has an individual override, which is always enforced. Enabled: enforce each member's configured allocation limit."
+                hint={
+                  isBudgetManagementEnabled
+                    ? "Disabled: members draw from the shared project budget, unless a member has an individual override, which is always enforced. Enabled: enforce each member's configured allocation limit."
+                    : 'Budget management is off. This stored setting stays in effect and cannot be changed here.'
+                }
                 value={value}
+                disabled={!isBudgetManagementEnabled}
                 onBlur={onBlur}
                 ref={ref}
                 onChange={(event) => onChange((event.target as HTMLInputElement).checked)}

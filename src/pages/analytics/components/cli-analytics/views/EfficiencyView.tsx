@@ -30,9 +30,9 @@ import type {
   SessionRow,
 } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
-import { formatMetricValue } from '@/utils/analyticsFormatters'
-import { formatSpend } from '@/utils/currency'
+import { formatMetricValue, formatTokens } from '@/utils/analyticsFormatters'
 
+import SessionCostValue from './SessionCostValue'
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import BarChartWidget from '../../widgets/BarChartWidget'
@@ -204,9 +204,19 @@ const SESSION_CUSTOM_COLS = {
     </div>
   ),
   cache_read: (row: SessionRow) => (
-    <div className="text-right">{(row.cache_read_tokens ?? 0).toLocaleString()}</div>
+    <div className="text-sm text-text-primary tabular-nums">
+      {formatTokens(row.cache_read_tokens ?? 0)}
+    </div>
   ),
-  cost: (row: SessionRow) => <div className="text-right">{formatSpend(row.cost_usd)}</div>,
+  cost: (row: SessionRow) => (
+    <div className="text-sm text-text-primary tabular-nums">
+      <SessionCostValue
+        value={row.cost_usd}
+        costAvailable={row.cost_available}
+        unpricedModels={row.unpriced_models}
+      />
+    </div>
+  ),
   bloat: (row: SessionRow) => (
     <div className="text-right">
       {row.bloat_pct != null ? formatMetricValue(row.bloat_pct, MetricFormat.PERCENTAGE) : '—'}

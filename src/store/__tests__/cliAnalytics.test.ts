@@ -138,4 +138,60 @@ describe('cliAnalyticsStore unpriced models', () => {
       [],
     ])
   })
+
+  it('fetchSessions keeps the store unchanged when the body has no data key', async () => {
+    cliAnalyticsStore.sessions = null
+    respondWith({ metadata: { unpriced_models: ['mai-code-1.1-flash'] } })
+
+    await expect(cliAnalyticsStore.fetchSessions({})).resolves.toBeUndefined()
+
+    expect(cliAnalyticsStore.sessions).toBeNull()
+    expect(cliAnalyticsStore.loading.sessions).toBe(false)
+  })
+
+  it('fetchSessionDetail records nothing when the body has no data key', async () => {
+    respondWith({ metadata: { unpriced_models: ['mai-code-1.1-flash'] } })
+
+    await cliAnalyticsStore.fetchSessionDetail('t3')
+
+    expect(cliAnalyticsStore.sessionDetail.t3).toBeUndefined()
+    expect(cliAnalyticsStore.loading['session:t3']).toBe(false)
+  })
+
+  it.each([
+    ['bedrock/converse/eu.anthropic.claude-haiku-4-5-20251001-v1:0', 'claude-haiku-4-5-20251001'],
+    ['bedrock/invoke/us.anthropic.claude-opus-4-1-20250805-v1:0', 'claude-opus-4-1-20250805'],
+    ['invoke/anthropic.claude-sonnet-4-6', 'claude-sonnet-4-6'],
+    ['claude-sonnet-4-6', 'claude-sonnet-4-6'],
+  ])('matches raw backend model %s to the normalized row model %s', async (raw, normalized) => {
+    respondWith({
+      data: {
+        sessions: [sessionRow('t1', `claude-sonnet-4-6, ${normalized}`)],
+        page: 0,
+        per_page: 20,
+        total: 1,
+      },
+      metadata: { unpriced_models: [raw] },
+    })
+
+    await cliAnalyticsStore.fetchSessions({})
+
+    expect(cliAnalyticsStore.sessions?.sessions[0].unpriced_models).toEqual([raw])
+  })
+
+  it('ignores empty segments in a row model list and empty unpriced names', async () => {
+    respondWith({
+      data: {
+        sessions: [sessionRow('t1', 'claude-sonnet-4-6, , mai-code-1.1-flash,')],
+        page: 0,
+        per_page: 20,
+        total: 1,
+      },
+      metadata: { unpriced_models: ['', 'mai-code-1.1-flash'] },
+    })
+
+    await cliAnalyticsStore.fetchSessions({})
+
+    expect(cliAnalyticsStore.sessions?.sessions[0].unpriced_models).toEqual(['mai-code-1.1-flash'])
+  })
 })

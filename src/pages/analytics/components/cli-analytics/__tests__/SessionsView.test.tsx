@@ -359,7 +359,7 @@ describe('SessionsView', () => {
       renderRow({ cost_usd: 0, cost_available: false, unpriced_models: ['mai-code-1.1-flash'] })
 
       expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
-      expect(costCell()).toHaveTextContent(/^-$/)
+      expect(costCell()).toHaveTextContent(/^-/)
       expect(costCell().querySelector('[data-tooltip-content]')).toHaveAttribute(
         'data-tooltip-content',
         'Cost unknown: no price for mai-code-1.1-flash'

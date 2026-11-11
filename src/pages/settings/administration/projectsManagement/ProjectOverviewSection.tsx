@@ -447,28 +447,37 @@ const ProjectOverviewSection: FC<Props> = ({
               </button>
             </div>
             <div className="min-h-0 flex-1 rounded-lg border border-border-structural bg-surface-base-secondary p-4">
-              <div className="mb-5">
-                <InfoItem label="Total budget" value={formatCurrency(totalBudget ?? null)} />
-              </div>
+              {canViewBudgets && (
+                <div className="mb-5">
+                  <InfoItem label="Total budget" value={formatCurrency(totalBudget ?? null)} />
+                </div>
+              )}
               <div className="grid grid-cols-2 content-start gap-x-5 gap-y-5">
-                <InfoItem
-                  label="Budget period spend"
-                  value={formatCurrency(spending?.current_spending)}
-                />
-                <InfoItem
-                  label="Budget reset"
-                  value={
-                    spending?.budget_reset_at
-                      ? formatDateTime(spending.budget_reset_at, 'short')
-                      : '—'
-                  }
-                />
-                <InfoItem label="Time until reset" value={spending?.time_until_reset ?? '—'} />
-                <InfoItem label="Reset period" value={projectBudgets[0]?.budget_duration || '—'} />
-                <InfoItem
-                  label="Member spend limits"
-                  value={project.enforce_member_spend_limits ? 'Enabled' : 'Disabled'}
-                />
+                {canViewBudgets && (
+                  <>
+                    <InfoItem
+                      label="Budget period spend"
+                      value={formatCurrency(spending?.current_spending)}
+                    />
+                    <InfoItem
+                      label="Budget reset"
+                      value={
+                        spending?.budget_reset_at
+                          ? formatDateTime(spending.budget_reset_at, 'short')
+                          : '—'
+                      }
+                    />
+                    <InfoItem label="Time until reset" value={spending?.time_until_reset ?? '—'} />
+                    <InfoItem
+                      label="Reset period"
+                      value={projectBudgets[0]?.budget_duration || '—'}
+                    />
+                    <InfoItem
+                      label="Member spend limits"
+                      value={project.enforce_member_spend_limits ? 'Enabled' : 'Disabled'}
+                    />
+                  </>
+                )}
                 {isChargebackFeatureEnabled && (
                   <InfoItem
                     label="Chargeback"
@@ -487,7 +496,7 @@ const ProjectOverviewSection: FC<Props> = ({
           </section>
         </div>
 
-        {!isPersonalProject && (
+        {!isPersonalProject && canViewBudgets && (
           <section>
             <div className="mb-3 flex items-center justify-between gap-4">
               <div className="flex min-w-0 items-baseline gap-3">

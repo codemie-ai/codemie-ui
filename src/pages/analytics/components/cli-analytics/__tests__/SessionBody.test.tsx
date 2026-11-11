@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ABSENT_VALUE_MARKER } from '@/constants'
@@ -23,8 +23,16 @@ import SessionBody from '../views/SessionBody'
 
 vi.mock('react-chartjs-2', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-chartjs-2')>()),
-  Line: ({ data }: { data: { datasets: { label: string }[] } }) => (
-    <div data-testid="growth-chart">{data.datasets.map((d) => d.label).join('|')}</div>
+  Line: ({
+    data,
+    options,
+  }: {
+    data: { datasets: { label: string }[] }
+    options: { scales: { y: { display?: boolean } } }
+  }) => (
+    <div data-testid="growth-chart" data-y-display={String(options.scales.y.display ?? true)}>
+      {data.datasets.map((d) => d.label).join('|')}
+    </div>
   ),
 }))
 
@@ -68,6 +76,7 @@ describe('SessionBody cost cards (EPMCDME-16522)', () => {
         'Cost unknown: no price for mai-code-1.1-flash'
       )
     }
+    expect(screen.getAllByText('Cost unknown: no price for mai-code-1.1-flash')).toHaveLength(2)
   })
 
   it('marks a partly priced cost and cache-read as understated', () => {
@@ -81,6 +90,7 @@ describe('SessionBody cost cards (EPMCDME-16522)', () => {
         'Understated: no price for mai-code-1.1-flash'
       )
     }
+    expect(screen.getAllByText('Understated: no price for mai-code-1.1-flash')).toHaveLength(2)
   })
 
   it('renders a fully priced session with formatted values and no marker', () => {
@@ -132,6 +142,7 @@ describe('SessionBody chart and timeline cost (EPMCDME-16522)', () => {
 
     expect(screen.getByTestId('growth-chart')).toHaveTextContent('Tokens')
     expect(screen.getByTestId('growth-chart')).not.toHaveTextContent('Cost')
+    expect(screen.getByTestId('growth-chart')).toHaveAttribute('data-y-display', 'false')
     expect(screen.queryAllByText('$0.00')).toHaveLength(0)
     const row = screen.getByRole('button', { name: /Explore/ })
     expect(row.getAttribute('title')).not.toContain('$')
@@ -147,6 +158,32 @@ describe('SessionBody chart and timeline cost (EPMCDME-16522)', () => {
     })
 
     expect(screen.getByTestId('growth-chart')).toHaveTextContent('Cost ($)')
+    expect(screen.getByTestId('growth-chart')).toHaveAttribute('data-y-display', 'true')
     expect(screen.getAllByText('$0.00').length).toBeGreaterThan(0)
+  })
+
+  it('labels the cost series as understated for a partly priced session', () => {
+    renderSession({
+      cost_available: true,
+      unpriced_models: ['mai-code-1.1-flash'],
+      events: EVENTS,
+    })
+
+    expect(screen.getByTestId('growth-chart')).toHaveTextContent('Cost ($, understated)')
+  })
+
+  it('does not qualify dispatch costs of a partly priced session', () => {
+    renderSession({
+      cost_available: true,
+      unpriced_models: ['mai-code-1.1-flash'],
+      events: EVENTS,
+      dispatches: DISPATCHES,
+    })
+
+    const row = screen.getByRole('button', { name: /Explore/ })
+    expect(row.getAttribute('title')).not.toContain('understated')
+    const panel = screen.getByText('Token Breakdown').closest('.w-52') as HTMLElement
+    expect(within(panel).getByText('$0.00')).toBeInTheDocument()
+    expect(within(panel).queryByTestId('unpriced-cost-marker')).not.toBeInTheDocument()
   })
 })

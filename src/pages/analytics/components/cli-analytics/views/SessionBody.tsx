@@ -141,8 +141,8 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
   ]
 
   // Unknown or understated money replaces the plain value; a fully priced session renders it as is.
-  const costIsQualified =
-    session.cost_available === false || (session.unpriced_models?.length ?? 0) > 0
+  const costIsUnderstated = (session.unpriced_models?.length ?? 0) > 0
+  const costIsQualified = session.cost_available === false || costIsUnderstated
   const costOverrides: Record<string, number | null | undefined> = {
     cost_usd: session.cost_usd,
     cache_read_cost: session.cache_read_cost_usd,
@@ -276,7 +276,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
                     ? []
                     : [
                         {
-                          label: 'Cost ($)',
+                          label: costIsUnderstated ? 'Cost ($, understated)' : 'Cost ($)',
                           data: growthData.costSeries,
                           borderColor: '#7C5CFC',
                           backgroundColor: 'rgba(124,92,252,0.1)',
@@ -317,6 +317,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
           dispatches={session.dispatches ?? []}
           sessionDurationMs={session.duration_ms}
           costAvailable={session.cost_available}
+          unpricedModels={session.unpriced_models}
         />
       </AnalyticsWidget>
 

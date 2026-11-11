@@ -46,7 +46,11 @@ const normalizeModelName = (model: string): string =>
 // The list metadata names unpriced models for the whole page; keep on each row the ones it used.
 const withRowUnpricedModels = (row: SessionRow, unpriced: string[]): SessionRow => {
   const models = new Set(
-    row.model_name ? row.model_name.split(',').map((name) => normalizeModelName(name.trim())) : []
+    (row.model_name ?? '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .map(normalizeModelName)
   )
   return {
     ...row,
@@ -251,11 +255,11 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       params,
       'Failed to fetch local analytics sessions'
     )
-    if (data) {
+    if (data?.data) {
       const unpriced = data.metadata?.unpriced_models ?? []
       cliAnalyticsStore.sessions = {
         ...data.data,
-        sessions: data.data.sessions.map((row) => withRowUnpricedModels(row, unpriced)),
+        sessions: (data.data.sessions ?? []).map((row) => withRowUnpricedModels(row, unpriced)),
       }
     }
   },
@@ -317,7 +321,7 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       undefined,
       'Failed to fetch session detail'
     )
-    if (data) {
+    if (data?.data) {
       cliAnalyticsStore.sessionDetail[traceId] = {
         ...data.data,
         unpriced_models: data.metadata?.unpriced_models ?? [],

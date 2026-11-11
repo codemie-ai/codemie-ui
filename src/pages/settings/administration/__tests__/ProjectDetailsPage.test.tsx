@@ -148,6 +148,10 @@ describe('ProjectDetailsPage', () => {
     projectDisplayNamesStore.invalidate = vi.fn()
   })
 
+  afterEach(() => {
+    budgetManagementFlag.mockReturnValue([false, true])
+  })
+
   it('renders ProjectMembersManager with the loaded project', async () => {
     routeState.name = 'projects-management-members'
     render(<ProjectDetailsPage />)
@@ -265,7 +269,6 @@ describe('ProjectDetailsPage', () => {
         pending.resolve(mockProject)
         await refresh
       })
-      budgetManagementFlag.mockReturnValue([false, true])
     })
   })
 
@@ -325,6 +328,7 @@ describe('ProjectDetailsPage', () => {
   })
 
   it('renders project member budget tracking status', async () => {
+    budgetManagementFlag.mockReturnValue([true, true])
     render(<ProjectDetailsPage />)
 
     expect(await screen.findByText('Member spend limits')).toBeInTheDocument()

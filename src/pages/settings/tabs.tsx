@@ -32,11 +32,7 @@ import {
 // Enterprise-only admin items. Users management is intentionally NOT part of this list —
 // it is available to Admin, Maintainer, and Auditor regardless of Enterprise Edition,
 // gated only by the `features:userManagement` flag (see `usersManagementTab` below).
-const getEnterpriseAdminItems = (
-  isMcpFeatureEnabled: boolean,
-  budgetsManagementTab: LayoutTab[]
-): LayoutTab[] => [
-  ...budgetsManagementTab,
+const getEnterpriseAdminItems = (isMcpFeatureEnabled: boolean): LayoutTab[] => [
   {
     id: SettingsTab.CATEGORIES_MANAGEMENT,
     name: 'Categories management',
@@ -101,6 +97,7 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
         : []),
       ctx.projectsTab,
       ...ctx.usersManagementTab,
+      ...ctx.budgetsManagementTab,
       ...(ctx.isMarketplaceMgmtEnabled
         ? [
             {
@@ -116,9 +113,7 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
             },
           ]
         : []),
-      ...(ctx.isEnterprise
-        ? getEnterpriseAdminItems(ctx.isMcpFeatureEnabled, ctx.budgetsManagementTab)
-        : []),
+      ...(ctx.isEnterprise ? getEnterpriseAdminItems(ctx.isMcpFeatureEnabled) : []),
     ].sort((a, b) => a.name.localeCompare(b.name))
   }
   if (ctx.isAuditor) {
