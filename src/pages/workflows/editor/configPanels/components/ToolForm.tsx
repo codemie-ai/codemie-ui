@@ -45,6 +45,7 @@ import ToolSelector from './ToolSelector'
 import ToolStepConfigFields from './ToolStepConfigFields'
 import { useWorkflowContext } from '../../hooks/useWorkflowContext'
 import { registerFields } from '../../utils/visualEditorFieldRegistry'
+import { isRequiredValueMissing } from '../utils/formUtils'
 
 registerFields(
   [
@@ -96,7 +97,7 @@ export interface ToolFormRef {
   reset: () => void
 }
 
-const getValidationSchema = (requiredFields: string[]) => {
+export const getValidationSchema = (requiredFields: string[]) => {
   const toolArgsValidation =
     requiredFields.length > 0
       ? Yup.mixed<Record<string, unknown>>().test(
@@ -106,14 +107,9 @@ const getValidationSchema = (requiredFields: string[]) => {
             if (!value) return requiredFields.length === 0
 
             const argsObj = value as Record<string, unknown>
-            const missingFields = requiredFields.filter((fieldName) => {
-              const fieldValue = argsObj[fieldName]
-              return (
-                !fieldValue ||
-                (Array.isArray(fieldValue) && fieldValue.length === 0) ||
-                fieldValue === ''
-              )
-            })
+            const missingFields = requiredFields.filter((fieldName) =>
+              isRequiredValueMissing(argsObj[fieldName])
+            )
 
             if (missingFields.length > 0) {
               return this.createError({
@@ -214,13 +210,8 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
           if (schemaRequiredFields.length > 0 && toolArgs) {
             const argsObj = toolArgs as Record<string, unknown>
             schemaRequiredFields.forEach((fieldName) => {
-              const fieldValue = argsObj[fieldName]
-              const isEmpty =
-                !fieldValue ||
-                (Array.isArray(fieldValue) && fieldValue.length === 0) ||
-                fieldValue === ''
-
-              if (isEmpty) errors[fieldName] = 'Field is required'
+              if (isRequiredValueMissing(argsObj[fieldName]))
+                errors[fieldName] = 'Field is required'
             })
           }
 

@@ -184,6 +184,7 @@ const DynamicFieldsForm: React.FC<DynamicFieldsFormProps> = ({
             onChange={(val) => handleFieldChange(fieldName, val)}
             error={error}
             isAIGenerated={false}
+            required={required}
             ref={issueField?.ref as Ref<HTMLInputElement>}
           />
         )

@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15960_workflow-required-list-a11y",
+  "head": "ce5f7e28f8dbe7d2fbdc49bb8192ef02213a0cde",
+  "runner": "npm",
+  "started_at": "2026-10-23T10:23:17Z",
+  "completed_at": "2026-10-23T10:29:15Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 14316,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13469,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip-if met: no dependency added, removed, or moved (package.json / package-lock.json unchanged vs merge_base)."
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 3583,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 116209,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 725 passed (725); Tests 7337 passed | 1 skipped (7338)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 58938,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 52 passed (52); Tests 572 passed | 1 skipped (573)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 37368,
+      "command": "npm run test-harness",
+      "exit_code": 1,
+      "notes": "Self-skip: no local CodeMie stack running \u2014 harness tried 'API Domain: http://localhost:8080' and every test ERRORed, then the results reporter raised requests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response')). Also missing ~/.codemie/test-harness.json. To run for real: bring up the stack at localhost:8080 and provide ~/.codemie/test-harness.json credentials. A gate that could not run is unverified, not passed \u2014 this is the MR compliance gate and is still owed before merge."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision. Diff touches ui_globs (.tsx files under src/components and src/pages). The guide's own 'test-harness' gate (sanity-ui browser suite) targets this but was itself SKIPPED in this run for lack of a running stack; it remains the owed browser-verification evidence, not this bookkeeping entry."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 495,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2387 files, 0 missing license headers. Husky pre-commit chain step not already covered by the guide's license-check gate (that gate checks dependency licences, not source headers)."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 158,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip, exact output: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN in the environment to run this locally. Husky pre-commit chain step; still owed before merge since this run could not exercise it."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 3431,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip, exact output: '\u2192 No staged files found.' Working tree has no staged changes at run time (git status showed only the untracked run_dir). Stage the changed files with 'git add' to exercise this gate; it duplicates eslint/prettier/tsc already exercised in full by the lint and typecheck gates above."
+    }
+  ],
+  "failures": {}
+}

@@ -37,6 +37,7 @@ import {
 import CustomNodeSelector from './CustomNodeSelector'
 import FieldController from './FieldController'
 import { registerFields } from '../../utils/visualEditorFieldRegistry'
+import { isRequiredValueMissing } from '../utils/formUtils'
 
 registerFields(['name', 'custom_node_id', 'model', 'system_prompt', /^config\./], NodeTypes.CUSTOM)
 
@@ -63,7 +64,7 @@ export interface CustomNodeFormRef {
   reset: () => void
 }
 
-const getValidationSchema = (requiredFields: string[]) => {
+export const getValidationSchema = (requiredFields: string[]) => {
   const configValidation =
     requiredFields.length > 0
       ? Yup.mixed<CustomNodeConfigurationValues>().test(
@@ -71,14 +72,9 @@ const getValidationSchema = (requiredFields: string[]) => {
           'Required fields are missing',
           function (value) {
             const configObj = (value ?? {}) as Record<string, unknown>
-            const missingFields = requiredFields.filter((fieldName) => {
-              const fieldValue = configObj[fieldName]
-              return (
-                !fieldValue ||
-                (Array.isArray(fieldValue) && fieldValue.length === 0) ||
-                fieldValue === ''
-              )
-            })
+            const missingFields = requiredFields.filter((fieldName) =>
+              isRequiredValueMissing(configObj[fieldName])
+            )
 
             return (
               missingFields.length === 0 ||
@@ -153,13 +149,8 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
           if (schemaRequiredFields.length > 0 && config) {
             const configObj = config as Record<string, unknown>
             schemaRequiredFields.forEach((fieldName) => {
-              const fieldValue = configObj[fieldName]
-              const isEmpty =
-                !fieldValue ||
-                (Array.isArray(fieldValue) && fieldValue.length === 0) ||
-                fieldValue === ''
-
-              if (isEmpty) errors[fieldName] = 'Field is required'
+              if (isRequiredValueMissing(configObj[fieldName]))
+                errors[fieldName] = 'Field is required'
             })
           }
 

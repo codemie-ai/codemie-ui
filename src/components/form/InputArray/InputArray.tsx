@@ -35,6 +35,7 @@ interface InputArrayProps {
   maxLength?: number
   value: string[]
   className?: string
+  required?: boolean
   onChange?: (value: string[]) => void
 }
 
@@ -51,6 +52,7 @@ const InputArray = forwardRef<HTMLInputElement, InputArrayProps>(
       maxLength,
       value,
       className,
+      required,
       onChange,
       ...rest
     },
@@ -107,6 +109,11 @@ const InputArray = forwardRef<HTMLInputElement, InputArrayProps>(
               className="text-sm font-mono text-text-quaternary flex items-center gap-2"
             >
               {label}
+              {required && (
+                <span className="text-text-error input-label-required ml-0.5" aria-hidden="true">
+                  *
+                </span>
+              )}
               {hint && <TooltipButton content={hint} />}
             </label>
           )}
@@ -119,6 +126,18 @@ const InputArray = forwardRef<HTMLInputElement, InputArrayProps>(
             <PlusSvg /> Add
           </Button>
         </div>
+
+        {required && value.length === 0 && (
+          <input
+            type="text"
+            className="sr-only"
+            value=""
+            readOnly
+            tabIndex={-1}
+            aria-required="true"
+            aria-label={label ? `${label.replace(/s$/, '')} required` : 'Required field'}
+          />
+        )}
 
         {value.map((item, index) => {
           const itemError = itemErrors?.[index]
@@ -141,6 +160,7 @@ const InputArray = forwardRef<HTMLInputElement, InputArrayProps>(
                   fullWidth
                   value={item}
                   name={name}
+                  required={required}
                   onChange={(e) => handleItemChange(index, e.target.value)}
                   containerClass="!rounded-r-none !border-0 !bg-transparent"
                   rightIcon={isAIGenerated && <AIFieldSvg />}

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "generated": "2026-10-23T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk": { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 1, "label": "XS" }
+  },
+  "total": 13,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 8,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Diffstat reports 8 files changed (257 insertions(+), 1 deletion(-)), mapping to the L band by file count, though most of the volume is new/expanded test coverage rather than production logic: InputArray.tsx, DynamicFieldsForm.tsx and ToolForm.tsx are the only non-test files touched."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Primary change is to InputArray (adds required prop, persistent asterisk, aria-required on rows, and a hidden aria-required placeholder control for empty required lists), forwarded one layer up through DynamicFieldsForm. Bumped from S to M because InputArray is a shared/core form component consumed by multiple workflow-editor forms (ToolForm/ToolArgumentsForm, CustomNodeArgumentsForm), so the blast radius is wider than a single self-contained component edit."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Extends an already-established required-field pattern (asterisk + aria-required already used by Input, MultiSelect, ExpandableTextarea per DynamicFieldsForm.tsx) to InputArray's array-of-inputs shape. The only semi-novel piece is the hidden sr-only placeholder control used to expose aria-required when the required list is empty (no rendered items to attach it to); this is additive, easily reversible, and accessibility-only (no security/performance implications). ToolForm.tsx's existing Yup `required-fields` test (AC5) was verified by new tests rather than changed."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from S to M: InputArray is a shared/core form component reused across ToolForm, CustomNodeArgumentsForm, and DynamicFieldsForm consumers."
+  ],
+  "split_recommendation": null
+}

@@ -35,6 +35,17 @@ export const buildCommonStateConfig = (
 }
 
 /**
+ * A required argument counts as missing when it is empty, or when it is a list
+ * whose every row is blank (InputArray's Add button appends '' rows).
+ */
+export const isRequiredValueMissing = (value: unknown): boolean => {
+  if (Array.isArray(value)) {
+    return value.every((item) => item == null || (typeof item === 'string' && item.trim() === ''))
+  }
+  return !value
+}
+
+/**
  * Normalizes boolean fields for backend:
  * - true (default) → undefined (backend interprets as true)
  * - false → false (explicitly set to false)
