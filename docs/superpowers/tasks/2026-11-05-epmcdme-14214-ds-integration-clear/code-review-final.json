@@ -1,0 +1,188 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "request-changes",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved after fix-up and check re-review: CR-001/002/004 resolved; CR-003 accepted (repo '' vs index None equivalent)"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "Fix CR-001 (edit auto-select regression on project change) and CR-004 (test annotations); accept CR-002 and CR-003"
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved after fix-up and check re-review: CR-001/002/004 resolved; CR-003 accepted (repo '' vs index None equivalent)"
+    }
+  ],
+  "reviewed_head": "c54a948622e1172fe9e6aba59c2afecffabfee64",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "3 of 4 prior blocking findings are resolved at HEAD (CR-001, CR-002, CR-004). CR-003 is unresolved: _repository_support.py was not changed, and the user's won't-fix decision cannot resolve a code-kind finding, so the user still has to sign off on it. All 4 were graded against current source; deferred items were not re-checked; business and standards rows are carried forward from the final round.",
+  "confidence": "low",
+  "check_confidence": "medium",
+  "risk_flags": [
+    "public-api",
+    "breaking-change"
+  ],
+  "open": 0,
+  "closed": {
+    "fixed": 3,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 1
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "../codemie-ui/src/pages/dataSources/components/DataSourceForm/hooks/useEditPopup.ts",
+      "line": 122,
+      "title": "Edit-mode project change keeps stale integration",
+      "problem": "The new `if (getValues('isEditing')) return` sits inside the single-option branch of an effect keyed on [projectName, indexType]. On edit, when the user moves the datasource to another project (or type) that has exactly one integration, the effect now returns early. It neither auto-selects the new project's integration nor reaches the else-if that resets setting_id on project change. The old project's setting_id stays in the form: the dropdown shows its placeholder because the id is not among the new project's settings, but the yup 'required' rule passes and the stale id is submitted. The new useEditPopup tests hold projectName constant, so this branch is never exercised.",
+      "impact": "Before this change the new project's only integration was auto-selected. Now an edit with a project change submits an integration that belongs to a different project, and the backend resolves credentials against the new project with that foreign id. The result is a failed credential lookup or a datasource bound to another project's credentials, while the UI shows no integration selected.",
+      "recommendation": "Skip the single-option auto-select on edit only while the datasource context is unchanged (projectName equals the saved project and indexType is unchanged). When projectName or indexType changes during an edit, reset setting_id to '' (and use '' rather than undefined at line 138), so the old project's integration is never resubmitted. Add useEditPopup tests for an edit with a project change: one option, and several options.",
+      "status": "resolved",
+      "check_notes": "useEditPopup.ts:122-130 records the loaded project on edit and allows single-option auto-select once the project changes; ref is set on mount since reset runs earlier; new test covers it.",
+      "fix": {
+        "change": "useEditPopup records the loaded project on edit; single-option auto-select is skipped only until the project changes, then behaves as before (codemie-ui c54a94862)",
+        "test": "useEditPopup.test.ts: auto-selects the new project integration when the project changes on edit"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/codemie/rest_api/models/index.py",
+      "line": 942,
+      "title": "Empty setting_id now clears integration on every route",
+      "problem": "IndexInfo.update_index changed from `if setting_id:` to `if setting_id is not None: self.setting_id = setting_id or None`, so setting_id='' now clears the stored integration for every caller, not only git, git FAQ and SVN. The public KB update routes for Jira, Confluence and Xray (kb_atlassian.py:240/333/409), Azure DevOps (kb_azure_devops.py:122/232), XWiki (kb_xwiki.py:140) and SharePoint pass request.setting_id straight through. The update request models accept '' (Optional[str], no min_length). In the same handlers, the credential lookup still reads '' as 'use the stored integration': kb_atlassian.py:304-308 uses `request.setting_id or kb_index.setting_id`. No test sends '' to any of these routes.",
+      "impact": "This is a public API contract change. Before, '' was a no-op on these routes. Now a client that sends setting_id='' to a Jira or Confluence update gets 200: validation and the reindex run with the old integration's credentials, but the index is saved with setting_id=None. The datasource is left with no credentials even though the UI marks these types as integration-required, and later scheduled reindexes resolve credentials from None.",
+      "recommendation": "Scope the '' clears-integration semantic to the datasource types that may have no integration (git code, git FAQ, SVN). Either normalize '' to None only in those routers/helpers and restore the old no-op in update_index, or reject '' with 422 on integration-required KB update routes (Jira, Confluence, Xray, XWiki, Azure DevOps Wiki/Work Item, SharePoint integration auth). Make each route's credential lookup use the same effective setting_id it stores. Add a router test that sends setting_id='' to the Jira update route and asserts both the stored setting_id and the id passed to get_jira_creds.",
+      "status": "resolved",
+      "check_notes": "update_index ignores '' unless _integration_is_optional (code/SVN or GIT_FAQ); kb_git_faq passes '' through; new test keeps Jira setting_id on ''.",
+      "fix": {
+        "change": "update_index: truthy setting_id sets it; '' clears only when _integration_is_optional() (code index or Git FAQ), otherwise ignored as on main (codemie 805677a5d)",
+        "test": "test_index_info.py::test_update_index_empty_setting_id_keeps_integration_for_required_type"
+      },
+      "disposition": {
+        "rationale": "Accepted by user: '' = clear on update for all types is the agreed contract (no opt-in flag). The UI cannot send '' for required types because Yup blocks it, and no client sends '' to mean \"not provided\".",
+        "source": "hitl"
+      }
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/rest_api/routers/index/_repository_support.py",
+      "line": 92,
+      "title": "Repo rows store '' while index stores None",
+      "problem": "For SVN, repo_updates passes setting_id='' through the `is not None` filter, so SVNRepo.setting_id becomes ''. For Git, the _REPO_FIELD_MAP loop sets GitRepo.setting_id to ''. IndexInfo, meanwhile, now stores None. The new tests (test_repository_support.py, test_index.py) assert `not repo.setting_id` rather than `is None`, so they accept the divergence. Clearing on SVN edit is new with this change: the UI previously sent undefined.",
+      "impact": "Index and repository disagree on 'no integration'. repo.setting_id is forwarded to credential lookups (svn_index_service.py:76, svn_datasource_processor.py:138, code_repositories.py:272/380, docs_generation_service.py:178), where '' and None may be handled differently. Reachability of a distinct failure on '' was unconfirmed.",
+      "recommendation": "Normalize '' to None for setting_id before writing it to the SVNRepo (repo_updates in _update_svn_index_and_repo_fields) and to the GitRepo (_REPO_FIELD_MAP loop in _handle_index_and_repository_update), so the repo and the index agree. Tighten test_repository_support.py and test_update_index_empty_setting_id_clears_index_and_repo to assert `repo.setting_id is None`.",
+      "status": "wont-fix",
+      "check_notes": "_repository_support.py not in changed_files; repo still stores '' vs index None. User recorded won't-fix, but a decision cannot resolve a code-kind finding.",
+      "disposition": {
+        "rationale": "Accepted by user: repo row '' and index None are equivalent. Every credential check uses a falsy test (if not setting_id), so both mean \"no integration\".",
+        "source": "hitl"
+      }
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "tests/codemie/rest_api/routers/test_repository_support.py",
+      "line": 53,
+      "title": "New SVN test functions lack type annotations",
+      "problem": "code-quality.md (Types And Imports) lists untyped public functions in new code as Avoid. The new file test_repository_support.py annotates its fixtures and _update helper, but test_update_svn_fields_empty_setting_id_clears_index_and_repo (line 53) and test_update_svn_fields_none_setting_id_keeps_integration (line 60) have no parameter or return annotations. Ruff's selected rules do not include ANN, so no gate enforces this.",
+      "impact": "This violates a documented code-quality standard in new code, and is inconsistent with the new tests in test_index.py added by the same change, which are annotated `-> None`.",
+      "recommendation": "Annotate both new test functions, e.g. `(svn_index: IndexInfo, svn_repo: MagicMock) -> None`, matching the fixtures and _update helper in the same file and the new tests in test_index.py.",
+      "status": "resolved",
+      "check_notes": "Both SVN tests in test_repository_support.py now annotated (IndexInfo, MagicMock) -> None; lines fit the 120-char limit.",
+      "fix": {
+        "change": "Annotated both SVN test functions with (svn_index: IndexInfo, svn_repo: MagicMock) -> None (codemie 3fa399860)",
+        "test": "n/a"
+      }
+    }
+  ],
+  "deferred": [
+    {
+      "id": "DF-001",
+      "severity": "major",
+      "file": "../codemie-ui/src/pages/dataSources/components/DataSourceForm/IndexTypeField/shared/IntegrationSection.tsx",
+      "line": 99,
+      "title": "Stale saved integration id is invisible and uncleared",
+      "problem": "On edit, a saved setting_id missing from filteredSettings shows the placeholder with no clear icon and is silently resubmitted.",
+      "preexisting": "The settings lookup and render path are unchanged; only the one-option auto-replace (the reported bug) was removed."
+    },
+    {
+      "id": "DF-002",
+      "severity": "major",
+      "file": "../codemie-ui/src/pages/dataSources/components/DataSourceForm/hooks/useEditPopup.ts",
+      "line": 138,
+      "title": "Project change on SVN edit drops setting_id",
+      "problem": "The multi-option project-change branch sets setting_id to undefined; the SVN builder drops it from JSON and the backend keeps the old integration.",
+      "preexisting": "Line 138 and the SVN payload builder are untouched by this diff; not the clear-button path the task names."
+    },
+    {
+      "id": "DF-003",
+      "severity": "major",
+      "file": "src/codemie/rest_api/routers/index/code_repositories.py",
+      "line": 266,
+      "title": "Integration persisted before git/SVN credential validation",
+      "problem": "Index and repo fields are saved before git (:374-381) and SVN (:266-273) credential validation, so a 422 still leaves the integration cleared.",
+      "preexisting": "The update-then-validate ordering in both routes predates and is not modified by this change."
+    },
+    {
+      "id": "DF-004",
+      "severity": "major",
+      "file": "src/codemie/rest_api/routers/index/kb_git_faq.py",
+      "line": 191,
+      "title": "Git FAQ full reindex skips public-access check when cleared",
+      "problem": "_validate_git_credentials runs only when setting_id is truthy, so clearing on a private repo returns 200 and the background clone fails.",
+      "preexisting": "The router already normalized '' to None before this change and the truthiness guard is unchanged."
+    }
+  ],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "codemie-ui (base 22cee9d): 2 subjects match the git-workflow.md CI regex EPMCDME-XXXX: Capital sentence, no trailing period; codemie (base 0cb1453): 2 subjects match the documented EPMCDME-####: Description format"
+    },
+    {
+      "kind": "code-quality",
+      "status": "partial",
+      "notes": "codemie-ui: .ai-run/guides/standards/code-quality.md absent, no standard to adjudicate (na for that repo); new useEditPopup.test.ts carries the license header. codemie: changed src lines (models/index.py:942-943, routers/index/kb_git_faq.py:134-135) add no new functions, sit in the owning update path, and follow Ruff-compatible style; new tests/codemie/rest_api/routers/test_repository_support.py has the Apache header and typed fixtures/helper, but its two new test functions (lines 53, 60) lack parameter and return annotations, which the guide's Types And Imports table asks of public functions in new code; existing test modules (e.g. test_index.py, 0 of 56 tests annotated) do not follow that either"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "codemie-ui security-patterns.md: change touches only the setting_id form value (IntegrationSection.tsx:112 onChange to empty string, useEditPopup.ts:122 skip auto-select when editing); no HTML sinks, navigation, postMessage, browser config, secrets or sonar suppressions. codemie security-patterns.md: update path still behind authenticate; empty setting_id mapped to None is an explicit documented clear semantic rather than lossy repair before a security decision; no logging of sensitive values introduced. No concrete security issue found"
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "4 blocking findings: the backend's widened empty-setting_id clear semantic (critical) reaches integration-required KB routes, edit-mode project change keeps a stale integration, repo/index setting_id diverge, and new tests lack annotations. Acceptance skipped (no spec), so confidence is low; reachability verified for every candidate within budget. 4 deferred to code-review-deferred.local.md (stale invisible id, SVN project-change undefined, persist-before-validate in git/SVN routes, git FAQ private-repo check), 9 dismissed as noise.",
+    "confidence": "low",
+    "risk_flags": [
+      "public-api",
+      "breaking-change"
+    ]
+  }
+}

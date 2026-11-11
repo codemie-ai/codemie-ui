@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { useCallback, useMemo, useEffect } from 'react'
+import { useCallback, useMemo, useEffect, useRef } from 'react'
 import { UseFormGetValues, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
 
@@ -40,6 +40,8 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
   const projectName = watch('projectName')
   const indexType = watch('indexType')
   const { settings } = useSnapshot(userSettingsStore) as typeof userSettingsStore
+  const loadedProjectName = useRef<string | undefined>(undefined)
+  const projectChangedOnEdit = useRef(false)
 
   const getSettingOptions = useCallback(
     (indexType) => {
@@ -118,7 +120,13 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
       indexType === INDEX_TYPES.GOOGLE ? GOOGLE_OAUTH_CREDENTIAL_TYPE : indexType
     const newSettingOptions = getSettingOptions(credentialKeyForType)
 
+    if (getValues('isEditing')) {
+      loadedProjectName.current ??= projectName
+      if (projectName !== loadedProjectName.current) projectChangedOnEdit.current = true
+    }
+
     if (newSettingOptions.length === 1) {
+      if (getValues('isEditing') && !projectChangedOnEdit.current) return
       if (
         indexType === INDEX_TYPES.JIRA ||
         indexType === INDEX_TYPES.XRAY ||

@@ -109,7 +109,7 @@ const IntegrationSection: FC<IntegrationSectionProps> = ({
                     addButtonLabel="Add User Integration"
                     selectClassName="max-w-full w-full"
                     buttonClassName="h-8 ml-0"
-                    onChange={(setting) => settingField.onChange(setting?.id)}
+                    onChange={(setting) => settingField.onChange(setting?.id ?? '')}
                     onAddSettingClick={onOpenIntegrationPopup}
                     disabled={isRequired && hasNoSettings}
                   />

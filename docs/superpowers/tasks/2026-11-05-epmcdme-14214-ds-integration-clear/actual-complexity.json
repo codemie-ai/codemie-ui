@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-11-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 17,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 10,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Multi-repo changes with distinct content across 2 repos - scope scored additively. Four components touched: IntegrationSection selector (emits '' on clear) and the useEditPopup auto-select effect in codemie-ui; IndexInfo.update_index (new _integration_is_optional guard for code and Git FAQ indexes) and the Git FAQ update-param builder in codemie. update_index is shared by every datasource type's update path, but the guard confines the new behaviour, so no shared-utility bump was applied." },
+    { "dimension": "file_change_estimate", "reason": "10 files across two repos (4 UI, 6 backend). Only 4 are source files; 6 are test files spanning UI component/hook tests and backend model and router tests. 10 maps to L in the actual-mode file table." },
+    { "dimension": "technical_risk", "reason": "Existing update and Controller patterns covered most of it. The new part is the API contract: an empty setting_id now clears the integration for optional-integration index types and is still ignored for the rest. Clients that already send '' on update see different behaviour, and the edit-mode auto-select must not overwrite a deliberate clear. A review round fixed 3 findings." },
+    { "dimension": "affected_layers", "reason": "UI (form component and hook), API (kb_git_faq router param building), and Service/model (IndexInfo.update_index). No schema migration and no external integration." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

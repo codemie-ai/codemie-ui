@@ -1,0 +1,18 @@
+{
+  "decision": "approve",
+  "gate_id": "code-review.check",
+  "source": "hitl",
+  "rationale": "Check round after the fix-up: CR-001, CR-002 and CR-004 are resolved at HEAD. CR-003 is waived by the user at the code-review.final gate: the repo row's '' and the index's None both mean 'no integration', since every credential check uses a falsy test (if not setting_id). Deferred items are pre-existing and out of scope.",
+  "confidence": "medium",
+  "risk_flags": ["public-api"],
+  "reviewed_heads": {
+    "codemie-ui": "c54a948622e1172fe9e6aba59c2afecffabfee64",
+    "codemie": "3fa399860d65fc44cd0cb6a94efbfc8baeffc094"
+  },
+  "finding_status": [
+    {"id": "CR-001", "status": "resolved", "notes": "useEditPopup.ts records the loaded project on edit and allows single-option auto-select once the project changes; new test covers it."},
+    {"id": "CR-002", "status": "resolved", "notes": "update_index ignores '' unless _integration_is_optional (code/SVN or Git FAQ); kb_git_faq passes '' through; new test keeps Jira setting_id on ''."},
+    {"id": "CR-003", "status": "wont-fix", "disposition": {"source": "hitl", "rationale": "Accepted by user: repo row '' and index None are equivalent. Every credential check uses a falsy test (if not setting_id), so both mean \"no integration\"."}, "notes": "_repository_support.py unchanged by design."},
+    {"id": "CR-004", "status": "resolved", "notes": "Both SVN tests in test_repository_support.py are annotated."}
+  ]
+}

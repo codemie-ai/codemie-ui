@@ -13,11 +13,13 @@
 // limitations under the License.
 //
 
+import { yupResolver } from '@hookform/resolvers/yup'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useForm } from 'react-hook-form'
+import { FieldValues, Resolver, useForm, UseFormGetValues } from 'react-hook-form'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { editingSchema } from '@/pages/dataSources/components/DataSourceForm/hooks/useEditPopupForm'
 import { userSettingsStore } from '@/store/userSettings'
 import toaster from '@/utils/toaster'
 
@@ -53,16 +55,24 @@ function TestWrapper({
   isDropdownShown,
   settings,
   isRequired = true,
+  defaultValues,
+  resolver,
+  onGetValues,
 }: Readonly<{
   hasNoSettings: boolean
   isDropdownShown: boolean
   settings: (typeof confluenceSetting)[]
   isRequired?: boolean
+  defaultValues?: FieldValues
+  resolver?: Resolver
+  onGetValues?: (getValues: UseFormGetValues<FieldValues>) => void
 }>) {
   const {
     control,
+    getValues,
     formState: { errors },
-  } = useForm()
+  } = useForm({ defaultValues, resolver, mode: 'onChange' })
+  onGetValues?.(getValues)
   return (
     <IntegrationSection
       hasNoSettings={hasNoSettings}
@@ -183,6 +193,69 @@ describe('IntegrationSection', () => {
       )
       const addBtn = screen.getByRole('button', { name: /add user integration/i })
       expect(addBtn).toHaveClass('h-8')
+    })
+  })
+
+  describe('clearing a saved integration', () => {
+    const clearIntegration = () =>
+      userEvent.click(document.querySelector('.p-dropdown-clear-icon') as Element)
+    const selectedLabel = () => document.querySelector('.p-dropdown-label')
+
+    it('restores nothing after clear when mounted with a saved integration', async () => {
+      let getValues: UseFormGetValues<FieldValues> | undefined
+      render(
+        <TestWrapper
+          hasNoSettings={false}
+          isDropdownShown={true}
+          settings={[confluenceSetting]}
+          defaultValues={{ setting_id: 's-1' }}
+          onGetValues={(fn) => {
+            getValues = fn
+          }}
+        />
+      )
+      expect(selectedLabel()).toHaveTextContent('My Confluence')
+
+      await clearIntegration()
+
+      expect(selectedLabel()).toHaveTextContent('Select integration')
+      expect(selectedLabel()).not.toHaveTextContent('My Confluence')
+      expect(getValues?.('setting_id')).toBe('')
+    })
+
+    it('stays empty after an unrelated re-render', async () => {
+      const props = {
+        hasNoSettings: false,
+        isDropdownShown: true,
+        settings: [confluenceSetting],
+        defaultValues: { setting_id: 's-1' },
+      }
+      const { rerender } = render(<TestWrapper {...props} />)
+
+      await clearIntegration()
+      rerender(<TestWrapper {...props} settings={[{ ...confluenceSetting }]} />)
+
+      expect(selectedLabel()).toHaveTextContent('Select integration')
+      expect(selectedLabel()).not.toHaveTextContent('My Confluence')
+    })
+
+    it('shows the required error when a required-type integration is cleared', async () => {
+      const settingRule = editingSchema.pick(['indexType', 'sharepointAuthType', 'setting_id'])
+      render(
+        <TestWrapper
+          hasNoSettings={false}
+          isDropdownShown={true}
+          settings={[confluenceSetting]}
+          defaultValues={{ setting_id: 's-1', indexType: 'confluence' }}
+          resolver={yupResolver(settingRule) as unknown as Resolver}
+        />
+      )
+
+      await clearIntegration()
+
+      expect(
+        await screen.findByText('Integration is required for this data source type')
+      ).toBeInTheDocument()
     })
   })
 })
