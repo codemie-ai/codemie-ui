@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "generated": "2026-11-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 1,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single Tailwind class change on the bottom actions/status row of the shared Card component. Scored S rather than XS because every catalog that renders Card (not only Hosted Applications) picks up the wrap behaviour." },
+    { "dimension": "technical_risk", "reason": "Presentation-only CSS change (flex-wrap, gap and height overrides split between preview and non-preview cards) that follows the existing responsive-wrap pattern. No security, state or data impact, and rollback is trivial. Scored S because the regression surface is visual and spans other card consumers." },
+    { "dimension": "requirements_clarity", "reason": "Clear bug report: the activate-version action and the status labels overlap, and they must not. The only judgement call was the breakpoint and wrap behaviour." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XS to S: touches a shared UI component (Card) used across multiple catalog pages"
+  ],
+  "split_recommendation": null
+}

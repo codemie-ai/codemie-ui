@@ -163,8 +163,16 @@ const Card: React.FC<CardProps> = ({
           </div>
 
           {/* On narrow cards the status wraps below the actions; children drop their full-height sizing
-              so the first line stays one row tall. */}
-          <div className="flex items-center mt-3 h-7 max-lg:flex-wrap max-lg:h-auto max-lg:gap-y-2 max-lg:[&>*]:h-auto max-sm:mt-2">
+              so the first line stays one row tall. Preview cards already have variable height, so their
+              row wraps at every width. */}
+          <div
+            className={classNames(
+              'flex items-center mt-3 max-sm:mt-2',
+              preview
+                ? 'flex-wrap min-h-7 gap-x-3 gap-y-2 [&>*]:h-auto'
+                : 'h-7 max-lg:flex-wrap max-lg:h-auto max-lg:gap-y-2 max-lg:[&>*]:h-auto'
+            )}
+          >
             {actions}
 
             {status && (

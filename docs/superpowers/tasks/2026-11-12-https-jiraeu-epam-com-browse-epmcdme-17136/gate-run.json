@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "branch": "claude/sdlc-autonomous-factory-e695be",
+  "head": "854c00fc962f20c3ebfd452c6f07495a46ff8203",
+  "runner": "npm",
+  "started_at": "2026-11-12T07:52:37Z",
+  "completed_at": "2026-11-12T07:59:25Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "install",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 37895,
+      "command": "npm ci",
+      "exit_code": 0,
+      "notes": "Required precondition per .ai-run/guides/security/verification.md section 1; prior node_modules was stale (npm ls reported invalid axios, dompurify, lodash, postcss, react-router, etc.)"
+    },
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 22935,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17182,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 181060,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  903 passed (903)"
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 91199,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Skip-if not met (diff touches component src/components/Card/Card.tsx); Test Files  84 passed (84)"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 4935,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Also enforced by .husky/pre-commit; gitleaks output: 'no leaks found' (working tree only)"
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 1975,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Summary printed, no 'Found error' on stderr"
+    },
+    {
+      "id": "sonar",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 144,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN (e.g. in .env.local) with a reachable Sonar host to run locally; also enforced by .husky/pre-commit; still owed to CI"
+    },
+    {
+      "id": "prettier",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 752,
+      "command": "npx prettier --check src/components/Card/Card.tsx",
+      "exit_code": 0,
+      "notes": "From .husky/pre-commit -> npx lint-staged (prettier --write on staged files), run in check mode on the branch diff; eslint --fix and tsc --noEmit parts of lint-staged are covered by lint and typecheck"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 283,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "From .husky/pre-commit; not a guide gate section (listed only in guide's automatic pre-commit table); 2777 files, 0 missing"
+    },
+    {
+      "id": "ci-mr-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": ".gitlab-ci.yml::wait-ci-init (extends external .wait-ci-init-template)",
+      "notes": "Waits on external ci-pipeline and compliance-report contexts defined outside this repo; cannot run locally. Still owed to CI for MRs targeting main."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "",
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    }
+  ],
+  "failures": {}
+}

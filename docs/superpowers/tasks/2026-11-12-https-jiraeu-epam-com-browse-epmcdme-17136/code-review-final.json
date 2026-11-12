@@ -1,0 +1,116 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "deterministic",
+    "rationale": "Compact profile: edge-case and acceptance lenses ran clean, 0 findings, confidence high; AC1/AC2 pending Stage 7 browser proof."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "deterministic",
+      "rationale": "Compact profile: edge-case and acceptance lenses ran clean, 0 findings, confidence high; AC1/AC2 pending Stage 7 browser proof."
+    }
+  ],
+  "reviewed_head": "854c00fc962f20c3ebfd452c6f07495a46ff8203",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Compact profile: edge-case and acceptance lenses both ran cleanly with no findings; 0 deferred, 0 dismissed. AC3 and plan tasks pass on code; AC1/AC2 and the per-width no-overlap/readability checks are pending-stage-7 browser proof. Standards audit not part of the compact profile.",
+  "confidence": "high",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: Activate version button, Not shared with project and No active version yet statuses display without overlapping",
+      "status": "pending-stage-7",
+      "notes": "Card.tsx preview branch now flex-wrap min-h-7 with gaps at every width; visual non-overlap needs browser proof."
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: All text and icons on the card are fully readable",
+      "status": "pending-stage-7",
+      "notes": "No truncation/clipping added; readability needs browser/screenshot evidence."
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: Activate version button remains clickable",
+      "status": "pass",
+      "notes": "className-only change; Button onClick and Card click filter in HostedApplicationCard.tsx untouched."
+    },
+    {
+      "kind": "spec",
+      "item": "Plan: no overlap at 1, 2 or 3 grid columns incl. just above 1024px, 1300px, 1600px",
+      "status": "pending-stage-7",
+      "notes": "Wrap unconditional for preview cards; per-width layout proof is browser evidence."
+    },
+    {
+      "kind": "spec",
+      "item": "Plan: bottom row readable and unclipped, including worst case with Suspended",
+      "status": "pending-stage-7",
+      "notes": "Row uses min-h-7 so wrapped lines grow the row; needs screenshot."
+    },
+    {
+      "kind": "spec",
+      "item": "Plan: Activate version stays clickable and opens details page",
+      "status": "pass",
+      "notes": "Same evidence as AC3; existing HostedApplicationCard test unaffected by class-only change."
+    },
+    {
+      "kind": "spec",
+      "item": "Plan Task 1: non-preview consumers keep current classes character for character",
+      "status": "pass",
+      "notes": "Non-preview class set identical to the removed string (order differs only)."
+    },
+    {
+      "kind": "spec",
+      "item": "Plan Task 1: comment in Card.tsx updated",
+      "status": "pass",
+      "notes": "Comment notes preview cards wrap at every width."
+    },
+    {
+      "kind": "spec",
+      "item": "Plan Task 1: status wrapper keeps ml-auto; no change to HostedApplicationCard.tsx",
+      "status": "pass",
+      "notes": "Diff touches only Card.tsx."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of the compact review profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of the compact review profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of the compact review profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Compact profile: edge-case and acceptance lenses both ran cleanly with no findings; 0 deferred, 0 dismissed. AC3 and plan tasks pass on code; AC1/AC2 and the per-width no-overlap/readability checks are pending-stage-7 browser proof. Standards audit not part of the compact profile.",
+    "confidence": "high",
+    "risk_flags": []
+  }
+}
