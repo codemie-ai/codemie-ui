@@ -20,7 +20,6 @@ import { ColumnType, type AnalyticsQueryParams, type TabularResponse } from '@/t
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { WEEKDAYS_MON_FIRST } from '../../utils/usagePatterns'
 import BarChartWidget from '../../widgets/BarChartWidget'
-import { browserUtcOffsetMinutes, shiftActivityToLocal } from '../activityTimezone'
 import { useCliAnalyticsActivity } from '../hooks/useCliAnalyticsActivity'
 
 const WEEKDAYS = WEEKDAYS_MON_FIRST
@@ -32,12 +31,8 @@ interface ActivityViewProps {
 }
 
 const ActivityView: FC<ActivityViewProps> = ({ filters, repositories }) => {
-  const { data, loading, error } = useCliAnalyticsActivity(filters, repositories)
-  // The API buckets by UTC weekday/hour; show them in the browser's local time.
-  const localData = useMemo(
-    () => (data ? shiftActivityToLocal(data, browserUtcOffsetMinutes()) : data),
-    [data]
-  )
+  // The API already buckets weekday/hour in the browser's zone (the store sends it), per session.
+  const { data: localData, loading, error } = useCliAnalyticsActivity(filters, repositories)
 
   const maxCell = useMemo(() => Math.max(...(localData?.heat.flat() ?? []), 1), [localData])
 

@@ -38,15 +38,18 @@ vi.mock('../hooks/useCliAnalyticsActivity', () => ({
 vi.mock('../../AnalyticsWidget', () => ({
   default: ({
     title,
+    description,
     children,
     error,
   }: {
     title: string
+    description?: string
     children: ReactNode
     error?: { message: string } | null
   }) => (
     <div data-testid={`widget-${title.toLowerCase().replace(/\s+/g, '-')}`}>
       <h3>{title}</h3>
+      <p>{description}</p>
       {error && <span data-testid="widget-error">{error.message}</span>}
       {children}
     </div>
@@ -54,9 +57,10 @@ vi.mock('../../AnalyticsWidget', () => ({
 }))
 
 vi.mock('../../widgets/BarChartWidget', () => ({
-  default: ({ title }: { title: string }) => (
+  default: ({ title, description }: { title: string; description?: string }) => (
     <div data-testid={`widget-${title.toLowerCase().replace(/\s+/g, '-')}`}>
       <h3>{title}</h3>
+      <p>{description}</p>
     </div>
   ),
 }))
@@ -120,19 +124,20 @@ describe('ActivityView', () => {
     expect(vi.mocked(useCliAnalyticsActivity)).toHaveBeenCalledWith(MOCK_FILTERS, ['repo-a'])
   })
 
-  describe('in a non-UTC browser', () => {
+  describe('time zone', () => {
     afterEach(() => {
       vi.restoreAllMocks()
     })
 
-    it('renders heatmap cells in the browser local hour', () => {
+    it('renders the buckets as the API returns them, already in the browser zone', () => {
+      // The API buckets per session in the sent IANA zone (DST-aware); the UI must not shift them again.
       vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(-60)
       const heat = Array.from({ length: 7 }, () => Array(24).fill(0))
-      heat[5][18] = 1
+      heat[2][23] = 1
       const by_hour = Array(24).fill(0)
-      by_hour[18] = 1
+      by_hour[23] = 1
       const by_weekday = Array(7).fill(0)
-      by_weekday[5] = 1
+      by_weekday[2] = 1
       vi.mocked(useCliAnalyticsActivity).mockReturnValueOnce({
         data: { heat, by_hour, by_weekday },
         loading: false,
@@ -141,8 +146,8 @@ describe('ActivityView', () => {
 
       render(<ActivityView filters={MOCK_FILTERS} />)
 
-      expect(screen.getByTitle('Sat 19:00 — 1 session')).toBeInTheDocument()
-      expect(screen.queryByTitle('Sat 18:00 — 1 session')).not.toBeInTheDocument()
+      expect(screen.getByTitle('Wed 23:00 — 1 session')).toBeInTheDocument()
+      expect(screen.queryByTitle('Thu 0:00 — 1 session')).not.toBeInTheDocument()
     })
   })
 })

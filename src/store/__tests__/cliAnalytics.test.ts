@@ -301,3 +301,26 @@ describe('cliAnalyticsStore.fetchProjects', () => {
     expect(cliAnalyticsStore.repositories).toBeNull()
   })
 })
+
+describe('cliAnalyticsStore.fetchActivity', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset()
+    vi.restoreAllMocks()
+  })
+
+  it('sends the browser IANA time zone so the API buckets each session with its own DST offset', async () => {
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({
+      timeZone: 'Europe/Madrid',
+    } as Intl.ResolvedDateTimeFormatOptions)
+    respondWith({ data: { heat: [], by_hour: [], by_weekday: [] } })
+
+    await cliAnalyticsStore.fetchActivity({ time_period: 'last_30_days' })
+
+    expect(mockApi.get).toHaveBeenCalledWith(
+      'v1/analytics/cli-analytics/activity',
+      expect.objectContaining({
+        params: expect.objectContaining({ time_period: 'last_30_days', tz: 'Europe/Madrid' }),
+      })
+    )
+  })
+})

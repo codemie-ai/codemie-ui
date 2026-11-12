@@ -32,6 +32,7 @@ import type {
 } from '@/types/cliAnalytics'
 import type { ErrorDetails, ErrorResponse } from '@/types/common'
 import api from '@/utils/api'
+import { getBrowserTimezone } from '@/utils/timezone'
 
 interface UnpricedMetadata {
   metadata?: { unpriced_models?: string[] }
@@ -211,7 +212,7 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       cliAnalyticsStore,
       'activity',
       'v1/analytics/cli-analytics/activity',
-      params,
+      { ...params, tz: getBrowserTimezone() },
       'Failed to fetch local analytics activity'
     )
     if (data) cliAnalyticsStore.activity = data.data
