@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "generated": "2026-11-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 15,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 17,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 17 files changed, which maps mechanically to XXL (16+). The diff is mostly deletions (52 insertions, 310 deletions): 8 of the 17 files are tests, and HostedStandaloneLaunch.tsx was deleted outright. Editing effort is far lower than the file count suggests." },
+    { "dimension": "component_scope", "reason": "Touches several UI components (HostedApplicationCard, HostedApplicationOverview, HostedApplicationViewer, HostedDetailsActions, HostedViewerActions), the router redirect for /apps/:id/standalone, the route and page-title constants, hostedRoutes and the hostedApplicationLaunch util. It is all in one frontend tier and only removes or redirects; no new abstractions." },
+    { "dimension": "technical_risk", "reason": "Removing controls and redirecting a route both follow established router patterns. validateHostedLaunch and submitHostedLaunch remain the in-frame launch path, so the security-sensitive ticket handling is unchanged and the attack surface shrinks." },
+    { "dimension": "calibration", "reason": "Total 15 sits on the S/M boundary (14->15). The lean-lower conditions hold: Technical Risk is S, and existing patterns cover the whole change. Compared with the bundled S example epmcdme-10102 (total 11), this work matches it on risk and clarity, and is larger only because of the inflated file count. The real effort is closer to S. M is kept because the band follows the summed total." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

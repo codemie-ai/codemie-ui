@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-17135_remove-direct-link",
+  "head": "9ee613b6a87fb83c24a96b5ddd20aa9daae36761",
+  "runner": "custom",
+  "started_at": "2026-11-12T08:17:44Z",
+  "completed_at": "2026-11-12T08:24:40Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 23659, "command": "npm run lint", "exit_code": 0, "notes": "Preceded by npm ci (exit 0) per AGENTS.md reinstall rule"},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 16868, "command": "npm run typecheck", "exit_code": 0},
+    {"id": "unit-tests", "source": "guide", "status": "PASS", "duration_ms": 181440, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "Test Files  903 passed (903); Tests 9277 passed | 1 skipped (9278)"},
+    {"id": "integration-tests", "source": "guide", "status": "PASS", "duration_ms": 98833, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "Test Files  84 passed (84); Tests 881 passed | 1 skipped (882)"},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 29077, "command": "npm run secrets:check", "exit_code": 0, "notes": "gitleaks: 'no leaks found' (working tree only, not history)"},
+    {"id": "license", "source": "guide", "status": "PASS", "duration_ms": 2560, "command": "npm run license-check", "exit_code": 0, "notes": "Summary printed; no 'Found error' on stderr"},
+    {"id": "sonar", "source": "guide", "status": "SKIPPED", "duration_ms": 187, "command": "npm run sonar-local", "exit_code": 0, "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' The pre-commit hook sources .env.local (which defines SONAR_TOKEN) before running this, so the hook would scan where this verbatim run did not; export SONAR_TOKEN to run locally. Still owed to CI/hook."},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 301, "command": "npm run license-headers:check", "exit_code": 0, "notes": "Checked 2776 files, 0 missing license headers. Hook-enforced, not listed as a guide gate section"},
+    {"id": "lint-staged", "source": "hook", "status": "N/A", "command": "npx lint-staged", "notes": "Operates on staged files only; nothing staged for this task. Its prettier/eslint/tsc steps are covered by lint and typecheck gates"},
+    {"id": "mr-pipeline", "source": "ci", "status": "N/A", "command": "wait-ci-init (external pre-ci-guard template)", "notes": "CI waits on external ci-pipeline and compliance-report contexts defined outside this repository; not runnable locally"}
+  ],
+  "failures": {}
+}

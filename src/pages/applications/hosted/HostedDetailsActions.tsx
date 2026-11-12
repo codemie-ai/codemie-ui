@@ -12,18 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useHref } from 'react-router'
-
 import EditSvg from '@/assets/icons/edit.svg?react'
 import EyeSvg from '@/assets/icons/eye.svg?react'
-import OpenSvg from '@/assets/icons/open.svg?react'
 import Button from '@/components/Button'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import type { NavigationMenuItem } from '@/components/NavigationMore/NavigationMore'
 import type { HostedApplication } from '@/types/entity/hostedApplication'
 
 import { hostedActions, type HostedActionKey } from './hostedAccess'
-import { hostedRoutes } from './hostedRoutes'
 
 interface Props {
   application: HostedApplication
@@ -35,7 +31,7 @@ interface Props {
   onAction(key: HostedActionKey): void
 }
 
-// View, Open in new tab and Edit are buttons; Share, Upload new version and the rest stay in the overflow menu,
+// View and Edit are buttons; Share, Upload new version and the rest stay in the overflow menu,
 // and Versions has its own Upload version button.
 const BUTTON_KEYS: HostedActionKey[] = ['open', 'edit']
 
@@ -50,7 +46,6 @@ const HostedDetailsActions = ({
   const actions = hostedActions(app)
   const has = (key: HostedActionKey) => actions.find((action) => action.key === key)
   const open = has('open')
-  const standalone = useHref(hostedRoutes.standalone(app.id))
   // "Copy share link" in the Share popup is the only copy action (AC10).
   const menu: NavigationMenuItem[] = menuItems(app, BUTTON_KEYS)
   return (
@@ -59,16 +54,6 @@ const HostedDetailsActions = ({
         <Button disabled={busy || open.disabled} onClick={onOpen}>
           <EyeSvg aria-hidden className="size-4" />
           View
-        </Button>
-      )}
-      {open && (
-        <Button
-          variant="secondary"
-          disabled={busy || open.disabled}
-          onClick={() => window.open(standalone, '_blank', 'noopener')}
-        >
-          <OpenSvg aria-hidden className="size-4" />
-          Open in new tab
         </Button>
       )}
       {has('edit') && (

@@ -79,7 +79,6 @@ const HostedApplicationOverview = ({
   className,
 }: Props) => {
   const link = useHref(hostedRoutes.view(app.id))
-  const standaloneLink = useHref(hostedRoutes.standalone(app.id))
   const owner = isManager(app)
 
   const active = versionLabel(versions, app.active_version_id)
@@ -132,11 +131,6 @@ const HostedApplicationOverview = ({
           label="Application link"
           value={window.location.origin + link}
           notification="Application link copied to clipboard"
-        />
-        <DetailsCopyField
-          label="Standalone link (own tab, without CodeMie)"
-          value={window.location.origin + standaloneLink}
-          notification="Standalone link copied to clipboard"
         />
         <p className="-mt-2 text-xs text-text-quaternary">{accessHint(app, hasGrants)}</p>
       </DetailsSidebarSection>

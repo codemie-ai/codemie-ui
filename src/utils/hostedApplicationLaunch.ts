@@ -65,20 +65,6 @@ export function validateHostedLaunch(
   return { action: action.href, ticket: response.ticket, origin: content.origin }
 }
 
-/**
- * Opens a named blank tab synchronously (inside the click) so the launch form can post into it
- * after the ticket arrives. Returns null when the browser blocks the tab; callers then fall back
- * to the current tab. The content origin sends COOP: same-origin, which severs the opener.
- */
-export function openHostedLaunchWindow(): { name: string; window: Window } | null {
-  const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
-  const name =
-    'codemie-hosted-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
-  const opened = window.open('about:blank', name)
-  return opened ? { name, window: opened } : null
-}
-
 export function submitHostedLaunch(launch: ValidatedHostedLaunch, target = '_self'): void {
   if (target !== '_self' && !/^codemie-hosted-[a-f0-9]{32}$/.test(target))
     throw new Error('Invalid application frame')

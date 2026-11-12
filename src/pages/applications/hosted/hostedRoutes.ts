@@ -27,8 +27,6 @@ export const hostedRoutes = {
   details: (id: string) => `${APPS_ROOT}/${id}`,
   /** Runs the application's active version. */
   view: (id: string) => `${APPS_ROOT}/${id}/view`,
-  /** The app alone in a browser tab, without the CodeMie layout. */
-  standalone: (id: string) => `${APPS_ROOT}/${id}/standalone`,
   edit: (id: string) => `${APPS_ROOT}/${id}/edit`,
   /** Runs one version of the application. */
   preview: (id: string, versionId: string) => `${APPS_ROOT}/${id}/preview/${versionId}`,

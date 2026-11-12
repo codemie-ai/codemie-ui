@@ -286,16 +286,19 @@ describe('details access model', () => {
     expect(route.navigate).toHaveBeenCalledWith(hostedRoutes.preview(route.id, version().id))
   })
 
-  it('opens the standalone app in a new tab from the header', async () => {
+  it('offers no way to open the app outside CodeMie from the header', async () => {
     const opened = vi.spyOn(window, 'open').mockReturnValue(null)
     show(make({ has_active_version: true }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Open in new tab' }))
-    expect(opened).toHaveBeenCalledWith(
-      expect.stringMatching(/\/apps\/[^/]+\/standalone$/),
-      '_blank',
-      'noopener'
-    )
+    expect(await screen.findByRole('button', { name: 'View' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /new tab/i })).not.toBeInTheDocument()
+    expect(opened).not.toHaveBeenCalled()
     opened.mockRestore()
+  })
+
+  it('shows the in-CodeMie application link and no standalone link', async () => {
+    show(make({ has_active_version: true }))
+    expect(await screen.findByText('Application link')).toBeInTheDocument()
+    expect(screen.queryByText(/Standalone link/i)).not.toBeInTheDocument()
   })
 
   it('opens the application in its viewer from the header View', async () => {

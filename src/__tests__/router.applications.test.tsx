@@ -80,6 +80,19 @@ describe('Applications area routes', () => {
     expect((result as Response).headers.get('Location')).toBe(`/apps/${appId}`)
   })
 
+  it('redirects the former standalone path /apps/:id/standalone to the viewer', async () => {
+    const match = matchRoutes(routes, `/apps/${appId}/standalone`)?.at(-1)
+    expect(match?.route.Component).toBeUndefined()
+
+    const result = await (match?.route.loader as LoaderFunction)({
+      params: match?.params,
+    } as Parameters<LoaderFunction>[0])
+
+    expect(result).toBeInstanceOf(Response)
+    expect((result as Response).status).toBe(302)
+    expect((result as Response).headers.get('Location')).toBe(`/apps/${appId}/view`)
+  })
+
   it('reads the share token from the route param', () => {
     expect(leafRoute('/apps/share/some-token')?.params.token).toBe('some-token')
   })

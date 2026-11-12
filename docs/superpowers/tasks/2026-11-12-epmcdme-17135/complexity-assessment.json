@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "Remove every Hosted Applications UI control that opens a hosted app in a new tab or exposes/copies its standalone URL (card, details header, viewer/preview header, Overview 'Standalone link' field, BUSY_MESSAGE new-tab hint) while keeping in-CodeMie viewing intact (EPMCDME-17135).",
+  "generated": "2026-11-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 14,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Five production components (HostedApplicationCard, HostedDetailsActions, HostedViewerActions, HostedApplicationViewer, HostedApplicationOverview) plus three to four test suites that assert the removed behaviour (card test, details integration test, embedded-viewer integration test, viewer test mock) give roughly 8-9 modified files across hosted/ and hosted/__tests__/; more if the standalone route, HostedStandaloneLaunch and openHostedLaunchWindow util are also removed." },
+    { "dimension": "component_scope", "reason": "Several presentation components but all within one feature area and one layer; the edits remove JSX, props (standalone, onOpenSeparately, previewing) and a handler whose only consumers are already listed. No shared utilities change, only usage of DetailsCopyField." },
+    { "dimension": "requirements_clarity", "reason": "Core AC are clear, but open points remain: whether the standalone route/HostedStandaloneLaunch page and the openHostedLaunchWindow util should be removed or left reachable by URL, the BUSY_MESSAGE rewording, and the ticket's 'Preview (eye) button' wording versus the code label 'View'." },
+    { "dimension": "technical_risk", "reason": "Pure removal; closest pattern is the existing in-app View/Preview path, which stays separate code. Main risk is missing a surface, mitigated by the complete inventory. No security-sensitive surface added and no enumerated edge-case AC requiring new test templates. Agrees with the S calibration example (epmcdme-10102)." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

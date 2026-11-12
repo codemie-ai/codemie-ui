@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useHref, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 
 import DiagramSvg from '@/assets/icons/diagram.svg?react'
 import EyeSvg from '@/assets/icons/eye.svg?react'
-import OpenSvg from '@/assets/icons/open.svg?react'
 import NotSharedSvg from '@/assets/icons/shared-no.svg?react'
 import SharedSvg from '@/assets/icons/shared-yes.svg?react'
 import StatusNotStartedSvg from '@/assets/icons/status-not-started.svg?react'
@@ -63,19 +62,17 @@ const nextStepLabel = (app: HostedApplication) => {
 const NO_ACTIVE_VERSION = 'No active version yet'
 
 /**
- * View and Open in new tab as icons with tooltips, so the card row keeps room for the status; the
- * details page labels them. A disabled button gets no pointer events, so its wrapper explains it.
+ * View as an icon with a tooltip, so the card row keeps room for the status; the details page
+ * labels it. A disabled button gets no pointer events, so its wrapper explains it.
  */
 const OpenButtons = ({
   app,
   openable,
-  standalone,
   noVersionId,
   onOpen,
 }: {
   app: HostedApplication
   openable: boolean
-  standalone: string
   noVersionId: string
   onOpen(application: HostedApplication): void
 }) => (
@@ -96,24 +93,11 @@ const OpenButtons = ({
     >
       <EyeSvg aria-hidden className="size-4" />
     </Button>
-    {openable && (
-      <Button
-        size="small"
-        variant="secondary"
-        aria-label={'Open ' + app.name + ' in a new tab'}
-        data-tooltip-id="react-tooltip"
-        data-tooltip-content="Open in new tab"
-        onClick={() => window.open(standalone, '_blank', 'noopener')}
-      >
-        <OpenSvg aria-hidden className="size-4" />
-      </Button>
-    )}
   </span>
 )
 
 const HostedApplicationCard = ({ application: app, menuItems, onOpen }: Props) => {
   const navigate = useNavigate()
-  const standalone = useHref(hostedRoutes.standalone(app.id))
   const openable = canOpen(app)
   const suspended = isSuspended(app)
   const titleId = 'app-title-' + app.id
@@ -179,13 +163,7 @@ const HostedApplicationCard = ({ application: app, menuItems, onOpen }: Props) =
               {nextStepLabel(app)}
             </Button>
           ) : (
-            <OpenButtons
-              app={app}
-              openable={openable}
-              standalone={standalone}
-              noVersionId={noVersionId}
-              onOpen={onOpen}
-            />
+            <OpenButtons app={app} openable={openable} noVersionId={noVersionId} onOpen={onOpen} />
           )
         }
         status={status}

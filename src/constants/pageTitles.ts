@@ -101,7 +101,6 @@ export const ROUTE_ID_TO_TITLE: Record<string, string> = {
   'hosted-application': 'Application Details',
   'hosted-application-manage': 'Application Details',
   'hosted-application-view': 'Application',
-  'hosted-application-standalone': 'Application',
   'hosted-application-share': 'Open Shared Application',
   'hosted-application-edit': 'Edit Application',
   'hosted-application-preview': 'Application Preview',

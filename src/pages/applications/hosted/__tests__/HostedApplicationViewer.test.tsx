@@ -77,7 +77,6 @@ vi.mock('@/store/hostedApplications', () => ({
 vi.mock('@/utils/hostedApplicationLaunch', () => ({
   HOSTED_UUID: /^[a-f0-9-]{36}$/,
   submitHostedLaunch: vi.fn(),
-  openHostedLaunchWindow: vi.fn(),
 }))
 vi.mock('@/utils/hostedApplicationFrame', () => ({
   createHostedFrame: () => ({ target: 'codemie-hosted-x', document: '<iframe></iframe>' }),

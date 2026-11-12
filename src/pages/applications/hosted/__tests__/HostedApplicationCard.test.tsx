@@ -160,14 +160,13 @@ describe('card without an active version', () => {
     expect(onOpen).toHaveBeenCalledWith(app)
   })
 
-  it('opens the standalone app in a new tab from the card', () => {
+  it('offers no way to open the app outside CodeMie from the card', () => {
     const opened = vi.spyOn(window, 'open').mockReturnValue(null)
     const app = make()
     renderCard(app)
-    const newTab = screen.getByRole('button', { name: 'Open ' + app.name + ' in a new tab' })
-    expect(newTab).toHaveAttribute('data-tooltip-content', 'Open in new tab')
-    fireEvent.click(newTab)
-    expect(opened).toHaveBeenCalledWith('/apps/' + app.id + '/standalone', '_blank', 'noopener')
+    expect(screen.queryByRole('button', { name: /new tab/i })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^View/ }))
+    expect(opened).not.toHaveBeenCalled()
     opened.mockRestore()
   })
 

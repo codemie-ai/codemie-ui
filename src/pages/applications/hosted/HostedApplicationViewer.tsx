@@ -28,7 +28,6 @@ import type { HostedApplication } from '@/types/entity/hostedApplication'
 import { createHostedFrame, type HostedFrame } from '@/utils/hostedApplicationFrame'
 import {
   HOSTED_UUID,
-  openHostedLaunchWindow,
   submitHostedLaunch,
   type ValidatedHostedLaunch,
 } from '@/utils/hostedApplicationLaunch'
@@ -40,8 +39,7 @@ import { useHostedCardActions } from './useHostedCardActions'
 import { hostedApplicationsOff, useHostedFeatureRedirect } from './useHostedFeatureRedirect'
 
 // The content host is busy (429/503) or the embedded session could not start.
-const BUSY_MESSAGE =
-  'The application is busy or unavailable right now. Retry in a few seconds, or open it in a new tab.'
+const BUSY_MESSAGE = 'The application is busy or unavailable right now. Retry in a few seconds.'
 
 // The launch was refused because the version no longer passes its checks (for example its stored
 // files are gone or the security policy changed); retrying cannot help, another version can.
@@ -102,12 +100,9 @@ const ApplicationView = ({ id, versionId }: Props) => {
   const iframe = useRef<HTMLIFrameElement>(null)
   const pending = useRef<{ launch: ValidatedHostedLaunch; epoch: number } | null>(null)
   const active = useRef(false)
-  const visit = useRef(0)
-  const selected = useRef<string | undefined>(versionId)
   useEffect(() => {
     let alive = true
     active.current = true
-    visit.current += 1
     const controller = new AbortController()
     let created: HostedFrame | null = null
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -150,13 +145,12 @@ const ApplicationView = ({ id, versionId }: Props) => {
         const app = await store.getApplication(id, controller.signal)
         if (!current()) return
         setApplication(app)
-        selected.current = versionId
         if (!canOpen(app) && !versionId) {
           setLoading(false)
           setUnavailable(true)
           return
         }
-        const launch = await store.issueLaunch(id, selected.current, controller.signal)
+        const launch = await store.issueLaunch(id, versionId, controller.signal)
         if (!current()) return
         created = createHostedFrame(launch, window.location.origin)
         pending.current = { launch, epoch }
@@ -196,30 +190,6 @@ const ApplicationView = ({ id, versionId }: Props) => {
     pending.current = null
     submitHostedLaunch(ticket.launch, frame.target)
   }
-  const openSeparately = async () => {
-    const epoch = hostedAuthenticationGeneration()
-    const requestVisit = visit.current
-    // Reserve the tab while the click still counts as a user gesture; the ticket is posted into it.
-    const target = openHostedLaunchWindow()
-    try {
-      const launch = await store.issueLaunch(id, selected.current)
-      if (
-        active.current &&
-        requestVisit === visit.current &&
-        epoch === hostedAuthenticationGeneration()
-      )
-        submitHostedLaunch(launch, target?.name ?? '_self')
-      else target?.window.close()
-    } catch (cause) {
-      target?.window.close()
-      if (
-        active.current &&
-        requestVisit === visit.current &&
-        epoch === hostedAuthenticationGeneration()
-      )
-        setError(hostedErrorMessage(cause))
-    }
-  }
   const subtitle = application ? viewerSubtitle(application, versionId) : 'Opening application'
   const copy = unavailableCopy(application, error, stale)
   const manages = !!application && isManager(application)
@@ -257,8 +227,6 @@ const ApplicationView = ({ id, versionId }: Props) => {
               menuItems={actions.menuItems}
               onShare={() => actions.select('share', application)}
               onReload={() => setRetry((value) => value + 1)}
-              onOpenSeparately={openSeparately}
-              previewing={!!versionId}
             />
           )
         }

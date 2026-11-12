@@ -32,7 +32,6 @@ import {
   HOSTED_APPLICATION_MANAGE,
   HOSTED_APPLICATION_PREVIEW,
   HOSTED_APPLICATION_SHARE,
-  HOSTED_APPLICATION_STANDALONE,
   HOSTED_APPLICATION_VIEW,
   HOSTED_APPLICATIONS,
   HOSTED_APPLICATIONS_MARKETPLACE,
@@ -55,7 +54,6 @@ import HostedApplicationDetails from '@/pages/applications/hosted/HostedApplicat
 import HostedApplicationViewer from '@/pages/applications/hosted/HostedApplicationViewer'
 import { hostedRoutes } from '@/pages/applications/hosted/hostedRoutes'
 import HostedSharePage from '@/pages/applications/hosted/HostedSharePage'
-import HostedStandaloneLaunch from '@/pages/applications/hosted/HostedStandaloneLaunch'
 import NewHostedApplicationPage from '@/pages/applications/hosted/NewHostedApplicationPage'
 import AssistantChatStartPage from '@/pages/assistants/AssistantChatStartPage'
 import AssistantDetailsPage from '@/pages/assistants/AssistantDetailsPage'
@@ -576,9 +574,9 @@ const applicationRoutes: RouteObject[] = [
     Component: HostedApplicationViewer,
   },
   {
-    id: HOSTED_APPLICATION_STANDALONE,
+    // The standalone launch page is gone; hosted apps open only inside CodeMie.
     path: `${APPS_PATH}/:id/standalone`,
-    Component: HostedStandaloneLaunch,
+    loader: ({ params }) => redirect(hostedRoutes.view(encodeURIComponent(params.id ?? ''))),
   },
   {
     id: HOSTED_APPLICATION_PREVIEW,

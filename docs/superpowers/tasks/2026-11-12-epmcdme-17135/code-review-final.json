@@ -1,0 +1,110 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "deterministic",
+    "rationale": "code-review-final.json: approve, confidence high, 0 findings (compact profile: edge-case + acceptance ran)"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "deterministic",
+      "rationale": "code-review-final.json: approve, confidence high, 0 findings (compact profile: edge-case + acceptance ran)"
+    }
+  ],
+  "reviewed_head": "9ee613b6a87fb83c24a96b5ddd20aa9daae36761",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Compact profile: edge-case and acceptance lenses ran with parseable output; edge-case reported no findings and all seven acceptance criteria pass, with gate execution pending Stage 7. Standards audit not part of the compact profile (rows na, no coverage gap); 0 deferred, 0 dismissed.",
+  "confidence": "high",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: card shows no Open in new tab control; View still opens inside CodeMie",
+      "status": "pass",
+      "notes": "HostedApplicationCard.tsx drops window.open button, standalone prop and useHref; View button unchanged; test updated"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: details header shows no Open in new tab control; View and version Preview still open inside CodeMie",
+      "status": "pass",
+      "notes": "HostedDetailsActions.tsx removes the button and unused imports; View and preview navigation untouched; integration test updated"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: viewer header on /view and /preview/:versionId shows no Open in new tab control; embedded app still loads",
+      "status": "pass",
+      "notes": "HostedViewerActions.tsx and HostedApplicationViewer.tsx drop open-separately paths; issueLaunch takes versionId directly; it.each covers both routes"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: details sidebar has no Standalone link field; Application link remains",
+      "status": "pass",
+      "notes": "HostedApplicationOverview.tsx removes the Standalone link copy field; Application link kept; new test asserts both"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC5: viewer busy message no longer mentions opening in a new tab",
+      "status": "pass",
+      "notes": "BUSY_MESSAGE reworded without new-tab mention; test text updated"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC6: /apps/<id>/standalone ends at /apps/<id>/view with access checks and feature-flag redirect applied there",
+      "status": "pass",
+      "notes": "router.tsx standalone route is a loader-only redirect to hostedRoutes.view; viewer keeps feature redirect and 404/403 handling; router test asserts 302"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC7: no hosted-app window.open/_blank or references to removed standalone identifiers; only /standalone path is the redirect",
+      "status": "pass",
+      "notes": "Repository grep of src finds none of the identifiers; only /standalone is the router.tsx redirect"
+    },
+    {
+      "kind": "spec",
+      "item": "Lint, type-check and unit/integration test runs for the updated suites",
+      "status": "pending-stage-7",
+      "notes": "Requires executing gates; not provable from the diff"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of the compact review profile"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of the compact review profile"
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of the compact review profile"
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Compact profile: edge-case and acceptance lenses ran with parseable output; edge-case reported no findings and all seven acceptance criteria pass, with gate execution pending Stage 7. Standards audit not part of the compact profile (rows na, no coverage gap); 0 deferred, 0 dismissed.",
+    "confidence": "high",
+    "risk_flags": []
+  }
+}

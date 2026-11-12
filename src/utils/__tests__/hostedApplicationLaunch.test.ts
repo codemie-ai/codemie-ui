@@ -14,11 +14,7 @@
 //
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  openHostedLaunchWindow,
-  submitHostedLaunch,
-  validateHostedLaunch,
-} from '@/utils/hostedApplicationLaunch'
+import { submitHostedLaunch, validateHostedLaunch } from '@/utils/hostedApplicationLaunch'
 
 const ui = 'https://codemie.example.com'
 const origin = 'https://v-fbe4b0a1a7084f5e83becc8f93178183.codemie-content.net'
@@ -85,26 +81,6 @@ describe('hosted launch destination', () => {
     ['an empty ticket', { ticket: '' }],
   ])('refuses %s', (_case, changes) => {
     expect(() => validateHostedLaunch(response(changes), ui)).toThrow('could not be verified')
-  })
-})
-
-describe('openHostedLaunchWindow', () => {
-  it('reserves a uniquely named tab that submitHostedLaunch accepts as a target', () => {
-    const opened = { close: vi.fn() } as unknown as Window
-    const open = vi.spyOn(window, 'open').mockReturnValue(opened)
-    const first = openHostedLaunchWindow()
-    const second = openHostedLaunchWindow()
-    expect(first?.window).toBe(opened)
-    expect(first?.name).toMatch(/^codemie-hosted-[a-f0-9]{32}$/)
-    expect(second?.name).not.toBe(first?.name)
-    expect(open).toHaveBeenCalledWith('about:blank', first?.name)
-    open.mockRestore()
-  })
-
-  it('returns null when the browser blocks the new tab', () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue(null)
-    expect(openHostedLaunchWindow()).toBeNull()
-    open.mockRestore()
   })
 })
 

@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import EditSvg from '@/assets/icons/edit.svg?react'
-import OpenSvg from '@/assets/icons/open.svg?react'
 import RefreshSvg from '@/assets/icons/refresh.svg?react'
 import ShareSvg from '@/assets/icons/share.svg?react'
 import Button from '@/components/Button'
@@ -21,7 +20,7 @@ import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import type { NavigationMenuItem } from '@/components/NavigationMore/NavigationMore'
 import type { HostedApplication } from '@/types/entity/hostedApplication'
 
-import { canOpen, hostedActions, isManager, type HostedActionKey } from './hostedAccess'
+import { hostedActions, isManager, type HostedActionKey } from './hostedAccess'
 import { hostedRoutes } from './hostedRoutes'
 
 interface Props {
@@ -30,28 +29,9 @@ interface Props {
   menuItems(app: HostedApplication, skip?: HostedActionKey[]): NavigationMenuItem[]
   onShare(): void
   onReload(): void
-  onOpenSeparately(): void
-  /** A version is being previewed: it opens separately even without an active version. */
-  previewing?: boolean
 }
-const HostedViewerActions = ({
-  application: app,
-  menuItems,
-  onShare,
-  onReload,
-  onOpenSeparately,
-  previewing = false,
-}: Props) => (
+const HostedViewerActions = ({ application: app, menuItems, onShare, onReload }: Props) => (
   <div className="flex items-center gap-2">
-    <Button
-      variant="secondary"
-      size="small"
-      disabled={!canOpen(app) && !previewing}
-      onClick={onOpenSeparately}
-    >
-      <OpenSvg aria-hidden className="size-4" />
-      Open in new tab
-    </Button>
     {hostedActions(app).some(({ key }) => key === 'share') && (
       <Button variant="secondary" size="small" onClick={onShare}>
         <ShareSvg className="size-4" />

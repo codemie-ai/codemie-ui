@@ -55,7 +55,6 @@ export const HOSTED_APPLICATIONS_PLATFORM = 'hosted-applications-platform'
 export const HOSTED_APPLICATIONS_NEW = 'hosted-applications-new'
 export const HOSTED_APPLICATION = 'hosted-application'
 export const HOSTED_APPLICATION_VIEW = 'hosted-application-view'
-export const HOSTED_APPLICATION_STANDALONE = 'hosted-application-standalone'
 export const HOSTED_APPLICATION_SHARE = 'hosted-application-share'
 // The former details path `/apps/:id/manage`; it redirects to `/apps/:id`.
 export const HOSTED_APPLICATION_MANAGE = 'hosted-application-manage'
