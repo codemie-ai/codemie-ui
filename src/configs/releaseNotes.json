@@ -1,5 +1,299 @@
 [
   {
+    "version": "2.67.0",
+    "date": "2026-11-12",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Improved long tool-output readability",
+            "description": "Long tool responses now retain and show their opening and closing lines.",
+            "issues": [
+              {
+                "key": "EPMCDME-16459",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16459"
+              }
+            ]
+          },
+          {
+            "title": "Background completion notifications",
+            "description": "Receive a notification when an LLM response finishes while the CodeMie tab is inactive.",
+            "issues": [
+              {
+                "key": "EPMCDME-15630",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15630"
+              }
+            ]
+          },
+          {
+            "title": "Cost-center filtering in Project Management",
+            "description": "Filter projects by cost center.",
+            "issues": [
+              {
+                "key": "EPMCDME-15631",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15631"
+              }
+            ]
+          },
+          {
+            "title": "Clearer data-source file filtering",
+            "description": "Improved placeholder examples make file filters easier to configure.",
+            "issues": [
+              {
+                "key": "EPMCDME-15680",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15680"
+              }
+            ]
+          },
+          {
+            "title": "MCP server instructions for tools",
+            "description": "Apply server-side MCP instructions before tool calls made through Skills and Assistants.",
+            "issues": [
+              {
+                "key": "EPMCDME-14217",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14217"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "Workflow revision rollback through SDK and API",
+            "description": "Restore workflow configurations to prior revisions programmatically.",
+            "issues": [
+              {
+                "key": "EPMCDME-14431",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14431"
+              }
+            ]
+          },
+          {
+            "title": "Analytics tags for conversations and workflow runs",
+            "description": "Add custom attributes and tags to assistant conversations and workflow runs for analytics.",
+            "issues": [
+              {
+                "key": "EPMCDME-16484",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16484"
+              }
+            ]
+          },
+          {
+            "title": "Identity-provider migration support",
+            "description": "Support identity remapping for users migrated from earlier, non-Keycloak identity providers.",
+            "issues": [
+              {
+                "key": "EPMCDME-16560",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16560"
+              }
+            ]
+          },
+          {
+            "title": "Budget creator visibility",
+            "description": "Display the creator in the Budget table.",
+            "issues": [
+              {
+                "key": "EPMCDME-15628",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15628"
+              }
+            ]
+          },
+          {
+            "title": "Assistant-run analytics API",
+            "description": "Retrieve analytics for individual assistant runs through the CodeMie API.",
+            "issues": [
+              {
+                "key": "EPMCDME-16481",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16481"
+              }
+            ]
+          },
+          {
+            "title": "More resilient SSO callbacks",
+            "description": "Support authorization data in callback bodies when reverse proxies remove authentication cookies.",
+            "issues": [
+              {
+                "key": "EPMCDME-16624",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16624"
+              }
+            ]
+          },
+          {
+            "title": "Simplified spend qualification labels",
+            "description": "Remove the spend qualification suffix.",
+            "issues": [
+              {
+                "key": "EPMCDME-16942",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16942"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "More reliable analytics cost and usage reporting",
+            "description": "Improve performance of unfiltered spending tables and correct CLI Analytics cost and line-count reporting.",
+            "issues": [
+              {
+                "key": "EPMCDME-17060",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17060"
+              },
+              {
+                "key": "EPMCDME-16713",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16713"
+              },
+              {
+                "key": "EPMCDME-16633",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16633"
+              }
+            ]
+          },
+          {
+            "title": "Workflow editor reliability and accessibility",
+            "description": "Preserve text entered in the expanded YAML editor and correctly identify required list fields in form mode.",
+            "issues": [
+              {
+                "key": "EPMCDME-16708",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16708"
+              },
+              {
+                "key": "EPMCDME-15960",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15960"
+              }
+            ]
+          },
+          {
+            "title": "Project provisioning member creation",
+            "description": "Prevent an error when adding the first member to a project created through the provisioning API.",
+            "issues": [
+              {
+                "key": "EPMCDME-17061",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17061"
+              }
+            ]
+          },
+          {
+            "title": "Jira Assistant ticket creation",
+            "description": "Prevent ticket-creation failures when the output token limit is reached.",
+            "issues": [
+              {
+                "key": "EPMCDME-16835",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16835"
+              }
+            ]
+          },
+          {
+            "title": "LLM usage attribution",
+            "description": "Use usernames rather than email addresses for LiteLLM customer IDs to preserve accurate chargeback allocation.",
+            "issues": [
+              {
+                "key": "EPMCDME-16273",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16273"
+              }
+            ]
+          },
+          {
+            "title": "User-management table layout",
+            "description": "Correct overlapping and incorrectly wrapped table headers on narrow screens.",
+            "issues": [
+              {
+                "key": "EPMCDME-15751",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15751"
+              }
+            ]
+          },
+          {
+            "title": "Assistant project lists",
+            "description": "Remove deleted projects from assistant settings.",
+            "issues": [
+              {
+                "key": "EPMCDME-15577",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15577"
+              }
+            ]
+          },
+          {
+            "title": "Data-source configuration and indexing",
+            "description": "Allow Git datasource integrations to be cleared, and resolve Confluence datasource indexing failures.",
+            "issues": [
+              {
+                "key": "EPMCDME-14214",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14214"
+              },
+              {
+                "key": "EPMCDME-15405",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15405"
+              }
+            ]
+          },
+          {
+            "title": "Assistant search filtering",
+            "description": "Restrict assistant search matching to titles rather than descriptions.",
+            "issues": [
+              {
+                "key": "EPMCDME-13700",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13700"
+              }
+            ]
+          },
+          {
+            "title": "ADO tool discovery",
+            "description": "Remove the five-item extraction limit so complete ADO tool suites are available.",
+            "issues": [
+              {
+                "key": "EPMCDME-12071",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-12071"
+              }
+            ]
+          },
+          {
+            "title": "Accessible pagination controls",
+            "description": "Provide an accessible name, role, and state for the “Per Page” selector.",
+            "issues": [
+              {
+                "key": "EPMCDME-8563",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-8563"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.66.0",
     "date": "2026-11-10",
     "sections": [
