@@ -27,7 +27,7 @@ import ProjectModelsSection from '../ProjectModelsSection'
 const { mockAppInfoStore, mockSettingsStore, mockToastSuccess } = vi.hoisted(() => ({
   mockAppInfoStore: {
     llmRouters: [] as any[],
-    getLLMModels: vi.fn(),
+    getLLMCatalog: vi.fn(),
     getProjectLLMModels: vi.fn(),
     invalidateProjectLLMModels: vi.fn(),
   },
@@ -84,7 +84,10 @@ describe('ProjectModelsSection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAppInfoStore.llmRouters = []
-    mockAppInfoStore.getLLMModels.mockResolvedValue(CATALOG)
+    mockAppInfoStore.getLLMCatalog.mockImplementation(async () => ({
+      models: CATALOG,
+      routers: mockAppInfoStore.llmRouters,
+    }))
     mockAppInfoStore.getProjectLLMModels.mockResolvedValue(CATALOG)
     mockSettingsStore.fetchSettings.mockResolvedValue(STORED)
     mockSettingsStore.saveSettings.mockImplementation((_project, settings) =>
@@ -125,6 +128,39 @@ describe('ProjectModelsSection', () => {
         })
       )
     )
+  })
+
+  it('lists CLI-only routers in the table but not as default candidates', async () => {
+    mockAppInfoStore.getLLMCatalog.mockResolvedValue({
+      models: CATALOG,
+      routers: [{ value: 'cli-router', label: 'CLI Router', cliOnly: true, tiers: {} }],
+    })
+    const { container } = await renderSection()
+
+    expect(screen.getByRole('button', { name: 'cli-router:on' })).toBeInTheDocument()
+    expect(screen.getByText('5 of 5 models available')).toBeInTheDocument()
+
+    fireEvent.click(container.querySelector('#project-default-model')!)
+    const listbox = await screen.findByRole('listbox')
+    expect(within(listbox).getByRole('option', { name: 'Model A' })).toBeInTheDocument()
+    expect(within(listbox).queryByRole('option', { name: 'CLI Router' })).not.toBeInTheDocument()
+  })
+
+  it('asks for a web model when only CLI-only routers stay selected', async () => {
+    mockAppInfoStore.getLLMCatalog.mockResolvedValue({
+      models: [{ label: 'Model A', value: 'model-a', isDefault: true }],
+      routers: [{ value: 'cli-router', label: 'CLI Router', cliOnly: true, tiers: {} }],
+    })
+    await renderSection()
+
+    fireEvent.click(screen.getByRole('button', { name: 'model-a:on' }))
+
+    expect(
+      await screen.findByText(
+        'Select at least one model available on the web — CLI-only routers cannot be the default'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled()
   })
 
   it('removes a disabled router from the saved allow list', async () => {

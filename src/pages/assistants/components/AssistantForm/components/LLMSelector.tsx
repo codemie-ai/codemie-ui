@@ -29,6 +29,7 @@ import { useSnapshot } from 'valtio'
 
 import MultiSelect from '@/components/form/MultiSelect'
 import InfoWarning from '@/components/InfoWarning'
+import ModelMetaLine from '@/components/ModelMetaLine'
 import { PREMIUM_MODEL_TOOLTIP } from '@/components/PremiumModelBadge'
 import TooltipButton from '@/components/TooltipButton'
 import { InfoWarningType } from '@/constants'
@@ -67,13 +68,7 @@ const LlmOptionRow: FC<{ label: string; isPremium: boolean; isRouter?: boolean }
       <span ref={labelRef} className="min-w-0 truncate">
         {label}
       </span>
-      {(isRouter || isPremium) && (
-        <span data-testid="llm-option-meta" className="truncate text-xs text-text-tertiary">
-          {isRouter && <span className="text-in-progress-primary">Router</span>}
-          {isRouter && isPremium && ' · '}
-          {isPremium && <span className="text-aborted-primary">Premium</span>}
-        </span>
-      )}
+      <ModelMetaLine isRouter={isRouter} isPremium={isPremium} testId="llm-option-meta" />
     </span>
   )
 }

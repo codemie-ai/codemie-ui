@@ -6,6 +6,7 @@ import { FC, useMemo, useState } from 'react'
 import { Checkbox } from '@/components/form/Checkbox'
 import Input from '@/components/form/Input'
 import Select from '@/components/form/Select'
+import ModelMetaLine from '@/components/ModelMetaLine'
 import StatusBadge, { StatusEnum } from '@/components/StatusBadge'
 import { ModelOption } from '@/types/entity/configuration'
 import { cn } from '@/utils/utils'
@@ -190,7 +191,15 @@ const ModelConfigurationTable: FC<ModelConfigurationTableProps> = ({
                   </td>
                   <td className="px-4 py-3 font-medium text-text-primary">
                     <div className="flex min-w-0 items-center">
-                      <span className="flex-1 truncate">{model.label}</span>
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate">{model.label}</span>
+                        {/* Premium keeps its badge; the line carries Router and CLI only. */}
+                        <ModelMetaLine
+                          isRouter={model.isRouter}
+                          cliOnly={model.cliOnly}
+                          className="font-normal"
+                        />
+                      </span>
                       {model.isPremium && (
                         <span className="ml-2 inline-flex shrink-0">
                           <StatusBadge status={StatusEnum.Warning} text="Premium" />

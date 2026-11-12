@@ -84,6 +84,13 @@ export interface AppInfoStoreType {
   viewedAppReleaseVersion: string
   llmModels: ModelOption[]
   llmRouters: LLMRouterOption[]
+  /**
+   * Catalog with the CLI-only routers (include_all), still without models hidden from web chat.
+   * For catalog views only —
+   * the project model table and the help page; web pickers keep using llmModels/llmRouters.
+   */
+  llmCatalogModels: ModelOption[]
+  llmCatalogRouters: LLMRouterOption[]
   /** Project-scoped model lists (project model settings applied), keyed by project name. */
   projectLlmModels: Record<string, ModelOption[]>
   imageGenerationModels: ModelOption[]
@@ -112,6 +119,7 @@ export interface AppInfoStoreType {
   isOnboardingCompleted: () => boolean
   completeOnboarding: () => Promise<void>
   getLLMModels: (projectId?: string) => Promise<ModelOption[]>
+  getLLMCatalog: () => Promise<{ models: ModelOption[]; routers: LLMRouterOption[] }>
   getProjectLLMModels: (projectName: string) => Promise<ModelOption[]>
   invalidateProjectLLMModels: (projectName?: string) => void
   getImageGenerationModels: () => Promise<ModelOption[]>
@@ -175,6 +183,22 @@ const mapLlmModel = (model: any): ModelOption => ({
   supportsTools: model.features?.tools ?? model.supports_tools,
   defaultForCategories: model.default_for_categories,
   cost: model.cost ? { input: model.cost.input, output: model.cost.output } : undefined,
+  cliOnly: model.forbidden_for_web === true,
+})
+
+const mapLlmRouter = (router: any): LLMRouterOption => ({
+  value: router.base_name,
+  label: router.label,
+  isDefault: router.default,
+  provider: router.provider,
+  isPremium: router.is_premium,
+  multimodal: router.multimodal,
+  supportsTools: router.supports_tools,
+  routerType: router.router_type,
+  strategy: router.strategy,
+  classifierModel: router.classifier_model,
+  tiers: router.tiers,
+  cliOnly: router.forbidden_for_web === true,
 })
 
 let sttModelsRequest: Promise<ModelOption[]> | null = null
@@ -269,6 +293,8 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   viewedAppReleaseVersion: '',
   llmModels: [],
   llmRouters: [],
+  llmCatalogModels: [],
+  llmCatalogRouters: [],
   projectLlmModels: {},
   imageGenerationModels: [],
   embeddingModels: [],
@@ -398,24 +424,32 @@ export const appInfoStore = proxy<AppInfoStoreType>({
 
       appInfoStore.llmModels = modelEntries.map(mapLlmModel)
 
-      appInfoStore.llmRouters = routerEntries.map((router: any) => ({
-        value: router.base_name,
-        label: router.label,
-        isDefault: router.default,
-        provider: router.provider,
-        isPremium: router.is_premium,
-        multimodal: router.multimodal,
-        supportsTools: router.supports_tools,
-        routerType: router.router_type,
-        strategy: router.strategy,
-        classifierModel: router.classifier_model,
-        tiers: router.tiers,
-      }))
+      appInfoStore.llmRouters = routerEntries.map(mapLlmRouter)
 
       return appInfoStore.llmModels
     } catch (error) {
       console.error('Failed to fetch LLM models:', error)
       return []
+    }
+  },
+
+  async getLLMCatalog() {
+    try {
+      const response = await api.get('v1/llm_models?include_all=true', ...coreOffApiOptions())
+      const data = await response.json()
+      // Of the entries hidden from web chat, only routers are listed (as CLI only): the hidden
+      // models also include image-generation ones, which the web uses through its own picker,
+      // so "CLI only" would mislabel them.
+      appInfoStore.llmCatalogModels = data
+        .filter((model: any) => !model.is_router && model.forbidden_for_web !== true)
+        .map(mapLlmModel)
+      appInfoStore.llmCatalogRouters = data
+        .filter((model: any) => model.is_router)
+        .map(mapLlmRouter)
+      return { models: appInfoStore.llmCatalogModels, routers: appInfoStore.llmCatalogRouters }
+    } catch (error) {
+      console.error('Failed to fetch the LLM catalog:', error)
+      return { models: [], routers: [] }
     }
   },
 

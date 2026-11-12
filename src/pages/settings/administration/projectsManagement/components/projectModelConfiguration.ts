@@ -16,6 +16,10 @@ export const getNewModelsPolicy = (mode: ModelAvailabilityMode): NewModelsPolicy
 export const getConfigurableModels = (models: readonly ModelOption[]) =>
   Array.from(new Map(models.map((model) => [model.value, model])).values())
 
+/** Models that can be the project default: web chat starts on it, so CLI-only routers are left out. */
+export const getDefaultModelCandidates = (models: readonly ModelOption[]) =>
+  getConfigurableModels(models).filter((model) => !model.cliOnly)
+
 export const getRouterModels = (models: readonly ModelOption[]) =>
   models.filter((model) => model.isRouter)
 

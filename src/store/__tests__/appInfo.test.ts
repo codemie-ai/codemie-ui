@@ -457,6 +457,7 @@ describe('appInfoStore.getLLMModels', () => {
       supportsTools: true,
       defaultForCategories: ['reasoning'],
       cost: { input: 0.000015, output: 0.000075 },
+      cliOnly: false,
     })
     expect(models[1].isPremium).toBeUndefined()
     expect(models[1].cost).toBeUndefined()
@@ -523,6 +524,7 @@ describe('appInfoStore.getLLMModels routers', () => {
         complex: { model: 'gpt-5', label: 'GPT-5' },
         reasoning: { model: 'gpt-5-pro', label: 'GPT-5 Pro' },
       },
+      cliOnly: false,
     })
   })
 
@@ -749,5 +751,45 @@ describe('appInfoStore.setSelectedSttModel', () => {
 
     expect(appInfoStore.selectedSttModel).toBe('whisper')
     expect(localStorage.getItem('codemie-stt-model')).toBe('whisper')
+  })
+})
+
+describe('appInfoStore.getLLMCatalog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    appInfoStore.llmModels = []
+    appInfoStore.llmRouters = []
+    appInfoStore.llmCatalogModels = []
+    appInfoStore.llmCatalogRouters = []
+  })
+
+  it('requests include_all, keeps hidden models out and marks CLI-only routers, leaving the web lists alone', async () => {
+    mockGet.mockResolvedValue(
+      okResponse([
+        { base_name: 'gpt-4o', label: 'GPT-4o', default: true },
+        { base_name: 'gpt-cli', label: 'GPT CLI', forbidden_for_web: true },
+        {
+          base_name: 'nano-banana',
+          label: 'Nano Banana',
+          forbidden_for_web: true,
+          supports_image_generation: true,
+        },
+        { base_name: 'cli-router', label: 'CLI Router', is_router: true, forbidden_for_web: true },
+        { base_name: 'web-router', label: 'Web Router', is_router: true, forbidden_for_web: false },
+      ])
+    )
+
+    const { models, routers } = await appInfoStore.getLLMCatalog()
+
+    expect(mockGet.mock.calls[0][0]).toBe('v1/llm_models?include_all=true')
+    // Hidden models include image-generation ones the web uses elsewhere, so none is listed.
+    expect(models.map((m) => [m.value, m.cliOnly])).toEqual([['gpt-4o', false]])
+    expect(routers.map((r) => [r.value, r.cliOnly])).toEqual([
+      ['cli-router', true],
+      ['web-router', false],
+    ])
+    expect(appInfoStore.llmCatalogModels).toHaveLength(1)
+    expect(appInfoStore.llmModels).toEqual([])
+    expect(appInfoStore.llmRouters).toEqual([])
   })
 })

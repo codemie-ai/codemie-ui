@@ -24,4 +24,5 @@ export const routerToModelOption = (router: LLMRouterOption): ModelOption => ({
   multimodal: router.multimodal,
   supportsTools: router.supportsTools,
   isRouter: true,
+  cliOnly: router.cliOnly,
 })

@@ -22,7 +22,7 @@ import DefaultModelsSelector from './components/DefaultModelsSelector'
 import ModelConfigurationTable, { ModelSelectionState } from './components/ModelConfigurationTable'
 import {
   getChecklistModels,
-  getConfigurableModels,
+  getDefaultModelCandidates,
   isModelAvailable,
   ProjectModelSetting,
   selectionToSettings,
@@ -62,7 +62,8 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
   const [saving, setSaving] = useState(false)
   const [navigationDialogVisible, setNavigationDialogVisible] = useState(false)
 
-  const defaultModelCandidates = useMemo(() => getConfigurableModels(catalog), [catalog])
+  // CLI-only routers can be allowed, but web chat starts on the default, so it must be a web model.
+  const defaultModelCandidates = useMemo(() => getDefaultModelCandidates(catalog), [catalog])
   const checklistModels = useMemo(() => getChecklistModels(catalog), [catalog])
   const globalDefaultModel = useMemo(
     () =>
@@ -80,18 +81,16 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
     let cancelled = false
     setLoadError(false)
     Promise.all([
-      appInfoStore.getLLMModels(),
+      appInfoStore.getLLMCatalog(),
       projectModelSettingsStore.fetchSettings(projectName),
       appInfoStore.getProjectLLMModels(projectName),
     ])
-      .then(([availableModels, settings]) => {
+      .then(([{ models, routers }, settings]) => {
         if (cancelled) return
-        // getLLMModels lists concrete models only; routers live beside them in the store.
-        const platformCatalog = [
-          ...availableModels,
-          ...appInfoStore.llmRouters.map(routerToModelOption),
-        ]
-        const configurable = getConfigurableModels(platformCatalog)
+        // Web models plus CLI-only routers: a project's selection also decides what CodeMie CLI
+        // and the apps it connects (e.g. Claude Desktop) offer.
+        const platformCatalog = [...models, ...routers.map(routerToModelOption)]
+        const configurable = getDefaultModelCandidates(platformCatalog)
         const checklist = getChecklistModels(platformCatalog)
         const globalDefault =
           configurable.find((model) => model.isDefault)?.value ?? configurable[0]?.value ?? ''
@@ -123,8 +122,13 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
     ? checklistModels.filter((model) => isModelAvailable(model, draft.selection, false)).length
     : 0
   const defaultIsValid = availableModels.some((model) => model.value === draft?.defaultModel)
-  const defaultModelError =
-    !defaultIsValid && draft?.defaultModel ? 'Selected model is not available' : undefined
+  let defaultModelError: string | undefined
+  if (draft && availableModels.length === 0) {
+    defaultModelError =
+      'Select at least one model available on the web — CLI-only routers cannot be the default'
+  } else if (!defaultIsValid && draft?.defaultModel) {
+    defaultModelError = 'Selected model is not available'
+  }
 
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -258,7 +262,9 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
             </div>
             <p className="mt-1 text-sm text-text-quaternary">
               Choose which models are available in this project and set the default model. The
-              selection applies to chats, assistants and workflows of the project.
+              selection applies to chats, assistants and workflows of the project, and to CodeMie
+              CLI. Routers marked <span className="text-text-tertiary">CLI only</span> are not
+              offered in web chat and cannot be the default.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">

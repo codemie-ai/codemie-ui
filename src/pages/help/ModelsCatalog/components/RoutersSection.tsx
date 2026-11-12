@@ -15,6 +15,7 @@
 
 import { FC } from 'react'
 
+import ModelMetaLine from '@/components/ModelMetaLine'
 import PremiumModelBadge from '@/components/PremiumModelBadge'
 import { appInfoStore } from '@/store/appInfo'
 import type { LLMRouterOption, RouterTiers } from '@/types/entity/configuration'
@@ -72,6 +73,7 @@ const RoutersSection: FC<RoutersSectionProps> = ({ routers }) => {
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-text-primary font-medium">{router.label}</span>
                 {router.isPremium && <PremiumModelBadge />}
+                <ModelMetaLine cliOnly={router.cliOnly} />
                 <span className="ml-auto text-xs text-text-tertiary">
                   {(router.provider && (PROVIDER_LABELS[router.provider] ?? router.provider)) ||
                     '—'}

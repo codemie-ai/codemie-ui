@@ -50,6 +50,8 @@ export interface ModelOption {
   supportsTools?: boolean
   defaultForCategories?: string[]
   cost?: { input: number; output: number }
+  /** Hidden from web chat (forbidden_for_web); offered only through CodeMie CLI and its connectors. */
+  cliOnly?: boolean
 }
 
 export interface RouterTierModel {
@@ -76,6 +78,8 @@ export interface LLMRouterOption {
   strategy?: string
   classifierModel?: string
   tiers: RouterTiers
+  /** Hidden from web chat (forbidden_for_web); offered only through CodeMie CLI and its connectors. */
+  cliOnly?: boolean
 }
 
 export interface SpeechConfig {

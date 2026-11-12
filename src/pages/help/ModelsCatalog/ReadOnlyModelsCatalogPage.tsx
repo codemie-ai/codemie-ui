@@ -24,14 +24,19 @@ const getDefaultFor = (model: any) => {
 }
 
 const ReadOnlyModelsCatalogPage: FC = () => {
-  const { llmModels, llmRouters, getLLMModels } = useSnapshot(appInfoStore)
+  // The full catalog: web models, plus routers marked CLI only.
+  const {
+    llmCatalogModels: llmModels,
+    llmCatalogRouters: llmRouters,
+    getLLMCatalog,
+  } = useSnapshot(appInfoStore)
   const [search, setSearch] = useState('')
   const [provider, setProvider] = useState<string | number | null>('all')
   const [premiumOnly, setPremiumOnly] = useState(false)
 
   useEffect(() => {
-    getLLMModels()
-  }, [getLLMModels])
+    getLLMCatalog()
+  }, [getLLMCatalog])
 
   const providers = useMemo(
     () => [...new Set(llmModels.map((m) => m.provider).filter(Boolean))] as string[],
@@ -57,7 +62,9 @@ const ReadOnlyModelsCatalogPage: FC = () => {
         <p className="text-sm text-text-tertiary mb-6">
           All models available on this deployment.{' '}
           <span className="text-aborted-primary">Premium</span> models are billed at higher rates
-          and count against your project&rsquo;s Premium models budget.
+          and count against your project&rsquo;s Premium models budget.{' '}
+          <span className="text-text-quaternary">CLI only</span> routers are not offered in web
+          chat; use them through CodeMie CLI and the apps it connects, such as Claude Desktop.
         </p>
 
         <RoutersSection routers={[...llmRouters]} />
