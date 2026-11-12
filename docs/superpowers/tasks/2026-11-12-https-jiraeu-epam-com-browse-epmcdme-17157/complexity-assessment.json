@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "task": "Enable full screen and focus mode in the Hosted Applications iframe viewer so HTML decks can be presented, without weakening hosted-app access control (EPMCDME-17157).",
+  "generated": "2026-11-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 17,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "No 'focus mode' exists anywhere in the UI. It could mean a viewer feature that hides the page chrome or the deck's own focus/presenter mode, and the code settles neither. Whether to grant the Fullscreen API to content, add a viewer-level toggle, or do both is an open design decision, which brings a risk of rework." },
+    { "dimension": "technical_risk", "reason": "The closest pattern, the in-app expand toggles in MarkdownEditor and WorkflowEditor, does not cover the security-sensitive part: relaxing the deliberate fullscreen 'none' permission on the trusted container's inner frame (set in EPMCDME-15659 with no recorded reason, pinned by hostedApplicationFrame.test.ts) and on the outer srcdoc iframe. AC5 requires that hosted-app access control is not weakened. Nothing in the app uses the Fullscreen API yet, the two nested frames must both be changed, jsdom cannot exercise fullscreen so browser checks are required, and the content host may send its own Permissions-Policy." },
+    { "dimension": "component_scope", "reason": "HostedApplicationViewer (outer iframe plus any focus toggle), HostedViewerActions (header control) and the createHostedFrame utility. PageLayout is also touched if hiding the page chrome goes through it." },
+    { "dimension": "file_change_estimate", "reason": "About 4-6 files are modified (viewer, actions, frame builder, possibly PageLayout, the frame unit test and the viewer/integration tests) across src/pages/applications/hosted, src/utils and possibly src/components. There are 0-1 new files, and the expand/collapse icons already exist." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: security requirement (AC5, access control not weakened) together with relaxing an explicit fullscreen 'none' permissions-policy denial that no existing pattern covers"
+  ],
+  "split_recommendation": null
+}

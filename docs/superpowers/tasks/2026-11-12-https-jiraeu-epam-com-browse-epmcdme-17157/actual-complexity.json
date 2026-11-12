@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "generated": "2026-11-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 18,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 5,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "requirements_clarity", "reason": "Direction changed mid-run: CodeMie viewer Full/Focus buttons were built and then reverted once the user clarified that the hosted deck's own controls were the target. Rework actually happened, so L." },
+    { "dimension": "technical_risk", "reason": "The UI diff loosens iframe permissions: fullscreen is delegated through the outer viewer frame and the inner container frame (allow=fullscreen restricted to the content origin) and allow-popups is added to both sandboxes. The closest pattern was the existing sandbox/allow attributes, but they did not cover the security tradeoff of widening the permissions. A security sign-off and live checks against two backends were needed. Base M, raised to L by the security red flag." },
+    { "dimension": "component_scope", "reason": "In the UI repo, two components changed (HostedApplicationViewer and the createHostedFrame util). A companion backend change was also needed in codemie content.py (Permissions-Policy fullscreen=(self), CSP sandbox allow-popups), so the scope is M rather than S." },
+    { "dimension": "file_change_estimate", "reason": "The diffstat shows 5 UI files (2 source, 3 tests, +29/-6), which maps to M. The companion backend change adds 4 more files (+48/-16) in a separate repo. That is not counted in this band but supports the score not being lower." },
+    { "dimension": "affected_layers", "reason": "The UI iframe layer plus backend response headers (API/content serving), coordinated across two codebases. This is a standard two-layer path, so M." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: security-sensitive change to iframe sandbox and Permissions-Policy, needing a security sign-off"
+  ],
+  "split_recommendation": null
+}

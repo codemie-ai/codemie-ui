@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "branch": "claude/sdlc-autonomous-factory-f34ff0",
+  "head": "7e4b87fd26fcecb4b83f5c3166665c79e0a9015d",
+  "runner": "npm",
+  "started_at": "2026-11-12T10:32:31Z",
+  "completed_at": "2026-11-12T10:39:01Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 23000, "command": "npm run lint", "exit_code": 0},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 18000, "command": "npm run typecheck", "exit_code": 0},
+    {"id": "unit-tests", "source": "guide", "status": "PASS", "duration_ms": 183000, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "Test Files  903 passed (903); Tests  9278 passed | 1 skipped (9279)"},
+    {"id": "integration-tests", "source": "guide", "status": "PASS", "duration_ms": 101000, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "Test Files  84 passed (84); Tests  881 passed | 1 skipped (882). Skip-if not applicable: diff touches a component (HostedApplicationViewer.tsx)"},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 6000, "command": "npm run secrets:check", "exit_code": 0, "notes": "gitleaks: 'no leaks found' (working tree only, not history). Also enforced by .husky/pre-commit"},
+    {"id": "license", "source": "guide", "status": "PASS", "duration_ms": 2000, "command": "npm run license-check", "exit_code": 0, "notes": "stderr empty; licence summary printed"},
+    {"id": "sonar", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": "npm run sonar-local", "exit_code": 0, "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN (e.g. in .env.local) with a reachable Sonar host to run locally; also in .husky/pre-commit. Still owed to CI"},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 500, "command": "npm run license-headers:check", "exit_code": 0, "notes": "'Checked 2776 files, 0 missing license headers'. From .husky/pre-commit; not a guide gate section"},
+    {"id": "lint-staged-prettier", "source": "hook", "status": "PASS", "duration_ms": 1000, "command": "npx prettier --check src/pages/applications/hosted/HostedApplicationViewer.tsx src/pages/applications/hosted/__tests__/HostedApplicationViewer.test.tsx src/pages/applications/hosted/__tests__/embedded-viewer.integration.test.tsx src/utils/__tests__/hostedApplicationFrame.test.ts src/utils/hostedApplicationFrame.ts", "exit_code": 0, "notes": "Check-mode equivalent of the 'npx lint-staged' prettier step over the branch diff files; nothing is staged, so running lint-staged itself would do nothing. Its eslint and tsc steps are covered by the lint and typecheck gates"},
+    {"id": "ci-wait-ci-init", "source": "ci", "status": "N/A", "duration_ms": 0, "command": "GitLab MR pipeline: wait-ci-init (external pre-ci-guard template)", "exit_code": null, "notes": "Waits on external ci-pipeline and compliance-report contexts defined outside this repo; cannot run locally. Only CI can settle it"}
+  ],
+  "failures": {}
+}

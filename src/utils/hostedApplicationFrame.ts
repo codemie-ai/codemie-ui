@@ -56,6 +56,6 @@ export function createHostedFrame(launch: ValidatedHostedLaunch, uiOrigin: strin
       uiOrigin
     )});
   });`
-  const document = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><title>Application container</title><style nonce="${nonce}">html,body,iframe{margin:0;width:100%;height:100%;border:0;overflow:hidden}html,body{color-scheme:light;background:Canvas}</style></head><body><iframe title="Application content" name="${target}" sandbox="allow-scripts allow-same-origin" allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'; fullscreen 'none'" tabindex="0" referrerpolicy="no-referrer"></iframe><script nonce="${nonce}">${script}</script></body></html>`
+  const document = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><title>Application container</title><style nonce="${nonce}">html,body,iframe{margin:0;width:100%;height:100%;border:0;overflow:hidden}html,body{color-scheme:light;background:Canvas}</style></head><body><iframe title="Application content" name="${target}" sandbox="allow-scripts allow-same-origin allow-popups" allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'; fullscreen ${content.origin}" tabindex="0" referrerpolicy="no-referrer"></iframe><script nonce="${nonce}">${script}</script></body></html>`
   return { target, document }
 }

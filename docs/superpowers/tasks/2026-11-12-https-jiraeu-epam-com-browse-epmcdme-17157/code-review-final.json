@@ -1,0 +1,204 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "deterministic",
+    "rationale": "fresh full-profile review of the reworked diff (91 lines): 0 findings, confidence high; security relaxation signed off by the user (hitl) earlier"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "deterministic",
+      "rationale": "1 blocking finding: focus mode lacks a focus trap; hidden header/nav reachable by Tab"
+    },
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "deterministic",
+      "rationale": "check round: CR-001 resolved (inert siblings in focus mode), 0 findings, confidence high"
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "deterministic",
+      "rationale": "fresh full-profile review of the reworked diff (91 lines): 0 findings, confidence high; security relaxation signed off by the user (hitl) earlier"
+    }
+  ],
+  "reviewed_head": "7e4b87fd26fcecb4b83f5c3166665c79e0a9015d",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "All four lenses and the standards audit ran with no blocking result, and every candidate was checked against the source. 11 candidates were dismissed (0 deferred): content.origin is SAFE_ORIGIN-validated and is the same value as the CSP frame-src; both message listeners still check source and exact origin; the popup and full-screen grants, with popups inheriting the sandbox, are the user-approved AC5 design; the test-naming and duplication notes are below the emission floor. Security-flagged and AC1-AC4/AC8 pending-stage-7 for real-browser proof: a human must approve per AGENTS.md.",
+  "confidence": "high",
+  "check_confidence": null,
+  "risk_flags": [
+    "security"
+  ],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: deck's own Full control enters browser full screen in the viewer (view and preview)",
+      "status": "pending-stage-7",
+      "notes": "outer allow=fullscreen and inner fullscreen <content.origin> are in place; jsdom cannot run the Fullscreen API"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: leaving full screen returns to the regular viewer on the same slide",
+      "status": "pending-stage-7",
+      "notes": "browser-runtime behaviour only"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: deck's own Focus control opens a new window without 'Pop-up blocked'",
+      "status": "pending-stage-7",
+      "notes": "allow-popups added to both sandboxes; needs browser verification"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: closing Focus window or deck exit leaves the viewer as it was",
+      "status": "pending-stage-7",
+      "notes": "no viewer state touched; runtime proof owned by Stage 7"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC5: access control not weakened; only allow-popups added, fullscreen scoped to content origin, no escape-sandbox",
+      "status": "pass",
+      "notes": "five 'none' entries kept; fullscreen scoped to SAFE_ORIGIN-validated origin; CSP, ticket and message checks unchanged"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC6: no viewer-level presentation controls remain",
+      "status": "pass",
+      "notes": "no Full screen/Focus mode buttons, inert logic or useHostedPresentation under src"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC7: unit tests pin the new inner and outer frame policy",
+      "status": "pass",
+      "notes": "frame, viewer and integration tests assert exact sandbox and allow strings and the absence of escape-sandbox"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC8: criteria 1-4 verified in a real browser with a codemie-html-report deck",
+      "status": "pending-stage-7",
+      "notes": "execution evidence owned by Stage 7"
+    },
+    {
+      "kind": "spec",
+      "item": "Inner frame: fullscreen grant scoped to the validated content origin",
+      "status": "pass",
+      "notes": "hostedApplicationFrame.ts:59"
+    },
+    {
+      "kind": "spec",
+      "item": "Inner frame: add allow-popups to sandbox",
+      "status": "pass",
+      "notes": "hostedApplicationFrame.ts:59"
+    },
+    {
+      "kind": "spec",
+      "item": "Outer viewer iframe: add fullscreen permission",
+      "status": "pass",
+      "notes": "HostedApplicationViewer.tsx:281"
+    },
+    {
+      "kind": "spec",
+      "item": "Outer viewer iframe: add allow-popups to sandbox",
+      "status": "pass",
+      "notes": "HostedApplicationViewer.tsx:280"
+    },
+    {
+      "kind": "spec",
+      "item": "Popups stay sandboxed: no allow-popups-to-escape-sandbox",
+      "status": "pass",
+      "notes": "absent in both; tests assert it"
+    },
+    {
+      "kind": "spec",
+      "item": "Net diff contains only the frame-permission change and its tests",
+      "status": "pass",
+      "notes": "two attribute sets and three test files"
+    },
+    {
+      "kind": "spec",
+      "item": "Standalone / Open in new tab path unchanged",
+      "status": "pass",
+      "notes": "launch files not in changed files"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no CodeMie-level presentation controls",
+      "status": "pass",
+      "notes": "none present"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no other sandbox flag added",
+      "status": "pass",
+      "notes": "only allow-popups added"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no other powerful feature granted",
+      "status": "pass",
+      "notes": "camera/microphone/geolocation/payment/usb stay 'none'"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: container CSP, ticket flow, postMessage protocol unchanged",
+      "status": "pass",
+      "notes": "outside the changed hunk"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no server-side Permissions-Policy headers",
+      "status": "pass",
+      "notes": "nginx.conf untouched"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no deck-specific features",
+      "status": "pass",
+      "notes": "none introduced"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 8 subjects in 4266f47..HEAD follow git-workflow.md Commit Message Format R1: EPMCDME-17157 (non-zero key), colon, space, capitalised sentence"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard, not adjudicated"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Checked security-patterns.md against hostedApplicationFrame.ts and HostedApplicationViewer.tsx: only allow-popups and scoped fullscreen added; no escape-sandbox/top-navigation; listeners and SAFE_ORIGIN checks intact"
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "All four lenses and the standards audit ran with no blocking result, and every candidate was checked against the source. 11 candidates were dismissed (0 deferred): content.origin is SAFE_ORIGIN-validated and is the same value as the CSP frame-src; both message listeners still check source and exact origin; the popup and full-screen grants, with popups inheriting the sandbox, are the user-approved AC5 design; the test-naming and duplication notes are below the emission floor. Security-flagged and AC1-AC4/AC8 pending-stage-7 for real-browser proof: a human must approve per AGENTS.md.",
+    "confidence": "high",
+    "risk_flags": [
+      "security"
+    ]
+  }
+}

@@ -28,12 +28,20 @@ it('pins a trusted container to one version and never embeds the launch credenti
   expect(
     parsed.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute('content')
   ).toContain('frame-src ' + origin)
-  expect(parsed.querySelector('iframe')?.getAttribute('sandbox')).toBe(
-    'allow-scripts allow-same-origin'
-  )
+  const sandbox = parsed.querySelector('iframe')?.getAttribute('sandbox') ?? ''
+  expect(sandbox).toBe('allow-scripts allow-same-origin allow-popups')
+  expect(sandbox).not.toContain('escape-sandbox')
   expect(parsed.querySelector('iframe')?.name).toBe(frame.target)
   expect(parsed.querySelector('iframe')?.getAttribute('tabindex')).toBe('0')
-  expect(parsed.querySelector('iframe')?.getAttribute('allow')).toContain("fullscreen 'none'")
+  const allow = parsed.querySelector('iframe')?.getAttribute('allow') ?? ''
+  expect(allow.split(';').map((s) => s.trim())).toEqual([
+    "camera 'none'",
+    "microphone 'none'",
+    "geolocation 'none'",
+    "payment 'none'",
+    "usb 'none'",
+    'fullscreen ' + origin,
+  ])
   expect(frame.document).toContain('event.source!==child.contentWindow')
   expect(frame.document).toContain('event.origin!==' + JSON.stringify(origin))
   expect(frame.document.indexOf('Content-Security-Policy')).toBeLessThan(

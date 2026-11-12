@@ -94,6 +94,10 @@ async function frame() {
 }
 it('submits one ticket only to the generated inner frame, never on unrelated messages', async () => {
   const { outer } = await frame()
+  expect(outer).toHaveAttribute('allow', 'fullscreen')
+  expect(outer).not.toHaveAttribute('allowfullscreen')
+  expect(outer).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups')
+  expect(outer.getAttribute('sandbox')).not.toContain('escape-sandbox')
   fireEvent(
     window,
     new MessageEvent('message', {

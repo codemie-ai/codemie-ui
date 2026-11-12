@@ -112,6 +112,16 @@ describe('viewer launch', () => {
     expect(boundary.store.issueLaunch.mock.calls[0][1]).toBeUndefined()
   })
 
+  it('lets the frame delegate full screen to its content and nothing else', async () => {
+    const { container } = render(<HostedApplicationViewer />)
+    await waitFor(() => expect(container.querySelector('iframe')).toBeInTheDocument())
+    const outer = container.querySelector('iframe')!
+    expect(outer).toHaveAttribute('allow', 'fullscreen')
+    expect(outer).not.toHaveAttribute('allowfullscreen')
+    expect(outer).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups')
+    expect(outer.getAttribute('sandbox')).not.toContain('escape-sandbox')
+  })
+
   it('launches nothing and says there is no active version yet', async () => {
     boundary.store.getApplication.mockResolvedValue(app({ has_active_version: false }))
     render(<HostedApplicationViewer />)

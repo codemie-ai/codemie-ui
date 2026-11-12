@@ -245,7 +245,8 @@ const ApplicationView = ({ id, versionId }: Props) => {
               ref={iframe}
               srcDoc={frame.document}
               title={application?.name ?? 'Application preview'}
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts allow-same-origin allow-popups"
+              allow="fullscreen"
               referrerPolicy="no-referrer"
               className="size-full border-0"
               onLoad={handleContainerLoad}
