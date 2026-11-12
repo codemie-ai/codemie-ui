@@ -135,7 +135,7 @@ const HostedApplicationCover = ({ application: app, className, loadImage = true 
         <img
           src={image.url}
           alt=""
-          className="absolute inset-0 size-full object-cover object-top"
+          className="absolute inset-0 size-full object-cover object-center"
           onError={() => setImage(null)}
         />
       )}

@@ -1,0 +1,67 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "user override at trigger 4: 'Continue to Stage 7' — AC are visual, confirmed by Stage 7 browser verification"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "deterministic",
+      "rationale": "code-review-final.json: approve, 0 findings, confidence low (acceptance lens skipped as no-spec; AC are visual, deferred to Stage 7)"
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "user override at trigger 4: 'Continue to Stage 7' — AC are visual, confirmed by Stage 7 browser verification"
+    }
+  ],
+  "reviewed_head": "b185ecf26d9ee434b71ef4e87f71c2ce3cf3e193",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Compact profile: only the edge-case lens ran, and it returned no findings (0 deferred, 0 dismissed). Acceptance was skipped as no-spec, so the ticket's centering and no-crop criteria were not audited here and need visual confirmation in Stage 7. Confidence is low for that reason. No standards audit was expected for this profile.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Compact profile: only the edge-case lens ran, and it returned no findings (0 deferred, 0 dismissed). Acceptance was skipped as no-spec, so the ticket's centering and no-crop criteria were not audited here and need visual confirmation in Stage 7. Confidence is low for that reason. No standards audit was expected for this profile.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

@@ -119,7 +119,7 @@ const HostedCoverField = ({ application, name, value, onChange, disabled = false
               <img
                 src={preview}
                 alt="Selected cover"
-                className="size-full object-cover object-top"
+                className="size-full object-cover object-center"
               />
             ) : (
               <HostedApplicationCover application={shown} loadImage={current} />

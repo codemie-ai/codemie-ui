@@ -454,14 +454,18 @@ describe('details access model', () => {
     vi.spyOn(store.sharing, 'loadSharedWith').mockResolvedValue([])
     show(make({ shared: false }))
     expect(await screen.findByText('Not shared with anyone yet.')).toBeInTheDocument()
-    expect(screen.getByText('Only you can open this link until you share it.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Only you can open this link until you share it.')
+    ).toBeInTheDocument()
   })
 
   it('tells the creator that project members can open a project-shared app with no named grants', async () => {
     vi.spyOn(store.sharing, 'loadSharedWith').mockResolvedValue([])
     show(make({ shared: true, project: 'demo' }))
     expect(await screen.findByText('Not shared with anyone yet.')).toBeInTheDocument()
-    expect(screen.getByText('Members of the demo project can open this link.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Members of the demo project can open this link.')
+    ).toBeInTheDocument()
     expect(
       screen.queryByText('Only you can open this link until you share it.')
     ).not.toBeInTheDocument()

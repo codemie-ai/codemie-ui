@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-17137_center-hosted-app-cover",
+  "head": "b185ecf26d9ee434b71ef4e87f71c2ce3cf3e193",
+  "runner": "npm",
+  "started_at": "2026-11-12T08:05:24Z",
+  "completed_at": "2026-11-12T08:12:08Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 25000,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Installed node_modules is older than package-lock.json (e.g. axios 1.13.2 installed vs 1.20.0 in package.json; dompurify, react-router, lodash, postcss also behind); result is against a stale install - run npm ci and rerun to satisfy the repo's reinstall-before-trusting rule."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17527,
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "notes": "Installed node_modules is older than package-lock.json (e.g. axios 1.13.2 installed vs 1.20.0 in package.json; dompurify, react-router, lodash, postcss also behind); result is against a stale install - run npm ci and rerun to satisfy the repo's reinstall-before-trusting rule."
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 195248,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  903 passed (903); Tests 9278 passed | 1 skipped. Installed node_modules is older than package-lock.json (e.g. axios 1.13.2 installed vs 1.20.0 in package.json; dompurify, react-router, lodash, postcss also behind); result is against a stale install - run npm ci and rerun to satisfy the repo's reinstall-before-trusting rule."
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 101461,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Skip-if not met (diff touches components). Test Files  84 passed (84); Tests 882 passed | 1 skipped. Installed node_modules is older than package-lock.json (e.g. axios 1.13.2 installed vs 1.20.0 in package.json; dompurify, react-router, lodash, postcss also behind); result is against a stale install - run npm ci and rerun to satisfy the repo's reinstall-before-trusting rule."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 6302,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Gitleaks ran: 'no leaks found' (working tree only). Also enforced by .husky/pre-commit."
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2035,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Summary printed, no 'Found error' or 'not permitted' in output; scanned the stale installed node_modules tree, not package-lock.json - rerun after npm ci."
+    },
+    {
+      "id": "sonar",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Guide Skip-if met: SONAR_TOKEN unset (no .env.local). Also enforced by .husky/pre-commit. Set SONAR_TOKEN with reachable Sonar host to run locally; still owed."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 392,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: '\u2192 No staged files found.' Its prettier --write step is not covered by any guide gate; stage the changed files (or prettier --check them) to exercise it."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 290,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Hook-only check not in the guide's gate sections: 'Checked 2777 files, 0 missing license headers'."
+    },
+    {
+      "id": "mr-pipeline-wait-ci-init",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": ".gitlab-ci.yml::wait-ci-init",
+      "exit_code": null,
+      "notes": "Needs GitLab MR pipeline and external ci-pipeline/compliance-report contexts; only CI can settle it."
+    }
+  ],
+  "failures": {}
+}

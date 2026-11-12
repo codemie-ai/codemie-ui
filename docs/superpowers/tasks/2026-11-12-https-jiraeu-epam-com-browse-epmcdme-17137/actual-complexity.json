@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 7,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 2 files changed (2 insertions, 2 deletions), which maps to S under the actual-mode file-count table. Both are existing files in one directory (src/pages/applications/hosted/), and no new files were added." },
+    { "dimension": "component_scope", "reason": "The change is a one-line Tailwind class adjustment (object-cover object-center) on the <img> in each of two presentational components: HostedApplicationCover, which covers the catalog card and the details preview, and HostedCoverField, which is the form preview. It fixes a single visual concern in the UI layer, with no logic, state, store or API changes." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
