@@ -68,20 +68,6 @@ export function useCliAnalyticsUsers(
   }
 
   useEffect(() => {
-    cliAnalyticsStore.fetchUsersCharts({
-      time_period,
-      start_date,
-      end_date,
-      users,
-      projects,
-      repositories: repositoriesParam,
-    })
-    return () => {
-      cliAnalyticsStore.abortControllers.get('usersCharts')?.abort()
-    }
-  }, [time_period, start_date, end_date, users, projects, repositoriesParam])
-
-  useEffect(() => {
     cliAnalyticsStore.fetchUsersTable({
       time_period,
       start_date,
@@ -91,6 +77,11 @@ export function useCliAnalyticsUsers(
       repositories: repositoriesParam,
       page: currentPage,
       per_page: pageSize,
+      // The cost-share chart rides on the page answer: one request, one pass over the window.
+      include_chart: true,
+      // The Users tab reads neither part; false keeps the request on the start-day rollup.
+      include_daily_activity: false,
+      include_avg_duration: false,
     })
     return () => {
       cliAnalyticsStore.abortControllers.get('usersTable')?.abort()
@@ -103,13 +94,13 @@ export function useCliAnalyticsUsers(
   }, [])
 
   return {
-    chartRows: snap.users?.charts?.rows ?? [],
+    chartRows: snap.users?.table?.chart ?? [],
     tableRows: snap.users?.table?.rows ?? [],
     totalCount: snap.users?.table?.total_count ?? 0,
     currentPage,
     pageSize,
-    loading: (snap.loading.usersCharts ?? false) || (snap.loading.usersTable ?? false),
-    error: snap.error.usersCharts?.message ?? snap.error.usersTable?.message ?? null,
+    loading: snap.loading.usersTable ?? false,
+    error: snap.error.usersTable?.message ?? null,
     setPage: handleSetPage,
   }
 }

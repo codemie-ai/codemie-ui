@@ -222,14 +222,12 @@ export interface CliAnalyticsProjectsData {
   pagination: CliAnalyticsRepositoriesData['pagination']
 }
 
-export interface CliAnalyticsUserChartsData {
-  rows: ChartUserRow[]
-}
-
 export interface CliAnalyticsUserTableData {
   rows: UserRow[]
   total_count: number
   avg_session_duration_ms: number | null
+  // Every user of the window in rank order (requested with include_chart=true), for the cost-share chart.
+  chart?: ChartUserRow[] | null
 }
 
 export interface CliAnalyticsUsersData {

@@ -211,7 +211,13 @@ describe('cliAnalyticsStore.fetchUserCount', () => {
     expect(mockApi.get).toHaveBeenCalledWith(
       'v1/analytics/cli-analytics/users',
       expect.objectContaining({
-        params: expect.objectContaining({ time_period: 'last_30_days', page: 0, per_page: 1 }),
+        params: expect.objectContaining({
+          time_period: 'last_30_days',
+          page: 0,
+          per_page: 1,
+          include_daily_activity: false,
+          include_avg_duration: false,
+        }),
       })
     )
     expect(cliAnalyticsStore.userCount).toBe(212)
@@ -249,6 +255,8 @@ describe('cliAnalyticsStore.fetchApiSpend', () => {
         params: expect.objectContaining({
           time_period: 'last_30_days',
           subscription_type: 'codemie',
+          include_class_lists: false,
+          include_buckets: false,
         }),
       })
     )
@@ -320,6 +328,52 @@ describe('cliAnalyticsStore.fetchActivity', () => {
       'v1/analytics/cli-analytics/activity',
       expect.objectContaining({
         params: expect.objectContaining({ time_period: 'last_30_days', tz: 'Europe/Madrid' }),
+      })
+    )
+  })
+})
+
+describe('cliAnalyticsStore.fetchCost', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset()
+  })
+
+  it('turns off the class lists and buckets the Cost tab does not read', async () => {
+    respondWith({ data: { kpis: null, cost_by_user: [], cost_by_model: [] } })
+
+    await cliAnalyticsStore.fetchCost({ time_period: 'last_hour' })
+
+    expect(mockApi.get).toHaveBeenCalledWith(
+      'v1/analytics/cli-analytics/cost',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          time_period: 'last_hour',
+          include_class_lists: false,
+          include_buckets: false,
+        }),
+      })
+    )
+  })
+})
+
+describe('cliAnalyticsStore.fetchOverview', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset()
+  })
+
+  it('turns off the class lists and buckets the Overview tab does not read', async () => {
+    respondWith({ data: { kpis: null, daily_buckets: [], model_breakdown: [] } })
+
+    await cliAnalyticsStore.fetchOverview({ time_period: 'last_30_days' })
+
+    expect(mockApi.get).toHaveBeenCalledWith(
+      'v1/analytics/cli-analytics/overview',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          time_period: 'last_30_days',
+          include_class_lists: false,
+          include_buckets: false,
+        }),
       })
     )
   })

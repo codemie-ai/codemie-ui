@@ -69,8 +69,7 @@ describe('useCliAnalyticsUsers', () => {
     await waitFor(() => expect(observe().error).toBe('boom'))
   })
 
-  it('sends a filter change to charts and table and resets the table page', async () => {
-    const fetchCharts = vi.spyOn(cliAnalyticsStore, 'fetchUsersCharts').mockResolvedValue(undefined)
+  it('sends a filter change to the table request and resets the table page', async () => {
     const fetchTable = vi.spyOn(cliAnalyticsStore, 'fetchUsersTable').mockResolvedValue(undefined)
 
     const { result, rerender } = renderHook(
@@ -85,7 +84,6 @@ describe('useCliAnalyticsUsers', () => {
     })
 
     await waitFor(() => expect(result.current.currentPage).toBe(0))
-    expect(fetchCharts).toHaveBeenLastCalledWith(expect.objectContaining({ users: 'a@co.com' }))
     expect(fetchTable).toHaveBeenLastCalledWith(
       expect.objectContaining({ users: 'a@co.com', page: 0 })
     )
@@ -96,7 +94,6 @@ describe('useCliAnalyticsUsers', () => {
   })
 
   it('defaults to 10 rows and goes back to the first page when the page size changes', async () => {
-    vi.spyOn(cliAnalyticsStore, 'fetchUsersCharts').mockResolvedValue(undefined)
     const fetchTable = vi.spyOn(cliAnalyticsStore, 'fetchUsersTable').mockResolvedValue(undefined)
 
     const { result } = renderHook(() => useCliAnalyticsUsers(BASE_FILTERS))
@@ -117,5 +114,37 @@ describe('useCliAnalyticsUsers', () => {
       )
     )
     expect(result.current.pageSize).toBe(50)
+  })
+
+  it('asks for the cost-share chart in the page request and reads the chart rows from its answer', async () => {
+    const chart = [
+      { developer_name: 'a@example.com', cost_usd: 3 },
+      { developer_name: 'b@example.com', cost_usd: 1 },
+    ]
+    const get = vi.spyOn(api, 'get').mockResolvedValue({
+      json: async () => ({
+        data: { rows: [], total_count: 2, avg_session_duration_ms: null, chart },
+      }),
+    } as Response)
+
+    const { result, rerender } = renderHook(() => useCliAnalyticsUsers(BASE_FILTERS))
+    await waitFor(() => expect(get).toHaveBeenCalled())
+    await act(async () => {})
+    rerender()
+
+    expect(get).toHaveBeenCalledTimes(1)
+    expect(get).toHaveBeenCalledWith(
+      'v1/analytics/cli-analytics/users',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          include_chart: true,
+          include_daily_activity: false,
+          include_avg_duration: false,
+          page: 0,
+          per_page: 10,
+        }),
+      })
+    )
+    expect(result.current.chartRows).toEqual(chart)
   })
 })

@@ -25,7 +25,6 @@ import type {
   CliAnalyticsRepositoriesData,
   CliAnalyticsSessionsData,
   CliAnalyticsToolsData,
-  CliAnalyticsUserChartsData,
   CliAnalyticsUserTableData,
   SessionDetail,
   SessionRow,
@@ -67,7 +66,6 @@ interface CliAnalyticsState {
   activity: CliAnalyticsActivityData | null
   tools: CliAnalyticsToolsData | null
   users: {
-    charts: CliAnalyticsUserChartsData | null
     table: CliAnalyticsUserTableData | null
   } | null
   sessions: CliAnalyticsSessionsData | null
@@ -84,7 +82,6 @@ interface CliAnalyticsState {
   error: Record<string, ErrorDetails | null>
   fetchActivity: (params: Record<string, unknown>) => Promise<void>
   fetchTools: (params: Record<string, unknown>) => Promise<void>
-  fetchUsersCharts: (params: Record<string, unknown>) => Promise<void>
   fetchUsersTable: (params: Record<string, unknown>) => Promise<void>
   fetchSessions: (params: Record<string, unknown>) => Promise<void>
   fetchOverview: (params: Record<string, unknown>) => Promise<void>
@@ -229,21 +226,6 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
     if (data) cliAnalyticsStore.tools = data.data
   },
 
-  async fetchUsersCharts(params) {
-    const data = await fetchWithState<{ data: CliAnalyticsUserChartsData }>(
-      cliAnalyticsStore,
-      'usersCharts',
-      'v1/analytics/cli-analytics/user-charts',
-      params,
-      'Failed to fetch user charts'
-    )
-    if (data && cliAnalyticsStore.users) {
-      cliAnalyticsStore.users.charts = data.data
-    } else if (data) {
-      cliAnalyticsStore.users = { charts: data.data, table: null }
-    }
-  },
-
   async fetchUsersTable(params) {
     const data = await fetchWithState<{ data: CliAnalyticsUserTableData }>(
       cliAnalyticsStore,
@@ -255,7 +237,7 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
     if (data && cliAnalyticsStore.users) {
       cliAnalyticsStore.users.table = data.data
     } else if (data) {
-      cliAnalyticsStore.users = { charts: null, table: data.data }
+      cliAnalyticsStore.users = { table: data.data }
     }
   },
 
@@ -267,7 +249,14 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       cliAnalyticsStore,
       'userCount',
       'v1/analytics/cli-analytics/users',
-      { ...params, page: 0, per_page: 1 },
+      // Only total_count is read: skip the daily-activity and avg-duration statements.
+      {
+        ...params,
+        page: 0,
+        per_page: 1,
+        include_daily_activity: false,
+        include_avg_duration: false,
+      },
       'Failed to fetch user count'
     )
     if (data) cliAnalyticsStore.userCount = data.data?.total_count ?? null
@@ -281,7 +270,13 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       cliAnalyticsStore,
       'apiSpend',
       'v1/analytics/cli-analytics/overview',
-      { ...params, subscription_type: API_BILLED_SUBSCRIPTION_TYPE },
+      // Only kpis.total_cost_usd is read: skip the class lists and buckets.
+      {
+        ...params,
+        subscription_type: API_BILLED_SUBSCRIPTION_TYPE,
+        include_class_lists: false,
+        include_buckets: false,
+      },
       'Failed to fetch API spend'
     )
     if (data) cliAnalyticsStore.apiSpend = data.data?.kpis?.total_cost_usd ?? null
@@ -309,7 +304,8 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       cliAnalyticsStore,
       'overview',
       'v1/analytics/cli-analytics/overview',
-      params,
+      // The Overview tab reads neither part; false keeps the request on the start-day rollup.
+      { ...params, include_class_lists: false, include_buckets: false },
       'Failed to fetch local analytics overview'
     )
     if (data) cliAnalyticsStore.overview = data.data
@@ -346,7 +342,8 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       cliAnalyticsStore,
       'cost',
       'v1/analytics/cli-analytics/cost',
-      params,
+      // The Cost tab reads neither part; false keeps the request on the start-day rollup.
+      { ...params, include_class_lists: false, include_buckets: false },
       'Failed to fetch local analytics cost'
     )
     if (data) cliAnalyticsStore.cost = data.data
