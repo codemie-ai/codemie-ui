@@ -18,8 +18,6 @@ import DiagramSvg from '@/assets/icons/diagram.svg?react'
 import EyeSvg from '@/assets/icons/eye.svg?react'
 import NotSharedSvg from '@/assets/icons/shared-no.svg?react'
 import SharedSvg from '@/assets/icons/shared-yes.svg?react'
-import StatusNotStartedSvg from '@/assets/icons/status-not-started.svg?react'
-import StopSvg from '@/assets/icons/stop.svg?react'
 import Button from '@/components/Button'
 import Card from '@/components/Card'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
@@ -27,6 +25,7 @@ import type { NavigationMenuItem } from '@/components/NavigationMore/NavigationM
 import { userStore } from '@/store/user'
 import type { HostedApplication } from '@/types/entity/hostedApplication'
 import { isProjectMember } from '@/utils/entity'
+import { cn } from '@/utils/utils'
 
 import { canOpen, isCreator, isManager, isSuspended, suspensionRefuses } from './hostedAccess'
 import HostedApplicationCover from './HostedApplicationCover'
@@ -41,8 +40,8 @@ interface Props {
 }
 
 // One status line in the style of the assistant and skill cards: an icon and plain text.
-const StatusItem = ({ icon, children, id }: { icon: ReactNode; children: string; id?: string }) => (
-  <span id={id} className="flex flex-row items-center gap-3 whitespace-nowrap text-xs">
+const StatusItem = ({ icon, children }: { icon: ReactNode; children: string }) => (
+  <span className="flex flex-row items-center gap-3 whitespace-nowrap text-xs">
     {icon}
     {children}
   </span>
@@ -60,6 +59,29 @@ const nextStepLabel = (app: HostedApplication) => {
 }
 
 const NO_ACTIVE_VERSION = 'No active version yet'
+
+/** A state pinned to the cover; a solid fill keeps it readable over any uploaded image. */
+const CoverBadge = ({
+  id,
+  tone,
+  children,
+}: {
+  id?: string
+  tone: 'neutral' | 'error'
+  children: string
+}) => (
+  <span
+    id={id}
+    className={cn(
+      'absolute right-2 top-2 whitespace-nowrap rounded-full border bg-surface-base-primary px-2.5 py-1 text-xs font-medium shadow-sm',
+      tone === 'error'
+        ? 'border-failed-secondary text-failed-secondary'
+        : 'border-border-structural text-text-secondary'
+    )}
+  >
+    {children}
+  </span>
+)
 
 /**
  * View as an icon with a tooltip, so the card row keeps room for the status; the details page
@@ -105,22 +127,24 @@ const HostedApplicationCard = ({ application: app, menuItems, onOpen }: Props) =
   // As on assistant cards, project sharing is shown to the creator and project members only.
   const seesSharing =
     isCreator(app, userStore.user?.userId) || isProjectMember(app, userStore.user?.projects)
-  const status = (
-    <div className="flex flex-row flex-wrap items-center gap-x-4 gap-y-1">
-      {app.is_global && <StatusItem icon={<DiagramSvg />}>Marketplace</StatusItem>}
-      {!app.is_global && seesSharing && (
-        <StatusItem icon={app.shared ? <SharedSvg /> : <NotSharedSvg />}>
-          {app.shared ? 'Shared with project' : 'Not shared with project'}
-        </StatusItem>
-      )}
-      {suspended && <StatusItem icon={<StopSvg />}>Suspended</StatusItem>}
-      {!openable && (
-        <StatusItem id={noVersionId} icon={<StatusNotStartedSvg />}>
-          {NO_ACTIVE_VERSION}
-        </StatusItem>
-      )}
-    </div>
+  const status = app.is_global ? (
+    <StatusItem icon={<DiagramSvg />}>Marketplace</StatusItem>
+  ) : (
+    seesSharing && (
+      <StatusItem icon={app.shared ? <SharedSvg /> : <NotSharedSvg />}>
+        {app.shared ? 'Shared with project' : 'Not shared with project'}
+      </StatusItem>
+    )
   )
+  // What keeps the app from running sits on its cover; suspension outranks a missing version.
+  let coverBadge: ReactNode = null
+  if (suspended) coverBadge = <CoverBadge tone="error">Suspended</CoverBadge>
+  else if (!openable)
+    coverBadge = (
+      <CoverBadge id={noVersionId} tone="neutral">
+        {NO_ACTIVE_VERSION}
+      </CoverBadge>
+    )
   return (
     <article aria-labelledby={titleId} className="min-w-0">
       <Card
@@ -135,7 +159,12 @@ const HostedApplicationCard = ({ application: app, menuItems, onOpen }: Props) =
         description={app.description}
         // The cover above already identifies the app; a constant icon here would say nothing.
         avatar={null}
-        preview={<HostedApplicationCover application={app} />}
+        preview={
+          <div className="relative size-full">
+            <HostedApplicationCover application={app} />
+            {coverBadge}
+          </div>
+        }
         topRight={
           menuItems?.length ? (
             <NavigationMore
