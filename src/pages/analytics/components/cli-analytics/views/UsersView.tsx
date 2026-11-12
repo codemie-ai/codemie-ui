@@ -17,7 +17,9 @@ import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Toolt
 import { type FC, useEffect, useMemo, useRef, useState } from 'react'
 
 import Select from '@/components/form/Select'
+import Pagination from '@/components/Pagination'
 import Table from '@/components/Table'
+import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import {
   ColumnType,
   MetricFormat,
@@ -267,9 +269,7 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
 
   const customRenderColumns = USER_CELL_RENDERERS
 
-  const totalPages = Math.ceil(totalCount / pageSize)
-  const canPrevious = currentPage > 0
-  const canNext = currentPage < totalPages - 1
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
   return (
     <div className="flex flex-col gap-6">
@@ -299,62 +299,45 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
         loading={loading}
         error={errorDetails}
       >
-        {tableRows.length === 0 && !loading && !error ? (
-          <p className="text-text-quaternary text-sm">No user data for the selected filters.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table<UserRow>
-              items={tableRows}
-              columnDefinitions={columnDefinitions}
-              customRenderColumns={customRenderColumns}
-              idPath="developer_name"
-              loading={false}
-              embedded={true}
-              selected={selected}
-              onSelectRow={(newRows) => {
-                const clicked = newRows.find(
-                  (r) => !selected.some((s) => s.developer_name === r.developer_name)
-                )
-                // A row without a resolvable user_id cannot be drilled into, so leave it
-                // unselected rather than highlighting a row that opens nothing.
-                if (clicked && !clicked.user_id) return
-                if (clicked) handleDrill(clicked)
-                setSelected(newRows)
-              }}
-            />
-          </div>
-        )}
-      </AnalyticsWidget>
-
-      {totalCount > pageSize && (
-        <div className="flex items-center justify-between">
-          <div className="text-text-quaternary text-xs">
-            Showing {currentPage * pageSize + 1} to{' '}
-            {Math.min((currentPage + 1) * pageSize, totalCount)} of {totalCount}
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPage(currentPage - 1)}
-              disabled={!canPrevious}
-              className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <span className="px-3 py-1 text-sm">
-              Page {currentPage + 1} of {totalPages}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPage(currentPage + 1)}
-              disabled={!canNext}
-              className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
+        <div className="flex flex-col gap-4">
+          {tableRows.length === 0 && !loading && !error ? (
+            <p className="text-text-quaternary text-sm">No user data for the selected filters.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table<UserRow>
+                items={tableRows}
+                columnDefinitions={columnDefinitions}
+                customRenderColumns={customRenderColumns}
+                idPath="developer_name"
+                loading={false}
+                embedded={true}
+                selected={selected}
+                onSelectRow={(newRows) => {
+                  const clicked = newRows.find(
+                    (r) => !selected.some((s) => s.developer_name === r.developer_name)
+                  )
+                  // A row without a resolvable user_id cannot be drilled into, so leave it
+                  // unselected rather than highlighting a row that opens nothing.
+                  if (clicked && !clicked.user_id) return
+                  if (clicked) handleDrill(clicked)
+                  setSelected(newRows)
+                }}
+              />
+            </div>
+          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setPage={setPage}
+            perPage={pageSize}
+            perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+            // Keep the size selector when one page holds every row, so a smaller size can be chosen again.
+            alwaysShowPerPage={totalCount > Number(DECIMAL_PAGINATION_OPTIONS[0].value)}
+            // Inside a widget the page-background band reads as a stray strip.
+            className="!bg-transparent !border-t-0"
+          />
         </div>
-      )}
+      </AnalyticsWidget>
 
       {selectedTarget && (
         <ExtendedSessionsModal

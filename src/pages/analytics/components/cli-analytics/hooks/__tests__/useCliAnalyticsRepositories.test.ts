@@ -46,7 +46,7 @@ describe('useCliAnalyticsRepositories', () => {
     expect(result.current.perPage).toBe(20)
   })
 
-  it('sends subscription_type and project_origin and resets page when they change', async () => {
+  it('resets page when a filter changes', async () => {
     const fetchRepositories = vi
       .spyOn(cliAnalyticsStore, 'fetchRepositories')
       .mockResolvedValue(undefined)
@@ -58,16 +58,16 @@ describe('useCliAnalyticsRepositories', () => {
     act(() => result.current.setPage(3))
 
     rerender({
-      filters: { ...BASE_FILTERS, subscription_type: ['personal'], project_origin: ['none'] },
+      filters: { ...BASE_FILTERS, users: ['a@co.com'] },
     })
 
     await waitFor(() => expect(result.current.page).toBe(1))
     expect(fetchRepositories).toHaveBeenLastCalledWith(
-      expect.objectContaining({ subscription_type: 'personal', project_origin: 'none', page: 0 })
+      expect.objectContaining({ users: 'a@co.com', page: 0 })
     )
     // The page resets with the filters: no request carries the new filters with the old page.
     expect(fetchRepositories).not.toHaveBeenCalledWith(
-      expect.objectContaining({ subscription_type: 'personal', page: 2 })
+      expect.objectContaining({ users: 'a@co.com', page: 2 })
     )
   })
 
@@ -94,10 +94,10 @@ describe('useCliAnalyticsRepositories', () => {
         useCliAnalyticsRepositories(props.filters, undefined, false, 0),
       { initialProps: { filters: BASE_FILTERS } }
     )
-    all.rerender({ filters: { ...BASE_FILTERS, subscription_type: ['personal'] } })
+    all.rerender({ filters: { ...BASE_FILTERS, users: ['a@co.com'] } })
     await waitFor(() =>
       expect(fetchRepositories).toHaveBeenLastCalledWith(
-        expect.objectContaining({ subscription_type: 'personal' })
+        expect.objectContaining({ users: 'a@co.com' })
       )
     )
     expect(fetchRepositories).not.toHaveBeenCalledWith(

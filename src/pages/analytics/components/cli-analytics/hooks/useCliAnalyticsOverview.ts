@@ -27,6 +27,7 @@ export interface UseCliAnalyticsOverviewResult {
   kpis: OverviewKPIs | null
   dailyBuckets: DailyBucket[]
   modelBreakdown: ModelBreakdownItem[]
+  personalBilledCost: number | null
   loading: boolean
   error: string | null
 }
@@ -44,6 +45,7 @@ export function useCliAnalyticsOverview(
     kpis: data?.kpis ?? null,
     dailyBuckets: data?.daily_buckets ?? [],
     modelBreakdown: data?.model_breakdown ?? [],
+    personalBilledCost: data?.personal_billed?.cost_usd ?? null,
     loading,
     error,
   }

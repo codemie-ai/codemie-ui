@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -21,6 +21,7 @@ import { cliAnalyticsStore } from '@/store/cliAnalytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 import type { ExtendedSessionsTarget, RepositoryRow } from '@/types/cliAnalytics'
 
+import { useCliAnalyticsApiSpend } from '../hooks/useCliAnalyticsApiSpend'
 import { useCliAnalyticsOverview } from '../hooks/useCliAnalyticsOverview'
 import { useCliAnalyticsRepositories } from '../hooks/useCliAnalyticsRepositories'
 import OverviewView from '../views/OverviewView'
@@ -47,9 +48,18 @@ vi.mock('../hooks/useCliAnalyticsOverview', () => ({
     },
     dailyBuckets: [{ day: '2026-07-01', net_lines: 18 }],
     modelBreakdown: [{ model_name: 'claude-sonnet-4-5', session_count: 80 }],
+    personalBilledCost: null,
     loading: false,
     error: null,
   })),
+}))
+
+vi.mock('../hooks/useCliAnalyticsUserCount', () => ({
+  useCliAnalyticsUserCount: vi.fn(() => ({ userCount: 40, loading: false, error: null })),
+}))
+
+vi.mock('../hooks/useCliAnalyticsApiSpend', () => ({
+  useCliAnalyticsApiSpend: vi.fn(() => ({ apiSpend: null, loading: false, error: null })),
 }))
 
 vi.mock('../hooks/useCliAnalyticsRepositories', () => ({
@@ -65,8 +75,19 @@ vi.mock('../hooks/useCliAnalyticsRepositories', () => ({
 }))
 
 vi.mock('../../AnalyticsWidget', () => ({
-  default: ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div data-testid={`widget-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+  default: ({
+    title,
+    children,
+    loading,
+  }: {
+    title: string
+    children: React.ReactNode
+    loading?: boolean
+  }) => (
+    <div
+      data-testid={`widget-${title.toLowerCase().replace(/\s+/g, '-')}`}
+      data-loading={String(Boolean(loading))}
+    >
       <h3>{title}</h3>
       {children}
     </div>
@@ -184,6 +205,7 @@ function renderWithKpis(overrides: {
     kpis: { ...BASE_KPIS, ...overrides },
     dailyBuckets: [{ day: '2026-07-01', net_lines: 18 }],
     modelBreakdown: [{ model_name: 'claude-sonnet-4-5', session_count: 80 }],
+    personalBilledCost: null,
     loading: false,
     error: null,
   } as unknown as ReturnType<typeof useCliAnalyticsOverview>)
@@ -194,36 +216,79 @@ describe('OverviewView', () => {
   // Restores the module factory default for tests that render without an override.
   beforeEach(() => {
     vi.mocked(useCliAnalyticsOverview).mockReset()
+    vi.mocked(useCliAnalyticsApiSpend).mockReturnValue({
+      apiSpend: null,
+      loading: false,
+      error: null,
+    })
   })
 
-  it('renders headline KPI metrics', () => {
+  it('splits Est. Cost into API Spend and Subscription Usage with the personal-billed cost', () => {
+    vi.mocked(useCliAnalyticsApiSpend).mockReturnValue({ apiSpend: 4, loading: false, error: null })
+    vi.mocked(useCliAnalyticsOverview).mockReturnValue({
+      kpis: { ...BASE_KPIS },
+      dailyBuckets: [],
+      modelBreakdown: [],
+      personalBilledCost: 1.5,
+      loading: false,
+      error: null,
+    } as unknown as ReturnType<typeof useCliAnalyticsOverview>)
+
     render(<OverviewView filters={MOCK_FILTERS} />)
 
-    expect(screen.getByTestId('metric-total_sessions')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-total_cost_usd')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-duration_ms')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-total_turns')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-total_tool_calls')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-total_files_changed')).toBeInTheDocument()
+    // Est. Cost 12.5: API Spend 4, Subscription Usage (12.5 - 4) + 1.5 personal = 10.
+    expect(
+      within(screen.getByTestId('metric-api_cost_usd')).getByTestId('metric-value')
+    ).toHaveTextContent('4')
+    expect(
+      within(screen.getByTestId('metric-subscription_cost_usd')).getByTestId('metric-value')
+    ).toHaveTextContent('10')
   })
 
-  it('renders token usage KPI metrics', () => {
+  it('keeps the summary loading while the API spend of the new filters is pending', () => {
+    vi.mocked(useCliAnalyticsApiSpend).mockReturnValue({
+      apiSpend: null,
+      loading: true,
+      error: null,
+    })
+
     render(<OverviewView filters={MOCK_FILTERS} />)
 
-    expect(screen.getByTestId('metric-total_input_tokens')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-total_output_tokens')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-total_tokens')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-total_cache_creation_tokens')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-total_cache_read_tokens')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-summary')).toHaveAttribute('data-loading', 'true')
   })
 
-  it('renders efficiency KPI metrics', () => {
+  it('renders the summary as three rows of cards without group headings', () => {
     render(<OverviewView filters={MOCK_FILTERS} />)
 
-    expect(screen.getByTestId('metric-cache_read_cost_usd')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-bloat_pct')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-dead_sessions')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-avg_context_per_call')).toBeInTheDocument()
+    const groups = {
+      cost: ['total_cost_usd', 'cache_read_cost_usd', 'bloat_pct'],
+      tokens: [
+        'total_tokens',
+        'total_input_tokens',
+        'total_output_tokens',
+        'total_cache_read_tokens',
+        'total_cache_creation_tokens',
+      ],
+      sessions: [
+        'total_users',
+        'total_sessions',
+        'total_turns',
+        'total_tool_calls',
+        'dead_sessions',
+      ],
+    }
+    for (const [id, metricIds] of Object.entries(groups)) {
+      const group = screen.getByTestId(`summary-group-${id}`)
+      for (const metricId of metricIds) {
+        expect(within(group).getByTestId(`metric-${metricId}`)).toBeInTheDocument()
+      }
+    }
+    for (const title of ['Cost attribution', 'Tokens breakdown', 'Session info']) {
+      expect(screen.queryByText(title)).not.toBeInTheDocument()
+    }
+    for (const id of ['duration_ms', 'total_files_changed', 'avg_context_per_call']) {
+      expect(screen.queryByTestId(`metric-${id}`)).not.toBeInTheDocument()
+    }
   })
 
   it('renders activity timeline widget', () => {
@@ -249,6 +314,7 @@ describe('OverviewView', () => {
       kpis: null,
       dailyBuckets: [],
       modelBreakdown: [],
+      personalBilledCost: null,
       loading: true,
       error: null,
     })
@@ -315,14 +381,14 @@ describe('OverviewView', () => {
   it('keeps the success subtitle when tool calls exist', () => {
     renderWithKpis({ total_tool_calls: 640, tool_call_success_rate: 81.3 })
 
-    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('81.30% success')
+    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('81.30% succeeded')
   })
 
   // This surface guards inline, not via formatToolSuccess; fails on a rate truthiness check.
   it('keeps a real 0.00% success subtitle when calls exist but none succeeded', () => {
     renderWithKpis({ total_tool_calls: 12, tool_call_success_rate: 0 })
 
-    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('0.00% success')
+    expect(screen.getByTestId('metric-desc-total_tool_calls')).toHaveTextContent('0.00% succeeded')
   })
 
   it('does not render stale rows left in the shared repositories store slot', async () => {
@@ -362,22 +428,5 @@ describe('OverviewView', () => {
     expect(screen.queryByText('stale/repo-b')).not.toBeInTheDocument()
 
     cliAnalyticsStore.repositories = null
-  })
-
-  it('says net lines not reported when net_lines is null', () => {
-    renderWithKpis({ net_lines: null })
-    expect(screen.getByTestId('metric-desc-total_files_changed')).toHaveTextContent(
-      'net lines not reported'
-    )
-  })
-
-  it('shows net +0 lines for a real zero', () => {
-    renderWithKpis({ net_lines: 0 })
-    expect(screen.getByTestId('metric-desc-total_files_changed')).toHaveTextContent('net +0 lines')
-  })
-
-  it('shows net +5 lines for a positive value', () => {
-    renderWithKpis({ net_lines: 5 })
-    expect(screen.getByTestId('metric-desc-total_files_changed')).toHaveTextContent('net +5 lines')
   })
 })

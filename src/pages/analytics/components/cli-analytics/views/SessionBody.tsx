@@ -69,15 +69,14 @@ const growthChartOptions = {
   },
   scales: {
     x: {
-      ticks: {
-        maxTicksLimit: 8,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        callback: (value: any) => `turn ${value}`,
-      },
+      // One point per API request, labelled 1…N from the data labels.
+      ticks: { maxTicksLimit: 8 },
     },
     y: {
       type: 'linear' as const,
       position: 'left' as const,
+      // Cost never goes below $0; without a floor an all-$0 series is auto-scaled to -$1…$1.
+      min: 0,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ticks: { callback: (v: any) => formatSpend(v as number) },
     },
@@ -126,7 +125,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
     m('cost_usd', 'Est. Cost', formatSpend(session.cost_usd), 'from token usage'),
     m(
       'cache_read_cost',
-      'Cache Read Cost',
+      'Cache Re-Read Cost',
       session.cache_read_cost_usd != null ? formatSpend(session.cache_read_cost_usd) : '—',
       'spend on context re-reads'
     ),
@@ -227,7 +226,12 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
 
     apiEvents.forEach((e, i) => {
       cumCost += e.cost_usd ?? 0
-      cumTokens += (e.input_tokens ?? 0) + (e.output_tokens ?? 0) + (e.cache_read_tokens ?? 0)
+      // The same total as the Tokens tile, so the line ends at TOTAL.
+      cumTokens +=
+        (e.input_tokens ?? 0) +
+        (e.output_tokens ?? 0) +
+        (e.cache_read_tokens ?? 0) +
+        (e.cache_creation_tokens ?? 0)
       costSeries.push(cumCost)
       tokenSeries.push(cumTokens)
       labels.push(String(i + 1))
@@ -262,7 +266,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
 
       <AnalyticsWidget
         title="Token & Cost Growth"
-        description="Cumulative cost and tokens per turn."
+        description="Cumulative cost and tokens per API request."
       >
         {growthData ? (
           // h-[240px]: explicit design-specified container height for the growth chart
@@ -271,7 +275,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
               data={{
                 labels: growthData.labels,
                 datasets: [
-                  // An unknown cost has no curve: the per-turn zeros are not a confirmed $0.
+                  // An unknown cost has no curve: the per-request zeros are not a confirmed $0.
                   ...(session.cost_available === false
                     ? []
                     : [
@@ -307,7 +311,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
           </div>
         ) : (
           <p className="text-text-quaternary text-sm">
-            Per-turn data not available for this session.
+            Per-request data not available for this session.
           </p>
         )}
       </AnalyticsWidget>

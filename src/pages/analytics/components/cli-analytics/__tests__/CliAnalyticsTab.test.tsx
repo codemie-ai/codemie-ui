@@ -50,38 +50,6 @@ vi.mock('../views/SessionsView', () => ({
   ),
 }))
 
-// Native stand-in for the PrimeReact multiselect: one option click toggles a value.
-vi.mock('@/components/form/MultiSelect', () => ({
-  default: ({
-    id,
-    value,
-    options,
-    onChange,
-  }: {
-    id: string
-    value: string[]
-    options: { label: string; value: string }[]
-    onChange: (e: { value: string[] }) => void
-  }) => (
-    <div data-testid={id}>
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          aria-label={`${id}:${o.label}`}
-          onClick={() =>
-            onChange({
-              value: value.includes(o.value)
-                ? value.filter((v) => v !== o.value)
-                : [...value, o.value],
-            })
-          }
-        />
-      ))}
-    </div>
-  ),
-}))
-
 const MOCK_FILTERS: AnalyticsQueryParams = { start_date: '2026-07-01', end_date: '2026-07-17' }
 
 describe('CliAnalyticsTab', () => {
@@ -112,43 +80,17 @@ describe('CliAnalyticsTab', () => {
     expect(screen.getByTestId('overview-view')).toBeInTheDocument()
   })
 
-  it('offers the documented subscription and origin options', () => {
+  it('renders no subscription or project origin filters', () => {
     render(<CliAnalyticsTab filters={MOCK_FILTERS} />)
-    for (const l of ['CodeMie', 'Corporate', 'Personal', 'Unknown']) {
-      expect(screen.getByLabelText(`cli-analytics-subscription:${l}`)).toBeInTheDocument()
-    }
-    for (const l of [
-      'Linked folder',
-      'Selected profile',
-      'Registered repository',
-      'Default project',
-      'Personal project',
-      'Legacy project adoption',
-      'Not recorded',
-    ]) {
-      expect(screen.getByLabelText(`cli-analytics-project-origin:${l}`)).toBeInTheDocument()
-    }
+    expect(screen.queryByText('All subscriptions')).not.toBeInTheDocument()
+    expect(screen.queryByText('All project origins')).not.toBeInTheDocument()
   })
 
-  it('passes both selections to the views next to the page filters, and drops them on clear', () => {
-    render(<CliAnalyticsTab filters={{ ...MOCK_FILTERS, users: ['a@co.com'] }} />)
+  it('passes the page filters to the views unchanged', () => {
+    const filters = { ...MOCK_FILTERS, users: ['a@co.com'] }
+    render(<CliAnalyticsTab filters={filters} />)
     fireEvent.click(screen.getByRole('button', { name: 'Sessions' }))
-
-    fireEvent.click(screen.getByLabelText('cli-analytics-subscription:CodeMie'))
-    fireEvent.click(screen.getByLabelText('cli-analytics-subscription:Unknown'))
-    fireEvent.click(screen.getByLabelText('cli-analytics-project-origin:Linked folder'))
-
-    const passed = () => JSON.parse(screen.getByTestId('sessions-view').textContent ?? '{}')
-    expect(passed()).toEqual({
-      ...MOCK_FILTERS,
-      users: ['a@co.com'],
-      subscription_type: ['codemie', 'unknown'],
-      project_origin: ['linked_folder'],
-    })
-
-    fireEvent.click(screen.getByLabelText('cli-analytics-subscription:CodeMie'))
-    fireEvent.click(screen.getByLabelText('cli-analytics-subscription:Unknown'))
-    expect(passed().subscription_type).toEqual([])
+    expect(JSON.parse(screen.getByTestId('sessions-view').textContent ?? '{}')).toEqual(filters)
   })
 
   it('does not render header content', () => {

@@ -195,3 +195,109 @@ describe('cliAnalyticsStore unpriced models', () => {
     expect(cliAnalyticsStore.sessions?.sessions[0].unpriced_models).toEqual(['mai-code-1.1-flash'])
   })
 })
+
+describe('cliAnalyticsStore.fetchUserCount', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset()
+    cliAnalyticsStore.userCount = null
+    cliAnalyticsStore.users = null
+  })
+
+  it('asks the users endpoint for one row and keeps only total_count in its own slot', async () => {
+    respondWith({ data: { rows: [], total_count: 212, avg_session_duration_ms: null } })
+
+    await cliAnalyticsStore.fetchUserCount({ time_period: 'last_30_days' })
+
+    expect(mockApi.get).toHaveBeenCalledWith(
+      'v1/analytics/cli-analytics/users',
+      expect.objectContaining({
+        params: expect.objectContaining({ time_period: 'last_30_days', page: 0, per_page: 1 }),
+      })
+    )
+    expect(cliAnalyticsStore.userCount).toBe(212)
+    // The Users tab owns the `users` slot; the count must not overwrite its table.
+    expect(cliAnalyticsStore.users).toBeNull()
+  })
+
+  it('drops the previous count when the next request fails', async () => {
+    cliAnalyticsStore.userCount = 12
+    mockApi.get.mockRejectedValueOnce(new Error('boom'))
+
+    await cliAnalyticsStore.fetchUserCount({ time_period: 'last_7_days' })
+
+    expect(cliAnalyticsStore.userCount).toBeNull()
+  })
+})
+
+describe('cliAnalyticsStore.fetchApiSpend', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset()
+    cliAnalyticsStore.apiSpend = null
+    cliAnalyticsStore.overview = null
+  })
+
+  it('asks the overview for CodeMie-proxy sessions and keeps only their cost in its own slot', async () => {
+    respondWith({
+      data: { kpis: { total_cost_usd: 412.3 }, daily_buckets: [], model_breakdown: [] },
+    })
+
+    await cliAnalyticsStore.fetchApiSpend({ time_period: 'last_30_days' })
+
+    expect(mockApi.get).toHaveBeenCalledWith(
+      'v1/analytics/cli-analytics/overview',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          time_period: 'last_30_days',
+          subscription_type: 'codemie',
+        }),
+      })
+    )
+    expect(cliAnalyticsStore.apiSpend).toBe(412.3)
+    // The Overview tab owns the `overview` slot; the filtered request must not overwrite it.
+    expect(cliAnalyticsStore.overview).toBeNull()
+  })
+
+  it('drops the previous spend while the next request is pending and when it fails', async () => {
+    cliAnalyticsStore.apiSpend = 600
+    let reject: (e: Error) => void = () => {}
+    mockApi.get.mockReturnValueOnce(
+      new Promise((_, r) => {
+        reject = r
+      })
+    )
+
+    const pending = cliAnalyticsStore.fetchApiSpend({ time_period: 'last_7_days' })
+    expect(cliAnalyticsStore.apiSpend).toBeNull()
+
+    reject(new Error('boom'))
+    await pending
+    expect(cliAnalyticsStore.apiSpend).toBeNull()
+  })
+})
+
+describe('cliAnalyticsStore.fetchProjects', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset()
+    cliAnalyticsStore.projects = null
+    cliAnalyticsStore.repositories = null
+  })
+
+  it('requests one page of projects and keeps it in its own slot', async () => {
+    const page = {
+      rows: [{ project_name: 'P', repositories: [] }],
+      pagination: { page: 1, per_page: 10, total_count: 12, has_more: false },
+    }
+    respondWith({ data: page })
+
+    await cliAnalyticsStore.fetchProjects({ time_period: 'last_30_days', page: 1, per_page: 10 })
+
+    expect(mockApi.get).toHaveBeenCalledWith(
+      'v1/analytics/cli-analytics/projects',
+      expect.objectContaining({
+        params: expect.objectContaining({ page: 1, per_page: 10 }),
+      })
+    )
+    expect(cliAnalyticsStore.projects).toEqual(page)
+    expect(cliAnalyticsStore.repositories).toBeNull()
+  })
+})

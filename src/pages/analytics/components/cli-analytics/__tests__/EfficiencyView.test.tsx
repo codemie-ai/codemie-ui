@@ -136,10 +136,14 @@ describe('EfficiencyView', () => {
     render(<EfficiencyView filters={MOCK_FILTERS} />)
 
     expect(screen.getByTestId('widget-context-bloat')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-avg_context_per_call')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-worst_session_ctx_per_call')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-cache_read_cost_usd')).toBeInTheDocument()
-    expect(screen.getByTestId('metric-bloat_pct')).toBeInTheDocument()
+    expect(screen.getByText('Cache Re-Read Cost')).toBeInTheDocument()
+    expect(screen.getByTestId('metric-cache_read_cost_usd-description')).toHaveTextContent(
+      'Spend on context re-reads'
+    )
+    expect(screen.getByTestId('metric-bloat_pct')).toHaveTextContent('Bloat %')
+    expect(screen.getByTestId('metric-bloat_pct-description')).toHaveTextContent(
+      'Cache re-read cost / est. cost'
+    )
   })
 
   // EPMCDME-16991: a cut-off prompt as the caption read as an unfinished label.
@@ -157,34 +161,59 @@ describe('EfficiencyView', () => {
     render(<EfficiencyView filters={MOCK_FILTERS} />)
 
     expect(screen.getByTestId('widget-most-bloated-sessions')).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Session' })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: 'Framework' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Cache Read / Call' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Cache Read Tokens' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Est. Cost' })).toBeInTheDocument()
     expect(screen.getByRole('columnheader', { name: 'Bloat %' })).toBeInTheDocument()
   })
 
-  it('renders the dead sessions widget and its metrics', () => {
+  it('shows full cache read token figures, right-aligned like the other session tables', () => {
+    vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+      loading: false,
+      error: null,
+      page: 1,
+      totalPages: 1,
+      perPage: 10,
+      setPage: vi.fn(),
+      search: '',
+      setSearch: vi.fn(),
+      displayRows: [
+        {
+          trace_id: 't1',
+          prompt: 'p',
+          cache_read_tokens: 15187224,
+          cost_usd: 1,
+          cost_available: true,
+        } as SessionRow,
+      ],
+    } as unknown as ReturnType<typeof useCliAnalyticsSessions>)
     render(<EfficiencyView filters={MOCK_FILTERS} />)
 
-    expect(screen.getByTestId('widget-dead-sessions')).toBeInTheDocument()
+    const cell = screen.getByText((15187224).toLocaleString())
+    expect(cell).toHaveClass('text-right')
+    expect(screen.queryByText('15.2M')).not.toBeInTheDocument()
+  })
+
+  it('renders the sessions without file edits widget and its metrics', () => {
+    render(<EfficiencyView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByTestId('widget-sessions-without-changes')).toBeInTheDocument()
     expect(screen.getByTestId('metric-dead_sessions_count')).toBeInTheDocument()
     expect(screen.getByTestId('metric-wasted_cost_usd')).toBeInTheDocument()
     expect(screen.getByTestId('metric-avg_cost_per_dead')).toBeInTheDocument()
   })
 
   it('computes the wasted-cost subtitle from wasted_cost_usd / total_cost_usd', () => {
-    // wasted_cost_usd: 0.42, total_cost_usd: 10.0 -> 4.20% of spend.
-    // Prior to the fix this divided by cache_read_cost_usd (1.25), yielding 33.60% of spend.
+    // wasted_cost_usd: 0.42, total_cost_usd: 10.0 -> 4.20% of total cost.
+    // Prior to the fix this divided by cache_read_cost_usd (1.25), yielding 33.60% of total cost.
     render(<EfficiencyView filters={MOCK_FILTERS} />)
 
     expect(screen.getByTestId('metric-wasted_cost_usd-description')).toHaveTextContent(
-      '4.20% of spend'
+      '4.20% of total cost'
     )
   })
 
-  it('falls back to 0% of spend when total_cost_usd is missing (NaN guard)', () => {
+  it('falls back to 0% of total cost when total_cost_usd is missing (NaN guard)', () => {
     vi.mocked(useCliAnalyticsEfficiency).mockReturnValueOnce({
       kpis: {
         avg_context_per_call: 15000,
@@ -210,7 +239,7 @@ describe('EfficiencyView', () => {
     render(<EfficiencyView filters={MOCK_FILTERS} />)
 
     expect(screen.getByTestId('metric-wasted_cost_usd-description')).toHaveTextContent(
-      '0% of spend'
+      '0% of total cost'
     )
   })
 
@@ -220,7 +249,7 @@ describe('EfficiencyView', () => {
     expect(screen.getByTestId('widget-session-depth')).toBeInTheDocument()
   })
 
-  it('renders the code changes widget and its metrics', () => {
+  it('renders the file edits widget and its metrics', () => {
     render(<EfficiencyView filters={MOCK_FILTERS} />)
 
     expect(screen.getByTestId('widget-code-changes')).toBeInTheDocument()
@@ -244,7 +273,7 @@ describe('EfficiencyView', () => {
 
     expect(screen.getByTestId('widget-context-bloat')).toBeInTheDocument()
     expect(screen.getByTestId('metric-avg_context_per_call')).toBeInTheDocument()
-    expect(screen.getByTestId('widget-dead-sessions')).toBeInTheDocument()
+    expect(screen.getByTestId('widget-sessions-without-changes')).toBeInTheDocument()
     expect(screen.getByTestId('metric-dead_sessions_count')).toBeInTheDocument()
     expect(screen.getByTestId('widget-code-changes')).toBeInTheDocument()
     expect(screen.getByTestId('metric-files_changed')).toBeInTheDocument()

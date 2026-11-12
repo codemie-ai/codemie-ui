@@ -21,14 +21,23 @@ import type { AnalyticsQueryParams } from '@/types/analytics'
 
 import { buildCliAnalyticsParams } from './params'
 
-export type CliAnalyticsSliceKey = 'activity' | 'cost' | 'efficiency' | 'overview' | 'tools'
+export type CliAnalyticsSliceKey =
+  | 'activity'
+  | 'apiSpend'
+  | 'cost'
+  | 'efficiency'
+  | 'overview'
+  | 'tools'
+  | 'userCount'
 
 const SLICE_FETCHER_NAMES = {
   activity: 'fetchActivity',
+  apiSpend: 'fetchApiSpend',
   cost: 'fetchCost',
   efficiency: 'fetchEfficiency',
   overview: 'fetchOverview',
   tools: 'fetchTools',
+  userCount: 'fetchUserCount',
 } as const satisfies Record<CliAnalyticsSliceKey, keyof typeof cliAnalyticsStore>
 
 export interface UseCliAnalyticsSliceResult<T> {
@@ -51,8 +60,6 @@ export function useCliAnalyticsSlice<T>(
     users,
     projects,
     repositories: repositoriesParam,
-    subscription_type,
-    project_origin,
   } = buildCliAnalyticsParams(filters, repositories)
 
   useEffect(() => {
@@ -63,23 +70,11 @@ export function useCliAnalyticsSlice<T>(
       users,
       projects,
       repositories: repositoriesParam,
-      subscription_type,
-      project_origin,
     })
     return () => {
       cliAnalyticsStore.abortControllers.get(key)?.abort()
     }
-  }, [
-    key,
-    time_period,
-    start_date,
-    end_date,
-    users,
-    projects,
-    repositoriesParam,
-    subscription_type,
-    project_origin,
-  ])
+  }, [key, time_period, start_date, end_date, users, projects, repositoriesParam])
 
   return {
     data: snap[key] as T | null,

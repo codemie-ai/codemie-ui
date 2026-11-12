@@ -97,35 +97,7 @@ describe('useCliAnalyticsSessions', () => {
     })
   })
 
-  it('sends subscription_type and project_origin together with the existing filters', async () => {
-    const fetchSessions = vi.spyOn(cliAnalyticsStore, 'fetchSessions').mockResolvedValue(undefined)
-
-    renderHook(() =>
-      useCliAnalyticsSessions(
-        {
-          ...BASE_FILTERS,
-          users: ['a@co.com'],
-          subscription_type: ['codemie', 'unknown'],
-          project_origin: ['default_project', 'other'],
-        },
-        ['repo-a']
-      )
-    )
-
-    await waitFor(() => {
-      expect(fetchSessions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          users: 'a@co.com',
-          repositories: 'repo-a',
-          subscription_type: 'codemie,unknown',
-          project_origin: 'default_project,other',
-          page: 0,
-        })
-      )
-    })
-  })
-
-  it('resets page to 1 on a subscription or origin change and omits both when cleared', async () => {
+  it('resets page to 1 on a filter change', async () => {
     const fetchSessions = vi.spyOn(cliAnalyticsStore, 'fetchSessions').mockResolvedValue(undefined)
 
     const { result, rerender } = renderHook(
@@ -136,34 +108,15 @@ describe('useCliAnalyticsSessions', () => {
     act(() => result.current.setPage(3))
     expect(result.current.page).toBe(3)
 
-    rerender({ filters: { ...BASE_FILTERS, subscription_type: ['corporate'] } })
+    rerender({ filters: { ...BASE_FILTERS, users: ['a@co.com'] } })
     await waitFor(() => expect(result.current.page).toBe(1))
     expect(fetchSessions).toHaveBeenLastCalledWith(
-      expect.objectContaining({ subscription_type: 'corporate', page: 0 })
-    )
-
-    act(() => result.current.setPage(2))
-    rerender({
-      filters: { ...BASE_FILTERS, subscription_type: ['corporate'], project_origin: ['profile'] },
-    })
-    await waitFor(() => expect(result.current.page).toBe(1))
-    expect(fetchSessions).toHaveBeenLastCalledWith(
-      expect.objectContaining({ subscription_type: 'corporate', project_origin: 'profile' })
-    )
-
-    rerender({ filters: { ...BASE_FILTERS, subscription_type: [], project_origin: [] } })
-    await waitFor(() =>
-      expect(fetchSessions).toHaveBeenLastCalledWith(
-        expect.objectContaining({ subscription_type: undefined, project_origin: undefined })
-      )
+      expect.objectContaining({ users: 'a@co.com', page: 0 })
     )
 
     // The page resets with the filters: no request carries the new filters with the old page.
     expect(fetchSessions).not.toHaveBeenCalledWith(
-      expect.objectContaining({ subscription_type: 'corporate', page: 2 })
-    )
-    expect(fetchSessions).not.toHaveBeenCalledWith(
-      expect.objectContaining({ project_origin: 'profile', page: 1 })
+      expect.objectContaining({ users: 'a@co.com', page: 2 })
     )
   })
 

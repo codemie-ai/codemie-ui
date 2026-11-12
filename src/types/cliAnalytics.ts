@@ -76,13 +76,6 @@ export interface SessionRow {
   cost_available?: boolean
   // Models the session used that have no usable catalog price; a non-empty list understates cost_usd.
   unpriced_models?: string[]
-  // Absent on older backends: rendered as unclassified, never as a known class.
-  subscription_type?: string | null
-  project_origin?: string | null
-  route_note?: string | null
-  // Readable label from the backend; set only for a default-project session that fell back from a
-  // folder link. Absent or null on other sessions and on older backends.
-  routing_label?: string | null
 }
 
 export interface SessionEvent {
@@ -94,6 +87,7 @@ export interface SessionEvent {
   cost_usd: number | null
   tool_name: string | null
   cache_read_tokens?: number | null
+  cache_creation_tokens?: number | null
 }
 
 export interface DispatchRow {
@@ -139,6 +133,10 @@ export interface OverviewKPIs {
   cache_read_cost_usd: number
   bloat_pct: number
   avg_context_per_call: number
+  // Ticket B fields: absent until the backend ships them; their cards stay hidden until then.
+  api_cost_usd?: number | null
+  subscription_cost_usd?: number | null
+  total_users?: number | null
 }
 
 export interface DailyBucket {
@@ -155,6 +153,8 @@ export interface CliAnalyticsOverviewData {
   kpis: OverviewKPIs
   daily_buckets: DailyBucket[]
   model_breakdown: ModelBreakdownItem[]
+  // Cost of sessions on a personal Claude subscription; kept out of every spend value, Est. Cost included.
+  personal_billed?: { cost_usd: number } | null
 }
 
 export interface RepositoryBranchRow {
@@ -197,6 +197,29 @@ export interface CliAnalyticsRepositoriesData {
     total_count: number
     has_more: boolean
   }
+}
+
+// One project with its repositories (and their branches) nested. Totals and tool_success_rate come
+// from the backend, which sums the raw counts (never averaged rates).
+export interface ProjectRow {
+  project_name: string | null
+  repository_count: number
+  session_count: number
+  turns: number
+  cost_usd: number
+  files_changed: number
+  lines_added: number | null
+  lines_removed: number | null
+  net_lines: number | null
+  tool_calls: number
+  tool_calls_success: number
+  tool_success_rate: number
+  repositories: RepositoryRow[]
+}
+
+export interface CliAnalyticsProjectsData {
+  rows: ProjectRow[]
+  pagination: CliAnalyticsRepositoriesData['pagination']
 }
 
 export interface CliAnalyticsUserChartsData {

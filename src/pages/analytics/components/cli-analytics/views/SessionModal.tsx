@@ -15,16 +15,13 @@
 
 import { useRef, type FC } from 'react'
 
-import InfoWarning from '@/components/InfoWarning/InfoWarning'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import Tooltip from '@/components/Tooltip'
-import { InfoWarningType } from '@/constants'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
-import { formatDateTime, truncateInput } from '@/utils/helpers'
+import { truncateInput } from '@/utils/helpers'
 
 import SessionBody from './SessionBody'
-import { projectOriginLabel, routeWarning, subscriptionLabel } from '../format'
 import { useCliAnalyticsSession } from '../hooks/useCliAnalyticsSession'
 
 interface SessionModalProps {
@@ -37,6 +34,9 @@ interface SessionModalProps {
 // user-typed and can be arbitrarily long (e.g. pasted logs), and an unbounded tooltip could grow
 // taller than the viewport.
 const MAX_PROMPT_LENGTH = 1000
+
+// The first two header lines share one style: who and with what, then where.
+const TITLE_TEXT = 'text-base font-semibold text-text-primary'
 
 interface SessionTitleProps {
   traceId: string
@@ -62,7 +62,7 @@ const SessionTitle: FC<SessionTitleProps> = ({ traceId, title }) => {
         ref={titleRef}
         data-pr-tooltip={isTitleTruncated ? title : ''}
         data-pr-position="bottom"
-        className={`text-base font-semibold text-text-primary truncate ${tooltipTarget}`}
+        className={`${TITLE_TEXT} truncate ${tooltipTarget}`}
       >
         {title}
       </span>
@@ -72,6 +72,8 @@ const SessionTitle: FC<SessionTitleProps> = ({ traceId, title }) => {
 
 interface SessionSubtitleProps {
   traceId: string
+  // Distinguishes the muted lines, so each gets its own tooltip target.
+  line: 'location' | 'prompt'
   subtitle: string
 }
 
@@ -83,10 +85,10 @@ interface SessionSubtitleProps {
 // Also keyed by `subtitle` in the parent — if the subtitle text itself changes while this stays
 // mounted (e.g. the session data refetches for the same trace), the same stale-measurement gap
 // described on SessionTitle applies here too; the remount forces a fresh measurement.
-const SessionSubtitle: FC<SessionSubtitleProps> = ({ traceId, subtitle }) => {
+const SessionSubtitle: FC<SessionSubtitleProps> = ({ traceId, line, subtitle }) => {
   const subtitleRef = useRef<HTMLSpanElement>(null)
   const isSubtitleTruncated = useIsTruncated(subtitleRef)
-  const tooltipTarget = `tooltip-target-session-subtitle-${traceId}`
+  const tooltipTarget = `tooltip-target-session-${line}-${traceId}`
 
   return (
     <>
@@ -95,7 +97,9 @@ const SessionSubtitle: FC<SessionSubtitleProps> = ({ traceId, subtitle }) => {
         ref={subtitleRef}
         data-pr-tooltip={isSubtitleTruncated ? subtitle : ''}
         data-pr-position="bottom"
-        className={`text-xs text-text-secondary truncate ${tooltipTarget}`}
+        className={`${
+          line === 'location' ? TITLE_TEXT : 'text-xs text-text-secondary'
+        } truncate ${tooltipTarget}`}
       >
         {subtitle}
       </span>
@@ -105,21 +109,16 @@ const SessionSubtitle: FC<SessionSubtitleProps> = ({ traceId, subtitle }) => {
 
 const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
   const { session, loading, error } = useCliAnalyticsSession(traceId)
-  const routeNote = routeWarning(session?.routing_label, session?.route_note)
 
-  // The heading identifies the session by its metadata. The prompt is user-typed free text, so it
-  // sits below as a muted line rather than as the heading.
+  // Three lines: who ran the session and with what; where it ran; what they asked. No date: the
+  // summary below already shows the start time. The prompt is user-typed free text, so it sits last.
   const title =
-    [
-      session?.harness_name,
-      session?.model_name,
-      session?.repository,
-      session?.branch,
-      session?.delivery_framework,
-      session?.start_time ? formatDateTime(session.start_time, 'short') : null,
-    ]
+    [session?.developer_name, session?.harness_name, session?.model_name]
       .filter(Boolean)
       .join(' · ') || 'Session'
+  const location = [session?.repository, session?.branch, session?.delivery_framework]
+    .filter(Boolean)
+    .join(' · ')
   const subtitle = session?.prompt
     ? `Prompt: ${truncateInput(session.prompt, MAX_PROMPT_LENGTH, '')}`
     : ''
@@ -136,7 +135,12 @@ const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
       headerContent={
         <div className="flex flex-col gap-0.5 min-w-0">
           <SessionTitle key={title} traceId={traceId} title={title} />
-          {subtitle && <SessionSubtitle key={subtitle} traceId={traceId} subtitle={subtitle} />}
+          {location && (
+            <SessionSubtitle key={location} traceId={traceId} line="location" subtitle={location} />
+          )}
+          {subtitle && (
+            <SessionSubtitle key={subtitle} traceId={traceId} line="prompt" subtitle={subtitle} />
+          )}
         </div>
       }
     >
@@ -149,26 +153,7 @@ const SessionModal: FC<SessionModalProps> = ({ traceId, onHide }) => {
       {!loading && !error && !session && (
         <p className="text-sm py-8 text-center text-text-secondary">No data for this session.</p>
       )}
-      {session && !loading && !error && (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-text-secondary">
-            <span>
-              Subscription:{' '}
-              <span className="text-text-primary">
-                {subscriptionLabel(session.subscription_type)}
-              </span>
-            </span>
-            <span>
-              Project origin:{' '}
-              <span className="text-text-primary">
-                {projectOriginLabel(session.project_origin)}
-              </span>
-            </span>
-          </div>
-          {routeNote && <InfoWarning type={InfoWarningType.WARNING} message={routeNote} />}
-          <SessionBody session={session} />
-        </div>
-      )}
+      {session && !loading && !error && <SessionBody session={session} />}
     </Popup>
   )
 }

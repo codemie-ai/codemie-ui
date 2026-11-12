@@ -189,4 +189,54 @@ describe('UsersView', () => {
     expect(cell).toHaveTextContent('0')
     expect(cell).not.toHaveAttribute('title')
   })
+
+  it('pages All Users with the shared pagination inside the widget', () => {
+    vi.mocked(useCliAnalyticsUsers).mockReturnValue({
+      chartRows: CHART_ROWS,
+      tableRows: [ALICE],
+      totalCount: 35,
+      currentPage: 0,
+      pageSize: 10,
+      loading: false,
+      error: null,
+      setPage: vi.fn(),
+    } as unknown as ReturnType<typeof useCliAnalyticsUsers>)
+    render(<UsersView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByRole('button', { name: 'Page 4' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Previous' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Showing \d+ to/)).not.toBeInTheDocument()
+  })
+
+  it('keeps the page-size selector when one page holds every user', () => {
+    vi.mocked(useCliAnalyticsUsers).mockReturnValue({
+      chartRows: CHART_ROWS,
+      tableRows: [ALICE],
+      totalCount: 15,
+      currentPage: 0,
+      pageSize: 20,
+      loading: false,
+      error: null,
+      setPage: vi.fn(),
+    } as unknown as ReturnType<typeof useCliAnalyticsUsers>)
+    render(<UsersView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByText('Show:')).toBeInTheDocument()
+  })
+
+  it('hides the pagination when every user fits the smallest page size', () => {
+    vi.mocked(useCliAnalyticsUsers).mockReturnValue({
+      chartRows: CHART_ROWS,
+      tableRows: [ALICE],
+      totalCount: 5,
+      currentPage: 0,
+      pageSize: 10,
+      loading: false,
+      error: null,
+      setPage: vi.fn(),
+    } as unknown as ReturnType<typeof useCliAnalyticsUsers>)
+    render(<UsersView filters={MOCK_FILTERS} />)
+
+    expect(screen.queryByText('Show:')).not.toBeInTheDocument()
+  })
 })

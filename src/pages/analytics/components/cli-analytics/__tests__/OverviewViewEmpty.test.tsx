@@ -26,9 +26,18 @@ vi.mock('../hooks/useCliAnalyticsOverview', () => ({
     kpis: null,
     dailyBuckets: [],
     modelBreakdown: [],
+    personalBilledCost: null,
     loading: false,
     error: null,
   })),
+}))
+
+vi.mock('../hooks/useCliAnalyticsUserCount', () => ({
+  useCliAnalyticsUserCount: vi.fn(() => ({ userCount: null, loading: false, error: null })),
+}))
+
+vi.mock('../hooks/useCliAnalyticsApiSpend', () => ({
+  useCliAnalyticsApiSpend: vi.fn(() => ({ apiSpend: null, loading: false, error: null })),
 }))
 
 vi.mock('../hooks/useCliAnalyticsRepositories', () => ({

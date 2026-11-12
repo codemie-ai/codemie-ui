@@ -30,10 +30,10 @@ export interface UseCliAnalyticsUsersResult {
   pageSize: number
   loading: boolean
   error: string | null
-  setPage: (page: number) => void
+  setPage: (page: number, perPage?: number) => void
 }
 
-const PAGE_SIZE = 50
+const DEFAULT_PAGE_SIZE = 10
 
 export function useCliAnalyticsUsers(
   filters: AnalyticsQueryParams,
@@ -41,6 +41,7 @@ export function useCliAnalyticsUsers(
 ): UseCliAnalyticsUsersResult {
   const snap = useSnapshot(cliAnalyticsStore)
   const [currentPage, setCurrentPage] = useState(0)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
   const {
     time_period,
@@ -49,8 +50,6 @@ export function useCliAnalyticsUsers(
     users,
     projects,
     repositories: repositoriesParam,
-    subscription_type,
-    project_origin,
   } = buildCliAnalyticsParams(filters, repositories)
 
   // Reset the page while rendering, so no request goes out with the new filters and the old page.
@@ -61,8 +60,6 @@ export function useCliAnalyticsUsers(
     users,
     projects,
     repositoriesParam,
-    subscription_type,
-    project_origin,
   ])
   const [pageFilterKey, setPageFilterKey] = useState(filterKey)
   if (pageFilterKey !== filterKey) {
@@ -78,22 +75,11 @@ export function useCliAnalyticsUsers(
       users,
       projects,
       repositories: repositoriesParam,
-      subscription_type,
-      project_origin,
     })
     return () => {
       cliAnalyticsStore.abortControllers.get('usersCharts')?.abort()
     }
-  }, [
-    time_period,
-    start_date,
-    end_date,
-    users,
-    projects,
-    repositoriesParam,
-    subscription_type,
-    project_origin,
-  ])
+  }, [time_period, start_date, end_date, users, projects, repositoriesParam])
 
   useEffect(() => {
     cliAnalyticsStore.fetchUsersTable({
@@ -103,27 +89,16 @@ export function useCliAnalyticsUsers(
       users,
       projects,
       repositories: repositoriesParam,
-      subscription_type,
-      project_origin,
       page: currentPage,
-      per_page: PAGE_SIZE,
+      per_page: pageSize,
     })
     return () => {
       cliAnalyticsStore.abortControllers.get('usersTable')?.abort()
     }
-  }, [
-    time_period,
-    start_date,
-    end_date,
-    users,
-    projects,
-    repositoriesParam,
-    subscription_type,
-    project_origin,
-    currentPage,
-  ])
+  }, [time_period, start_date, end_date, users, projects, repositoriesParam, currentPage, pageSize])
 
-  const handleSetPage = useCallback((page: number) => {
+  const handleSetPage = useCallback((page: number, perPage?: number) => {
+    if (perPage !== undefined) setPageSize(perPage)
     setCurrentPage(Math.max(0, page))
   }, [])
 
@@ -132,7 +107,7 @@ export function useCliAnalyticsUsers(
     tableRows: snap.users?.table?.rows ?? [],
     totalCount: snap.users?.table?.total_count ?? 0,
     currentPage,
-    pageSize: PAGE_SIZE,
+    pageSize,
     loading: (snap.loading.usersCharts ?? false) || (snap.loading.usersTable ?? false),
     error: snap.error.usersCharts?.message ?? snap.error.usersTable?.message ?? null,
     setPage: handleSetPage,

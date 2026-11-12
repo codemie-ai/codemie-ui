@@ -57,7 +57,7 @@ describe('useCliAnalyticsUsers', () => {
           pending.push(resolve)
         }) as ReturnType<typeof api.get>
     )
-    observe({ filters: { ...BASE_FILTERS, subscription_type: ['personal'] } })
+    observe({ filters: { ...BASE_FILTERS, users: ['a@co.com'] } })
     await waitFor(() => expect(observe().loading).toBe(true))
     await act(async () => {
       pending.forEach((resolve) => resolve(ok))
@@ -65,13 +65,11 @@ describe('useCliAnalyticsUsers', () => {
     await waitFor(() => expect(observe().loading).toBe(false))
 
     get.mockRejectedValue(new Error('boom'))
-    observe({
-      filters: { ...BASE_FILTERS, subscription_type: ['personal'], project_origin: ['none'] },
-    })
+    observe({ filters: { ...BASE_FILTERS, users: ['b@co.com'] } })
     await waitFor(() => expect(observe().error).toBe('boom'))
   })
 
-  it('sends subscription_type and project_origin to charts and table and resets the table page', async () => {
+  it('sends a filter change to charts and table and resets the table page', async () => {
     const fetchCharts = vi.spyOn(cliAnalyticsStore, 'fetchUsersCharts').mockResolvedValue(undefined)
     const fetchTable = vi.spyOn(cliAnalyticsStore, 'fetchUsersTable').mockResolvedValue(undefined)
 
@@ -83,23 +81,41 @@ describe('useCliAnalyticsUsers', () => {
     expect(result.current.currentPage).toBe(2)
 
     rerender({
-      filters: {
-        ...BASE_FILTERS,
-        subscription_type: ['codemie'],
-        project_origin: ['linked_folder'],
-      },
+      filters: { ...BASE_FILTERS, users: ['a@co.com'] },
     })
 
     await waitFor(() => expect(result.current.currentPage).toBe(0))
-    expect(fetchCharts).toHaveBeenLastCalledWith(
-      expect.objectContaining({ subscription_type: 'codemie', project_origin: 'linked_folder' })
-    )
+    expect(fetchCharts).toHaveBeenLastCalledWith(expect.objectContaining({ users: 'a@co.com' }))
     expect(fetchTable).toHaveBeenLastCalledWith(
-      expect.objectContaining({ subscription_type: 'codemie', page: 0 })
+      expect.objectContaining({ users: 'a@co.com', page: 0 })
     )
     // The page resets with the filters: no request carries the new filters with the old page.
     expect(fetchTable).not.toHaveBeenCalledWith(
-      expect.objectContaining({ subscription_type: 'codemie', page: 2 })
+      expect.objectContaining({ users: 'a@co.com', page: 2 })
     )
+  })
+
+  it('defaults to 10 rows and goes back to the first page when the page size changes', async () => {
+    vi.spyOn(cliAnalyticsStore, 'fetchUsersCharts').mockResolvedValue(undefined)
+    const fetchTable = vi.spyOn(cliAnalyticsStore, 'fetchUsersTable').mockResolvedValue(undefined)
+
+    const { result } = renderHook(() => useCliAnalyticsUsers(BASE_FILTERS))
+    expect(result.current.pageSize).toBe(10)
+    expect(fetchTable).toHaveBeenLastCalledWith(expect.objectContaining({ page: 0, per_page: 10 }))
+
+    act(() => result.current.setPage(3))
+    await waitFor(() =>
+      expect(fetchTable).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 3, per_page: 10 })
+      )
+    )
+
+    act(() => result.current.setPage(0, 50))
+    await waitFor(() =>
+      expect(fetchTable).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 0, per_page: 50 })
+      )
+    )
+    expect(result.current.pageSize).toBe(50)
   })
 })

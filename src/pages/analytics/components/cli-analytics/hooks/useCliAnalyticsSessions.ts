@@ -57,8 +57,6 @@ export function useCliAnalyticsSessions(
     projects: filterProjects,
     repositories: repositoriesParam,
     branch: branchParam,
-    subscription_type,
-    project_origin,
   } = buildCliAnalyticsParams(filters, repositories, options?.branch)
 
   // A clicked project group overrides the project filter; the null project sends the flag only.
@@ -89,8 +87,6 @@ export function useCliAnalyticsSessions(
     projects,
     repositoriesParam,
     branchParam,
-    subscription_type,
-    project_origin,
     debouncedSearch,
     options?.framework,
     options?.isUnattributed,
@@ -111,8 +107,6 @@ export function useCliAnalyticsSessions(
       projects,
       repositories: repositoriesParam,
       branch: branchParam,
-      subscription_type,
-      project_origin,
       page: page - 1,
       per_page: perPage,
       sort_by: options?.sort_by,
@@ -133,8 +127,6 @@ export function useCliAnalyticsSessions(
     projects,
     repositoriesParam,
     branchParam,
-    subscription_type,
-    project_origin,
     page,
     perPage,
     debouncedSearch,

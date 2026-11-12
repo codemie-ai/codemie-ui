@@ -15,11 +15,13 @@
 
 import { proxy } from 'valtio'
 
+import { API_BILLED_SUBSCRIPTION_TYPE } from '@/constants/cliAnalytics'
 import type {
   CliAnalyticsActivityData,
   CliAnalyticsCostData,
   CliAnalyticsEfficiencyData,
   CliAnalyticsOverviewData,
+  CliAnalyticsProjectsData,
   CliAnalyticsRepositoriesData,
   CliAnalyticsSessionsData,
   CliAnalyticsToolsData,
@@ -70,9 +72,12 @@ interface CliAnalyticsState {
   sessions: CliAnalyticsSessionsData | null
   overview: CliAnalyticsOverviewData | null
   repositories: CliAnalyticsRepositoriesData | null
+  projects: CliAnalyticsProjectsData | null
   cost: CliAnalyticsCostData | null
   efficiency: CliAnalyticsEfficiencyData | null
   frameworks: string[] | null
+  userCount: number | null
+  apiSpend: number | null
   sessionDetail: Record<string, SessionDetail>
   loading: Record<string, boolean>
   error: Record<string, ErrorDetails | null>
@@ -84,10 +89,13 @@ interface CliAnalyticsState {
   fetchOverview: (params: Record<string, unknown>) => Promise<void>
   fetchRepositories: (params: Record<string, unknown>) => Promise<void>
   clearRepositories: () => void
+  fetchProjects: (params: Record<string, unknown>) => Promise<void>
   fetchCost: (params: Record<string, unknown>) => Promise<void>
   fetchEfficiency: (params: Record<string, unknown>) => Promise<void>
   fetchSessionDetail: (traceId: string) => Promise<void>
   fetchFrameworks: (params: Record<string, unknown>) => Promise<void>
+  fetchUserCount: (params: Record<string, unknown>) => Promise<void>
+  fetchApiSpend: (params: Record<string, unknown>) => Promise<void>
 }
 
 const parseErrorResponse = (error: unknown, fallbackMessage: string): ErrorDetails => {
@@ -188,9 +196,12 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
   sessions: null,
   overview: null,
   repositories: null,
+  projects: null,
   cost: null,
   efficiency: null,
   frameworks: null,
+  userCount: null,
+  apiSpend: null,
   sessionDetail: {},
   loading: {},
   error: {},
@@ -247,6 +258,34 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
     }
   },
 
+  // Own slot: the Users tab owns `users`, and a one-row request must not replace its table.
+  // Cleared first, so a failed or pending request never leaves the count of other filters on screen.
+  async fetchUserCount(params) {
+    cliAnalyticsStore.userCount = null
+    const data = await fetchWithState<{ data: CliAnalyticsUserTableData }>(
+      cliAnalyticsStore,
+      'userCount',
+      'v1/analytics/cli-analytics/users',
+      { ...params, page: 0, per_page: 1 },
+      'Failed to fetch user count'
+    )
+    if (data) cliAnalyticsStore.userCount = data.data?.total_count ?? null
+  },
+
+  // Est. Cost of sessions routed through the CodeMie proxy (billed per token). Own slot, so the
+  // filtered request never replaces the Overview data. Cleared first, like the user count.
+  async fetchApiSpend(params) {
+    cliAnalyticsStore.apiSpend = null
+    const data = await fetchWithState<{ data: CliAnalyticsOverviewData }>(
+      cliAnalyticsStore,
+      'apiSpend',
+      'v1/analytics/cli-analytics/overview',
+      { ...params, subscription_type: API_BILLED_SUBSCRIPTION_TYPE },
+      'Failed to fetch API spend'
+    )
+    if (data) cliAnalyticsStore.apiSpend = data.data?.kpis?.total_cost_usd ?? null
+  },
+
   async fetchSessions(params) {
     const data = await fetchWithState<{ data: CliAnalyticsSessionsData } & UnpricedMetadata>(
       cliAnalyticsStore,
@@ -288,6 +327,17 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
 
   clearRepositories() {
     cliAnalyticsStore.repositories = null
+  },
+
+  async fetchProjects(params) {
+    const data = await fetchWithState<{ data: CliAnalyticsProjectsData }>(
+      cliAnalyticsStore,
+      'projects',
+      'v1/analytics/cli-analytics/projects',
+      params,
+      'Failed to fetch local analytics projects'
+    )
+    if (data) cliAnalyticsStore.projects = data.data
   },
 
   async fetchCost(params) {

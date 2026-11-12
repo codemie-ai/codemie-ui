@@ -51,8 +51,6 @@ export function useCliAnalyticsRepositories(
     users,
     projects,
     repositories: repositoriesParam,
-    subscription_type,
-    project_origin,
   } = buildCliAnalyticsParams(filters, repositories)
 
   const [page, setPage] = useState(1)
@@ -77,8 +75,6 @@ export function useCliAnalyticsRepositories(
     users,
     projects,
     repositoriesParam,
-    subscription_type,
-    project_origin,
     debouncedSearch,
   ])
   const [pageFilterKey, setPageFilterKey] = useState(filterKey)
@@ -101,8 +97,6 @@ export function useCliAnalyticsRepositories(
       users,
       projects,
       repositories: repositoriesParam,
-      subscription_type,
-      project_origin,
       search: debouncedSearch || undefined,
     }
     if (!fetchAll) {
@@ -123,8 +117,6 @@ export function useCliAnalyticsRepositories(
     users,
     projects,
     repositoriesParam,
-    subscription_type,
-    project_origin,
     page,
     perPage,
     includeBranches,

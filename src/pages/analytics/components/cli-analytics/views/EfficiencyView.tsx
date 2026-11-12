@@ -30,7 +30,7 @@ import type {
   SessionRow,
 } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
-import { formatMetricValue, formatTokens } from '@/utils/analyticsFormatters'
+import { formatMetricValue } from '@/utils/analyticsFormatters'
 
 import SessionCostValue from './SessionCostValue'
 import SessionModal from './SessionModal'
@@ -51,7 +51,7 @@ function describeWorstSession(kpis: CliAnalyticsEfficiencyKPIs | null): string {
   return `${(worst / avg).toFixed(1)}× the average`
 }
 
-function buildContextBloatMetrics(kpis: CliAnalyticsEfficiencyKPIs | null): Metric[] {
+function buildCachedContextMetrics(kpis: CliAnalyticsEfficiencyKPIs | null): Metric[] {
   const worst = kpis?.worst_session_ctx_per_call
   return [
     {
@@ -70,11 +70,11 @@ function buildContextBloatMetrics(kpis: CliAnalyticsEfficiencyKPIs | null): Metr
     },
     {
       id: 'cache_read_cost_usd',
-      label: 'Cache Read Cost',
+      label: 'Cache Re-Read Cost',
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
       value: kpis?.cache_read_cost_usd ?? 0,
-      description: 'spend on context re-reads',
+      description: 'Spend on context re-reads',
     },
     {
       id: 'bloat_pct',
@@ -82,7 +82,7 @@ function buildContextBloatMetrics(kpis: CliAnalyticsEfficiencyKPIs | null): Metr
       type: ColumnType.NUMBER,
       format: MetricFormat.PERCENTAGE,
       value: kpis?.bloat_pct ?? 0,
-      description: 'cache read cost / est. cost',
+      description: 'Cache re-read cost / est. cost',
     },
   ]
 }
@@ -104,7 +104,7 @@ function buildDeadSessionsMetrics(
     },
     {
       id: 'wasted_cost_usd',
-      label: 'Wasted Cost',
+      label: 'Est. Cost',
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
       value: deadSessions?.wasted_cost_usd ?? 0,
@@ -112,11 +112,11 @@ function buildDeadSessionsMetrics(
     },
     {
       id: 'avg_cost_per_dead',
-      label: 'Avg Cost / Dead',
+      label: 'Avg Cost / Session',
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
       value: deadSessions?.avg_cost_per_dead ?? 0,
-      description: 'per dead session',
+      description: 'Per session',
     },
   ]
 }
@@ -128,7 +128,7 @@ function buildCodeChangesMetrics(codeChanges: CliAnalyticsCodeChangesKPIs | null
       label: 'Files Changed',
       type: ColumnType.INTEGER,
       value: codeChanges?.files_changed ?? 0,
-      description: 'written or edited',
+      description: 'Distinct files',
     },
     {
       id: 'files_written',
@@ -139,7 +139,7 @@ function buildCodeChangesMetrics(codeChanges: CliAnalyticsCodeChangesKPIs | null
     },
     {
       id: 'files_edited',
-      label: 'Files Edited',
+      label: 'Files Modified',
       type: ColumnType.INTEGER,
       value: codeChanges?.files_edited ?? 0,
       description: 'Edit tool',
@@ -159,11 +159,11 @@ function wastedCostSubtitle(
   deadSessions: CliAnalyticsDeadSessionsKPIs | null
 ): string {
   if (!kpis || !Number.isFinite(kpis.total_cost_usd) || kpis.total_cost_usd <= 0 || !deadSessions)
-    return '0% of spend'
+    return '0% of total cost'
   return `${formatMetricValue(
     (deadSessions.wasted_cost_usd / kpis.total_cost_usd) * 100,
     MetricFormat.PERCENTAGE
-  )} of spend`
+  )} of total cost`
 }
 
 const SESSION_COLUMN_DEFS = [
@@ -182,7 +182,12 @@ const SESSION_COLUMN_DEFS = [
     headClassNames: 'text-right',
   },
   { key: 'cost', label: 'Est. Cost', type: DefinitionTypes.Custom, headClassNames: 'text-right' },
-  { key: 'bloat', label: 'Bloat %', type: DefinitionTypes.Custom, headClassNames: 'text-right' },
+  {
+    key: 'bloat',
+    label: 'Bloat %',
+    type: DefinitionTypes.Custom,
+    headClassNames: 'text-right',
+  },
 ]
 
 // Same type size and full figures as the other session tables (e.g. Most Expensive Sessions).
@@ -204,12 +209,10 @@ const SESSION_CUSTOM_COLS = {
     </div>
   ),
   cache_read: (row: SessionRow) => (
-    <div className="text-sm text-text-primary tabular-nums">
-      {formatTokens(row.cache_read_tokens ?? 0)}
-    </div>
+    <div className="text-right">{(row.cache_read_tokens ?? 0).toLocaleString()}</div>
   ),
   cost: (row: SessionRow) => (
-    <div className="text-sm text-text-primary tabular-nums">
+    <div className="text-right">
       <SessionCostValue
         value={row.cost_usd}
         costAvailable={row.cost_available}
@@ -242,7 +245,7 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
 
   const errorDetails = error ? { message: error } : null
 
-  const contextBloatMetrics = useMemo(() => buildContextBloatMetrics(kpis), [kpis])
+  const cachedContextMetrics = useMemo(() => buildCachedContextMetrics(kpis), [kpis])
   const deadSessionsMetrics = useMemo(
     () => buildDeadSessionsMetrics(kpis, deadSessions),
     [kpis, deadSessions]
@@ -279,7 +282,7 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
         error={errorDetails}
       >
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-sm:gap-2">
-          {contextBloatMetrics.map((metric) => (
+          {cachedContextMetrics.map((metric) => (
             <MetricCard key={metric.id} metric={metric} />
           ))}
         </div>
@@ -313,7 +316,7 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
       <div className="grid grid-cols-1 xl:grid-cols-7 gap-4">
         <div className="xl:col-span-3 [&>div]:h-full">
           <AnalyticsWidget
-            title="Dead Sessions"
+            title="Sessions Without Changes"
             description="Sessions that produced no file output."
             expandable={false}
             loading={loading}

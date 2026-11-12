@@ -59,7 +59,7 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-// The subtitle is the muted "Prompt: …" line; the title is the session metadata (EPMCDME-16991).
+// The subtitle is the muted "user · Prompt: …" line; the title is the session metadata (EPMCDME-16991).
 describe('SessionModal subtitle truncation (real useIsTruncated)', () => {
   it('detects truncation once the subtitle mounts after the session loads asynchronously', async () => {
     // First render: session has not arrived yet (mirrors useCliAnalyticsSession's real initial
@@ -155,7 +155,7 @@ describe('SessionModal title truncation (real useIsTruncated)', () => {
     })
     rerender(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const titleEl = screen.getByText(/^Cursor · /)
+    const titleEl = screen.getByText(/^alice@co\.com · Cursor · /)
     Object.defineProperty(titleEl, 'scrollWidth', { configurable: true, value: 500 })
     Object.defineProperty(titleEl, 'clientWidth', { configurable: true, value: 100 })
 

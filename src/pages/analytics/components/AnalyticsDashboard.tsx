@@ -88,7 +88,7 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
     if (isCliAnalyticsEnabled) {
       tabsList.push({
         id: AnalyticsDashboard.cliAnalytics,
-        label: 'CLI Analytics',
+        label: 'AI Attribution',
         element: <CliAnalyticsTab filters={filters} />,
         className: '[overflow-wrap:normal]',
       })

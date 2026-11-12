@@ -21,17 +21,8 @@ import type { SessionDetail } from '@/types/cliAnalytics'
 import SessionModal from '../views/SessionModal'
 
 vi.mock('@/components/Popup', () => ({
-  default: ({
-    headerContent,
-    children,
-  }: {
-    headerContent?: React.ReactNode
-    children?: React.ReactNode
-  }) => (
-    <div data-testid="popup">
-      {headerContent}
-      {children}
-    </div>
+  default: ({ headerContent }: { headerContent?: React.ReactNode }) => (
+    <div data-testid="popup">{headerContent}</div>
   ),
 }))
 
@@ -66,91 +57,6 @@ const MOCK_SESSION: SessionDetail = {
   events: [],
 }
 
-describe('SessionModal routing', () => {
-  const show = (extra: Partial<SessionDetail>) => {
-    mockUseCliAnalyticsSession.mockReturnValue({
-      session: { ...MOCK_SESSION, ...extra },
-      loading: false,
-      error: null,
-    })
-    render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
-  }
-
-  it('shows readable subscription and origin labels', () => {
-    show({ subscription_type: 'personal', project_origin: 'registered_repository' })
-    expect(screen.getByText('Personal')).toBeInTheDocument()
-    expect(screen.getByText('Registered repository')).toBeInTheDocument()
-  })
-
-  it('shows Folder not linked to a project for folder_not_linked', () => {
-    show({
-      subscription_type: 'corporate',
-      project_origin: 'default_project',
-      route_note: 'folder_not_linked',
-    })
-    expect(screen.getByText('Folder not linked to a project')).toBeInTheDocument()
-  })
-
-  it('shows a readable label for other known notes', () => {
-    show({ route_note: 'registration_ambiguous' })
-    expect(screen.getByText('Repository registration ambiguous')).toBeInTheDocument()
-  })
-
-  it('prefers the backend routing label over the mapped note, and shows it without a note', () => {
-    show({ route_note: 'folder_not_linked', routing_label: 'folder not linked to a project' })
-    expect(screen.getByText('Folder not linked to a project')).toBeInTheDocument()
-    expect(screen.queryByText('folder not linked to a project')).toBeNull()
-  })
-
-  it('shows a label-only warning when the backend sends no note', () => {
-    show({ route_note: null, routing_label: 'folder not linked to a project' })
-    expect(screen.getByText('Folder not linked to a project')).toBeInTheDocument()
-  })
-
-  it('shows a trimmed, sentence-cased backend label', () => {
-    show({ route_note: null, routing_label: '  registration needs review ' })
-    expect(screen.getByText('Registration needs review')).toBeInTheDocument()
-  })
-
-  it.each([null, undefined, '   '])(
-    'falls back to the mapped note when the routing label is %j',
-    (routing_label) => {
-      show({ route_note: 'linked_project_unavailable', routing_label })
-      expect(screen.getByText('Linked project unavailable')).toBeInTheDocument()
-    }
-  )
-
-  it('shows an inherited-key note as received instead of an inherited property', () => {
-    show({ route_note: 'constructor', routing_label: null, project_origin: 'profile' })
-    expect(screen.getByText('constructor')).toBeInTheDocument()
-  })
-
-  it('shows no warning when the label is blank and there is no note', () => {
-    show({ route_note: null, routing_label: ' ' })
-    expect(screen.queryByText(/not linked|unavailable|inaccessible|ambiguous/i)).toBeNull()
-  })
-
-  it('shows no warning when the note is absent and labels missing values as unclassified', () => {
-    show({ subscription_type: undefined, project_origin: undefined, route_note: null })
-    expect(screen.queryByText(/not linked|unavailable|inaccessible|ambiguous/i)).toBeNull()
-    expect(screen.getByText('Unknown')).toBeInTheDocument()
-    expect(screen.getByText('Not recorded')).toBeInTheDocument()
-  })
-
-  it('keeps an unrecognized value as received instead of mapping it to a known class', () => {
-    show({ subscription_type: 'mystery', project_origin: 'constructor' })
-    expect(screen.getByText('mystery')).toBeInTheDocument()
-    expect(screen.getByText('constructor')).toBeInTheDocument()
-  })
-
-  it('does not imply a personal project for a Personal subscription in a shared origin', () => {
-    show({ subscription_type: 'personal', project_origin: 'default_project' })
-    expect(screen.getByText('Personal')).toBeInTheDocument()
-    expect(screen.getByText('Default project')).toBeInTheDocument()
-    expect(screen.queryByText('Personal project')).toBeNull()
-  })
-})
-
 const PROMPT_LINE = `Prompt: ${MOCK_SESSION.prompt}`
 
 describe('SessionModal', () => {
@@ -163,9 +69,33 @@ describe('SessionModal', () => {
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const titleEl = screen.getByText(/^Cursor · claude-sonnet-4-5 · svc · /)
+    const titleEl = screen.getByText('alice@co.com · Cursor · claude-sonnet-4-5')
     expect(titleEl).toHaveClass('font-semibold')
     expect(screen.getByTestId('popup').textContent).not.toContain('Claude-Code')
+  })
+
+  it('shows user, harness and models, then repository, branch and framework, then the prompt', () => {
+    mockUseCliAnalyticsSession.mockReturnValue({
+      session: { ...MOCK_SESSION, branch: 'main', delivery_framework: 'Superpowers' },
+      loading: false,
+      error: null,
+    })
+
+    render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
+
+    const lines = [
+      screen.getByText('alice@co.com · Cursor · claude-sonnet-4-5'),
+      screen.getByText('svc · main · Superpowers'),
+      screen.getByText(PROMPT_LINE),
+    ]
+    // In that order, top to bottom.
+    const text = screen.getByTestId('popup').textContent ?? ''
+    const positions = lines.map((line) => text.indexOf(line.textContent ?? ''))
+    expect(positions).toEqual([...positions].sort((x, y) => x - y))
+    // The location line looks the same as the first line.
+    expect(lines[1]).toHaveClass('text-base', 'font-semibold', 'text-text-primary')
+    // No date in the header: the summary below shows the start time.
+    lines.forEach((line) => expect(line.textContent).not.toMatch(/2026/))
   })
 
   it('does not use the raw prompt as the title (EPMCDME-16991)', () => {
@@ -194,7 +124,7 @@ describe('SessionModal', () => {
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    const titleEl = screen.getByText(/^Cursor · /)
+    const titleEl = screen.getByText(/^alice@co\.com · Cursor · /)
     expect(titleEl).toHaveAttribute('data-pr-tooltip', titleEl.textContent)
   })
 
@@ -208,7 +138,7 @@ describe('SessionModal', () => {
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    expect(screen.getByText(/^Cursor · /)).toHaveAttribute('data-pr-tooltip', '')
+    expect(screen.getByText(/^alice@co\.com · Cursor · /)).toHaveAttribute('data-pr-tooltip', '')
   })
 
   it('sets a tooltip target with the full prompt when the prompt line is truncated', () => {
@@ -263,7 +193,7 @@ describe('SessionModal', () => {
 
     render(<SessionModal traceId="abc123" onHide={vi.fn()} />)
 
-    expect(screen.queryByText(/^Prompt:/)).toBeNull()
+    expect(screen.queryByText(/Prompt:/)).toBeNull()
   })
 
   it('falls back to "Session" as the title while the session is loading', () => {
