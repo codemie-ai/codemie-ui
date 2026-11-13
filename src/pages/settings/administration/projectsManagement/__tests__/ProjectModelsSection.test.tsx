@@ -105,7 +105,7 @@ describe('ProjectModelsSection', () => {
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled()
   })
 
-  it('offers an overlapping router once in the table and project default dropdown and saves it as default', async () => {
+  it('offers an overlapping router once in the table and project default dropdown and saves all models with it as default', async () => {
     mockAppInfoStore.llmRouters = [{ value: 'router', label: 'Router' }]
     const { container } = await renderSection()
 
@@ -123,8 +123,9 @@ describe('ProjectModelsSection', () => {
       expect(mockSettingsStore.saveSettings).toHaveBeenCalledWith(
         'team',
         expect.objectContaining({
+          mode: 'all',
           default_model: 'router',
-          models: ['model-a', 'model-b', 'premium', 'router'],
+          models: [],
         })
       )
     )
@@ -163,6 +164,24 @@ describe('ProjectModelsSection', () => {
     expect(screen.getByRole('button', { name: 'Apply changes' })).toBeDisabled()
   })
 
+  it('saves all models with the chosen default when every model stays ticked', async () => {
+    const { container } = await renderSection()
+
+    fireEvent.click(container.querySelector('#project-default-model')!)
+    fireEvent.click(
+      within(await screen.findByRole('listbox')).getByRole('option', { name: 'Model B' })
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }))
+
+    await waitFor(() =>
+      expect(mockSettingsStore.saveSettings).toHaveBeenCalledWith(
+        'team',
+        expect.objectContaining({ mode: 'all', models: [], default_model: 'model-b' })
+      )
+    )
+    expect(mockSettingsStore.resetSettings).not.toHaveBeenCalled()
+  })
+
   it('removes a disabled router from the saved allow list', async () => {
     await renderSection()
 
@@ -173,7 +192,7 @@ describe('ProjectModelsSection', () => {
     await waitFor(() =>
       expect(mockSettingsStore.saveSettings).toHaveBeenCalledWith(
         'team',
-        expect.objectContaining({ models: ['model-a', 'model-b', 'premium'] })
+        expect.objectContaining({ mode: 'allow_list', models: ['model-a', 'model-b', 'premium'] })
       )
     )
   })

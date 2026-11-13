@@ -1,0 +1,61 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; 0 findings, compact profile"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; 0 findings, compact profile"
+    }
+  ],
+  "reviewed_head": "dd94a567814372e628894542691a860153eb5e60",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case lens ran and returned no findings; acceptance did not run (no spec/story), so confidence is low. No candidates to verify, 0 deferred, 0 dismissed; no deferred backlog written.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case lens ran and returned no findings; acceptance did not run (no spec/story), so confidence is low. No candidates to verify, 0 deferred, 0 dismissed; no deferred backlog written.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

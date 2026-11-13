@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-17119",
+  "head": "dd94a567814372e628894542691a860153eb5e60",
+  "runner": "npm",
+  "started_at": "2026-11-12T08:38:00Z",
+  "completed_at": "2026-11-12T08:52:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 33000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 27000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 267000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 903 passed (903); Tests 9279 passed | 1 skipped"
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 127000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 84 passed (84); Tests 882 passed | 1 skipped"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 35000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: no leaks found"
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2000,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "No 'Found error' in stderr; summary printed"
+    },
+    {
+      "id": "sonar",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "SONAR_TOKEN unset in environment; guide Skip if applies. Set SONAR_TOKEN and reach the Sonar host to run locally; CI/pre-commit re-runs it."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 500,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2777 files, 0 missing license headers"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Operates on staged files only; nothing staged and must not stage user changes. Its tsc --noEmit and eslint parts are covered by typecheck and lint gates."
+    }
+  ],
+  "failures": {}
+}

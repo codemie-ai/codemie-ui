@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-12T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 1, "label": "XS" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 8,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single component (ProjectModelsSection) changed in its persistDraft save path; reuses existing selectionToSettings 'enable'/'disable' modes, no new abstractions." },
+    { "dimension": "technical_risk", "reason": "Existing pattern covers the change; it alters the save payload semantics (allowed_models null vs allow list) but is a small, reversible UI-side decision with test coverage added." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

@@ -180,10 +180,16 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
   const persistDraft = async (targetDraft: DraftState) => {
     if (!savedSettings) return false
 
+    const allEnabled = Object.values(targetDraft.selection).every((value) => value === 'enabled')
+
     setSaving(true)
     try {
       const saved = await projectModelSettingsStore.saveSettings(projectName, {
-        ...selectionToSettings(savedSettings, targetDraft.selection, 'disable'),
+        ...selectionToSettings(
+          savedSettings,
+          targetDraft.selection,
+          allEnabled ? 'enable' : 'disable'
+        ),
         default_model: targetDraft.defaultModel,
       })
       applySaved(saved)
