@@ -81,6 +81,60 @@ ingress:
   # -- AI/Run UI ingress TLS configuration
   tls: []
 
+# -- Kubernetes Gateway API support
+gatewayAPI:
+  enabled: false
+  # -- The list of hostnames to serve requests for by HTTPRoute by default
+  hostnames: []
+  # -- Gateway to attach HTTPRoute to by default
+  gateway:
+    # -- Gateway name
+    name: codemie
+    # -- Gateway namespace
+    namespace: envoy-gateway-system
+    # -- Section name of the listener
+    sectionName: https
+
+  routes:
+    main:
+      enabled: true
+      # -- The list of hostnames to serve requests for by HTTPRoute. Default list if not set.
+      hostnames: []
+      # -- Gateway reference. Default gateway if not set
+      gateway: {}
+      # -- Additional labels to assign to route
+      labels: {}
+      # -- HTTPRoute annotations
+      annotations: {}
+      # -- SecurityPolicy to use for route protection
+      securityPolicy:
+        # -- SecurityPolicy name
+        name: codemie-oidc
+        # -- Namespace name where SecurityPolicy deployed to create ReferenceGrant
+        namespace: security
+      extensionPolicy:
+        # -- EnvoyExtensionPolicy name
+        name: "rewrite-authorization-header"
+        # -- Namespace name where EnvoyExtensionPolicy deployed to create ReferenceGrant. Default - current namespace.
+        namespace: ""
+      # -- Traffic Policy settings to apply to route
+      trafficPolicy: {}
+        # -- Request size limit in Mi (value * 1024 * 1024)
+        # requestSize: 900
+      # -- rules for HTTPRoute
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: "/"
+          timeouts: {}
+            # -- Timeout for request in total
+            # request: 65s
+            # -- Timeout for waiting response from backend
+            # backendRequest: 60s
+          # -- Retry request to backend configuration
+          retry: {}
+
 ## Probes for the AI/Run UI
 ## Ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:

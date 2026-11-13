@@ -1,0 +1,22 @@
+{{- if and .Values.gatewayAPI .Values.gatewayAPI.enabled }}
+{{- range $routeName, $httpRoute := .Values.gatewayAPI.routes }}
+{{- if and $httpRoute.enabled $httpRoute.rewriteRules -}}
+{{- $resourceName := printf "%s-%s" (include "codemie-ui.fullname" $) $routeName -}}
+{{- range $index, $rule := $httpRoute.rewriteRules }}
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: HTTPRouteFilter
+metadata:
+  name: {{ $resourceName }}-{{ $index }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  urlRewrite:
+    path:
+      type: ReplaceRegexMatch
+      replaceRegexMatch:
+        pattern: {{ $rule.pattern }}
+        substitution: {{ $rule.substitution }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

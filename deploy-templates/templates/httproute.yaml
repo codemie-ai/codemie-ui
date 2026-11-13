@@ -1,0 +1,78 @@
+{{- if and .Values.gatewayAPI .Values.gatewayAPI.enabled }}
+{{- $defaultHostnames := .Values.gatewayAPI.hostnames }}
+{{- $defaultGateway := .Values.gatewayAPI.gateway -}}
+{{- $serviceName := include "codemie-ui.fullname" . -}}
+{{- $servicePort := .Values.service.port -}}
+{{- range $routeName, $httpRoute := .Values.gatewayAPI.routes }}
+{{- if $httpRoute.enabled }}
+{{- $resourceName := printf "%s-%s" $serviceName $routeName -}}
+{{- $gateway := $httpRoute.gateway | default $defaultGateway }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $resourceName }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- if $httpRoute.trafficPolicy }}
+    gateway.envoyproxy.io/traffic-policy: {{ $resourceName }}
+    {{- end }}
+    {{- if and $httpRoute.securityPolicy $httpRoute.securityPolicy.name }}
+    gateway.envoyproxy.io/security-policy: {{ $httpRoute.securityPolicy.name }}
+    {{- end -}}
+    {{- if and $httpRoute.extensionPolicy $httpRoute.extensionPolicy.name }}
+    gateway.envoyproxy.io/extension-policy: {{ $httpRoute.extensionPolicy.name }}
+    {{- end -}}
+    {{- include "codemie-ui.labels" $ | nindent 4 }}
+    {{- range $key, $value := $httpRoute.labels }}
+    {{- printf "%s: %s" $key (tpl $value $ | quote) | nindent 4 }}
+    {{- end }}
+  {{- with $httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      namespace: {{ $gateway.namespace }}
+      name: {{ $gateway.name }}
+      sectionName: {{ $gateway.sectionName }}
+  hostnames:
+    {{- toYaml ($httpRoute.hostnames | default $defaultHostnames) | nindent 4 }}
+  {{- with $httpRoute.rules }}
+  rules:
+    {{- range . }}
+    - backendRefs:
+      - name: {{ $serviceName }}
+        port: {{ $servicePort }}
+      {{- with .matches }}
+      matches:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if or .filters $httpRoute.rewriteRules }}
+      filters:
+      {{- end }}
+      {{- with .filters }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- range $index, $s := $httpRoute.rewriteRules }}
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.envoyproxy.io
+            kind: HTTPRouteFilter
+            name: {{ $resourceName }}-{{ $index }}
+      {{- end }}
+      {{- with .timeouts }}
+      timeouts:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .retry }}
+      retry:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,23 @@
+{{- if and .Values.gatewayAPI .Values.gatewayAPI.enabled }}
+{{- range $routeName, $httpRoute := .Values.gatewayAPI.routes }}
+{{- if and $httpRoute.enabled $httpRoute.trafficPolicy }}
+{{- $resourceName := printf "%s-%s" (include "codemie-ui.fullname" $) $routeName -}}
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: {{ $resourceName }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  {{- with $httpRoute.trafficPolicy.requestSize }}
+  requestBuffer:
+    limit: {{ $httpRoute.trafficPolicy.requestSize }}Mi
+  {{- end }}
+  targetSelectors:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      matchLabels:
+        gateway.envoyproxy.io/traffic-policy: {{ $resourceName }}
+{{- end }}
+{{- end }}
+{{- end }}

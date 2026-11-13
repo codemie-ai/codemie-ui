@@ -1,0 +1,45 @@
+{{- if and .Values.gatewayAPI .Values.gatewayAPI.enabled }}
+{{- range $routeName, $httpRoute := .Values.gatewayAPI.routes }}
+{{- if $httpRoute.enabled }}
+{{- $resourceName := printf "%s-%s" (include "codemie-ui.fullname" $) $routeName }}
+{{- if and $httpRoute.securityPolicy $httpRoute.securityPolicy.name $httpRoute.securityPolicy.namespace }}
+{{- if ne $httpRoute.securityPolicy.namespace $.Release.Namespace }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: {{ $resourceName }}-security-policy
+  namespace: {{ $.Release.Namespace }}
+spec:
+  from:
+    - group: gateway.envoyproxy.io
+      kind: SecurityPolicy
+      namespace: {{ $httpRoute.securityPolicy.namespace }}
+  to:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: {{ $resourceName }}
+{{- end }}
+{{- end }}
+{{- if and $httpRoute.extensionPolicy $httpRoute.extensionPolicy.name $httpRoute.extensionPolicy.namespace }}
+{{- if ne $httpRoute.extensionPolicy.namespace $.Release.Namespace }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: ReferenceGrant
+metadata:
+  name: {{ $resourceName }}-extension-policy
+  namespace: {{ $.Release.Namespace }}
+spec:
+  from:
+    - group: gateway.envoyproxy.io
+      kind: EnvoyExtensionPolicy
+      namespace: {{ $httpRoute.extensionPolicy.namespace }}
+  to:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: {{ $resourceName }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

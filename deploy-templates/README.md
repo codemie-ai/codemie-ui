@@ -24,6 +24,24 @@ A Helm chart for AI/Run UI
 | enableServiceLinks | bool | `false` | Prevent Kubernetes from injecting service environment variables into pods. |
 | extraConfig | object | `{}` | Extra config keys injected into window._env_ via ConfigMap. Keys should follow the VITE_ naming convention. |
 | fullnameOverride | string | `""` |  |
+| gatewayAPI | object | `{"enabled":false,"gateway":{"name":"codemie","namespace":"envoy-gateway-system","sectionName":"https"},"hostnames":[],"routes":{"main":{"annotations":{},"enabled":true,"extensionPolicy":{"name":"rewrite-authorization-header","namespace":""},"gateway":{},"hostnames":[],"labels":{},"rules":[{"matches":[{"path":{"type":"PathPrefix","value":"/"}}],"retry":{},"timeouts":{}}],"securityPolicy":{"name":"codemie-oidc","namespace":"security"},"trafficPolicy":{}}}}` | Kubernetes Gateway API support |
+| gatewayAPI.gateway | object | `{"name":"codemie","namespace":"envoy-gateway-system","sectionName":"https"}` | Gateway to attach HTTPRoute to by default |
+| gatewayAPI.gateway.name | string | `"codemie"` | Gateway name |
+| gatewayAPI.gateway.namespace | string | `"envoy-gateway-system"` | Gateway namespace |
+| gatewayAPI.gateway.sectionName | string | `"https"` | Section name of the listener |
+| gatewayAPI.hostnames | list | `[]` | The list of hostnames to serve requests for by HTTPRoute by default |
+| gatewayAPI.routes.main.annotations | object | `{}` | HTTPRoute annotations |
+| gatewayAPI.routes.main.extensionPolicy.name | string | `"rewrite-authorization-header"` | EnvoyExtensionPolicy name |
+| gatewayAPI.routes.main.extensionPolicy.namespace | string | `""` | Namespace name where EnvoyExtensionPolicy deployed to create ReferenceGrant. Default - current namespace. |
+| gatewayAPI.routes.main.gateway | object | `{}` | Gateway reference. Default gateway if not set |
+| gatewayAPI.routes.main.hostnames | list | `[]` | The list of hostnames to serve requests for by HTTPRoute. Default list if not set. |
+| gatewayAPI.routes.main.labels | object | `{}` | Additional labels to assign to route |
+| gatewayAPI.routes.main.rules | list | `[{"matches":[{"path":{"type":"PathPrefix","value":"/"}}],"retry":{},"timeouts":{}}]` | rules for HTTPRoute |
+| gatewayAPI.routes.main.rules[0].retry | object | `{}` | Retry request to backend configuration |
+| gatewayAPI.routes.main.securityPolicy | object | `{"name":"codemie-oidc","namespace":"security"}` | SecurityPolicy to use for route protection |
+| gatewayAPI.routes.main.securityPolicy.name | string | `"codemie-oidc"` | SecurityPolicy name |
+| gatewayAPI.routes.main.securityPolicy.namespace | string | `"security"` | Namespace name where SecurityPolicy deployed to create ReferenceGrant |
+| gatewayAPI.routes.main.trafficPolicy | object | `{}` | Traffic Policy settings to apply to route |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the AI/Run UI. |
 | image.repository | string | `""` | Repository to use for the AI/Run UI. |
 | image.tag | string | `""` | Overrides the image tag whose default is the chart appVersion. |
