@@ -298,6 +298,24 @@ describe('HelpPage', () => {
     })
   })
 
+  describe('Share experience section', () => {
+    it('displays Share experience with Feedback Assistant and no Survey item', () => {
+      renderWithRouter(<HelpPage />)
+      expect(screen.getByText('Share experience')).toBeInTheDocument()
+      expect(screen.getByText('Feedback Assistant')).toBeInTheDocument()
+      expect(screen.queryByText('Survey')).not.toBeInTheDocument()
+      expect(screen.queryByText('Open Survey')).not.toBeInTheDocument()
+    })
+
+    it('hides Share experience section when feedback assistant is disabled', () => {
+      mockAppInfoStore.configs = initialConfigs.map((c) =>
+        c.id === 'feedbackAssistant' ? { ...c, settings: { enabled: false } } : c
+      )
+      renderWithRouter(<HelpPage />)
+      expect(screen.queryByText('Share experience')).not.toBeInTheDocument()
+    })
+  })
+
   describe('sections layout', () => {
     it('renders all sections in order', () => {
       renderWithRouter(<HelpPage />)

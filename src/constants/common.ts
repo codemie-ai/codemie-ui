@@ -41,7 +41,6 @@ export const CHECKER_STATUSES = {
 } as const
 
 export const CONFIG_FEEDBACK_ASST_KEY = 'feedbackAssistant'
-export const CONFIG_USER_SURVEY_KEY = 'userSurvey'
 export const CONFIG_LIKE_FORM_KEY = 'likeForm'
 
 const SUPPORTED_IMAGE_FORMATS = 'JPEG, PNG, JPG, GIF'

@@ -27,11 +27,7 @@ import {
   FEEDBACK_ASSISTANT_SLUG,
   CHATBOT_ASSISTANT_SLUG,
 } from '@/constants/assistants'
-import {
-  CONFIG_FEEDBACK_ASST_KEY,
-  ADDITIONAL_USER_MATERIALS,
-  CONFIG_USER_SURVEY_KEY,
-} from '@/constants/common'
+import { CONFIG_FEEDBACK_ASST_KEY, ADDITIONAL_USER_MATERIALS } from '@/constants/common'
 import { TERMS_AND_CONDITIONS_ROUTE } from '@/pages/terms/constants'
 import { useTermsAndConditions } from '@/pages/terms/hooks/useTermsAndConditions'
 import { userStore, assistantsStore } from '@/store'
@@ -105,18 +101,6 @@ const HelpPage: FC = () => {
 
     if (isCustomerConfigItemEnabled(CONFIG_FEEDBACK_ASST_KEY)) {
       addAssistantItem(shareItems, FEEDBACK_ASSISTANT_SLUG)
-    }
-    const surveyUrl = getConfigItemSettings(configs, CONFIG_USER_SURVEY_KEY)?.url
-    if (surveyUrl) {
-      shareItems.push({
-        name: 'Survey',
-        description: 'Fill out a survey to share your experience using CodeMie.',
-        type: 'link',
-        icon: SheetSvg,
-        link: surveyUrl,
-        isExternal: true,
-        buttonText: 'Open Survey',
-      })
     }
 
     const resourcesToProps: Record<string, Partial<HelpItemType>> = {

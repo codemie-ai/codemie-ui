@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15755_remove-survey-help-page",
+  "head": "792074ff4f1dc8928e2d9fa675cd8a02199ba7b1",
+  "runner": "npm",
+  "started_at": "2026-10-28T16:55:16Z",
+  "completed_at": "2026-10-28T17:07:21Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 34847,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 28605,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5541,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Guide marks this SKIPPED when no dependency is added/removed/moved (true here), but it was run anyway per 'when in doubt, run anyway' and passed."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 26168,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 213430,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 797 passed (797); Tests 8157 passed | 1 skipped (8158)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 118870,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 1,
+      "notes": "Test Files 1 failed | 54 passed (55); failure is in src/pages/assistants/__tests__/EditAssistantPage.integration.test.tsx, an area untouched by this branch's diff (which only touches src/pages/help/*). Present on commits already on main prior to this branch (dc10f3dc0, fbc788f4a)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "command": "npm run test-harness",
+      "notes": "Requires a live stack and ~/.codemie/test-harness.json, neither present in this environment. Not run."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2555 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exited 0 without scanning. Set SONAR_TOKEN locally to enable; CI's compliance-report job will run this check for real."
+    }
+  ],
+  "failures": {
+    "integration": "FAIL  |integration| src/pages/assistants/__tests__/EditAssistantPage.integration.test.tsx > EditAssistantPage - Integration > Optional numeric model params > persists set → clear → reload for temperature, top_p and tools_tokens_size_limit\nAssertionError: expected { name: 'Test Assistant', …(30) } to match object { temperature: 0.4, top_p: 0.8, …(1) }\n(28 matching properties omitted from actual)\n\n- Expected\n+ Received\n\n  {\n-   \"temperature\": 0.4,\n+   \"temperature\": 0,\n    \"tools_tokens_size_limit\": 1000,\n    \"top_p\": 0.8,\n  }\n\n ❯ src/pages/assistants/__tests__/EditAssistantPage.integration.test.tsx:312:30\n    310|\n    311|       await waitFor(() => expect(putBodies()).toHaveLength(1))\n    312|       expect(putBodies()[0]).toMatchObject({\n       |                              ^\n    313|         temperature: 0.4,\n    314|         top_p: 0.8,\n\n Test Files  1 failed | 54 passed (55)\n      Tests  1 failed | 626 passed | 1 skipped (628)\n   Start at  19:04:51\n   Duration  118.87s (tests 43%, import 36%, transform 15%, environment 5%, setup 2%)\n\n     Import  |integration| 2376 modules were evaluated 106588 times · 123.51s total, 36% of tracked time\n             ~38.47s faster with isolate: false — shared modules are evaluated once per worker instead of once per file\n             learn more: https://vitest.dev/guide/improving-performance#test-isolation\n\nEXIT:1"
+  }
+}
