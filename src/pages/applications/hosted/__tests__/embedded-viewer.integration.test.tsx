@@ -14,7 +14,9 @@
 //
 import './reviewRegressionSetup'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { HOSTED_MESSAGE } from '@/utils/hostedApplicationMessages'
 
 import HostedApplicationViewer from '../HostedApplicationViewer'
 
@@ -205,4 +207,123 @@ it('tells a manager previewing a version that people with access see the active 
   expect(
     await screen.findByText('Previewing a version · people with access see the active version')
   ).toBeInTheDocument()
+})
+
+describe('opening a window for the application', () => {
+  const APP = boundary.route.id
+  const LAUNCHED = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+  const VIEW = window.location.origin + '/apps/' + APP + '/view?version=' + LAUNCHED + '&path='
+  let now = 0
+  const later = () => {
+    now += 60 * 1000
+  }
+  beforeEach(() => {
+    now += 10 * 60 * 1000
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    boundary.store.issueLaunch.mockResolvedValue({
+      ticket: 'test-only',
+      action: 'https://content.test/_platform/launch',
+      versionId: LAUNCHED,
+    })
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+  const send = (
+    source: MessageEventSource | null,
+    data: unknown,
+    origin = window.location.origin
+  ) => fireEvent(window, new MessageEvent('message', { data, origin, source }))
+  const open = (target: unknown, name: unknown = '') => ({
+    type: HOSTED_MESSAGE.open,
+    target,
+    name,
+  })
+  const popup = () => ({ closed: false, focus: vi.fn(), location: { href: 'about:blank' } })
+
+  it('opens the version this viewer launched in a CodeMie window at the requested path', async () => {
+    const opened = vi.spyOn(window, 'open').mockReturnValue(popup() as never)
+    const { outer } = await frame()
+    send(outer.contentWindow, open('/deck.html?presenter=1', 'presenter-view'))
+    expect(opened).toHaveBeenCalledExactlyOnceWith(
+      VIEW + '%2Fdeck.html%3Fpresenter%3D1',
+      'codemie-app-' + APP + '-presenter-view'
+    )
+  })
+
+  it('opens a preview on the same version, so both windows show one version', async () => {
+    const opened = vi.spyOn(window, 'open').mockReturnValue(popup() as never)
+    boundary.route.versionId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    const { outer } = await frame()
+    send(outer.contentWindow, open('/print', ''))
+    expect(opened).toHaveBeenCalledExactlyOnceWith(
+      window.location.origin +
+        '/apps/' +
+        APP +
+        '/preview/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb?path=%2Fprint',
+      '_blank'
+    )
+  })
+
+  it('reuses the window behind a repeated name instead of opening another', async () => {
+    const window1 = popup()
+    const opened = vi.spyOn(window, 'open').mockReturnValue(window1 as never)
+    const { outer } = await frame()
+    send(outer.contentWindow, open('/deck?presenter=1', 'presenter-reuse'))
+    window1.location.href = opened.mock.calls[0][0] as string
+    send(outer.contentWindow, open('/deck?presenter=1', 'presenter-reuse'))
+    expect(opened).toHaveBeenCalledTimes(1)
+    expect(window1.focus).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens a new window for each _blank request instead of reusing one', async () => {
+    const window1 = popup()
+    const opened = vi.spyOn(window, 'open').mockReturnValue(window1 as never)
+    const { outer } = await frame()
+    send(outer.contentWindow, open('/detail/1', '_blank'))
+    later()
+    send(outer.contentWindow, open('/detail/2', '_blank'))
+    expect(opened).toHaveBeenCalledTimes(2)
+    expect(opened).toHaveBeenNthCalledWith(2, VIEW + '%2Fdetail%2F2', '_blank')
+    expect(window1.focus).not.toHaveBeenCalled()
+  })
+
+  it('opens one window for a burst of requests from one click', async () => {
+    const activation = { isActive: true }
+    vi.stubGlobal('navigator', { ...navigator, userActivation: activation })
+    const opened = vi.spyOn(window, 'open').mockImplementation(() => {
+      activation.isActive = false
+      return popup() as never
+    })
+    const { outer } = await frame()
+    for (let i = 0; i < 5; i += 1) send(outer.contentWindow, open('/detail/' + i, '_blank'))
+    expect(opened).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['a protocol-relative host', open('//evil.com')],
+    ['a javascript: URL', open(['javascript', 'alert(1)'].join(':'))],
+    ['an over-long path', open('/' + 'a'.repeat(4096))],
+    ['a control character', open('/deck\u0000')],
+    ['a space', open('/a b')],
+    ['a target that is not a string', open(42)],
+    ['a missing name', { type: HOSTED_MESSAGE.open, target: '/deck' }],
+    ['an over-long name', open('/deck', 'n'.repeat(201))],
+  ])('ignores a request with %s', async (_label, data) => {
+    const opened = vi.spyOn(window, 'open').mockReturnValue(popup() as never)
+    const { outer } = await frame()
+    send(outer.contentWindow, data)
+    send(outer.contentWindow, open('/valid', ''))
+    expect(opened).toHaveBeenCalledExactlyOnceWith(VIEW + '%2Fvalid', '_blank')
+  })
+
+  it('ignores a request from another window or another origin', async () => {
+    const opened = vi.spyOn(window, 'open').mockReturnValue(popup() as never)
+    const { outer } = await frame()
+    send(window, open('/deck', ''))
+    send(outer.contentWindow, open('/deck', ''), 'https://content.test')
+    send(outer.contentWindow, open('/valid', ''))
+    expect(opened).toHaveBeenCalledExactlyOnceWith(VIEW + '%2Fvalid', '_blank')
+  })
 })

@@ -14,6 +14,7 @@
 //
 import { HostedUserError } from '@/types/entity/hostedApplication'
 import type { ValidatedHostedLaunch } from '@/utils/hostedApplicationLaunch'
+import { HOSTED_MESSAGE } from '@/utils/hostedApplicationMessages'
 
 // The only request-derived values in the container: a scheme, a lower-case host and a port.
 // Nothing that can close an attribute, a string or a tag passes this allowlist.
@@ -49,12 +50,15 @@ export function createHostedFrame(launch: ValidatedHostedLaunch, uiOrigin: strin
   // This CSP belongs to the trusted container, so navigation to unrelated Platform apps
   // remains unaffected. A child cannot navigate itself to an external origin.
   const csp = `default-src 'none'; base-uri 'none'; form-action 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; frame-src ${content.origin}`
+  const toUi = JSON.stringify(uiOrigin)
+  const ready = JSON.stringify(HOSTED_MESSAGE.ready)
+  const unavailable = JSON.stringify(HOSTED_MESSAGE.unavailable)
+  const open = JSON.stringify(HOSTED_MESSAGE.open)
   const script = `const child=document.querySelector('iframe');addEventListener('message',event=>{
     if(event.source!==child.contentWindow||event.origin!==${JSON.stringify(content.origin)})return;
     const type=event.data&&event.data.type;
-    if(type==='codemie-hosted-ready'||type==='codemie-hosted-unavailable')parent.postMessage({type},${JSON.stringify(
-      uiOrigin
-    )});
+    if(type===${ready}||type===${unavailable})parent.postMessage({type},${toUi});
+    if(type===${open}&&typeof event.data.target==='string'&&typeof event.data.name==='string')parent.postMessage({type,target:event.data.target,name:event.data.name},${toUi});
   });`
   const document = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><title>Application container</title><style nonce="${nonce}">html,body,iframe{margin:0;width:100%;height:100%;border:0;overflow:hidden}html,body{color-scheme:light;background:Canvas}</style></head><body><iframe title="Application content" name="${target}" sandbox="allow-scripts allow-same-origin allow-popups" allow="camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'; usb 'none'; fullscreen ${content.origin}" tabindex="0" referrerpolicy="no-referrer"></iframe><script nonce="${nonce}">${script}</script></body></html>`
   return { target, document }

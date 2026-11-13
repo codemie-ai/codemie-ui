@@ -21,6 +21,7 @@ import { hostedRoutes } from '../hostedRoutes'
 
 const boundary = vi.hoisted(() => ({
   route: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', versionId: undefined as string | undefined },
+  search: '',
   navigate: vi.fn(),
   store: {
     capabilities: { view: true },
@@ -34,7 +35,7 @@ const boundary = vi.hoisted(() => ({
 }))
 vi.mock('react-router', () => ({
   useParams: () => boundary.route,
-  useLocation: () => ({ key: 'k' }),
+  useLocation: () => ({ key: 'k', search: boundary.search }),
   useNavigate: () => boundary.navigate,
   Link: ({ children, to }: any) => <a href={to}>{children}</a>,
 }))
@@ -100,6 +101,7 @@ const app = (over: Record<string, unknown> = {}) => ({
 beforeEach(() => {
   vi.clearAllMocks()
   boundary.route.versionId = undefined
+  boundary.search = ''
   boundary.store.getApplication.mockResolvedValue(app())
   boundary.store.issueLaunch.mockResolvedValue({ ticket: 't', action: 'https://c.test/x' })
   boundary.store.deleteApplication.mockResolvedValue(undefined)
@@ -172,6 +174,171 @@ describe('viewer launch', () => {
     render(<HostedApplicationViewer />)
     await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalled())
     expect(boundary.store.issueLaunch.mock.calls[0][1]).toBe(boundary.route.versionId)
+  })
+})
+
+describe('viewer launch at a path', () => {
+  const VERSION = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+  const at = (call = 0) => boundary.store.issueLaunch.mock.calls[call][3]
+  const refused = () =>
+    Object.assign(new Error('Invalid application launch'), {
+      status: 422,
+      parsedError: { details: { code: 'INVALID_LAUNCH' } },
+    })
+
+  it('launches at no path when the address has none', async () => {
+    render(<HostedApplicationViewer />)
+    await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalled())
+    expect(at().path).toBeNull()
+  })
+
+  it.each([
+    ['/apps/:id/view', undefined],
+    ['/apps/:id/preview/:versionId', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'],
+  ])('passes ?path= on %s to the launch and leaves the address as it is', async (_r, versionId) => {
+    boundary.route.versionId = versionId
+    boundary.search = '?path=' + encodeURIComponent('/deck.html?presenter=1#s2')
+    render(<HostedApplicationViewer />)
+    await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalled())
+    expect(boundary.store.issueLaunch.mock.calls[0][1]).toBe(versionId)
+    expect(at().path).toBe('/deck.html?presenter=1#s2')
+    expect(boundary.navigate).not.toHaveBeenCalled()
+  })
+
+  it.each(['/_platform/view', '/a/../b', '/a%2Fb'])(
+    'leaves it to the backend whether %s can be served',
+    async (path) => {
+      boundary.search = '?path=' + encodeURIComponent(path)
+      render(<HostedApplicationViewer />)
+      await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalled())
+      expect(at().path).toBe(path)
+    }
+  )
+
+  it.each([
+    ['a protocol-relative host', '//evil.com'],
+    ['a javascript: URL', ['javascript', 'alert(1)'].join(':')],
+    ['an over-long path', '/' + 'a'.repeat(4096)],
+    ['a control character', '/deck\n.html'],
+    ['a space', '/a b'],
+    ['a non-ASCII character', '/caf\u00e9'],
+  ])('launches at the root instead of %s', async (_label, path) => {
+    boundary.search = '?path=' + encodeURIComponent(path)
+    render(<HostedApplicationViewer />)
+    await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalled())
+    expect(at().path).toBeNull()
+  })
+
+  it('launches once more at the root when the backend refuses the path', async () => {
+    boundary.search = '?path=%2Fmissing'
+    boundary.store.issueLaunch
+      .mockRejectedValueOnce(refused())
+      .mockResolvedValue({ ticket: 't', action: 'https://c.test/x' })
+    const { container } = render(<HostedApplicationViewer />)
+    await waitFor(() => expect(container.querySelector('iframe')).toBeInTheDocument())
+    expect(boundary.store.issueLaunch).toHaveBeenCalledTimes(2)
+    expect(at(0).path).toBe('/missing')
+    expect(at(1).path).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Unable to open application' })).toBeNull()
+  })
+
+  it('never retries a refused path', async () => {
+    boundary.search = '?path=%2Fmissing'
+    boundary.store.issueLaunch.mockRejectedValue(refused())
+    render(<HostedApplicationViewer />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalledTimes(3))
+    expect(at(0).path).toBe('/missing')
+    expect(at(1).path).toBeNull()
+    expect(at(2).path).toBeNull()
+  })
+
+  it('does not relaunch at the root for a refusal that is not about the path', async () => {
+    boundary.store.issueLaunch.mockRejectedValue(refused())
+    render(<HostedApplicationViewer />)
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeVisible()
+    expect(boundary.store.issueLaunch).toHaveBeenCalledTimes(1)
+  })
+
+  it('reads ?path= once, so a later address change does not relaunch the application', async () => {
+    boundary.search = '?path=%2Fone'
+    const { rerender } = render(<HostedApplicationViewer />)
+    await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalled())
+    boundary.search = '?path=%2Ftwo'
+    rerender(<HostedApplicationViewer />)
+    await new Promise((resolve) => {
+      setTimeout(resolve, 20)
+    })
+    expect(boundary.store.issueLaunch).toHaveBeenCalledTimes(1)
+  })
+
+  it('pins the published view to the version in the address', async () => {
+    boundary.search = '?version=' + VERSION + '&path=%2Fdeck'
+    render(<HostedApplicationViewer />)
+    await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalled())
+    expect(at()).toEqual({ path: '/deck', publishedVersion: VERSION })
+  })
+
+  it.each([
+    [
+      'a preview, which names its version in the route',
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      VERSION,
+    ],
+    ['a version that is not an id', undefined, 'latest'],
+  ])('pins no published version for %s', async (_label, versionId, version) => {
+    boundary.route.versionId = versionId
+    boundary.search = '?version=' + version
+    render(<HostedApplicationViewer />)
+    await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalled())
+    expect(at().publishedVersion).toBeNull()
+  })
+
+  const expectReplaced = async () => {
+    expect(
+      await screen.findByRole('heading', { name: 'This version is no longer available' })
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Open the current version' }))
+    expect(boundary.navigate).toHaveBeenCalledExactlyOnceWith(
+      hostedRoutes.view(boundary.route.id) + '?path=%2Fdeck',
+      { replace: true }
+    )
+  }
+
+  it('does not launch a pinned version that a manager can see is no longer active', async () => {
+    boundary.search = '?version=' + VERSION + '&path=%2Fdeck'
+    boundary.store.getApplication.mockResolvedValue(
+      app({ active_version_id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' })
+    )
+    render(<HostedApplicationViewer />)
+    await expectReplaced()
+    expect(boundary.store.issueLaunch).not.toHaveBeenCalled()
+  })
+
+  it('offers the current version when a pinned launch is no longer found', async () => {
+    boundary.search = '?version=' + VERSION + '&path=%2Fdeck'
+    boundary.store.issueLaunch.mockRejectedValue({ status: 404 })
+    render(<HostedApplicationViewer />)
+    await expectReplaced()
+  })
+
+  it('launches a pinned version that is still the active one', async () => {
+    boundary.search = '?version=' + VERSION
+    boundary.store.getApplication.mockResolvedValue(app({ active_version_id: VERSION }))
+    render(<HostedApplicationViewer />)
+    await waitFor(() => expect(boundary.store.issueLaunch).toHaveBeenCalled())
+    expect(at().publishedVersion).toBe(VERSION)
+  })
+
+  it('keeps the normal not-available page for a launch that is not found without a pin', async () => {
+    boundary.store.issueLaunch.mockRejectedValue({ status: 404 })
+    render(<HostedApplicationViewer />)
+    expect(
+      await screen.findByRole('heading', { name: 'This application is not available' })
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Open the current version' })).toBeNull()
   })
 })
 

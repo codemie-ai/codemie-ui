@@ -251,12 +251,25 @@ interface HostedApplicationsStore {
     version: HostedVersion,
     action: 'select' | 'activate' | 'cancel' | 'retry'
   ): Promise<void>
+  /** Launches `versionId` as an owner preview, or the published view when it is not given. */
   issueLaunch(
     appId: string,
     versionId?: string,
-    signal?: AbortSignal
-  ): Promise<ValidatedHostedLaunch>
+    signal?: AbortSignal,
+    at?: HostedLaunchAt
+  ): Promise<HostedLaunch>
 }
+
+/** Where a launch starts: the local page, and for a published view the version it must run. */
+export interface HostedLaunchAt {
+  /** Path, query and fragment of the first page; null for the application's root. */
+  path?: string | null
+  /** A published view runs this version, or is refused when it is no longer the active one. */
+  publishedVersion?: string | null
+}
+
+/** A launch the UI checked, with the version it runs. */
+export type HostedLaunch = ValidatedHostedLaunch & { versionId: string }
 
 export const hostedApplicationsStore = proxy<HostedApplicationsStore>({
   capabilities: null,
@@ -605,22 +618,26 @@ export const hostedApplicationsStore = proxy<HostedApplicationsStore>({
     }
   },
 
-  async issueLaunch(appId, versionId, signal) {
+  async issueLaunch(appId, versionId, signal, at) {
     const epoch = authenticationEpoch
+    const expected = versionId ?? at?.publishedVersion ?? null
     const response: HostedLaunchResponse = await (
       await api.post(
         appPath(appId) + '/launch',
         {
           purpose: versionId ? 'owner_preview' : 'published_view',
-          version_id: versionId ?? null,
-          path: null,
+          version_id: expected,
+          path: at?.path ?? null,
         },
         { skipErrorHandling: true, signal }
       )
     ).json()
     requireCurrentAuthentication(epoch)
-    if (versionId && response.version_id !== versionId)
+    if (expected && response.version_id !== expected)
       throw new HostedUserError('The application version changed. Reload and try again.')
-    return validateHostedLaunch(response, window.location.origin)
+    return {
+      ...validateHostedLaunch(response, window.location.origin),
+      versionId: response.version_id,
+    }
   },
 })

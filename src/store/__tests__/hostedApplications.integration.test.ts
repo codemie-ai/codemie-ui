@@ -105,6 +105,70 @@ describe('hosted application store at the API boundary', () => {
     )
   })
 
+  it('asks the backend to open the version at the requested local path', async () => {
+    const content = 'https://v-' + 'a'.repeat(32) + '.content.test'
+    const post = vi.spyOn(api, 'post').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          version_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          content_origin: content,
+          action: content + '/_platform/launch',
+          ticket: 'test-only-ticket',
+        })
+      )
+    )
+    await store.issueLaunch(app.id, undefined, undefined, { path: '/deck.html?presenter=1' })
+    expect(post).toHaveBeenCalledWith(
+      'v1/hosted-applications/' + app.id + '/launch',
+      { purpose: 'published_view', version_id: null, path: '/deck.html?presenter=1' },
+      expect.objectContaining({ skipErrorHandling: true })
+    )
+  })
+
+  it('pins a published view to the version another window launched, and reports which it ran', async () => {
+    const content = 'https://v-' + 'a'.repeat(32) + '.content.test'
+    const version = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    const post = vi.spyOn(api, 'post').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          version_id: version,
+          content_origin: content,
+          action: content + '/_platform/launch',
+          ticket: 'test-only-ticket',
+        })
+      )
+    )
+    const launch = await store.issueLaunch(app.id, undefined, undefined, {
+      path: '/deck',
+      publishedVersion: version,
+    })
+    expect(post).toHaveBeenCalledWith(
+      'v1/hosted-applications/' + app.id + '/launch',
+      { purpose: 'published_view', version_id: version, path: '/deck' },
+      expect.objectContaining({ skipErrorHandling: true })
+    )
+    expect(launch.versionId).toBe(version)
+  })
+
+  it('refuses a published view that launched another version than the pinned one', async () => {
+    const content = 'https://v-' + 'a'.repeat(32) + '.content.test'
+    vi.spyOn(api, 'post').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          version_id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+          content_origin: content,
+          action: content + '/_platform/launch',
+          ticket: 'test-only-ticket',
+        })
+      )
+    )
+    await expect(
+      store.issueLaunch(app.id, undefined, undefined, {
+        publishedVersion: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      })
+    ).rejects.toThrow('The application version changed')
+  })
+
   it('does not send artifact bytes to an upload path for another application', async () => {
     store.capabilities = {
       create: true,

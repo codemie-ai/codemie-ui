@@ -20,6 +20,8 @@ import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout'
 import Spinner from '@/components/Spinner'
 import {
+  type HostedLaunch,
+  type HostedLaunchAt,
   hostedApplicationsStore as store,
   hostedAuthenticationGeneration,
   hostedErrorMessage,
@@ -31,6 +33,13 @@ import {
   submitHostedLaunch,
   type ValidatedHostedLaunch,
 } from '@/utils/hostedApplicationLaunch'
+import { HOSTED_MESSAGE } from '@/utils/hostedApplicationMessages'
+import {
+  createHostedWindowOpener,
+  HOSTED_PATH_PARAM,
+  HOSTED_VERSION_PARAM,
+  isHostedPath,
+} from '@/utils/hostedApplicationWindows'
 
 import { canOpen, isManager, isSuspended } from './hostedAccess'
 import { hostedRoutes } from './hostedRoutes'
@@ -45,11 +54,24 @@ const BUSY_MESSAGE = 'The application is busy or unavailable right now. Retry in
 // files are gone or the security policy changed); retrying cannot help, another version can.
 const STALE_VERSION = 'VERSION_NOT_ACCEPTED'
 
+// The backend refused the launch request, for example a page it does not serve.
+const INVALID_LAUNCH = 'INVALID_LAUNCH'
+
 const errorCode = (cause: unknown) =>
   (cause as { parsedError?: { details?: { code?: unknown } } } | null)?.parsedError?.details?.code
 
 /** What the person can do when the application cannot be shown: managers upload, others go back. */
-const unavailableCopy = (app: HostedApplication | null, error: string | null, stale: boolean) => {
+const unavailableCopy = (
+  app: HostedApplication | null,
+  error: string | null,
+  stale: boolean,
+  replaced: boolean
+) => {
+  if (replaced)
+    return {
+      title: 'This version is no longer available',
+      message: 'A newer version of the application was published after this window opened.',
+    }
   if (stale)
     return {
       title: 'This version is no longer available',
@@ -72,6 +94,17 @@ const unavailableCopy = (app: HostedApplication | null, error: string | null, st
   }
 }
 
+/** A manager is told the active version, so a window pinned to an earlier one need not launch. */
+const pinReplaced = (app: HostedApplication, pinned: string | null | undefined) =>
+  !!pinned && !!app.active_version_id && app.active_version_id !== pinned
+
+/** Others are not told it: a pinned launch of an application they can open is then not found. */
+const pinNotFound = (
+  status: number | undefined,
+  app: HostedApplication | null,
+  pinned: string | null | undefined
+) => status === 404 && !!app && !!pinned
+
 /** Managers see which version they are looking at; everyone else sees who published it. */
 const viewerSubtitle = (app: HostedApplication, versionId?: string) => {
   if (isSuspended(app)) return 'Suspended'
@@ -85,14 +118,20 @@ const viewerSubtitle = (app: HostedApplication, versionId?: string) => {
 interface Props {
   id: string
   versionId?: string
+  /** The `?path=` the viewer was opened with; one with the wrong shape launches the root. */
+  path: string | null
+  /** The `?version=` a published view was opened with, by a window this application opened. */
+  version: string | null
 }
-const ApplicationView = ({ id, versionId }: Props) => {
+const ApplicationView = ({ id, versionId, path, version }: Props) => {
   const navigate = useNavigate()
   useHostedFeatureRedirect()
   const [application, setApplication] = useState<HostedApplication | null>(null)
   const [frame, setFrame] = useState<HostedFrame | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
+  // A window pinned to the version its opener ran, after another version was published.
+  const [replaced, setReplaced] = useState(false)
   const [loading, setLoading] = useState(true)
   const [actionError, setActionError] = useState<string | null>(null)
   const [retry, setRetry] = useState(0)
@@ -100,17 +139,26 @@ const ApplicationView = ({ id, versionId }: Props) => {
   const iframe = useRef<HTMLIFrameElement>(null)
   const pending = useRef<{ launch: ValidatedHostedLaunch; epoch: number } | null>(null)
   const active = useRef(false)
+  // Where the application starts, read once per mount: Retry and Reload keep it. A router navigation
+  // remounts the viewer (it is keyed on the location) and launches again, so a later change that lets
+  // the address follow the application must use history.replaceState, never navigate.
+  const launchAt = useRef<HostedLaunchAt>({
+    path: isHostedPath(path) ? path : null,
+    publishedVersion: !versionId && version && HOSTED_UUID.test(version) ? version : null,
+  })
   useEffect(() => {
     let alive = true
     active.current = true
     const controller = new AbortController()
     let created: HostedFrame | null = null
     let timer: ReturnType<typeof setTimeout> | undefined
+    let openWindow: ((data: unknown) => void) | null = null
     const epoch = hostedAuthenticationGeneration()
     const current = () => alive && epoch === hostedAuthenticationGeneration()
     setFrame(null)
     setError(null)
     setStale(false)
+    setReplaced(false)
     setUnavailable(false)
     setLoading(true)
     const handleMessage = (event: MessageEvent) => {
@@ -120,11 +168,15 @@ const ApplicationView = ({ id, versionId }: Props) => {
         event.origin !== window.location.origin
       )
         return
-      if (event.data?.type === 'codemie-hosted-ready') {
+      if (event.data?.type === HOSTED_MESSAGE.open) {
+        openWindow?.(event.data)
+        return
+      }
+      if (event.data?.type === HOSTED_MESSAGE.ready) {
         clearTimeout(timer)
         setLoading(false)
       }
-      if (event.data?.type === 'codemie-hosted-unavailable') {
+      if (event.data?.type === HOSTED_MESSAGE.unavailable) {
         clearTimeout(timer)
         setLoading(false)
         setUnavailable(true)
@@ -132,6 +184,17 @@ const ApplicationView = ({ id, versionId }: Props) => {
       }
     }
     window.addEventListener('message', handleMessage)
+    // The backend alone decides which pages it serves: a page it refuses launches the root, once.
+    const startLaunch = async (): Promise<HostedLaunch> => {
+      try {
+        return await store.issueLaunch(id, versionId, controller.signal, launchAt.current)
+      } catch (cause) {
+        if (!current() || !launchAt.current.path || errorCode(cause) !== INVALID_LAUNCH) throw cause
+        launchAt.current = { ...launchAt.current, path: null }
+        return store.issueLaunch(id, versionId, controller.signal, launchAt.current)
+      }
+    }
+    let opened: HostedApplication | null = null
     const load = async () => {
       try {
         // Old addresses (/apps/explore, /apps/trash, /apps/folders/...) land here: not available.
@@ -145,13 +208,27 @@ const ApplicationView = ({ id, versionId }: Props) => {
         const app = await store.getApplication(id, controller.signal)
         if (!current()) return
         setApplication(app)
+        opened = app
         if (!canOpen(app) && !versionId) {
           setLoading(false)
           setUnavailable(true)
           return
         }
-        const launch = await store.issueLaunch(id, versionId, controller.signal)
+        // Never switch a pinned window to another version silently: the person chooses to.
+        if (pinReplaced(app, launchAt.current.publishedVersion)) {
+          setLoading(false)
+          setUnavailable(true)
+          setReplaced(true)
+          return
+        }
+        const launch = await startLaunch()
         if (!current()) return
+        // A new window runs the version this viewer runs, so the two can sync through storage.
+        openWindow = createHostedWindowOpener(
+          id,
+          versionId ? hostedRoutes.preview(id, versionId) : hostedRoutes.view(id),
+          versionId ? null : launch.versionId ?? null
+        )
         created = createHostedFrame(launch, window.location.origin)
         pending.current = { launch, epoch }
         setFrame(created)
@@ -168,6 +245,8 @@ const ApplicationView = ({ id, versionId }: Props) => {
         // Missing and forbidden look the same: the generic "not available" copy, no detail.
         const status = (cause as { status?: number } | null)?.status
         setStale(errorCode(cause) === STALE_VERSION)
+        // Only managers are told the active version; for others the pinned launch is not found.
+        setReplaced(pinNotFound(status, opened, launchAt.current.publishedVersion))
         setError(status === 404 || status === 403 ? null : hostedErrorMessage(cause))
       }
     }
@@ -191,7 +270,7 @@ const ApplicationView = ({ id, versionId }: Props) => {
     submitHostedLaunch(ticket.launch, frame.target)
   }
   const subtitle = application ? viewerSubtitle(application, versionId) : 'Opening application'
-  const copy = unavailableCopy(application, error, stale)
+  const copy = unavailableCopy(application, error, stale, replaced)
   const manages = !!application && isManager(application)
   const actions = useHostedCardActions({
     isCurrent: () => active.current,
@@ -208,6 +287,12 @@ const ApplicationView = ({ id, versionId }: Props) => {
     },
     onError: setActionError,
   })
+  const openCurrentVersion = () => {
+    const query = new URLSearchParams()
+    if (launchAt.current.path) query.set(HOSTED_PATH_PARAM, launchAt.current.path)
+    const search = query.toString()
+    navigate(hostedRoutes.view(id) + (search ? '?' + search : ''), { replace: true })
+  }
   const back = () => {
     if ((window.history.state as { idx?: number } | null)?.idx) navigate(-1)
     else navigate(hostedRoutes.root)
@@ -268,7 +353,8 @@ const ApplicationView = ({ id, versionId }: Props) => {
               >
                 {copy.message}
               </p>
-              {!stale && (
+              {replaced && <Button onClick={openCurrentVersion}>Open the current version</Button>}
+              {!stale && !replaced && (
                 <Button variant="secondary" onClick={() => setRetry((value) => value + 1)}>
                   Retry
                 </Button>
@@ -290,11 +376,14 @@ const ApplicationView = ({ id, versionId }: Props) => {
 const HostedApplicationViewer = () => {
   const { id = '', versionId } = useParams()
   const location = useLocation()
+  const query = new URLSearchParams(location.search)
   return (
     <ApplicationView
       key={location.key + ':' + hostedAuthenticationGeneration()}
       id={id}
       versionId={versionId}
+      path={query.get(HOSTED_PATH_PARAM)}
+      version={query.get(HOSTED_VERSION_PARAM)}
     />
   )
 }
