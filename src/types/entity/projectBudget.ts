@@ -78,3 +78,21 @@ export interface MemberAllocationOverridePayload {
   allocated_soft_budget: number
   override_reason?: string | null
 }
+
+export interface BulkMemberOverrideItem extends MemberAllocationOverridePayload {
+  budget_id: string
+  user_id: string
+}
+
+export interface BulkMemberOverrideResult {
+  budget_id: string
+  user_id: string
+  status: 'ok' | 'failed'
+  code?: number
+  message?: string
+}
+
+export interface BulkMemberOverrideResponse {
+  results: BulkMemberOverrideResult[]
+  budgets: ProjectBudget[]
+}

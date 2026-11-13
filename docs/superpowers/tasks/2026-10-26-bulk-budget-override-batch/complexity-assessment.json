@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "task": "Switch bulk member budget override in ProjectMembersBulkActions to the new batch endpoint (types, store method, onSubmit rewrite, unchanged toasts) and add a busy lock to BulkBudgetOverrideModal.",
+  "generated": "2026-10-26T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 15,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "Closest patterns are overrideMemberAllocation (store method style) and UnifiedProjectBudgetModal (useInFlightGuard, Popup busy, fieldset). Both cover the shape of the work. The enumerated failure cases (partial failure, all-failed with budgets [], whole-request rejection) have no parameterized test template, and the existing wrapper test targets the per-user method being replaced. The fieldset may not give the cosmetic disabled styling on category-card inputs. The backend contract comes from an unmerged branch. These justify M rather than S." },
+    { "dimension": "component_scope", "reason": "Four touch points (types, projectBudgets store, ProjectMembersBulkActions handler, BulkBudgetOverrideModal), each following a clear in-repo pattern. Popup and useInFlightGuard are consumed unchanged. Scored M because the pattern is clear, though the touch-point count is at the top of M." },
+    { "dimension": "file_change_estimate", "reason": "About 4 source files plus 2 updated test files (ProjectMembersBulkActions.test, BulkBudgetOverrideModal.test) and a possible new store or busy test, across src/types, src/store and projectsManagement." },
+    { "dimension": "affected_layers", "reason": "UI (modal), Service/store (valtio), and the External backend batch endpoint. There is no DB or infrastructure change in this repo." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S to M: acceptance criteria enumerate per-item and whole-request failure variants and no existing parameterized test template covers them."
+  ],
+  "split_recommendation": null
+}

@@ -7,6 +7,7 @@ import Button from '@/components/Button'
 import Input from '@/components/form/Input'
 import Popup from '@/components/Popup'
 import { ButtonSize, ButtonType } from '@/constants'
+import { useInFlightGuard } from '@/hooks/useInFlightGuard'
 import { BudgetCategory } from '@/types/entity/budget'
 import {
   MemberAllocationOverridePayload,
@@ -152,7 +153,7 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
   onSubmit,
 }) => {
   const [pending, setPending] = useState<PendingValues>(emptyPendingValues)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { inFlight, tryBegin, end } = useInFlightGuard()
   const [clearedMixed, setClearedMixed] = useState<Partial<Record<ClearedMixedKey, true>>>({})
 
   const currentValuesByCategory = useMemo(
@@ -274,7 +275,6 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
   useEffect(() => {
     if (!visible) return
     setPending(emptyPendingValues())
-    setIsSubmitting(false)
     setClearedMixed({})
     // Initialize only when the modal opens so external budget refreshes do not
     // discard edits already made in the bulk form.
@@ -346,11 +346,11 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
       }))
     })
 
-    setIsSubmitting(true)
+    if (!tryBegin()) return
     try {
       await onSubmit(updates)
     } finally {
-      setIsSubmitting(false)
+      end()
     }
   }
 
@@ -358,6 +358,7 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
     <Popup
       visible={visible}
       onHide={onHide}
+      busy={inFlight}
       header={`Budget Override — ${users.length} users`}
       limitWidth
       className="w-full !max-w-3xl"
@@ -370,7 +371,7 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
               size={ButtonSize.SMALL}
               variant={ButtonType.SECONDARY}
               onClick={onHide}
-              disabled={isSubmitting}
+              disabled={inFlight}
             >
               Cancel
             </Button>
@@ -378,7 +379,8 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
               size={ButtonSize.SMALL}
               variant={ButtonType.PRIMARY}
               onClick={handleSubmit}
-              disabled={isSubmitting || !isDirty || hasInvalidPendingCategory}
+              isLoading={inFlight}
+              disabled={!isDirty || hasInvalidPendingCategory}
             >
               Save Override
             </Button>
@@ -387,85 +389,87 @@ const BulkBudgetOverrideModal: FC<BulkBudgetOverrideModalProps> = ({
       }
     >
       <div className="space-y-4" onBlur={handleFieldBlur}>
-        <div className="text-xs text-text-quaternary">
-          Mixed values remain unchanged unless edited.
-        </div>
+        <fieldset disabled={inFlight} className="m-0 min-w-0 space-y-4 border-0 p-0">
+          <div className="text-xs text-text-quaternary">
+            Mixed values remain unchanged unless edited.
+          </div>
 
-        <BudgetOverrideCategoryTable hasActionRow={false}>
-          {categoryOptions
-            .filter(({ value }) => budgets.some((budget) => budget.budget_category === value))
-            .map(({ value }) => {
-              const current = getCategoryValues(value)
-              const values = pending[value]
-              const maxMixed = !valuesAreEqual(current.max)
-              const softMixed = !valuesAreEqual(current.soft)
-              const fieldErrors = validationByCategory[value]
-              const revertField = (field: BudgetOverrideField) =>
-                setPending((currentPending) => ({
-                  ...currentPending,
-                  [value]: {
-                    ...currentPending[value],
-                    [field]: '',
-                    [`${field}Dirty`]: false,
-                  },
-                }))
-              return (
-                <BudgetOverrideCategoryCard
-                  key={value}
-                  category={value}
-                  maxValue={getFieldDisplayValue(
-                    values.maxDirty,
-                    values.max,
-                    maxMixed,
-                    current.max[0],
-                    Boolean(clearedMixed[`${value}-max`])
-                  )}
-                  softValue={getFieldDisplayValue(
-                    values.softDirty,
-                    values.soft,
-                    softMixed,
-                    current.soft[0],
-                    Boolean(clearedMixed[`${value}-soft`])
-                  )}
-                  maxAvailable={availableCapacityByCategory[value].max}
-                  softAvailable={availableCapacityByCategory[value].soft}
-                  availableLabel="Max available per user"
-                  maxError={fieldErrors.max}
-                  softError={fieldErrors.soft}
-                  maxDirty={isCategoryFieldDirty(values.max, values.maxDirty, current.max)}
-                  softDirty={isCategoryFieldDirty(values.soft, values.softDirty, current.soft)}
-                  allocationState={getAllocationState(value)}
-                  hasActionRow={false}
-                  maxId={`bulk-${value}-max`}
-                  softId={`bulk-${value}-soft`}
-                  onMaxChange={(nextValue) =>
-                    maxMixed && !nextValue
-                      ? revertField('max')
-                      : updateCategory(value, 'max', nextValue)
-                  }
-                  onSoftChange={(nextValue) =>
-                    softMixed && !nextValue
-                      ? revertField('soft')
-                      : updateCategory(value, 'soft', nextValue)
-                  }
-                  onMaxFocus={() => clearMixedForTyping(`${value}-max`)}
-                  onSoftFocus={() => clearMixedForTyping(`${value}-soft`)}
-                  onRevert={(field) => {
-                    revertField(field)
-                    restoreMixedText(`${value}-${field}`)
-                  }}
-                />
-              )
-            })}
-        </BudgetOverrideCategoryTable>
-        <Input
-          id="bulk_override_reason"
-          label="Override reason"
-          value={pending.platform.reason}
-          onChange={(event) => updateCategory('platform', 'reason', event.target.value)}
-          placeholder="Reason for this override (optional)"
-          aria-label="Override reason"
-        />
+          <BudgetOverrideCategoryTable hasActionRow={false}>
+            {categoryOptions
+              .filter(({ value }) => budgets.some((budget) => budget.budget_category === value))
+              .map(({ value }) => {
+                const current = getCategoryValues(value)
+                const values = pending[value]
+                const maxMixed = !valuesAreEqual(current.max)
+                const softMixed = !valuesAreEqual(current.soft)
+                const fieldErrors = validationByCategory[value]
+                const revertField = (field: BudgetOverrideField) =>
+                  setPending((currentPending) => ({
+                    ...currentPending,
+                    [value]: {
+                      ...currentPending[value],
+                      [field]: '',
+                      [`${field}Dirty`]: false,
+                    },
+                  }))
+                return (
+                  <BudgetOverrideCategoryCard
+                    key={value}
+                    category={value}
+                    maxValue={getFieldDisplayValue(
+                      values.maxDirty,
+                      values.max,
+                      maxMixed,
+                      current.max[0],
+                      Boolean(clearedMixed[`${value}-max`])
+                    )}
+                    softValue={getFieldDisplayValue(
+                      values.softDirty,
+                      values.soft,
+                      softMixed,
+                      current.soft[0],
+                      Boolean(clearedMixed[`${value}-soft`])
+                    )}
+                    maxAvailable={availableCapacityByCategory[value].max}
+                    softAvailable={availableCapacityByCategory[value].soft}
+                    availableLabel="Max available per user"
+                    maxError={fieldErrors.max}
+                    softError={fieldErrors.soft}
+                    maxDirty={isCategoryFieldDirty(values.max, values.maxDirty, current.max)}
+                    softDirty={isCategoryFieldDirty(values.soft, values.softDirty, current.soft)}
+                    allocationState={getAllocationState(value)}
+                    hasActionRow={false}
+                    maxId={`bulk-${value}-max`}
+                    softId={`bulk-${value}-soft`}
+                    onMaxChange={(nextValue) =>
+                      maxMixed && !nextValue
+                        ? revertField('max')
+                        : updateCategory(value, 'max', nextValue)
+                    }
+                    onSoftChange={(nextValue) =>
+                      softMixed && !nextValue
+                        ? revertField('soft')
+                        : updateCategory(value, 'soft', nextValue)
+                    }
+                    onMaxFocus={() => clearMixedForTyping(`${value}-max`)}
+                    onSoftFocus={() => clearMixedForTyping(`${value}-soft`)}
+                    onRevert={(field) => {
+                      revertField(field)
+                      restoreMixedText(`${value}-${field}`)
+                    }}
+                  />
+                )
+              })}
+          </BudgetOverrideCategoryTable>
+          <Input
+            id="bulk_override_reason"
+            label="Override reason"
+            value={pending.platform.reason}
+            onChange={(event) => updateCategory('platform', 'reason', event.target.value)}
+            placeholder="Reason for this override (optional)"
+            aria-label="Override reason"
+          />
+        </fieldset>
       </div>
     </Popup>
   )

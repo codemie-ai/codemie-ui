@@ -18,6 +18,8 @@ import { proxy } from 'valtio'
 import { Pagination } from '@/types/common'
 import { BudgetCategory } from '@/types/entity/budget'
 import {
+  BulkMemberOverrideItem,
+  BulkMemberOverrideResponse,
   MemberAllocationOverridePayload,
   ProjectBudget,
   ProjectBudgetCreatePayload,
@@ -59,6 +61,9 @@ interface ProjectBudgetsStore {
     payload: MemberAllocationOverridePayload,
     silent?: boolean
   ) => Promise<ProjectBudgetMemberAllocation>
+  bulkOverrideMemberAllocations: (
+    items: BulkMemberOverrideItem[]
+  ) => Promise<BulkMemberOverrideResponse>
   clearMemberOverride: (budgetId: string, userId: string, silent?: boolean) => Promise<void>
   listProjectBudgetGroups: (projectName: string) => Promise<ProjectBudgetGroup[]>
   getProjectBudgetGroup: (groupId: string) => Promise<ProjectBudgetGroup>
@@ -248,6 +253,27 @@ export const projectBudgetsStore = proxy<ProjectBudgetsStore>({
         error?.parsedError?.message ?? error?.message ?? 'Failed to override member allocation'
       this.error = msg
       if (!silent) toaster.error(msg)
+      throw error
+    } finally {
+      this.loading = false
+    }
+  },
+
+  async bulkOverrideMemberAllocations(items: BulkMemberOverrideItem[]) {
+    this.loading = true
+    this.error = null
+
+    try {
+      const response = await api.post(
+        'v1/admin/project-budgets/member-overrides/bulk',
+        { items },
+        { skipErrorHandling: true }
+      )
+      return (await response.json()) as BulkMemberOverrideResponse
+    } catch (error: any) {
+      const msg =
+        error?.parsedError?.message ?? error?.message ?? 'Failed to override member allocations'
+      this.error = msg
       throw error
     } finally {
       this.loading = false

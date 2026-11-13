@@ -13,14 +13,15 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, Mock, vi } from 'vitest'
 
 import { BudgetCategory } from '@/types/entity/budget'
 import { ProjectBudget } from '@/types/entity/projectBudget'
 import { UserListItem } from '@/types/entity/user'
 
+import { deferred } from '../../__tests__/budgetModalTestUtils'
 import BulkBudgetOverrideModal from '../BulkBudgetOverrideModal'
 
 const HARD_ERROR = 'Hard limit must be a non-negative number'
@@ -51,8 +52,15 @@ const buildBudget = (maxValues: number[], softValues: number[]): ProjectBudget =
   })),
 })
 
-const renderModal = ({ maxValues, softValues }: { maxValues: number[]; softValues: number[] }) => {
-  const onSubmit = vi.fn().mockResolvedValue(undefined)
+const renderModal = ({
+  maxValues,
+  softValues,
+  onSubmit = vi.fn<(updates: any[]) => Promise<void>>().mockResolvedValue(undefined),
+}: {
+  maxValues: number[]
+  softValues: number[]
+  onSubmit?: Mock<(updates: any[]) => Promise<void>>
+}) => {
   const props = {
     visible: true,
     users,
@@ -257,5 +265,79 @@ describe('BulkBudgetOverrideModal — mixed fields', () => {
     rerender(<BulkBudgetOverrideModal {...props} visible />)
 
     expect(hardInput()).toHaveValue('Mixed')
+  })
+})
+
+describe('BulkBudgetOverrideModal — in-flight save', () => {
+  const values = { maxValues: [10, 20], softValues: [5, 5] }
+
+  const renderPending = async () => {
+    const save = deferred()
+    const view = renderModal({
+      ...values,
+      onSubmit: vi.fn(async () => {
+        await save.promise
+      }),
+    })
+    await userEvent.type(hardInput(), '7')
+    return { ...view, save }
+  }
+
+  it('sends a single request when Save fires twice in the same tick', async () => {
+    const { onSubmit, save } = await renderPending()
+    const save$ = saveButton()
+
+    act(() => {
+      fireEvent.click(save$)
+      fireEvent.click(save$)
+    })
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    await act(async () => save.resolve(undefined))
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
+  it('locks every control and shows loading while the save is pending', async () => {
+    const { save } = await renderPending()
+
+    await userEvent.click(saveButton())
+
+    await waitFor(() => expect(saveButton()).toBeDisabled())
+    expect(saveButton()).toHaveClass('cursor-wait')
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    expect(hardInput()).toBeDisabled()
+    expect(softInput()).toBeDisabled()
+    expect(screen.getByLabelText('Override reason')).toBeDisabled()
+    expect(screen.getByLabelText('Revert')).toBeDisabled()
+    expect(document.querySelector('[aria-busy="true"]')).toBeInTheDocument()
+
+    await act(async () => save.resolve(undefined))
+  })
+
+  it('does not dismiss on Escape while the save is pending', async () => {
+    const { props, save } = await renderPending()
+
+    await userEvent.click(saveButton())
+    await waitFor(() => expect(saveButton()).toBeDisabled())
+    fireEvent.keyDown(document, { key: 'Escape', code: 'Escape', keyCode: 27 })
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', code: 'Escape', keyCode: 27 })
+
+    expect(props.onHide).not.toHaveBeenCalled()
+
+    await act(async () => save.resolve(undefined))
+  })
+
+  it('enables the controls again once the save settles', async () => {
+    const { save } = await renderPending()
+
+    await userEvent.click(saveButton())
+    await waitFor(() => expect(hardInput()).toBeDisabled())
+
+    await act(async () => save.resolve(undefined))
+
+    await waitFor(() => expect(hardInput()).toBeEnabled())
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled()
+    expect(screen.getByLabelText('Override reason')).toBeEnabled()
+    expect(saveButton()).toBeEnabled()
   })
 })

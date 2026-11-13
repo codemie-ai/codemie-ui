@@ -203,14 +203,21 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
           budgetAllocationLookup={budgetAllocationLookup}
           onHide={() => closePopup()}
           onSubmit={async (updates) => {
-            const failedUserIds = new Set<string>()
-            for (const { budgetId, userId, payload } of updates) {
+            let failedUserIds = new Set<string>()
+            if (updates.length) {
               try {
-                // Backend rebalances after every PATCH, so these updates must be sequential.
-                // eslint-disable-next-line no-await-in-loop
-                await projectBudgetsStore.overrideMemberAllocation(budgetId, userId, payload, true)
+                const { results } = await projectBudgetsStore.bulkOverrideMemberAllocations(
+                  updates.map(({ budgetId, userId, payload }) => ({
+                    budget_id: budgetId,
+                    user_id: userId,
+                    ...payload,
+                  }))
+                )
+                failedUserIds = new Set(
+                  results.filter((r) => r.status === 'failed').map((r) => r.user_id)
+                )
               } catch {
-                failedUserIds.add(userId)
+                failedUserIds = new Set(updates.map(({ userId }) => userId))
               }
             }
             const failedUsers = selectedUsers.filter((user) => failedUserIds.has(user.id))
