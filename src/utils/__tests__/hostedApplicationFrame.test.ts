@@ -71,6 +71,32 @@ it('does not permit arbitrary named targets or top-level escape targets', () => 
   expect(() => submitHostedLaunch(launch, '_top')).toThrow()
   expect(() => submitHostedLaunch(launch, 'existing-admin-tab')).toThrow()
 })
+const OPENER = '0f8fad5b-d9cb-469f-a165-70867728950e'
+it('names the content frame after the window that opened it, for the content to read', () => {
+  const frame = createHostedFrame(launch, ui, OPENER)
+  expect(frame.target).toMatch(new RegExp('^codemie-hosted-[a-f0-9]{32}-opener-' + OPENER + '$'))
+  const parsed = new DOMParser().parseFromString(frame.document, 'text/html')
+  expect(parsed.querySelector('iframe')?.name).toBe(frame.target)
+  expect(() => submitHostedLaunch(launch, frame.target)).not.toThrow()
+})
+it.each([null, undefined])('keeps the plain frame name with no opener (%s)', (opener) => {
+  expect(createHostedFrame(launch, ui, opener).target).toMatch(/^codemie-hosted-[a-f0-9]{32}$/)
+})
+it.each(['short', 'a'.repeat(65), 'abcd_efgh', 'abcdefgh"><script>x</script>', "abcdefgh' x='"])(
+  'never puts an invalid opener into the frame name: %s',
+  (opener) => {
+    const frame = createHostedFrame(launch, ui, opener)
+    expect(frame.target).toMatch(/^codemie-hosted-[a-f0-9]{32}$/)
+    expect(frame.document).not.toContain(opener)
+  }
+)
+it.each([
+  'codemie-hosted-' + 'a'.repeat(32) + '-opener-short',
+  'codemie-hosted-' + 'a'.repeat(32) + '-opener-abcdefgh"x',
+  'codemie-hosted-' + 'a'.repeat(32) + '-other-' + OPENER,
+])('does not submit a launch to a frame named %s', (target) => {
+  expect(() => submitHostedLaunch(launch, target)).toThrow()
+})
 it.each([
   'https://a_b.content.example',
   'https://content.example"><script>alert(1)</script>',
@@ -110,31 +136,94 @@ function relay(data: unknown, from: { source?: 'child' | 'other'; origin?: strin
   })
   return parent.postMessage
 }
+const CHANNEL = '0f8fad5b-d9cb-469f-a165-70867728950e'
 it('relays a request to open a window from the content to CodeMie, with only its fields', () => {
   const posted = relay({
     type: HOSTED_MESSAGE.open,
     target: '/deck?presenter=1',
     name: 'presenter',
+    channel: CHANNEL,
+    features: { popup: true, width: 1180, height: '720', left: 1.5, top: 20, evil: 'x' },
     extra: 'dropped',
   })
   expect(posted).toHaveBeenCalledExactlyOnceWith(
-    { type: HOSTED_MESSAGE.open, target: '/deck?presenter=1', name: 'presenter' },
+    {
+      type: HOSTED_MESSAGE.open,
+      target: '/deck?presenter=1',
+      name: 'presenter',
+      channel: CHANNEL,
+      features: { popup: true, width: 1180, top: 20 },
+    },
     ui
   )
 })
 it.each([
-  ['another frame', { type: HOSTED_MESSAGE.open, target: '/x', name: '' }, { source: 'other' }],
+  ['no features', undefined],
+  ['null', null],
+  ['a string', 'width=1180'],
+  ['an array', [1180]],
+])('relays %s as no features', (_label, features) => {
+  const posted = relay({
+    type: HOSTED_MESSAGE.open,
+    target: '/x',
+    name: '',
+    channel: CHANNEL,
+    features,
+  })
+  expect(posted).toHaveBeenCalledExactlyOnceWith(
+    { type: HOSTED_MESSAGE.open, target: '/x', name: '', channel: CHANNEL, features: null },
+    ui
+  )
+})
+it('relays an open request with no channel, from a link or a no-opener window', () => {
+  const posted = relay({ type: HOSTED_MESSAGE.open, target: '/x', name: '', channel: null })
+  expect(posted).toHaveBeenCalledExactlyOnceWith(
+    { type: HOSTED_MESSAGE.open, target: '/x', name: '', channel: null, features: null },
+    ui
+  )
+})
+it('relays a request to close the window opened for a channel, with only its fields', () => {
+  expect(
+    relay({ type: HOSTED_MESSAGE.close, channel: CHANNEL, extra: 'dropped' })
+  ).toHaveBeenCalledExactlyOnceWith({ type: HOSTED_MESSAGE.close, channel: CHANNEL }, ui)
+})
+it.each([
+  ['no channel', { type: HOSTED_MESSAGE.close }],
+  ['a null channel', { type: HOSTED_MESSAGE.close, channel: null }],
+  ['a bad channel', { type: HOSTED_MESSAGE.close, channel: '../x' }],
+  ['a channel that is not a string', { type: HOSTED_MESSAGE.close, channel: 12345678 }],
+])('does not relay a close request with %s', (_label, data) => {
+  expect(relay(data)).not.toHaveBeenCalled()
+})
+it('does not relay a close request from another frame', () => {
+  expect(
+    relay({ type: HOSTED_MESSAGE.close, channel: CHANNEL }, { source: 'other' })
+  ).not.toHaveBeenCalled()
+})
+it.each([
+  [
+    'another frame',
+    { type: HOSTED_MESSAGE.open, target: '/x', name: '', channel: CHANNEL },
+    { source: 'other' },
+  ],
   [
     'another origin',
-    { type: HOSTED_MESSAGE.open, target: '/x', name: '' },
+    { type: HOSTED_MESSAGE.open, target: '/x', name: '', channel: CHANNEL },
     { origin: 'https://attacker.test' },
   ],
   ['a target that is not a string', { type: HOSTED_MESSAGE.open, target: 1, name: '' }, {}],
   ['a name that is not a string', { type: HOSTED_MESSAGE.open, target: '/x' }, {}],
+  ['no channel', { type: HOSTED_MESSAGE.open, target: '/x', name: '' }, {}],
+  [
+    'a channel that is not a string or null',
+    { type: HOSTED_MESSAGE.open, target: '/x', name: '', channel: 12345678 },
+    {},
+  ],
+  ['a bad channel', { type: HOSTED_MESSAGE.open, target: '/x', name: '', channel: 'short' }, {}],
 ] as const)('does not relay an open request from %s', (_label, data, from) => {
   expect(relay(data, from)).not.toHaveBeenCalled()
 })
-it.each([HOSTED_MESSAGE.ready, HOSTED_MESSAGE.unavailable])(
+it.each([HOSTED_MESSAGE.ready, HOSTED_MESSAGE.unavailable, HOSTED_MESSAGE.closeSelf])(
   'relays the %s message kind from the shared message module',
   (type) => {
     expect(relay({ type, extra: 'dropped' })).toHaveBeenCalledExactlyOnceWith({ type }, ui)

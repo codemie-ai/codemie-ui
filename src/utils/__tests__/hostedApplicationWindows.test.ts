@@ -18,7 +18,9 @@ import { HOSTED_MESSAGE } from '@/utils/hostedApplicationMessages'
 import {
   createHostedWindowOpener,
   HOSTED_OPENS_PER_MINUTE,
+  isHostedChannel,
   isHostedPath,
+  openedByCodeMie,
 } from '@/utils/hostedApplicationWindows'
 
 const APP = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
@@ -32,11 +34,18 @@ const fakeWindow = (href = 'about:blank') => ({
   location: { href },
 })
 
-const request = (target: unknown, name: unknown = '') => ({
-  type: HOSTED_MESSAGE.open,
-  target,
-  name,
-})
+// The channel the content's broker gives each window it asks for.
+const CHANNEL = '0f8fad5b-d9cb-469f-a165-70867728950e'
+const OPENER = '&opener=' + CHANNEL
+
+const request = (
+  target: unknown,
+  name: unknown = '',
+  channel: unknown = CHANNEL,
+  features: unknown = null
+) => ({ type: HOSTED_MESSAGE.open, target, name, channel, features })
+
+const close = (channel: unknown = CHANNEL) => ({ type: HOSTED_MESSAGE.close, channel })
 
 let now = 0
 // A fresh name per test: the window registry is shared by every viewer of the page.
@@ -91,6 +100,19 @@ describe('isHostedPath', () => {
   })
 })
 
+describe('isHostedChannel', () => {
+  it.each([CHANNEL, 'abcdefgh', 'A'.repeat(64)])('accepts %s', (channel) => {
+    expect(isHostedChannel(channel)).toBe(true)
+  })
+
+  it.each(['abcdefg', 'a'.repeat(65), 'abcd_efgh', 'abcd efgh', '../../x/y', '', null, 12345678])(
+    'rejects %j',
+    (channel) => {
+      expect(isHostedChannel(channel)).toBe(false)
+    }
+  )
+})
+
 describe('createHostedWindowOpener', () => {
   it('opens the published view pinned to the launched version, under the router base', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(fakeWindow() as never)
@@ -101,7 +123,8 @@ describe('createHostedWindowOpener', () => {
         VIEW +
         '?version=' +
         VERSION +
-        '&path=%2Fdeck.html%3Fpresenter%3D1%26x%3Da%2520b%23s2',
+        '&path=%2Fdeck.html%3Fpresenter%3D1%26x%3Da%2520b%23s2' +
+        OPENER,
       'codemie-app-' + APP + '-' + name
     )
   })
@@ -110,7 +133,7 @@ describe('createHostedWindowOpener', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(fakeWindow() as never)
     createHostedWindowOpener(APP, PREVIEW, null)(request('/print'))
     expect(open).toHaveBeenCalledExactlyOnceWith(
-      window.location.origin + PREVIEW + '?path=%2Fprint',
+      window.location.origin + PREVIEW + '?path=%2Fprint' + OPENER,
       '_blank'
     )
   })
@@ -139,7 +162,7 @@ describe('createHostedWindowOpener', () => {
     const opener = createHostedWindowOpener(APP, PREVIEW, null)
     const name = named('presenter')
     opener(request('/deck', name))
-    popup.location.href = window.location.origin + '/codemie' + PREVIEW + '?path=%2Fdeck'
+    popup.location.href = window.location.origin + '/codemie' + PREVIEW + '?path=%2Fdeck' + OPENER
     opener(request('/deck', name))
     expect(open).toHaveBeenCalledTimes(1)
     expect(popup.focus).toHaveBeenCalledTimes(1)
@@ -161,7 +184,12 @@ describe('createHostedWindowOpener', () => {
   it.each([
     ['a target with the wrong shape', request('//evil.com', 'x')],
     ['a target that is not a string', request(42, 'x')],
-    ['a missing name', { type: HOSTED_MESSAGE.open, target: '/deck' }],
+    ['a missing name', { type: HOSTED_MESSAGE.open, target: '/deck', channel: CHANNEL }],
+    ['a missing channel', { type: HOSTED_MESSAGE.open, target: '/deck', name: 'x' }],
+    ['a channel that is too short', request('/deck', 'x', 'abc')],
+    ['an over-long channel', request('/deck', 'x', 'a'.repeat(65))],
+    ['a channel with other characters', request('/deck', 'x', 'abcd efgh_ijkl')],
+    ['a channel that is not a string', request('/deck', 'x', 12345678)],
     ['an over-long name', request('/deck', 'n'.repeat(201))],
     ['another message kind', { type: HOSTED_MESSAGE.ready, target: '/deck', name: 'x' }],
     ['no message at all', null],
@@ -195,7 +223,7 @@ describe('createHostedWindowOpener', () => {
       opener(request('/two', name))
       expect(open).toHaveBeenCalledTimes(2)
       expect(open).toHaveBeenLastCalledWith(
-        window.location.origin + PREVIEW + '?path=%2Ftwo',
+        window.location.origin + PREVIEW + '?path=%2Ftwo' + OPENER,
         'codemie-app-' + APP + '-' + name
       )
       expect(popup.focus).toHaveBeenCalledTimes(1)
@@ -317,5 +345,163 @@ describe('createHostedWindowOpener', () => {
       for (let i = 0; i < HOSTED_OPENS_PER_MINUTE + 2; i += 1) opener(request('/deck', name))
       expect(popup.focus).toHaveBeenCalledTimes(HOSTED_OPENS_PER_MINUTE + 2)
     })
+  })
+
+  describe('window features', () => {
+    it.each([
+      ['no features', null, undefined],
+      ['features that are not an object', 'width=1180', undefined],
+      ['an empty object', {}, undefined],
+      ['a plain pop-up', { popup: true }, 'popup'],
+      ['a size', { width: 1180, height: 720 }, 'popup,width=1180,height=720'],
+      [
+        'a size and a position',
+        { popup: true, width: 1180, height: 720, left: 10, top: 20 },
+        'popup,width=1180,height=720,left=10,top=20',
+      ],
+      [
+        'values out of range',
+        { width: 50, height: 20000, left: -5, top: 99999 },
+        'popup,width=100,height=10000,left=0,top=10000',
+      ],
+      [
+        'some bad fields',
+        { popup: 'yes', width: '1180', height: 720, left: 1.5, top: Number.NaN, extra: 1 },
+        'popup,height=720',
+      ],
+      ['only bad fields', { popup: 1, width: '1180', left: null }, undefined],
+    ])('opens a window with %s', (_label, features, expected) => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(fakeWindow() as never)
+      createHostedWindowOpener(APP, PREVIEW, null)(request('/print', '', CHANNEL, features))
+      expect(open).toHaveBeenCalledTimes(1)
+      expect(open.mock.calls[0][2]).toBe(expected)
+    })
+
+    it('opens a named window with its features', () => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(fakeWindow() as never)
+      const name = named('presenter')
+      createHostedWindowOpener(
+        APP,
+        PREVIEW,
+        null
+      )(request('/deck', name, CHANNEL, { width: 1180, height: 720 }))
+      expect(open.mock.calls[0][1]).toBe('codemie-app-' + APP + '-' + name)
+      expect(open.mock.calls[0][2]).toBe('popup,width=1180,height=720')
+    })
+
+    it('ignores the features when an open named window moves to a new address', () => {
+      const popup = fakeWindow()
+      const open = vi.spyOn(window, 'open').mockReturnValue(popup as never)
+      const opener = createHostedWindowOpener(APP, PREVIEW, null)
+      const name = named('presenter')
+      opener(request('/one', name, CHANNEL, { width: 1180 }))
+      popup.location.href = open.mock.calls[0][0] as string
+      opener(request('/two', name, CHANNEL, { width: 1180 }))
+      expect(open).toHaveBeenCalledTimes(2)
+      expect(open.mock.calls[1]).toHaveLength(2)
+    })
+  })
+
+  describe('a request with no channel (a link or a no-opener window)', () => {
+    it.each([
+      ['a new window', ''],
+      ['a named window', 'linked'],
+    ])('opens %s as before, with no opener in the address', (_label, name) => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(fakeWindow() as never)
+      const target = name && named(name)
+      createHostedWindowOpener(APP, PREVIEW, null)(request('/deck', target, null))
+      expect(open.mock.calls[0][0]).toBe(window.location.origin + PREVIEW + '?path=%2Fdeck')
+    })
+
+    it('focuses a named window that already shows the address without reloading it', () => {
+      const popup = fakeWindow()
+      const open = vi.spyOn(window, 'open').mockReturnValue(popup as never)
+      const opener = createHostedWindowOpener(APP, PREVIEW, null)
+      const name = named('linked')
+      opener(request('/deck', name, null))
+      popup.location.href = open.mock.calls[0][0] as string
+      opener(request('/deck', name, null))
+      expect(open).toHaveBeenCalledTimes(1)
+      expect(popup.focus).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps no channel for the window, so no close request reaches it', () => {
+      const popup = { ...fakeWindow(), close: vi.fn() }
+      vi.spyOn(window, 'open').mockReturnValue(popup as never)
+      const opener = createHostedWindowOpener(APP, PREVIEW, null)
+      opener(request('/deck', '', null))
+      opener(close(null))
+      opener(close())
+      expect(popup.close).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('closing a window the application opened', () => {
+    it.each([
+      ['a new window', ''],
+      ['a named window', 'presenter-close'],
+    ])('closes %s opened for the channel', (_label, name) => {
+      const popup = { ...fakeWindow(), close: vi.fn() }
+      vi.spyOn(window, 'open').mockReturnValue(popup as never)
+      const opener = createHostedWindowOpener(APP, PREVIEW, null)
+      opener(request('/deck', name && named(name)))
+      opener(close())
+      expect(popup.close).toHaveBeenCalledTimes(1)
+    })
+
+    it('closes nothing for another channel, a bad channel or a window already closed', () => {
+      const popup = { ...fakeWindow(), close: vi.fn() }
+      vi.spyOn(window, 'open').mockReturnValue(popup as never)
+      const opener = createHostedWindowOpener(APP, PREVIEW, null)
+      opener(request('/deck'))
+      opener(close('1f8fad5b-d9cb-469f-a165-70867728950e'))
+      opener(close('bad'))
+      opener({ type: HOSTED_MESSAGE.close })
+      expect(popup.close).not.toHaveBeenCalled()
+      popup.closed = true
+      opener(close())
+      expect(popup.close).not.toHaveBeenCalled()
+    })
+
+    it('never closes a window that another viewer opened, even for the same channel', () => {
+      const popup = { ...fakeWindow(), close: vi.fn() }
+      vi.spyOn(window, 'open').mockReturnValue(popup as never)
+      createHostedWindowOpener(APP, PREVIEW, null)(request('/deck'))
+      createHostedWindowOpener(APP, PREVIEW, null)(close())
+      expect(popup.close).not.toHaveBeenCalled()
+    })
+  })
+})
+
+describe('openedByCodeMie', () => {
+  const withOpener = (opener: unknown) =>
+    Object.defineProperty(window, 'opener', { configurable: true, get: () => opener })
+
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'opener')
+  })
+
+  it('is true for a window a CodeMie page opened', () => {
+    withOpener({ location: { origin: window.location.origin } })
+    expect(openedByCodeMie()).toBe(true)
+  })
+
+  it('is false for a tab the person opened, which has no opener', () => {
+    withOpener(null)
+    expect(openedByCodeMie()).toBe(false)
+  })
+
+  it('is false for a window another site opened', () => {
+    withOpener({
+      get location(): { origin: string } {
+        throw new DOMException('Blocked a frame with origin', 'SecurityError')
+      },
+    })
+    expect(openedByCodeMie()).toBe(false)
+  })
+
+  it('is false for a window opened by a page on another origin it can read', () => {
+    withOpener({ location: { origin: 'https://elsewhere.test' } })
+    expect(openedByCodeMie()).toBe(false)
   })
 })

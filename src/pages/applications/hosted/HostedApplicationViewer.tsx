@@ -36,9 +36,12 @@ import {
 import { HOSTED_MESSAGE } from '@/utils/hostedApplicationMessages'
 import {
   createHostedWindowOpener,
+  HOSTED_OPENER_PARAM,
   HOSTED_PATH_PARAM,
   HOSTED_VERSION_PARAM,
+  isHostedChannel,
   isHostedPath,
+  openedByCodeMie,
 } from '@/utils/hostedApplicationWindows'
 
 import { canOpen, isManager, isSuspended } from './hostedAccess'
@@ -122,8 +125,10 @@ interface Props {
   path: string | null
   /** The `?version=` a published view was opened with, by a window this application opened. */
   version: string | null
+  /** The `?opener=` channel of the window that opened this one; a malformed one is dropped. */
+  opener: string | null
 }
-const ApplicationView = ({ id, versionId, path, version }: Props) => {
+const ApplicationView = ({ id, versionId, path, version, opener }: Props) => {
   const navigate = useNavigate()
   useHostedFeatureRedirect()
   const [application, setApplication] = useState<HostedApplication | null>(null)
@@ -146,6 +151,9 @@ const ApplicationView = ({ id, versionId, path, version }: Props) => {
     path: isHostedPath(path) ? path : null,
     publishedVersion: !versionId && version && HOSTED_UUID.test(version) ? version : null,
   })
+  // The channel of the window that opened this one, read once like the start page. It reaches the
+  // content in its frame's name, never the launch.
+  const openerChannel = useRef(isHostedChannel(opener) ? opener : null)
   useEffect(() => {
     let alive = true
     active.current = true
@@ -168,8 +176,13 @@ const ApplicationView = ({ id, versionId, path, version }: Props) => {
         event.origin !== window.location.origin
       )
         return
-      if (event.data?.type === HOSTED_MESSAGE.open) {
+      if (event.data?.type === HOSTED_MESSAGE.open || event.data?.type === HOSTED_MESSAGE.close) {
         openWindow?.(event.data)
+        return
+      }
+      // A tab the person opened is never closed by an application, whatever the browser allows.
+      if (event.data?.type === HOSTED_MESSAGE.closeSelf) {
+        if (openedByCodeMie()) window.close()
         return
       }
       if (event.data?.type === HOSTED_MESSAGE.ready) {
@@ -229,7 +242,7 @@ const ApplicationView = ({ id, versionId, path, version }: Props) => {
           versionId ? hostedRoutes.preview(id, versionId) : hostedRoutes.view(id),
           versionId ? null : launch.versionId ?? null
         )
-        created = createHostedFrame(launch, window.location.origin)
+        created = createHostedFrame(launch, window.location.origin, openerChannel.current)
         pending.current = { launch, epoch }
         setFrame(created)
         timer = setTimeout(() => {
@@ -287,6 +300,8 @@ const ApplicationView = ({ id, versionId, path, version }: Props) => {
     },
     onError: setActionError,
   })
+  // Keeps the page but drops `?opener=`: content origins are per version, so the window that opened
+  // this one runs the earlier version and the two could not talk anyway.
   const openCurrentVersion = () => {
     const query = new URLSearchParams()
     if (launchAt.current.path) query.set(HOSTED_PATH_PARAM, launchAt.current.path)
@@ -384,6 +399,7 @@ const HostedApplicationViewer = () => {
       versionId={versionId}
       path={query.get(HOSTED_PATH_PARAM)}
       version={query.get(HOSTED_VERSION_PARAM)}
+      opener={query.get(HOSTED_OPENER_PARAM)}
     />
   )
 }

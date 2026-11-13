@@ -65,8 +65,11 @@ export function validateHostedLaunch(
   return { action: action.href, ticket: response.ticket, origin: content.origin }
 }
 
+// The content frame's name, with the opener channel it may carry (see createHostedFrame).
+const HOSTED_FRAME_NAME = /^codemie-hosted-[a-f0-9]{32}(-opener-[A-Za-z0-9-]{8,64})?$/
+
 export function submitHostedLaunch(launch: ValidatedHostedLaunch, target = '_self'): void {
-  if (target !== '_self' && !/^codemie-hosted-[a-f0-9]{32}$/.test(target))
+  if (target !== '_self' && !HOSTED_FRAME_NAME.test(target))
     throw new Error('Invalid application frame')
   const form = document.createElement('form')
   form.method = 'POST'

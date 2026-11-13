@@ -235,19 +235,28 @@ describe('opening a window for the application', () => {
     data: unknown,
     origin = window.location.origin
   ) => fireEvent(window, new MessageEvent('message', { data, origin, source }))
-  const open = (target: unknown, name: unknown = '') => ({
+  const CHANNEL = '0f8fad5b-d9cb-469f-a165-70867728950e'
+  const OPENER = '&opener=' + CHANNEL
+  const open = (target: unknown, name: unknown = '', features: unknown = null) => ({
     type: HOSTED_MESSAGE.open,
     target,
     name,
+    channel: CHANNEL,
+    features,
   })
-  const popup = () => ({ closed: false, focus: vi.fn(), location: { href: 'about:blank' } })
+  const popup = () => ({
+    closed: false,
+    focus: vi.fn(),
+    close: vi.fn(),
+    location: { href: 'about:blank' },
+  })
 
   it('opens the version this viewer launched in a CodeMie window at the requested path', async () => {
     const opened = vi.spyOn(window, 'open').mockReturnValue(popup() as never)
     const { outer } = await frame()
     send(outer.contentWindow, open('/deck.html?presenter=1', 'presenter-view'))
     expect(opened).toHaveBeenCalledExactlyOnceWith(
-      VIEW + '%2Fdeck.html%3Fpresenter%3D1',
+      VIEW + '%2Fdeck.html%3Fpresenter%3D1' + OPENER,
       'codemie-app-' + APP + '-presenter-view'
     )
   })
@@ -261,7 +270,8 @@ describe('opening a window for the application', () => {
       window.location.origin +
         '/apps/' +
         APP +
-        '/preview/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb?path=%2Fprint',
+        '/preview/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb?path=%2Fprint' +
+        OPENER,
       '_blank'
     )
   })
@@ -285,7 +295,7 @@ describe('opening a window for the application', () => {
     later()
     send(outer.contentWindow, open('/detail/2', '_blank'))
     expect(opened).toHaveBeenCalledTimes(2)
-    expect(opened).toHaveBeenNthCalledWith(2, VIEW + '%2Fdetail%2F2', '_blank')
+    expect(opened).toHaveBeenNthCalledWith(2, VIEW + '%2Fdetail%2F2' + OPENER, '_blank')
     expect(window1.focus).not.toHaveBeenCalled()
   })
 
@@ -308,14 +318,15 @@ describe('opening a window for the application', () => {
     ['a control character', open('/deck\u0000')],
     ['a space', open('/a b')],
     ['a target that is not a string', open(42)],
-    ['a missing name', { type: HOSTED_MESSAGE.open, target: '/deck' }],
+    ['a missing name', { type: HOSTED_MESSAGE.open, target: '/deck', channel: CHANNEL }],
+    ['a bad channel', { ...open('/deck', 'x'), channel: 'short' }],
     ['an over-long name', open('/deck', 'n'.repeat(201))],
   ])('ignores a request with %s', async (_label, data) => {
     const opened = vi.spyOn(window, 'open').mockReturnValue(popup() as never)
     const { outer } = await frame()
     send(outer.contentWindow, data)
     send(outer.contentWindow, open('/valid', ''))
-    expect(opened).toHaveBeenCalledExactlyOnceWith(VIEW + '%2Fvalid', '_blank')
+    expect(opened).toHaveBeenCalledExactlyOnceWith(VIEW + '%2Fvalid' + OPENER, '_blank')
   })
 
   it('ignores a request from another window or another origin', async () => {
@@ -324,6 +335,82 @@ describe('opening a window for the application', () => {
     send(window, open('/deck', ''))
     send(outer.contentWindow, open('/deck', ''), 'https://content.test')
     send(outer.contentWindow, open('/valid', ''))
-    expect(opened).toHaveBeenCalledExactlyOnceWith(VIEW + '%2Fvalid', '_blank')
+    expect(opened).toHaveBeenCalledExactlyOnceWith(VIEW + '%2Fvalid' + OPENER, '_blank')
+  })
+
+  it('opens the window the deck asks for as a pop-up of that size', async () => {
+    const opened = vi.spyOn(window, 'open').mockReturnValue(popup() as never)
+    const { outer } = await frame()
+    send(
+      outer.contentWindow,
+      open('/?presenter=1', 'codemie-presenter', { width: 1180, height: 720 })
+    )
+    expect(opened).toHaveBeenCalledExactlyOnceWith(
+      VIEW + '%2F%3Fpresenter%3D1' + OPENER,
+      'codemie-app-' + APP + '-codemie-presenter',
+      'popup,width=1180,height=720'
+    )
+  })
+
+  it('closes the window it opened for a channel when its own content asks', async () => {
+    const window1 = popup()
+    vi.spyOn(window, 'open').mockReturnValue(window1 as never)
+    const { outer } = await frame()
+    send(outer.contentWindow, open('/deck', ''))
+    send(window, { type: HOSTED_MESSAGE.close, channel: CHANNEL })
+    send(
+      outer.contentWindow,
+      { type: HOSTED_MESSAGE.close, channel: CHANNEL },
+      'https://content.test'
+    )
+    expect(window1.close).not.toHaveBeenCalled()
+    send(outer.contentWindow, { type: HOSTED_MESSAGE.close, channel: CHANNEL })
+    expect(window1.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens a link the content brokered with no channel, with no opener in the address', async () => {
+    const opened = vi.spyOn(window, 'open').mockReturnValue(popup() as never)
+    const { outer } = await frame()
+    send(outer.contentWindow, { ...open('/detail/1', '_blank'), channel: null })
+    expect(opened).toHaveBeenCalledExactlyOnceWith(VIEW + '%2Fdetail%2F1', '_blank')
+  })
+
+  describe('a window that closes itself', () => {
+    const withOpener = (opener: unknown) =>
+      Object.defineProperty(window, 'opener', { configurable: true, get: () => opener })
+    afterEach(() => {
+      Reflect.deleteProperty(window, 'opener')
+    })
+
+    it('closes this window when CodeMie opened it and its own content asks', async () => {
+      withOpener({ location: { origin: window.location.origin } })
+      const closed = vi.spyOn(window, 'close').mockImplementation(() => undefined)
+      const { outer } = await frame()
+      send(window, { type: HOSTED_MESSAGE.closeSelf })
+      send(outer.contentWindow, { type: HOSTED_MESSAGE.closeSelf }, 'https://content.test')
+      expect(closed).not.toHaveBeenCalled()
+      send(outer.contentWindow, { type: HOSTED_MESSAGE.closeSelf })
+      expect(closed).toHaveBeenCalledTimes(1)
+    })
+
+    it('never closes a tab the person opened', async () => {
+      withOpener(null)
+      const closed = vi.spyOn(window, 'close').mockImplementation(() => undefined)
+      const { outer } = await frame()
+      send(outer.contentWindow, { type: HOSTED_MESSAGE.closeSelf })
+      expect(closed).not.toHaveBeenCalled()
+    })
+
+    it('never closes a window another site opened', async () => {
+      withOpener({
+        get location(): { origin: string } {
+          throw new DOMException('Blocked a frame with origin', 'SecurityError')
+        },
+      })
+      const closed = vi.spyOn(window, 'close').mockImplementation(() => undefined)
+      const { outer } = await frame()
+      send(outer.contentWindow, { type: HOSTED_MESSAGE.closeSelf })
+      expect(closed).not.toHaveBeenCalled()
+    })
   })
 })

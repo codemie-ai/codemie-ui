@@ -23,6 +23,7 @@ const boundary = vi.hoisted(() => ({
   route: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', versionId: undefined as string | undefined },
   search: '',
   navigate: vi.fn(),
+  createHostedFrame: vi.fn(),
   store: {
     capabilities: { view: true },
     ensureCapabilities: vi.fn(),
@@ -80,7 +81,7 @@ vi.mock('@/utils/hostedApplicationLaunch', () => ({
   submitHostedLaunch: vi.fn(),
 }))
 vi.mock('@/utils/hostedApplicationFrame', () => ({
-  createHostedFrame: () => ({ target: 'codemie-hosted-x', document: '<iframe></iframe>' }),
+  createHostedFrame: boundary.createHostedFrame,
 }))
 vi.mock('../HostedSharePopup', () => ({
   default: ({ app, visible }: any) => (visible ? <dialog open>share {app.id}</dialog> : null),
@@ -105,6 +106,10 @@ beforeEach(() => {
   boundary.store.getApplication.mockResolvedValue(app())
   boundary.store.issueLaunch.mockResolvedValue({ ticket: 't', action: 'https://c.test/x' })
   boundary.store.deleteApplication.mockResolvedValue(undefined)
+  boundary.createHostedFrame.mockReturnValue({
+    target: 'codemie-hosted-x',
+    document: '<iframe></iframe>',
+  })
 })
 
 describe('viewer launch', () => {
@@ -270,6 +275,50 @@ describe('viewer launch at a path', () => {
       setTimeout(resolve, 20)
     })
     expect(boundary.store.issueLaunch).toHaveBeenCalledTimes(1)
+  })
+
+  const CHANNEL = '0f8fad5b-d9cb-469f-a165-70867728950e'
+
+  const frameOpener = () => boundary.createHostedFrame.mock.calls[0][2]
+
+  it.each([
+    ['/apps/:id/view', undefined],
+    ['/apps/:id/preview/:versionId', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'],
+  ])('passes ?opener= on %s to the frame, not the launch, read once', async (_r, versionId) => {
+    boundary.route.versionId = versionId
+    boundary.search = '?path=%2Fdeck&opener=' + CHANNEL
+    const { rerender } = render(<HostedApplicationViewer />)
+    await waitFor(() => expect(boundary.createHostedFrame).toHaveBeenCalled())
+    expect(frameOpener()).toBe(CHANNEL)
+    expect(at()).not.toHaveProperty('opener')
+    boundary.search = '?path=%2Fdeck&opener=1f8fad5b-d9cb-469f-a165-70867728950e'
+    rerender(<HostedApplicationViewer />)
+    await new Promise((resolve) => {
+      setTimeout(resolve, 20)
+    })
+    expect(boundary.store.issueLaunch).toHaveBeenCalledTimes(1)
+    expect(boundary.createHostedFrame).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['short', 'a'.repeat(65), 'abcd_efgh', '../../x/y', 'abcdefgh"><script>'])(
+    'gives the frame no opener for ?opener=%s',
+    async (opener) => {
+      boundary.search = '?opener=' + encodeURIComponent(opener)
+      render(<HostedApplicationViewer />)
+      await waitFor(() => expect(boundary.createHostedFrame).toHaveBeenCalled())
+      expect(frameOpener()).toBeNull()
+    }
+  )
+
+  it('keeps the opener for the frame when the backend refuses the path', async () => {
+    boundary.search = '?path=%2Fmissing&opener=' + CHANNEL
+    boundary.store.issueLaunch
+      .mockRejectedValueOnce(refused())
+      .mockResolvedValue({ ticket: 't', action: 'https://c.test/x' })
+    render(<HostedApplicationViewer />)
+    await waitFor(() => expect(boundary.createHostedFrame).toHaveBeenCalled())
+    expect(at(1).path).toBeNull()
+    expect(frameOpener()).toBe(CHANNEL)
   })
 
   it('pins the published view to the version in the address', async () => {
