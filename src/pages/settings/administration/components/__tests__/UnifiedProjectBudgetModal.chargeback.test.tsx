@@ -23,6 +23,7 @@ import { ProjectDetail } from '@/types/entity/projectManagement'
 import UnifiedProjectBudgetModal, {
   UnifiedProjectBudgetModalProps,
 } from '../UnifiedProjectBudgetModal'
+import { activePlan, deferred } from './budgetModalTestUtils'
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -65,35 +66,11 @@ vi.mock('@/utils/toaster', () => ({
 vi.mock('../UnifiedBudgetDragBar', () => ({ default: () => <div data-testid="dragbar" /> }))
 vi.mock('../BudgetCategoryTable', () => ({ default: () => <div data-testid="cat-table" /> }))
 
-vi.mock('@/components/Popup', () => ({
-  default: ({ visible, children, onSubmit, submitText = 'Submit', headerContent }: any) => {
-    if (!visible) return null
-    return (
-      <dialog open>
-        {headerContent}
-        {children}
-        <button type="button" onClick={onSubmit}>
-          {submitText}
-        </button>
-      </dialog>
-    )
-  },
+vi.mock('@/components/Popup', async () => ({
+  default: (await import('./budgetModalTestUtils')).MockPopup,
 }))
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const activePlan = {
-  group_id: 'g1',
-  name: 'My Budget',
-  description: 'desc',
-  budget_duration: '30d',
-  total_amount: 1000,
-  categories: [
-    { category: 'platform', max_budget: 300, soft_budget: 100 },
-    { category: 'cli', max_budget: 600, soft_budget: 200 },
-    { category: 'premium_models', max_budget: 100, soft_budget: 50 },
-  ],
-}
 
 const makeProject = (overrides: Partial<ProjectDetail> = {}): ProjectDetail =>
   ({
@@ -267,6 +244,52 @@ describe('UnifiedProjectBudgetModal chargeback', () => {
     expect(updateProjectBudgetGroup).not.toHaveBeenCalled()
     expect(screen.getByText(/could not save chargeback settings/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Update Budget' })).toBeInTheDocument()
+  })
+
+  it('retries after a failed chargeback save', async () => {
+    const user = userEvent.setup()
+    updateProject.mockRejectedValueOnce(new Error('save failed'))
+
+    await renderPopulated({
+      projectName: 'p1',
+      project: withCostCenter('cost_center'),
+      canManageBudgets: true,
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Update Budget' }))
+    await screen.findByText(/could not save chargeback settings/i)
+
+    expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-busy')
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled()
+    expect(screen.getByDisplayValue('My Budget')).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: 'Update Budget' }))
+    await waitFor(() => expect(updateProject).toHaveBeenCalledTimes(2))
+  })
+
+  it('locks the dialog while the chargeback write is in flight', async () => {
+    const user = userEvent.setup()
+    const chargebackSave = deferred()
+    updateProject.mockImplementation(() => chargebackSave.promise)
+
+    await renderPopulated({
+      projectName: 'p1',
+      project: withCostCenter('cost_center'),
+      canManageBudgets: true,
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Update Budget' }))
+
+    await waitFor(() => expect(screen.getByRole('dialog')).toHaveAttribute('aria-busy', 'true'))
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    expect(screen.getByDisplayValue('My Budget')).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Updating…' }))
+    expect(updateProject).toHaveBeenCalledTimes(1)
+    expect(updateProjectBudgetGroup).not.toHaveBeenCalled()
+
+    chargebackSave.resolve({})
+    await waitFor(() => expect(updateProjectBudgetGroup).toHaveBeenCalledTimes(1))
   })
 
   it('does not re-seed chargeback edits when the project prop changes while open', async () => {

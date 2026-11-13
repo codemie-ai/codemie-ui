@@ -28,6 +28,7 @@ interface UnifiedBudgetDragBarProps {
   onChange: (next: PctMap) => void
   onDragStart?: () => void
   onDragEnd?: () => void
+  disabled?: boolean
 }
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(Math.max(v, lo), hi)
@@ -106,6 +107,7 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
   onChange,
   onDragStart,
   onDragEnd,
+  disabled = false,
 }) => {
   const colors = {
     platform: getTailwindColor('--colors-surface-specific-charts-blue'),
@@ -247,20 +249,22 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
 
   const handleBarMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (disabled) return
       e.preventDefault()
       startDrag(pickHandle(e.clientX), e.clientX)
     },
-    [startDrag, pickHandle]
+    [disabled, startDrag, pickHandle]
   )
 
   const handleBarTouchStart = useCallback(
     (e: React.TouchEvent) => {
+      if (disabled) return
       const touch = e.touches[0]
       if (!touch) return
       e.preventDefault()
       startDrag(pickHandle(touch.clientX), touch.clientX)
     },
-    [startDrag, pickHandle]
+    [disabled, startDrag, pickHandle]
   )
 
   useEffect(() => {
@@ -365,9 +369,11 @@ const UnifiedBudgetDragBar: FC<UnifiedBudgetDragBarProps> = ({
       aria-valuetext={`Platform: ${Math.round(pcts.platform)}%, CLI: ${Math.round(
         pcts.cli
       )}%, Premium: ${Math.round(pcts.premium_models)}%`}
-      tabIndex={0}
+      aria-disabled={disabled || undefined}
+      tabIndex={disabled ? -1 : 0}
       className={cn(
-        'relative h-12 rounded-md select-none touch-none cursor-col-resize',
+        'relative h-12 rounded-md select-none touch-none',
+        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-col-resize',
         'border border-border-structural'
       )}
       onMouseDown={handleBarMouseDown}

@@ -1,0 +1,38 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two major blockers: the delayed busy hint's role=\"status\" region mounts with its text already inside, so screen readers may never announce it (CR-001). The chargeback path's lock and unlock have no test, so a regression that leaves the dialog locked after a chargeback failure would ship unnoticed (CR-002). Confidence is low because acceptance did not run (no spec/story, so decision_needed was unavailable); standards code-quality is na because the repo has no code-quality guide, which is not a coverage gap. 1 deferred to code-review-deferred.md (pre-existing chargebackError paragraph has no role=alert). 13 lens claims dismissed after reading source: every onFormSubmit exit resets the ref and state, CustomButton isLoading disables submit, the drag bar has no keyboard handler, the only busy caller passes a string busyHint and uses the default footer, and the uncancellable lock is the plan's intended design.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "all 3 subjects in aee395867..HEAD match the git-workflow.md regex EPMCDME-<nonzero>: <Capitalized sentence>, ticket EPMCDME-14996, capitalized first word (Lock/Add/Add), no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md is absent from the repo and no code_quality ref was passed; absent standard, not adjudicated" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checked against all 7 changed files (Popup.tsx, UnifiedBudgetDragBar.tsx, UnifiedProjectBudgetModal.tsx and 4 test files): no HTML sinks (dangerouslySetInnerHTML/innerHTML), no navigation from untrusted input (location.href/assign/replace, window.open, href), no cross-window postMessage/message listeners, no import.meta.env or window._env_ reads, no nosonar suppressions; no concrete security issue observed" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Popup/Popup.tsx",
+      "line": 208,
+      "title": "Busy hint live region never announced",
+      "problem": "The default footer renders `{showBusyHint && <p role=\"status\">{busyHint}</p>}`, so the live region and its text enter the DOM together after BUSY_HINT_DELAY_MS. Many screen readers announce changes to an existing live region but ignore one inserted with its content in place. The project's accessibility guide shows live regions as a persistent container whose content changes.",
+      "impact": "Screen-reader users may never hear the 'Large projects can take a little longer to save.' hint. The only caller, UnifiedProjectBudgetModal, triggers it on every save that takes longer than 5 s, which is the slow case this change exists for. Reachability confirmed: the default footer is used and a string busyHint is passed.",
+      "recommendation": "Render the `role=\"status\"` paragraph whenever the default footer is shown, or at least whenever `busy && busyHint`. Toggle only its content, e.g. `<p role=\"status\" aria-live=\"polite\" className=...>{showBusyHint ? busyHint : null}</p>`, so the region exists before the text arrives. Update the Popup busy tests to assert the region exists before the delay and gets the text after BUSY_HINT_DELAY_MS."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/components/__tests__/UnifiedProjectBudgetModal.chargeback.test.tsx",
+      "line": 272,
+      "title": "Chargeback-path lock/unlock has no test",
+      "problem": "The busy tests mock useProjectChargebackEnabled to [false, true], so they never run the chargeback write (UnifiedProjectBudgetModal.tsx:396-414). The chargeback tests mock Popup without `busy` (lines 67-80), and 'retries after a failed chargeback save' only checks that updateProject is called twice, which proves the submittingRef reset. Nothing checks that the dialog locks during the chargeback write, or that it unlocks (no aria-busy, Cancel and fields enabled) after the chargeback catch at lines 406-413. The plan states 'chargeback or budget rejects: the dialog unlocks' but tests only the budget rejection.",
+      "impact": "If `setSubmitting(false)` were dropped from the chargeback catch, admins would be trapped after a failed chargeback save. Cancel, the close icon, Escape and the backdrop are all blocked by `busy`, submit is disabled by isLoading, and every field is disabled by the fieldset. Every existing test would still pass. The lock during the two-write chargeback save, which the plan names as the slow path, is also unverified.",
+      "recommendation": "Make this file's Popup mock forward `busy`, as `aria-busy` plus a Cancel button disabled while busy, as the busy test's mock does. Then (a) defer updateProject, click Update Budget, and assert the dialog is aria-busy=\"true\", the Name input is disabled, and a second click keeps updateProject at one call. (b) In 'retries after a failed chargeback save', after the error text appears, assert there is no aria-busy, Cancel and the Name input are enabled, and the submit label is back to 'Update Budget'."
+    }
+  ]
+}

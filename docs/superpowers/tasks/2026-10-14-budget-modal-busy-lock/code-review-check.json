@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "Fix-up commit 9abd5a4ad ('Keep busy hint live region mounted and test chargeback lock') resolves both blocking findings from the initial round. CR-001: Popup.tsx's busy-hint <p role=\"status\" aria-live=\"polite\"> now mounts whenever busyHint is set and only its text content toggles with showBusyHint, instead of the region and its text being inserted together; a new Popup test asserts the region is empty before BUSY_HINT_DELAY_MS and gets its text after. CR-002: UnifiedProjectBudgetModal.chargeback.test.tsx's Popup mock now forwards busy as aria-busy plus a disabled Cancel button, and a new test ('locks the dialog while the chargeback write is in flight') asserts aria-busy=\"true\" and disabled Cancel/Name while the chargeback write is pending, then that updateProjectBudgetGroup only fires after it resolves; the existing failed-chargeback test already asserted the unlock (no aria-busy, enabled Cancel/Name) after the catch. standards_review and business_review are carried forward unchanged from the prior round — no new standards or acceptance-criteria concerns were introduced by the fix-up. No gates were rerun in this check beyond reading the current source and tests for the two findings.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "all 3 subjects in aee395867..HEAD match the git-workflow.md regex EPMCDME-<nonzero>: <Capitalized sentence>, ticket EPMCDME-14996, capitalized first word (Lock/Add/Add), no trailing period" },
+    { "kind": "code-quality", "status": "na", "notes": ".ai-run/guides/standards/code-quality.md is absent from the repo and no code_quality ref was passed; absent standard, not adjudicated" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checked against all 7 changed files (Popup.tsx, UnifiedBudgetDragBar.tsx, UnifiedProjectBudgetModal.tsx and 4 test files): no HTML sinks (dangerouslySetInnerHTML/innerHTML), no navigation from untrusted input (location.href/assign/replace, window.open, href), no cross-window postMessage/message listeners, no import.meta.env or window._env_ reads, no nosonar suppressions; no concrete security issue observed" }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Popup.tsx:187-191 now renders `{busyHint && <p role=\"status\" aria-live=\"polite\">{showBusyHint ? busyHint : null}</p>}` — the live region is mounted as soon as busyHint is passed and only its text content changes on the BUSY_HINT_DELAY_MS timer, matching the recommended pattern. Popup.test.tsx adds a test asserting the region is empty before the delay and has the hint text after."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "UnifiedProjectBudgetModal.chargeback.test.tsx's Popup mock now forwards `busy` as `aria-busy` on the dialog plus a Cancel button disabled while busy. New test 'locks the dialog while the chargeback write is in flight' (line 270) asserts aria-busy=\"true\" and disabled Cancel/Name-input while the chargeback write is pending and that updateProjectBudgetGroup has not yet been called; the pre-existing failed-chargeback test (line 262) asserts the unlock (no aria-busy, enabled Cancel/Name) once the catch runs."
+    }
+  ]
+}

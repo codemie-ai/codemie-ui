@@ -64,6 +64,9 @@ All modals MUST use the `Popup` component from `src/components/Popup/`.
 
 **Behaviour**
 - `dismissableMask?: boolean` — click outside closes (default `true`)
+- `busy?: boolean` — blocks dismissal and shows loading on the default submit button (default `false`).
+  Pass `busy={submitting}`; disable form fields and custom footer actions yourself.
+- `busyHint?: ReactNode` — reassurance text shown in the default footer after five seconds of being busy.
 
 ---
 
@@ -217,6 +220,8 @@ useEffect(() => {
 | File | Purpose |
 |------|---------|
 | `src/components/Popup/Popup.tsx` | Popup wrapper (wraps PrimeReact Dialog) |
+| `src/components/Popup/usePopupBusy.ts` | Busy lock behind `busy` / `busyHint` |
+| `src/hooks/useInFlightGuard.ts` | Re-entry guard for an async submit (`inFlight`, `tryBegin`, `end`) |
 | `src/components/ConfirmationModal/` | Reusable confirmation dialog |
 | `src/hooks/useEscapeKey.ts` | ESC key handler hook |
 | `src/hooks/useFocusOnVisible.ts` | Auto-focus hook |

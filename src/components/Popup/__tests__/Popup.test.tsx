@@ -13,11 +13,11 @@
 // limitations under the License.
 //
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-import Popup, { PopupProps } from '../Popup'
+import Popup, { BUSY_HINT_DELAY_MS, PopupProps } from '../Popup'
 
 vi.mock('@/assets/icons/cross.svg?react', () => ({
   default: () => <span aria-label="close icon"></span>,
@@ -416,5 +416,120 @@ describe('Popup — focus trap', () => {
     document.body.focus()
     fireEvent.keyDown(document, { key: 'Tab', bubbles: true })
     expect(screen.getByTestId('btn-a')).toHaveFocus()
+  })
+})
+
+describe('Popup — busy', () => {
+  beforeEach(() => {
+    user = userEvent.setup()
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('marks only the content aria-busy and puts the submit button in a loading state', () => {
+    renderPopup({ busy: true })
+    expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-busy')
+    expect(document.querySelector('.p-dialog-content')).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled()
+  })
+
+  it('disables Cancel and ignores clicks on it while busy', async () => {
+    renderPopup({ busy: true })
+    const cancel = screen.getByRole('button', { name: 'Cancel' })
+    expect(cancel).toBeDisabled()
+    await user.click(cancel)
+    expect(mockOnHide).not.toHaveBeenCalled()
+  })
+
+  it('ignores the close icon while busy', async () => {
+    renderPopup({ busy: true })
+    const close = screen.getByRole('button', { name: 'Close' })
+    expect(close).toHaveAttribute('aria-disabled', 'true')
+    await user.click(close)
+    expect(mockOnHide).not.toHaveBeenCalled()
+  })
+
+  it('ignores Escape while busy', async () => {
+    renderPopup({ busy: true })
+    await user.keyboard('{Escape}')
+    expect(mockOnHide).not.toHaveBeenCalled()
+  })
+
+  it('ignores Escape while busy when hideClose is true', async () => {
+    renderPopup({ busy: true, hideClose: true })
+    await user.keyboard('{Escape}')
+    expect(mockOnHide).not.toHaveBeenCalled()
+  })
+
+  it('closes on a backdrop click when idle', () => {
+    renderPopup()
+    fireEvent.pointerUp(document.querySelector('.p-dialog-mask') as Element)
+    expect(mockOnHide).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a backdrop click while busy', () => {
+    renderPopup({ busy: true })
+    fireEvent.pointerUp(document.querySelector('.p-dialog-mask') as Element)
+    expect(mockOnHide).not.toHaveBeenCalled()
+  })
+
+  it('restores Cancel once busy ends', async () => {
+    const { rerender } = renderPopup({ busy: true })
+    rerender(
+      <Popup visible onHide={mockOnHide} onSubmit={mockOnSubmit} header="Test Popup" busy={false} />
+    )
+    expect(document.querySelector('.p-dialog-content')).not.toHaveAttribute('aria-busy')
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(mockOnHide).toHaveBeenCalledTimes(1)
+  })
+
+  it('moves focus into the dialog content when busy starts', () => {
+    const { rerender } = renderPopup()
+    rerender(<Popup visible onHide={mockOnHide} onSubmit={mockOnSubmit} header="Test Popup" busy />)
+    expect(document.activeElement).toBe(document.querySelector('.p-dialog-content'))
+  })
+
+  it('shows the busy hint only after the delay', () => {
+    vi.useFakeTimers()
+    renderPopup({ busy: true, busyHint: 'Hang tight' })
+    expect(screen.queryByText('Hang tight')).not.toBeInTheDocument()
+    act(() => {
+      vi.advanceTimersByTime(BUSY_HINT_DELAY_MS)
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('Hang tight')
+  })
+
+  it('mounts the hint live region empty before the delay so the text is announced', () => {
+    vi.useFakeTimers()
+    renderPopup({ busy: true, busyHint: 'Hang tight' })
+    const region = screen.getByRole('status')
+    expect(region).toBeEmptyDOMElement()
+    expect(region).toHaveAttribute('aria-live', 'polite')
+    expect(screen.getByRole('dialog')).toContainElement(region)
+    expect(region.closest('[aria-busy="true"]')).toBeNull()
+    act(() => {
+      vi.advanceTimersByTime(BUSY_HINT_DELAY_MS)
+    })
+    expect(screen.getByRole('status')).toBe(region)
+    expect(region).toHaveTextContent('Hang tight')
+    expect(region.closest('[aria-busy="true"]')).toBeNull()
+  })
+
+  it('never shows the hint when busy ends before the delay', () => {
+    vi.useFakeTimers()
+    const { rerender } = renderPopup({ busy: true, busyHint: 'Hang tight' })
+    act(() => {
+      vi.advanceTimersByTime(BUSY_HINT_DELAY_MS - 1)
+    })
+    rerender(
+      <Popup visible onHide={mockOnHide} header="Test Popup" busy={false} busyHint="Hang tight" />
+    )
+    act(() => {
+      vi.advanceTimersByTime(BUSY_HINT_DELAY_MS)
+    })
+    expect(screen.queryByText('Hang tight')).not.toBeInTheDocument()
   })
 })

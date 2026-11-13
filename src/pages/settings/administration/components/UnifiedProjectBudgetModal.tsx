@@ -32,6 +32,7 @@ import {
   useFeatureFlag,
   useProjectChargebackEnabled,
 } from '@/hooks/useFeatureFlags'
+import { useInFlightGuard } from '@/hooks/useInFlightGuard'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { projectsStore } from '@/store/projects'
 import { BudgetCategory } from '@/types/entity/budget'
@@ -125,7 +126,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   const [pcts, setPcts] = useState<PctMap>({ ...DEFAULT_PCTS })
   const [softs, setSofts] = useState<PctMap>({ ...ZERO_PCTS })
   const [existingGroup, setExistingGroup] = useState<ProjectBudgetGroup | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+  const { inFlight: submitting, tryBegin: tryBeginSubmit, end: endSubmit } = useInFlightGuard()
   const [dataLoading, setDataLoading] = useState(false)
 
   const [isChargebackFeatureEnabled] = useProjectChargebackEnabled()
@@ -371,8 +372,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   }, [])
 
   const onFormSubmit: SubmitHandler<FormValues> = async (data) => {
-    if (hasSoftError || sumPctError) return
-    setSubmitting(true)
+    if (hasSoftError || sumPctError || !tryBeginSubmit()) return
     setChargebackError(null)
 
     // Save order is fail-fast with no rollback: persist chargeback first, then save
@@ -394,7 +394,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
           error?.parsedError?.message ||
           'Could not save chargeback settings. Your budget was not saved — please retry.'
         setChargebackError(message)
-        setSubmitting(false)
+        endSubmit()
         return
       }
     }
@@ -446,7 +446,7 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
     } catch {
       /* error already toasted */
     } finally {
-      setSubmitting(false)
+      endSubmit()
     }
   }
 
@@ -455,11 +455,10 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
   const onTotalBlur = useCallback(() => releaseInteraction(), [releaseInteraction])
 
   const isEditMode = !forceCreate
-  const headerContent = (
-    <h4 className="text-base font-semibold m-0">
-      {isEditMode ? 'Update Budget' : 'Create Budget'}
-    </h4>
-  )
+  const title = isEditMode ? 'Update Budget' : 'Create Budget'
+  const busyLabel = isEditMode ? 'Updating…' : 'Creating…'
+  const submitLabel = submitting ? busyLabel : title
+  const headerContent = <h4 className="text-base font-semibold m-0">{title}</h4>
 
   return (
     <Popup
@@ -467,8 +466,10 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       onHide={onHide}
       headerContent={headerContent}
       onSubmit={handleSubmit(onFormSubmit)}
-      submitText={isEditMode ? 'Update Budget' : 'Create Budget'}
-      submitDisabled={submitting || dataLoading || hasSoftError || sumPctError}
+      submitText={submitLabel}
+      submitDisabled={dataLoading || hasSoftError || sumPctError}
+      busy={submitting}
+      busyHint="Large projects can take a little longer to save."
       cancelText="Cancel"
       limitWidth
       withBorderBottom={false}
@@ -476,185 +477,189 @@ const UnifiedProjectBudgetModal: FC<UnifiedProjectBudgetModalProps> = ({
       {dataLoading ? (
         <Spinner inline rootClassName="py-12" />
       ) : (
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-          {!distributionOnly && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <Controller
-                  name="name"
-                  control={control}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="name"
-                      label="Name"
-                      required
-                      placeholder="Budget name"
-                      error={errors.name?.message}
-                    />
-                  )}
-                />
-                <Controller
-                  name="budget_duration"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      id="budget_duration"
-                      label="Reset Period"
-                      required
-                      value={field.value}
-                      options={DURATION_OPTIONS}
-                      onChangeValue={(value) => field.onChange(value)}
-                      error={errors.budget_duration?.message}
-                    />
-                  )}
-                />
-              </div>
+        <form onSubmit={handleSubmit(onFormSubmit)}>
+          <fieldset disabled={submitting} className="m-0 min-w-0 space-y-4 border-0 p-0">
+            {!distributionOnly && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="name"
+                        label="Name"
+                        required
+                        placeholder="Budget name"
+                        error={errors.name?.message}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="budget_duration"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        id="budget_duration"
+                        label="Reset Period"
+                        required
+                        value={field.value}
+                        options={DURATION_OPTIONS}
+                        disabled={submitting}
+                        onChangeValue={(value) => field.onChange(value)}
+                        error={errors.budget_duration?.message}
+                      />
+                    )}
+                  />
+                </div>
 
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field }) => (
+                    <Textarea
+                      {...field}
+                      id="description"
+                      label="Description"
+                      placeholder="What this budget is used for"
+                      error={errors.description?.message}
+                      rows={3}
+                    />
+                  )}
+                />
+              </>
+            )}
+
+            <Controller
+              name="total_budget"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  id="total_budget"
+                  label="Total Budget ($)"
+                  required
+                  type="number"
+                  min="0"
+                  step="any"
+                  disabled={distributionOnly}
+                  onFocus={onTotalFocus}
+                  onBlur={() => {
+                    field.onBlur()
+                    onTotalBlur()
+                  }}
+                  error={errors.total_budget?.message}
+                />
+              )}
+            />
+
+            {isNotificationEnabled && !distributionOnly && (
               <Controller
-                name="description"
+                name="notification_owner_email"
                 control={control}
                 render={({ field }) => (
-                  <Textarea
-                    {...field}
-                    id="description"
-                    label="Description"
-                    placeholder="What this budget is used for"
-                    error={errors.description?.message}
-                    rows={3}
+                  <UserEmailAutocomplete
+                    id="notification_owner_email"
+                    label="Budget owner"
+                    hint="Notified by email when this budget reaches its soft limit. Search for a platform user or type any address, including a group alias. Leave empty to disable notifications."
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    error={errors.notification_owner_email?.message}
                   />
                 )}
               />
-            </>
-          )}
+            )}
 
-          <Controller
-            name="total_budget"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                id="total_budget"
-                label="Total Budget ($)"
-                required
-                type="number"
-                min="0"
-                step="any"
-                disabled={distributionOnly}
-                onFocus={onTotalFocus}
-                onBlur={() => {
-                  field.onBlur()
-                  onTotalBlur()
-                }}
-                error={errors.total_budget?.message}
+            {isNotificationEnabled && (
+              <Controller
+                name="soft_limit_notification_enabled"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="soft_limit_notification_enabled"
+                    label="Send email notifications"
+                    labelHint={
+                      !isEmailEnabled
+                        ? 'Email sending is disabled by system configuration'
+                        : 'When enabled, the notification owner will receive an email when this budget reaches its soft limit.'
+                    }
+                    checked={field.value}
+                    onChange={field.onChange}
+                    disabled={submitting || !isEmailEnabled}
+                  />
+                )}
               />
             )}
-          />
 
-          {isNotificationEnabled && !distributionOnly && (
-            <Controller
-              name="notification_owner_email"
-              control={control}
-              render={({ field }) => (
-                <UserEmailAutocomplete
-                  id="notification_owner_email"
-                  label="Budget owner"
-                  hint="Notified by email when this budget reaches its soft limit. Search for a platform user or type any address, including a group alias. Leave empty to disable notifications."
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  error={errors.notification_owner_email?.message}
-                />
+            {isNotificationEnabled && !distributionOnly && (
+              <Controller
+                name="soft_limit_notify_once"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="soft_limit_notify_once"
+                    label="Notify only once"
+                    labelHint="When enabled, the soft-limit notification email is sent only once per budget edit cycle. It resets when you save the budget."
+                    checked={field.value}
+                    onChange={field.onChange}
+                    disabled={submitting || !isEmailEnabled || !sendEmailEnabled}
+                  />
+                )}
+              />
+            )}
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-text-quaternary uppercase tracking-wide">
+                  Distribution
+                </span>
+                <Button type="secondary" onClick={handleDefaultDistribution} disabled={submitting}>
+                  Reset to Default
+                </Button>
+              </div>
+              <UnifiedBudgetDragBar
+                pcts={pcts}
+                totalBudget={totalBudget}
+                platformMinPct={PLATFORM_MIN_PCT}
+                onChange={onSliderChange}
+                onDragStart={captureInteractionStart}
+                onDragEnd={releaseInteraction}
+                disabled={submitting}
+              />
+              {sumPctError && (
+                <p className="text-xs text-failed-secondary mt-2">
+                  Category limits are ${formatAmount(sumDiffAmount)}{' '}
+                  {pctSum < 100 ? 'below' : 'above'} the Total Budget ({Math.round(pctSum)}%).
+                  Adjust the values to total 100%.
+                </p>
               )}
-            />
-          )}
-
-          {isNotificationEnabled && (
-            <Controller
-              name="soft_limit_notification_enabled"
-              control={control}
-              render={({ field }) => (
-                <Checkbox
-                  id="soft_limit_notification_enabled"
-                  label="Send email notifications"
-                  labelHint={
-                    !isEmailEnabled
-                      ? 'Email sending is disabled by system configuration'
-                      : 'When enabled, the notification owner will receive an email when this budget reaches its soft limit.'
-                  }
-                  checked={field.value}
-                  onChange={field.onChange}
-                  disabled={!isEmailEnabled}
-                />
-              )}
-            />
-          )}
-
-          {isNotificationEnabled && !distributionOnly && (
-            <Controller
-              name="soft_limit_notify_once"
-              control={control}
-              render={({ field }) => (
-                <Checkbox
-                  id="soft_limit_notify_once"
-                  label="Notify only once"
-                  labelHint="When enabled, the soft-limit notification email is sent only once per budget edit cycle. It resets when you save the budget."
-                  checked={field.value}
-                  onChange={field.onChange}
-                  disabled={!isEmailEnabled || !sendEmailEnabled}
-                />
-              )}
-            />
-          )}
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-text-quaternary uppercase tracking-wide">
-                Distribution
-              </span>
-              <Button type="secondary" onClick={handleDefaultDistribution}>
-                Reset to Default
-              </Button>
             </div>
-            <UnifiedBudgetDragBar
-              pcts={pcts}
-              totalBudget={totalBudget}
-              platformMinPct={PLATFORM_MIN_PCT}
-              onChange={onSliderChange}
-              onDragStart={captureInteractionStart}
-              onDragEnd={releaseInteraction}
+
+            <BudgetCategoryTable
+              hardVals={hardVals}
+              softs={softs}
+              softErrors={softErrors}
+              onHardInputChange={onHardInputChange}
+              onSoftInputChange={onSoftInputChange}
             />
-            {sumPctError && (
-              <p className="text-xs text-failed-secondary mt-2">
-                Category limits are ${formatAmount(sumDiffAmount)}{' '}
-                {pctSum < 100 ? 'below' : 'above'} the Total Budget ({Math.round(pctSum)}%). Adjust
-                the values to total 100%.
-              </p>
+
+            {!distributionOnly && (
+              <>
+                <ChargebackSettings
+                  value={chargeback}
+                  hasCostCenter={Boolean(project?.cost_center_id)}
+                  costCentersEnabled={isCostCentersEnabled}
+                  canEdit={canManageBudgets}
+                  onChange={setChargeback}
+                />
+
+                {chargebackError && (
+                  <p className="text-sm text-failed-secondary">{chargebackError}</p>
+                )}
+              </>
             )}
-          </div>
-
-          <BudgetCategoryTable
-            hardVals={hardVals}
-            softs={softs}
-            softErrors={softErrors}
-            onHardInputChange={onHardInputChange}
-            onSoftInputChange={onSoftInputChange}
-          />
-
-          {!distributionOnly && (
-            <>
-              <ChargebackSettings
-                value={chargeback}
-                hasCostCenter={Boolean(project?.cost_center_id)}
-                costCentersEnabled={isCostCentersEnabled}
-                canEdit={canManageBudgets}
-                onChange={setChargeback}
-              />
-
-              {chargebackError && (
-                <p className="text-sm text-failed-secondary">{chargebackError}</p>
-              )}
-            </>
-          )}
+          </fieldset>
         </form>
       )}
     </Popup>

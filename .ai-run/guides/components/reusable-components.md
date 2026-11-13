@@ -54,7 +54,7 @@ import { ButtonType, ButtonSize } from '@/constants'
 
 | Component | Purpose | Import path | Key props |
 |---|---|---|---|
-| **`Popup`** | **Generic modal — ALWAYS USE THIS** | `@/components/Popup` | `visible`, `onHide`, `header?`, `onSubmit?`, `submitText?`, `hideFooter?`, `footerContent?`, `headerContent?`, `children` |
+| **`Popup`** | **Generic modal — ALWAYS USE THIS** | `@/components/Popup` | `visible`, `onHide`, `header?`, `onSubmit?`, `submitText?`, `busy?`, `hideFooter?`, `footerContent?`, `headerContent?`, `children` |
 | `ConfirmationModal` | Destructive-action confirm dialog | `@/components/ConfirmationModal` | `visible`, `header`, `message`, `onConfirm`, `onCancel`, `confirmText?`, `confirmButtonType?` |
 | `Spinner` | Loading indicator | `@/components/Spinner` | `className?`, `inline?` |
 | `InfoWarning` | Inline info/warning banner | `@/components/InfoWarning` | `message`, `type?` (`InfoWarningType` enum), `header?` |

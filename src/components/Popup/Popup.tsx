@@ -24,7 +24,10 @@ import { ButtonType } from '@/constants'
 import { useFocusTrap, FOCUSABLE_SELECTOR } from '@/hooks/useFocusTrap'
 import { cn } from '@/utils/utils'
 
+import { usePopupBusy } from './usePopupBusy'
 import { useTopmostDialog, isPrimeReactSentinel } from './useTopmostDialog'
+
+export { BUSY_HINT_DELAY_MS } from './usePopupBusy'
 
 export interface PopupProps {
   isFullWidth?: boolean
@@ -39,6 +42,8 @@ export interface PopupProps {
   /** Selector hook for the cancel button. */
   cancelTestId?: string
   submitDisabled?: boolean
+  busy?: boolean
+  busyHint?: ReactNode
   overlayClassName?: string
   hideFooter?: boolean
   cancelText?: string
@@ -72,6 +77,8 @@ const Popup: React.FC<PopupProps> = ({
   submitTestId,
   cancelTestId,
   submitDisabled = false,
+  busy = false,
+  busyHint,
   overlayClassName = '',
   hideFooter = false,
   cancelText = 'Cancel',
@@ -98,6 +105,15 @@ const Popup: React.FC<PopupProps> = ({
 
   useFocusTrap(dialogContainerRef, visible ?? false)
 
+  const dialogRef = useRef<Dialog>(null)
+  const { handleHide, showBusyHint } = usePopupBusy({
+    busy,
+    hasBusyHint: Boolean(busyHint),
+    visible: visible ?? false,
+    onHide,
+    dialogRef,
+  })
+
   // For hideClose dialogs, PrimeReact's own closeOnEscape is disabled (it guards
   // on closable && closeOnEscape). Only add a custom handler for that case, and
   // guard it to fire only for the topmost visible dialog so stacked dialogs do
@@ -106,15 +122,13 @@ const Popup: React.FC<PopupProps> = ({
     const handleEscapeKey = (e: KeyboardEvent) => {
       if (!hideClose || e.key !== 'Escape' || !visible) return
       if (!isTopmost) return
-      onHide()
+      handleHide()
     }
     document.addEventListener('keydown', handleEscapeKey)
     return () => {
       document.removeEventListener('keydown', handleEscapeKey)
     }
-  }, [visible, onHide, hideClose, isTopmost])
-
-  const dialogRef = useRef<Dialog>(null)
+  }, [visible, handleHide, hideClose, isTopmost])
 
   // WCAG 2.4.3: focus must enter the dialog when it opens. focusOnShow stays false on purpose —
   // enabling it would also activate PrimeReact's own FocusTrap on top of useFocusTrap, causing a
@@ -175,16 +189,26 @@ const Popup: React.FC<PopupProps> = ({
     }
 
     return (
-      <div className="flex justify-end gap-4">
+      <div className="flex w-full items-center justify-end gap-4">
+        {/* Kept mounted: screen readers skip a live region inserted with its text. */}
+        {busyHint && (
+          <output aria-live="polite" className="mr-auto mb-0 text-xs text-text-quaternary">
+            {showBusyHint ? busyHint : null}
+          </output>
+        )}
         <CustomButton
           variant={cancelButtonType ?? ButtonType.SECONDARY}
-          onClick={onHide}
+          onClick={handleHide}
+          disabled={busy}
           data-testid={cancelTestId}
         >
           {cancelText}
         </CustomButton>
+        {/* While busy the loading state alone conveys "not now"; stacking the disabled style
+            on top would dim the button and swap its wait cursor for not-allowed. */}
         <CustomButton
-          disabled={submitDisabled}
+          disabled={submitDisabled && !busy}
+          isLoading={busy}
           onClick={onSubmit}
           variant={submitButtonType ?? ButtonType.PRIMARY}
           data-testid={submitTestId}
@@ -203,7 +227,7 @@ const Popup: React.FC<PopupProps> = ({
       onShow={focusFirstElement}
       header={renderHeader}
       visible={visible}
-      onHide={onHide}
+      onHide={handleHide}
       footer={renderFooter}
       closeIcon={hideClose ? '' : <CloseSvg />}
       className={cn(
@@ -249,8 +273,16 @@ const Popup: React.FC<PopupProps> = ({
         },
         headerTitle: { className: 'flex-1 min-w-0' },
         headerIcons: { className: cn('self-auto', hideClose && 'hidden') },
+        closeButton: {
+          'aria-disabled': busy || undefined,
+          className: cn(busy && 'opacity-50 cursor-not-allowed'),
+        },
         mask: { className: '!z-50' },
-        content: { className: 'border-none p-0 text-sm', tabIndex: -1 },
+        content: {
+          className: 'border-none p-0 text-sm',
+          tabIndex: -1,
+          'aria-busy': busy || undefined,
+        },
         footer: {
           className: cn(
             `px-4 py-4 flex items-center justify-end gap-4 sticky bg-surface-base-secondary bottom-0 rounded-b-md bg-transparent ${
