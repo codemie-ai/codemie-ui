@@ -21,12 +21,14 @@ import type {
   CostByUserRow,
 } from '@/types/cliAnalytics'
 
+import { getCostState, type CostState } from '../costCompleteness'
 import { useCliAnalyticsSlice } from './useCliAnalyticsSlice'
 
 export interface UseCliAnalyticsCostResult {
   kpis: CliAnalyticsCostKPIs | null
   costByUser: CostByUserRow[]
   costByModel: CostByModelRow[]
+  costState: CostState
   loading: boolean
   error: string | null
 }
@@ -44,6 +46,7 @@ export function useCliAnalyticsCost(
     kpis: data?.kpis ?? null,
     costByUser: data?.cost_by_user ?? [],
     costByModel: data?.cost_by_model ?? [],
+    costState: getCostState(data),
     loading,
     error,
   }

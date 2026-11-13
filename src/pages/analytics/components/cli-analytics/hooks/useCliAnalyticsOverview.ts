@@ -21,6 +21,7 @@ import type {
   OverviewKPIs,
 } from '@/types/cliAnalytics'
 
+import { getCostState, type CostState } from '../costCompleteness'
 import { useCliAnalyticsSlice } from './useCliAnalyticsSlice'
 
 export interface UseCliAnalyticsOverviewResult {
@@ -28,6 +29,7 @@ export interface UseCliAnalyticsOverviewResult {
   dailyBuckets: DailyBucket[]
   modelBreakdown: ModelBreakdownItem[]
   personalBilledCost: number | null
+  costState: CostState
   loading: boolean
   error: string | null
 }
@@ -46,6 +48,7 @@ export function useCliAnalyticsOverview(
     dailyBuckets: data?.daily_buckets ?? [],
     modelBreakdown: data?.model_breakdown ?? [],
     personalBilledCost: data?.personal_billed?.cost_usd ?? null,
+    costState: getCostState(data),
     loading,
     error,
   }

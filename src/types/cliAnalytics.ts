@@ -149,7 +149,14 @@ export interface ModelBreakdownItem {
   session_count: number
 }
 
-export interface CliAnalyticsOverviewData {
+// Response metadata of an aggregating answer, stored next to the data it describes.
+// cost_incomplete: some model in the selection has no catalog price, so the cost totals understate it.
+export interface CostMetadata {
+  cost_incomplete?: boolean
+  unpriced_models?: string[]
+}
+
+export interface CliAnalyticsOverviewData extends CostMetadata {
   kpis: OverviewKPIs
   daily_buckets: DailyBucket[]
   model_breakdown: ModelBreakdownItem[]
@@ -217,12 +224,12 @@ export interface ProjectRow {
   repositories: RepositoryRow[]
 }
 
-export interface CliAnalyticsProjectsData {
+export interface CliAnalyticsProjectsData extends CostMetadata {
   rows: ProjectRow[]
   pagination: CliAnalyticsRepositoriesData['pagination']
 }
 
-export interface CliAnalyticsUserTableData {
+export interface CliAnalyticsUserTableData extends CostMetadata {
   rows: UserRow[]
   total_count: number
   avg_session_duration_ms: number | null
@@ -266,7 +273,7 @@ export interface CostByModelRow {
   cost_usd: number
 }
 
-export interface CliAnalyticsCostData {
+export interface CliAnalyticsCostData extends CostMetadata {
   kpis: CliAnalyticsCostKPIs
   cost_by_user: CostByUserRow[]
   cost_by_model: CostByModelRow[]

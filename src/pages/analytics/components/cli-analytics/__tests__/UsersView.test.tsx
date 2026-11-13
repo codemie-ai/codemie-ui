@@ -113,6 +113,7 @@ const ALICE: UserRow = {
 
 function renderWithRow(overrides: Partial<UserRow> = {}) {
   vi.mocked(useCliAnalyticsUsers).mockReturnValue({
+    costState: { incomplete: false, unpricedModels: [] },
     chartRows: CHART_ROWS,
     tableRows: [{ ...ALICE, ...overrides }],
     totalCount: 1,
@@ -192,6 +193,7 @@ describe('UsersView', () => {
 
   it('pages All Users with the shared pagination inside the widget', () => {
     vi.mocked(useCliAnalyticsUsers).mockReturnValue({
+      costState: { incomplete: false, unpricedModels: [] },
       chartRows: CHART_ROWS,
       tableRows: [ALICE],
       totalCount: 35,
@@ -210,6 +212,7 @@ describe('UsersView', () => {
 
   it('keeps the page-size selector when one page holds every user', () => {
     vi.mocked(useCliAnalyticsUsers).mockReturnValue({
+      costState: { incomplete: false, unpricedModels: [] },
       chartRows: CHART_ROWS,
       tableRows: [ALICE],
       totalCount: 15,
@@ -226,6 +229,7 @@ describe('UsersView', () => {
 
   it('hides the pagination when every user fits the smallest page size', () => {
     vi.mocked(useCliAnalyticsUsers).mockReturnValue({
+      costState: { incomplete: false, unpricedModels: [] },
       chartRows: CHART_ROWS,
       tableRows: [ALICE],
       totalCount: 5,

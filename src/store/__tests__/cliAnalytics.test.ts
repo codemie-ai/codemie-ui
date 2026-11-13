@@ -305,7 +305,11 @@ describe('cliAnalyticsStore.fetchProjects', () => {
         params: expect.objectContaining({ page: 1, per_page: 10 }),
       })
     )
-    expect(cliAnalyticsStore.projects).toEqual(page)
+    expect(cliAnalyticsStore.projects).toEqual({
+      ...page,
+      cost_incomplete: false,
+      unpriced_models: [],
+    })
     expect(cliAnalyticsStore.repositories).toBeNull()
   })
 })

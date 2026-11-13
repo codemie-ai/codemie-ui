@@ -20,6 +20,7 @@ import { cliAnalyticsStore } from '@/store/cliAnalytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 import type { ProjectRow } from '@/types/cliAnalytics'
 
+import { getCostState, type CostState } from '../costCompleteness'
 import { buildCliAnalyticsParams } from './params'
 
 const DEFAULT_PER_PAGE = 10
@@ -27,6 +28,7 @@ const SEARCH_DEBOUNCE_MS = 350
 
 export interface UseCliAnalyticsProjectsResult {
   rows: ProjectRow[]
+  costState: CostState
   loading: boolean
   error: string | null
   page: number // 0-based
@@ -116,6 +118,7 @@ export function useCliAnalyticsProjects(
 
   return {
     rows: snap.projects?.rows ?? [],
+    costState: getCostState(snap.projects),
     loading: snap.loading.projects ?? false,
     error: snap.error.projects?.message ?? null,
     page,

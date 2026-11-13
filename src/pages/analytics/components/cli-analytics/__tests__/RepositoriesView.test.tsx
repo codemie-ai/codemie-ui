@@ -208,6 +208,7 @@ const project = (
 })
 
 const EMPTY_HOOK_RESULT = {
+  costState: { incomplete: false, unpricedModels: [] },
   rows: [] as ProjectRow[],
   loading: false,
   error: null,
