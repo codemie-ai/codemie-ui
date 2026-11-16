@@ -60,6 +60,7 @@ vi.mock('../hooks/useCliAnalyticsSessions', () => ({
     loading: false,
     error: null,
     page: 1,
+    total: 1,
     totalPages: 1,
     perPage: 10,
     setPage: vi.fn(),
@@ -172,6 +173,7 @@ describe('EfficiencyView', () => {
       loading: false,
       error: null,
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 10,
       setPage: vi.fn(),
@@ -201,6 +203,14 @@ describe('EfficiencyView', () => {
     expect(screen.getByTestId('metric-dead_sessions_count')).toBeInTheDocument()
     expect(screen.getByTestId('metric-wasted_cost_usd')).toBeInTheDocument()
     expect(screen.getByTestId('metric-avg_cost_per_dead')).toBeInTheDocument()
+  })
+
+  it('names sessions with cost as the base of the dead-session share', () => {
+    render(<EfficiencyView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByTestId('metric-dead_sessions_count-description')).toHaveTextContent(
+      /^5\.60% of sessions with cost$/
+    )
   })
 
   it('computes the wasted-cost subtitle from wasted_cost_usd / total_cost_usd', () => {
@@ -361,6 +371,7 @@ describe('EfficiencyView', () => {
       loading: false,
       error: null,
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 10,
       setPage: vi.fn(),
@@ -414,6 +425,7 @@ describe('EfficiencyView', () => {
         loading: false,
         error: null,
         page: 1,
+        total: 1,
         totalPages: 1,
         perPage: 10,
         setPage: vi.fn(),

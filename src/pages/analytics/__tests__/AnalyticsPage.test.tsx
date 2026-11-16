@@ -194,9 +194,9 @@ describe('AnalyticsPage - isCustomDashboard excludes leaderboard tab', () => {
     expect(screen.queryByText('Edit Dashboard')).not.toBeInTheDocument()
   })
 
-  it('should NOT show Edit Dashboard button when tab is cliAnalytics', () => {
+  it('should NOT show Edit Dashboard button when tab is aiAttribution', () => {
     mockSearchParams.get.mockImplementation((key: string) => {
-      if (key === 'tab') return 'cliAnalytics'
+      if (key === 'tab') return AnalyticsDashboardType.cliAnalytics
       return null
     })
 
@@ -372,6 +372,19 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     await waitFor(() =>
       expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'insights' }, { replace: true })
     )
+  })
+
+  it('moves a link saved with the old cliAnalytics tab to the AI Attribution tab', async () => {
+    mockSearchParams.get.mockImplementation((key: string) =>
+      key === 'tab' ? 'cliAnalytics' : null
+    )
+    render(<AnalyticsPage />)
+    await waitFor(() => expect(mockSetSearchParams).toHaveBeenCalled())
+    const [updater, options] = mockSetSearchParams.mock.calls[0]
+    expect(updater(new URLSearchParams('tab=cliAnalytics&time_period=last_hour')).toString()).toBe(
+      'tab=aiAttribution&time_period=last_hour'
+    )
+    expect(options).toEqual({ replace: true })
   })
 
   it('redirects the leaderboard tab to insights when its feature flag is disabled', async () => {

@@ -261,6 +261,8 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
           },
           ticks: {
             color: textColor,
+            // A horizontal chart names one bar per row; skipping drops every other name.
+            autoSkip: !horizontal,
             callback: (value) => {
               if (horizontal) {
                 if (typeof value === 'number') {

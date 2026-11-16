@@ -109,6 +109,17 @@ const AnalyticsPage: FC = () => {
 
   useEffect(() => {
     if (!dashboardsLoaded) return
+    // Links saved before the tab was renamed to AI Attribution.
+    if (tab === 'cliAnalytics') {
+      setSearchParams(
+        (prev) => {
+          prev.set('tab', AnalyticsDashboardType.cliAnalytics)
+          return prev
+        },
+        { replace: true }
+      )
+      return
+    }
     const isKnownTab = (Object.values(AnalyticsDashboardType) as string[]).includes(tab)
     // The flag arrives with the app config: do not leave the tab before it is known.
     if (tab === AnalyticsDashboardType.usageAttribution && !isUsageAttributionFlagLoaded) return

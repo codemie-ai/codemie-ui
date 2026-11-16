@@ -69,6 +69,7 @@ vi.mock('../hooks/useCliAnalyticsRepositories', () => ({
     loading: false,
     error: null,
     page: 1,
+    total: 1,
     totalPages: 1,
     perPage: 20,
     setPage: vi.fn(),

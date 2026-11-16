@@ -23,9 +23,9 @@ import { DECIMAL_PAGINATION_OPTIONS, InfoWarningType } from '@/constants'
 import { NOT_REPORTED_LABEL } from '@/constants/cliAnalytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 import type { SessionRow } from '@/types/cliAnalytics'
-import { DefinitionTypes } from '@/types/table'
 import { formatDateTime } from '@/utils/helpers'
 
+import { customColumn } from './columns'
 import SessionCostValue from './SessionCostValue'
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
@@ -39,13 +39,13 @@ const StartTimeCell: FC<{ row: SessionRow }> = ({ row }) => (
 )
 
 const PromptCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="truncate max-w-[280px]" title={row.prompt}>
+  <div className="truncate max-w-[180px]" title={row.prompt}>
     {row.prompt || '—'}
   </div>
 )
 
 const RepositoryCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="truncate max-w-[200px]" title={row.repository ?? NOT_REPORTED_LABEL}>
+  <div className="truncate max-w-[160px]" title={row.repository ?? NOT_REPORTED_LABEL}>
     {row.repository === null ? (
       <span className="text-gray-400 italic">{NOT_REPORTED_LABEL}</span>
     ) : (
@@ -55,7 +55,7 @@ const RepositoryCell: FC<{ row: SessionRow }> = ({ row }) => (
 )
 
 const BranchCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="truncate max-w-[160px]" title={row.branch ?? NOT_REPORTED_LABEL}>
+  <div className="truncate max-w-[120px]" title={row.branch ?? NOT_REPORTED_LABEL}>
     {row.branch === null ? (
       <span className="text-gray-400 italic">{NOT_REPORTED_LABEL}</span>
     ) : (
@@ -65,7 +65,7 @@ const BranchCell: FC<{ row: SessionRow }> = ({ row }) => (
 )
 
 const DeliveryFrameworkCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="truncate max-w-[200px]" title={row.delivery_framework ?? ''}>
+  <div className="truncate max-w-[140px]" title={row.delivery_framework ?? ''}>
     {row.delivery_framework || '—'}
   </div>
 )
@@ -96,9 +96,7 @@ const OutputTokensCell: FC<{ row: SessionRow }> = ({ row }) => (
 )
 
 const CachedTokensCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="text-right">
-    {((row.cache_read_tokens ?? 0) + (row.cache_creation_tokens ?? 0)).toLocaleString()}
-  </div>
+  <div className="text-right">{(row.cache_read_tokens ?? 0).toLocaleString()}</div>
 )
 
 const CostCell: FC<{ row: SessionRow }> = ({ row }) => (
@@ -134,6 +132,11 @@ interface SessionsViewProps {
   isProjectUnattributed?: boolean
 }
 
+const gapMessage = (total: number) =>
+  `${total.toLocaleString()} session${
+    total === 1 ? ' has' : 's in this view have'
+  } no repository or branch data because the analytics plugin was not active.`
+
 const SessionsView: FC<SessionsViewProps> = ({
   filters,
   repositories,
@@ -150,15 +153,25 @@ const SessionsView: FC<SessionsViewProps> = ({
     [frameworks]
   )
 
-  const { displayRows, loading, error, page, totalPages, perPage, setPage, search, setSearch } =
-    useCliAnalyticsSessions(filters, repositories, {
-      sort_by: 'start_time',
-      framework: deliveryFramework ?? undefined,
-      isUnattributed,
-      branch,
-      projectName,
-      isProjectUnattributed,
-    })
+  const {
+    displayRows,
+    loading,
+    error,
+    page,
+    total,
+    totalPages,
+    perPage,
+    setPage,
+    search,
+    setSearch,
+  } = useCliAnalyticsSessions(filters, repositories, {
+    sort_by: 'start_time',
+    framework: deliveryFramework ?? undefined,
+    isUnattributed,
+    branch,
+    projectName,
+    isProjectUnattributed,
+  })
 
   const { selectedTraceId, selectSession, closeSession } = useSessionModal()
 
@@ -171,92 +184,25 @@ const SessionsView: FC<SessionsViewProps> = ({
     [displayRows, selectedTraceId]
   )
 
-  const gapCount = useMemo(
-    () => displayRows.filter((r) => r.repository === null).length,
-    [displayRows]
-  )
+  // Only the Unattributed drill-down knows the gap: it holds just the sessions without a repository, so
+  // its total is exact. Elsewhere the API reports no count, and a page-only count would mislead.
+  const showGapWarning = isUnattributed && total > 0
 
   const customRenderColumns = SESSION_CELL_RENDERERS
 
   const columnDefinitions = useMemo(
     () => [
-      {
-        key: 'start_time',
-        label: 'Date',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'min-w-[110px]',
-      },
-      {
-        key: 'prompt',
-        label: 'Prompt',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: '',
-      },
-      {
-        key: 'repository',
-        label: 'Repository',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: '',
-      },
-      {
-        key: 'branch',
-        label: 'Branch',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: '',
-      },
-      {
-        key: 'delivery_framework',
-        label: 'Framework',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: '',
-      },
-      {
-        key: 'turns',
-        label: 'Turns',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'net_lines',
-        label: 'Net Lines',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'input_tokens',
-        label: 'Input Tokens',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'output_tokens',
-        label: 'Output Tokens',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'cache_read_tokens',
-        label: 'Cache Read Tokens',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'cost_usd',
-        label: 'Est. Cost',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
+      customColumn('start_time', 'Date', 'min-w-[110px]'),
+      customColumn('prompt', 'Prompt'),
+      customColumn('repository', 'Repository'),
+      customColumn('branch', 'Branch'),
+      customColumn('delivery_framework', 'Framework'),
+      customColumn('cost_usd', 'Est. Cost', 'text-right'),
+      customColumn('turns', 'Turns', 'text-right'),
+      customColumn('net_lines', 'Net Lines', 'text-right'),
+      customColumn('input_tokens', 'Input Tokens', 'text-right'),
+      customColumn('output_tokens', 'Output Tokens', 'text-right'),
+      customColumn('cache_read_tokens', 'Cache Read Tokens', 'text-right'),
     ],
     []
   )
@@ -264,13 +210,8 @@ const SessionsView: FC<SessionsViewProps> = ({
   return (
     <AnalyticsWidget title="Sessions" loading={false} error={error ? { message: error } : null}>
       <div className="flex flex-col gap-3">
-        {gapCount > 0 && (
-          <InfoWarning
-            type={InfoWarningType.WARNING}
-            message={`${gapCount} session${gapCount === 1 ? '' : 's'} in this view ${
-              gapCount === 1 ? 'has' : 'have'
-            } no repository or branch data because the analytics plugin was not active.`}
-          />
+        {showGapWarning && (
+          <InfoWarning type={InfoWarningType.WARNING} message={gapMessage(total)} />
         )}
         <div className="flex flex-row gap-2 items-center">
           <input

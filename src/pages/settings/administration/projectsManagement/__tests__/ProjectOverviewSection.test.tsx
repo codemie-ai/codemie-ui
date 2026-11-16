@@ -77,34 +77,34 @@ describe('ProjectOverviewSection - CLI Analytics status (EPMCDME-16025)', () => 
   it('O1 shows "Enabled" when the project carries cli_analytics_enabled: true', () => {
     renderOverview({ cli_analytics_enabled: true })
 
-    expect(screen.getByText('CLI Analytics')).toBeTruthy()
+    expect(screen.getByText('AI Attribution')).toBeTruthy()
     expect(screen.getByText('Enabled', { selector: 'div' })).toBeTruthy()
   })
 
   it('O1 shows "Disabled" when the project carries cli_analytics_enabled: false', () => {
     renderOverview({ cli_analytics_enabled: false })
 
-    const label = screen.getByText('CLI Analytics')
+    const label = screen.getByText('AI Attribution')
     expect(label.nextElementSibling?.textContent).toBe('Disabled')
   })
 
   it('O2 renders no status when the key is absent', () => {
     renderOverview({})
 
-    expect(screen.queryByText('CLI Analytics')).toBeNull()
+    expect(screen.queryByText('AI Attribution')).toBeNull()
   })
 
   it('O3 shows "Disabled" for a personal project carrying false', () => {
     renderOverview({ project_type: 'personal', cli_analytics_enabled: false })
 
-    const label = screen.getByText('CLI Analytics')
+    const label = screen.getByText('AI Attribution')
     expect(label.nextElementSibling?.textContent).toBe('Disabled')
   })
 
   it('O4 shows "Enabled" for true', () => {
     renderOverview({ cli_analytics_enabled: true })
 
-    const label = screen.getByText('CLI Analytics')
+    const label = screen.getByText('AI Attribution')
     expect(label.nextElementSibling?.textContent).toBe('Enabled')
   })
 })

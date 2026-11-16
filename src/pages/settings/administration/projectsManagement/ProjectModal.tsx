@@ -265,7 +265,7 @@ const ProjectModal: FC<ProjectModalProps> = ({ visible, project, onHide, onSubmi
               >
                 <Switch
                   id="cli_analytics_enabled"
-                  label="Enable CLI Analytics"
+                  label="Enable AI Attribution"
                   hint="Allow analytics ingestion for this project. Turning this off discards incoming analytics; existing data remains available."
                   value={value}
                   disabled={!canWriteCliAnalytics}

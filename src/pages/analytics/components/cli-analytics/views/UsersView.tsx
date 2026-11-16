@@ -29,10 +29,10 @@ import {
   type TabularResponse,
 } from '@/types/analytics'
 import type { ExtendedSessionsTarget, UserRow } from '@/types/cliAnalytics'
-import { DefinitionTypes } from '@/types/table'
 import { formatSpend } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 
+import { customColumn } from './columns'
 import CostIncompleteNotice from './CostIncompleteNotice'
 import ExtendedSessionsModal from './ExtendedSessionsModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
@@ -85,7 +85,7 @@ function tokensOf(r: UserRow): number {
 }
 
 const DeveloperNameCell: FC<{ row: UserRow }> = ({ row }) => (
-  <div className="truncate max-w-[220px]" title={row.developer_name ?? undefined}>
+  <div className="truncate max-w-[160px]" title={row.developer_name ?? undefined}>
     {row.developer_name || '—'}
   </div>
 )
@@ -112,7 +112,11 @@ const NetLinesCell: FC<{ row: UserRow }> = ({ row }) => (
   </div>
 )
 
-const TopModelCell: FC<{ row: UserRow }> = ({ row }) => <div>{row.top_model || '—'}</div>
+const TopModelCell: FC<{ row: UserRow }> = ({ row }) => (
+  <div className="truncate max-w-[160px]" title={row.top_model ?? undefined}>
+    {row.top_model || '—'}
+  </div>
+)
 
 // The full figure, as in every other token column: a compact "1.7B" reads as "1.78".
 const TokensCell: FC<{ row: UserRow }> = ({ row }) => (
@@ -211,68 +215,16 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
 
   const columnDefinitions = useMemo(
     () => [
-      { key: 'developer_name', label: 'User', type: DefinitionTypes.Custom, sortable: false },
-      {
-        key: 'session_count',
-        label: 'Sessions',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'turns',
-        label: 'Turns',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'tool_calls',
-        label: 'Tool Calls',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'tool_success_rate',
-        label: 'Tool Success',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'net_lines',
-        label: 'Net Lines',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'top_model',
-        label: 'Top Model',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-      },
-      {
-        key: 'tokens',
-        label: 'Total Tokens',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'cost_usd',
-        label: 'Est. Cost',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'last_active',
-        label: 'Last Active',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-      },
+      customColumn('developer_name', 'User'),
+      customColumn('session_count', 'Sessions', 'text-right'),
+      customColumn('cost_usd', 'Est. Cost', 'text-right'),
+      customColumn('turns', 'Turns', 'text-right'),
+      customColumn('tool_calls', 'Tool Calls', 'text-right'),
+      customColumn('tool_success_rate', 'Tool Success', 'text-right'),
+      customColumn('net_lines', 'Net Lines', 'text-right'),
+      customColumn('top_model', 'Top Model'),
+      customColumn('tokens', 'Total Tokens', 'text-right'),
+      customColumn('last_active', 'Last Active'),
     ],
     []
   )

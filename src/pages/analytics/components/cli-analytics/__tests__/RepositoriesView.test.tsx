@@ -214,6 +214,7 @@ const EMPTY_HOOK_RESULT = {
   error: null,
   page: 0,
   totalCount: 0,
+  total: 1,
   totalPages: 1,
   perPage: 10,
   setPage: vi.fn(),

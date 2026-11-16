@@ -100,7 +100,7 @@ function buildDeadSessionsMetrics(
       description: `${formatMetricValue(
         deadSessions?.pct_of_sessions ?? 0,
         MetricFormat.PERCENTAGE
-      )} of sessions`,
+      )} of sessions with cost`,
     },
     {
       id: 'wasted_cost_usd',
@@ -169,6 +169,7 @@ function wastedCostSubtitle(
 const SESSION_COLUMN_DEFS = [
   { key: 'session', label: 'Session', type: DefinitionTypes.Custom },
   { key: 'delivery_framework', label: 'Framework', type: DefinitionTypes.Custom },
+  { key: 'cost', label: 'Est. Cost', type: DefinitionTypes.Custom, headClassNames: 'text-right' },
   {
     key: 'ctx_per_call',
     label: 'Cache Read / Call',
@@ -181,7 +182,6 @@ const SESSION_COLUMN_DEFS = [
     type: DefinitionTypes.Custom,
     headClassNames: 'text-right',
   },
-  { key: 'cost', label: 'Est. Cost', type: DefinitionTypes.Custom, headClassNames: 'text-right' },
   {
     key: 'bloat',
     label: 'Bloat %',
@@ -193,13 +193,13 @@ const SESSION_COLUMN_DEFS = [
 // Same type size and full figures as the other session tables (e.g. Most Expensive Sessions).
 const SESSION_CUSTOM_COLS = {
   session: (row: SessionRow) => (
-    <div className="truncate max-w-xs" title={row.prompt ?? row.trace_id}>
+    <div className="truncate max-w-[240px]" title={row.prompt ?? row.trace_id}>
       {(row.prompt ?? row.trace_id).slice(0, 40)}
       {(row.prompt ?? row.trace_id).length > 40 ? '…' : ''}
     </div>
   ),
   delivery_framework: (row: SessionRow) => (
-    <div className="truncate max-w-[200px]" title={row.delivery_framework ?? ''}>
+    <div className="truncate max-w-[140px]" title={row.delivery_framework ?? ''}>
       {row.delivery_framework || '—'}
     </div>
   ),

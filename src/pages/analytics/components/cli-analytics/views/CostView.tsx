@@ -52,25 +52,25 @@ function truncatePrompt(s: string, max = 36): string {
 }
 
 const PromptCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="truncate max-w-[280px]" title={row.prompt ?? undefined}>
+  <div className="truncate max-w-[180px]" title={row.prompt ?? undefined}>
     {truncatePrompt(row.prompt ?? '')}
   </div>
 )
 
 const DeveloperCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="truncate max-w-[180px]" title={row.developer_name ?? undefined}>
+  <div className="truncate max-w-[140px]" title={row.developer_name ?? undefined}>
     {row.developer_name || '—'}
   </div>
 )
 
 const RepositoryCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="truncate max-w-[200px]" title={row.repository ?? undefined}>
+  <div className="truncate max-w-[160px]" title={row.repository ?? undefined}>
     {row.repository || '—'}
   </div>
 )
 
 const DeliveryFrameworkCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="truncate max-w-[200px]" title={row.delivery_framework ?? ''}>
+  <div className="truncate max-w-[140px]" title={row.delivery_framework ?? ''}>
     {row.delivery_framework || '—'}
   </div>
 )
@@ -84,9 +84,7 @@ const OutputTokensCell: FC<{ row: SessionRow }> = ({ row }) => (
 )
 
 const CachedTokensCell: FC<{ row: SessionRow }> = ({ row }) => (
-  <div className="text-right">
-    {((row.cache_read_tokens ?? 0) + (row.cache_creation_tokens ?? 0)).toLocaleString()}
-  </div>
+  <div className="text-right">{(row.cache_read_tokens ?? 0).toLocaleString()}</div>
 )
 
 const TotalTokensCell: FC<{ row: SessionRow }> = ({ row }) => (
@@ -150,6 +148,7 @@ function buildKpiMetrics(kpis: {
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
       value: kpis.avg_cost_per_session,
+      description: 'per session with cost',
     },
   ]
 }
@@ -281,6 +280,13 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
         headClassNames: '',
       },
       {
+        key: 'cost_usd_display',
+        label: 'Est. Cost',
+        type: DefinitionTypes.Custom,
+        sortable: false,
+        headClassNames: 'text-right',
+      },
+      {
         key: 'input_tokens',
         label: 'Input Tokens',
         type: DefinitionTypes.Custom,
@@ -304,13 +310,6 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
       {
         key: 'cost_usd',
         label: 'Total Tokens',
-        type: DefinitionTypes.Custom,
-        sortable: false,
-        headClassNames: 'text-right',
-      },
-      {
-        key: 'cost_usd_display',
-        label: 'Est. Cost',
         type: DefinitionTypes.Custom,
         sortable: false,
         headClassNames: 'text-right',

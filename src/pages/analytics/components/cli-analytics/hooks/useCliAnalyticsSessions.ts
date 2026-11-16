@@ -27,6 +27,7 @@ export interface UseCliAnalyticsSessionsResult {
   loading: boolean
   error: string | null
   page: number
+  total: number
   totalPages: number
   perPage: number
   setPage: (page: number, perPage?: number) => void
@@ -140,7 +141,8 @@ export function useCliAnalyticsSessions(
     if (newPerPage !== undefined) setPerPage(newPerPage)
   }
 
-  const totalPages = Math.max(1, Math.ceil((snap.sessions?.total ?? 0) / perPage))
+  const total = snap.sessions?.total ?? 0
+  const totalPages = Math.max(1, Math.ceil(total / perPage))
 
   const displayRows = useMemo(() => snap.sessions?.sessions ?? [], [snap.sessions])
 
@@ -152,6 +154,7 @@ export function useCliAnalyticsSessions(
     loading,
     error,
     page,
+    total,
     totalPages,
     perPage,
     setPage: setPageState,

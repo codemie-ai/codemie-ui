@@ -96,7 +96,7 @@ describe('buildOverviewSummaryGroups', () => {
       'At API rates, not billed',
     ])
     expect(text('cache_read_cost_usd')).toEqual(['Cache Re-Read Cost', 'Spend on context re-reads'])
-    expect(text('bloat_pct')).toEqual(['Bloat %', 'Cache reads / total cost'])
+    expect(text('bloat_pct')).toEqual(['Bloat %', 'Cache re-read cost / est. cost'])
     expect(text('total_tokens')).toEqual(['Total Tokens', 'Input, output and cache'])
     expect(text('total_input_tokens')).toEqual(['Input Tokens', 'LLM input tokens'])
     expect(text('total_output_tokens')).toEqual(['Output Tokens', 'LLM output tokens'])

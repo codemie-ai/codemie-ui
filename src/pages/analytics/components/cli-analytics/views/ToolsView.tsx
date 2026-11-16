@@ -103,7 +103,7 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <BarChartWidget
           title="Most Used Tools"
-          description="Tool calls across CLI sessions."
+          description="The 20 most called tools across CLI sessions."
           labelField="tool_name"
           valueField="call_count"
           yAxisLabel="call_count"
@@ -134,7 +134,7 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
       <div className="grid grid-cols-1 gap-4">
         <BarChartWidget
           title="Skills Invoked"
-          description="Skill invocations across CLI sessions."
+          description="The 10 most invoked skills across CLI sessions."
           labelField="name"
           valueField="count"
           yAxisLabel="count"
@@ -144,7 +144,7 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
         />
         <BarChartWidget
           title="Agent Subtypes"
-          description="Sub-agent dispatches by type."
+          description="The 10 most dispatched sub-agent types."
           labelField="name"
           valueField="count"
           yAxisLabel="count"
@@ -154,7 +154,7 @@ const ToolsView: FC<ToolsViewProps> = ({ filters, repositories }) => {
         />
         <BarChartWidget
           title="Slash Commands"
-          description="Slash commands run in CLI sessions."
+          description="The 10 most run slash commands in CLI sessions."
           labelField="name"
           valueField="count"
           yAxisLabel="count"

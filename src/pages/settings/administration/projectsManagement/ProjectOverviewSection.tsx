@@ -408,7 +408,7 @@ const ProjectOverviewSection: FC<Props> = ({
                 <InfoItem label="Admins" value={project.admin_count} />
                 {project.cli_analytics_enabled !== undefined && (
                   <InfoItem
-                    label="CLI Analytics"
+                    label="AI Attribution"
                     value={project.cli_analytics_enabled ? 'Enabled' : 'Disabled'}
                   />
                 )}

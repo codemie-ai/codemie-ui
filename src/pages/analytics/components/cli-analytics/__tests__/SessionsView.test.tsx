@@ -28,6 +28,7 @@ vi.mock('../hooks/useCliAnalyticsSessions', () => ({
     loading: false,
     error: null,
     page: 1,
+    total: 1,
     totalPages: 1,
     perPage: 20,
     setPage: vi.fn(),
@@ -95,6 +96,7 @@ describe('SessionsView', () => {
       loading: false,
       error: null,
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 20,
       setPage: vi.fn(),
@@ -110,12 +112,12 @@ describe('SessionsView', () => {
       'Repository',
       'Branch',
       'Framework',
+      'Est. Cost',
       'Turns',
       'Net Lines',
       'Input Tokens',
       'Output Tokens',
       'Cache Read Tokens',
-      'Est. Cost',
     ])
   })
 
@@ -133,6 +135,7 @@ describe('SessionsView', () => {
       loading: false,
       error: null,
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 20,
       setPage: vi.fn(),
@@ -157,6 +160,7 @@ describe('SessionsView', () => {
       loading: false,
       error: null,
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 20,
       setPage: vi.fn(),
@@ -169,12 +173,34 @@ describe('SessionsView', () => {
     expect(screen.getByText('$0.05')).toBeInTheDocument()
   })
 
+  it('shows cache reads only in the Cache Read Tokens cell, not reads plus creation', () => {
+    vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+      displayRows: [MOCK_ROW],
+      loading: false,
+      error: null,
+      page: 1,
+      total: 1,
+      totalPages: 1,
+      perPage: 20,
+      setPage: vi.fn(),
+      search: '',
+      setSearch: vi.fn(),
+    })
+
+    render(<SessionsView filters={MOCK_FILTERS} />)
+
+    const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
+    const cell = screen.getAllByRole('cell')[headers.indexOf('Cache Read Tokens')]
+    expect(cell).toHaveTextContent(/^100$/)
+  })
+
   it('passes error to AnalyticsWidget', () => {
     vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
       displayRows: [],
       loading: false,
       error: 'Failed to fetch sessions',
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 20,
       setPage: vi.fn(),
@@ -200,6 +226,7 @@ describe('SessionsView', () => {
       loading: false,
       error: null,
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 20,
       setPage: vi.fn(),
@@ -225,6 +252,7 @@ describe('SessionsView', () => {
       loading: false,
       error: null,
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 20,
       setPage: vi.fn(),
@@ -242,22 +270,40 @@ describe('SessionsView', () => {
     })
   })
 
-  it('renders InfoWarning banner when at least one session has null repository', () => {
-    vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
-      displayRows: [{ ...MOCK_ROW, repository: null }],
-      loading: false,
-      error: null,
-      page: 1,
-      totalPages: 1,
-      perPage: 20,
-      setPage: vi.fn(),
-      search: '',
-      setSearch: vi.fn(),
+  describe('gap warning', () => {
+    const mockSessions = (rows: unknown[], total: number) =>
+      vi.mocked(useCliAnalyticsSessions).mockReturnValueOnce({
+        displayRows: rows as never,
+        loading: false,
+        error: null,
+        page: 1,
+        total,
+        totalPages: Math.ceil(total / 20),
+        perPage: 20,
+        setPage: vi.fn(),
+        search: '',
+        setSearch: vi.fn(),
+      })
+
+    it('counts every session of the Unattributed drill-down, not only the loaded page', () => {
+      mockSessions(Array(20).fill({ ...MOCK_ROW, repository: null }), 1183)
+      render(<SessionsView filters={MOCK_FILTERS} isUnattributed />)
+      expect(
+        screen.getByText(/1,183 sessions in this view have no repository/i)
+      ).toBeInTheDocument()
     })
 
-    render(<SessionsView filters={MOCK_FILTERS} />)
+    it('uses the singular for one unattributed session', () => {
+      mockSessions([{ ...MOCK_ROW, repository: null }], 1)
+      render(<SessionsView filters={MOCK_FILTERS} isUnattributed />)
+      expect(screen.getByText(/^1 session has no repository/i)).toBeInTheDocument()
+    })
 
-    expect(screen.getByText(/analytics plugin was not active/i)).toBeInTheDocument()
+    it('shows no banner when the view mixes attributed and unattributed sessions', () => {
+      mockSessions([{ ...MOCK_ROW, repository: null }, MOCK_ROW], 1183)
+      render(<SessionsView filters={MOCK_FILTERS} />)
+      expect(screen.queryByText(/analytics plugin was not active/i)).not.toBeInTheDocument()
+    })
   })
 
   it('does not render InfoWarning banner when all sessions have a repository', () => {
@@ -266,6 +312,7 @@ describe('SessionsView', () => {
       loading: false,
       error: null,
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 20,
       setPage: vi.fn(),
@@ -285,6 +332,7 @@ describe('SessionsView', () => {
         loading: false,
         error: null,
         page: 1,
+        total: 1,
         totalPages: 1,
         perPage: 20,
         setPage: vi.fn(),
@@ -317,6 +365,7 @@ describe('SessionsView', () => {
         loading: false,
         error: null,
         page: 1,
+        total: 1,
         totalPages: 1,
         perPage: 20,
         setPage: vi.fn(),
@@ -325,7 +374,10 @@ describe('SessionsView', () => {
       })
       return render(<SessionsView filters={MOCK_FILTERS} />)
     }
-    const costCell = () => screen.getAllByRole('cell').at(-1) as HTMLElement
+    const costCell = () => {
+      const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
+      return screen.getAllByRole('cell')[headers.indexOf('Est. Cost')]
+    }
 
     it('shows an unknown cost as a dash naming the unpriced models, never $0.00', () => {
       renderRow({ cost_usd: 0, cost_available: false, unpriced_models: ['mai-code-1.1-flash'] })

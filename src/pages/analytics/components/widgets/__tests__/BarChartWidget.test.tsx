@@ -22,11 +22,18 @@ import type { TabularResponse } from '@/types/analytics'
 import BarChartWidget from '../BarChartWidget'
 
 vi.mock('react-chartjs-2', () => ({
-  Bar: ({ data }: { data: { labels?: string[]; datasets: Array<{ data: number[] }> } }) => (
+  Bar: ({
+    data,
+    options,
+  }: {
+    data: { labels?: string[]; datasets: Array<{ data: number[] }> }
+    options?: { scales?: { y?: { ticks?: { autoSkip?: boolean } } } }
+  }) => (
     <canvas
       data-testid="bar-chart"
       data-labels={JSON.stringify(data.labels ?? [])}
       data-values={JSON.stringify(data.datasets[0]?.data ?? [])}
+      data-y-autoskip={String(options?.scales?.y?.ticks?.autoSkip)}
     />
   ),
 }))
@@ -106,6 +113,30 @@ describe('BarChartWidget — net_lines', () => {
     const canvas = screen.getByTestId('bar-chart')
     const values = JSON.parse(canvas.getAttribute('data-values') ?? '[]') as number[]
     expect(values).toEqual([30, -10, 0])
+  })
+})
+
+describe('BarChartWidget — category labels', () => {
+  const renderChart = (horizontal: boolean) =>
+    render(
+      <BarChartWidget
+        title="Most Used Tools"
+        labelField="day"
+        valueField="net_lines"
+        yAxisLabel="net_lines"
+        horizontal={horizontal}
+        dataOverride={makeOverride([{ day: 'Bash', net_lines: 3 }])}
+      />
+    )
+
+  it('labels every bar of a horizontal chart, not every other one', () => {
+    renderChart(true)
+    expect(screen.getByTestId('bar-chart')).toHaveAttribute('data-y-autoskip', 'false')
+  })
+
+  it('keeps skipping value ticks on a vertical chart', () => {
+    renderChart(false)
+    expect(screen.getByTestId('bar-chart')).toHaveAttribute('data-y-autoskip', 'true')
   })
 })
 

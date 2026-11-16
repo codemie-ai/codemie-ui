@@ -94,7 +94,7 @@ export function buildOverviewSummaryGroups(
       type: ColumnType.NUMBER,
       format: MetricFormat.PERCENTAGE,
       value: kpis.bloat_pct,
-      description: 'Cache reads / total cost',
+      description: 'Cache re-read cost / est. cost',
     },
   ]
 

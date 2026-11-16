@@ -39,15 +39,18 @@ vi.mock('../hooks/useCliAnalyticsTools', () => ({
 vi.mock('../../AnalyticsWidget', () => ({
   default: ({
     title,
+    description,
     children,
     error,
   }: {
     title: string
+    description?: string
     children: React.ReactNode
     error?: { message: string } | null
   }) => (
     <div data-testid={`widget-${title.toLowerCase().replace(/\s+/g, '-')}`}>
       <h3>{title}</h3>
+      {description && <p>{description}</p>}
       {error && <span data-testid="widget-error">{error.message}</span>}
       {children}
     </div>
@@ -119,6 +122,23 @@ describe('ToolsView', () => {
 
     // Most Used Tools, Skills invoked, Agent subtypes, Slash commands.
     expect(charts).toHaveLength(4)
+  })
+
+  it('names the cap the API puts on each ranked list', () => {
+    render(<ToolsView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByTestId('widget-most-used-tools')).toHaveTextContent(
+      'The 20 most called tools across CLI sessions.'
+    )
+    expect(screen.getByTestId('widget-skills-invoked')).toHaveTextContent(
+      'The 10 most invoked skills across CLI sessions.'
+    )
+    expect(screen.getByTestId('widget-agent-subtypes')).toHaveTextContent(
+      'The 10 most dispatched sub-agent types.'
+    )
+    expect(screen.getByTestId('widget-slash-commands')).toHaveTextContent(
+      'The 10 most run slash commands in CLI sessions.'
+    )
   })
 
   it('shows empty states when tool datasets are empty', () => {

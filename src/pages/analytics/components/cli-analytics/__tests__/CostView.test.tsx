@@ -46,6 +46,7 @@ vi.mock('../hooks/useCliAnalyticsSessions', () => ({
     loading: false,
     error: null,
     page: 1,
+    total: 1,
     totalPages: 1,
     perPage: 10,
     setPage: vi.fn(),
@@ -73,9 +74,10 @@ vi.mock('../../AnalyticsWidget', () => ({
 }))
 
 vi.mock('../../widgets/MetricCard', () => ({
-  default: ({ metric }: { metric: { id: string; label: string } }) => (
+  default: ({ metric }: { metric: { id: string; label: string; description?: string } }) => (
     <div data-testid={`metric-${metric.id}`}>
       <span>{metric.label}</span>
+      {metric.description && <span>{metric.description}</span>}
     </div>
   ),
 }))
@@ -136,6 +138,14 @@ describe('CostView', () => {
     expect(screen.getByTestId('metric-total_cost_usd')).toBeInTheDocument()
     expect(screen.getByTestId('metric-total_tokens')).toBeInTheDocument()
     expect(screen.getByTestId('metric-avg_cost_per_session')).toBeInTheDocument()
+  })
+
+  it('names sessions with cost as the base of the average', () => {
+    render(<CostView filters={MOCK_FILTERS} />)
+
+    expect(screen.getByTestId('metric-avg_cost_per_session')).toHaveTextContent(
+      'per session with cost'
+    )
   })
 
   it('renders the cost-by-user and cost-by-model widgets', () => {
@@ -200,6 +210,7 @@ describe('CostView', () => {
       loading: false,
       error: 'Failed to fetch sessions',
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 10,
       setPage: vi.fn(),
@@ -234,6 +245,7 @@ describe('CostView', () => {
       loading: false,
       error: null,
       page: 1,
+      total: 1,
       totalPages: 1,
       perPage: 10,
       setPage: vi.fn(),
@@ -260,6 +272,7 @@ describe('CostView', () => {
         loading: false,
         error: null,
         page: 1,
+        total: 1,
         totalPages: 1,
         perPage: 10,
         setPage: vi.fn(),
@@ -268,7 +281,10 @@ describe('CostView', () => {
       })
       return render(<CostView filters={MOCK_FILTERS} />)
     }
-    const costCell = () => screen.getAllByRole('cell').at(-1) as HTMLElement
+    const costCell = () => {
+      const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
+      return screen.getAllByRole('cell')[headers.indexOf('Est. Cost')]
+    }
 
     it('shows an unknown cost as a dash naming the unpriced models, never $0.00', () => {
       renderSessionRow({
@@ -305,6 +321,14 @@ describe('CostView', () => {
 
       expect(costCell()).toHaveTextContent(/^-$/)
       expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+    })
+
+    it('shows cache reads only in the Cache Read Tokens cell, not reads plus creation', () => {
+      renderSessionRow({})
+
+      const headers = screen.getAllByRole('columnheader').map((h) => h.textContent)
+      const cell = screen.getAllByRole('cell')[headers.indexOf('Cache Read Tokens')]
+      expect(cell).toHaveTextContent(/^100$/)
     })
   })
 })
