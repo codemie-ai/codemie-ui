@@ -84,14 +84,14 @@ describe('hostedAccess predicates', () => {
 describe('hostedActions', () => {
   it('offers no edit, upload or publish without write, and no delete without delete', () => {
     const k = keys(make({ user_abilities: ['read'], has_active_version: true }))
-    expect(k).toEqual(['open'])
+    expect(k).toEqual(['open', 'details'])
   })
 
   it('offers all owner actions in order with write and delete', () => {
     const k = keys(
       make({ user_abilities: ['write', 'delete'], can_share: true, has_active_version: true })
     )
-    expect(k).toEqual(['open', 'edit', 'upload', 'publish', 'share', 'delete'])
+    expect(k).toEqual(['open', 'details', 'edit', 'upload', 'publish', 'share', 'delete'])
   })
 
   it('shows share only with can_share', () => {
@@ -108,7 +108,12 @@ describe('hostedActions', () => {
   })
 
   it('offers Revoke share link to a moderator who is not the owner', () => {
-    expect(keys(make({ can_moderate: true }))).toEqual(['open', 'suspend', 'revoke_link'])
+    expect(keys(make({ can_moderate: true }))).toEqual([
+      'open',
+      'details',
+      'suspend',
+      'revoke_link',
+    ])
     expect(find(make({ can_moderate: true }), 'revoke_link')?.label).toBe('Revoke share link')
     // Suspended apps keep it: revoking is allowed while suspended.
     expect(keys(make({ can_moderate: true, suspended: true }))).toContain('revoke_link')

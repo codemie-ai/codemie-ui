@@ -34,6 +34,7 @@ export const isCreator = (app: HostedApplication, userId?: string) =>
 
 export type HostedActionKey =
   | 'open'
+  | 'details'
   | 'edit'
   | 'upload'
   | 'publish'
@@ -48,10 +49,15 @@ export interface HostedAction {
   key: HostedActionKey
   label: string
   disabled?: boolean
+  tooltip?: string
 }
 
+const NO_ACTIVE_VERSION = 'No active version yet'
+
 export const hostedActions = (app: HostedApplication): HostedAction[] => {
-  const actions: HostedAction[] = [{ key: 'open', label: 'View', disabled: !canOpen(app) }]
+  const open: HostedAction = { key: 'open', label: 'Open', disabled: !canOpen(app) }
+  if (!canOpen(app)) open.tooltip = NO_ACTIVE_VERSION
+  const actions: HostedAction[] = [open, { key: 'details', label: 'Details' }]
 
   if (isManager(app)) {
     actions.push({ key: 'edit', label: 'Edit' }, { key: 'upload', label: 'Upload new version' })

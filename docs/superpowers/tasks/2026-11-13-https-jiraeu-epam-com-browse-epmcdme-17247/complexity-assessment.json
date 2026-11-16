@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "task": "In codemie-ui, make a hosted app card click launch the app in the viewer (details when there is no active version), remove the card's eye-icon View button, rename View to Open with the open icon in the card menu and details button, and add a Details item to the card menu.",
+  "generated": "2026-11-13T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 12,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Several hosted-app UI components change together: HostedApplicationCard (click handler, removal of the OpenButtons eye button), hostedAccess action list (open label, new details action), useHostedCardActions (icon/navigation for details), HostedApplicationsPage menu skip list, and HostedDetailsActions (View to Open with open.svg). All sit in one presentation area and share the single hostedActions contract, so the pattern is clear." },
+    { "dimension": "file_change_estimate", "reason": "About 5-7 source files under src/pages/applications/hosted/ plus updates to existing tests that assert the current behavior and wording (HostedApplicationCard.test, HostedApplicationDetails.integration.test, possibly the card-menu parity and viewer-actions tests). No new files expected." },
+    { "dimension": "requirements_clarity", "reason": "The task resolves the open points from the analysis (launch on click, details fallback without an active version, Details menu item). Minor confirmations remain, such as whether manager next-step buttons stay and how a view-only user's click on a non-openable card behaves (details per task)." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is the Platform ApplicationCard, which already launches on body click with an open.svg Open button, and catalog.open to /apps/:id/view already exists and is tested. No security-sensitive surface changes; the viewer keeps its separate-origin iframe. Existing Vitest/RTL tests cover the variant cases, so no edge-case bump." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

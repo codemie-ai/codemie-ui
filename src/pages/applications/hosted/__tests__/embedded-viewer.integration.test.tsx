@@ -209,6 +209,17 @@ it('tells a manager previewing a version that people with access see the active 
   ).toBeInTheDocument()
 })
 
+it('offers one way to the details page in the viewer menu, not a second generic Details entry', async () => {
+  const { outer } = await frame()
+  expect(outer).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Application actions' }))
+  const links = await screen.findAllByRole('link', { name: 'Manage application' })
+  expect(links).toHaveLength(1)
+  expect(links[0]).toHaveAttribute('href', '/apps/' + boundary.route.id)
+  expect(screen.queryByRole('menuitem', { name: 'Details' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Details' })).not.toBeInTheDocument()
+})
+
 describe('opening a window for the application', () => {
   const APP = boundary.route.id
   const LAUNCHED = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'

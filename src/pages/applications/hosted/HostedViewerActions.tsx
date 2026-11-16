@@ -45,7 +45,7 @@ const HostedViewerActions = ({ application: app, menuItems, onShare, onReload }:
       data-tooltip-content="Application actions"
       items={[
         { title: 'Reload', icon: <RefreshSvg />, onClick: onReload },
-        ...menuItems(app, ['open', 'share']),
+        ...menuItems(app, ['open', 'share', 'details']),
         {
           title: isManager(app) ? 'Manage application' : 'Application details',
           icon: <EditSvg />,

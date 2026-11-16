@@ -20,7 +20,6 @@ import {
   hostedApplicationsStore as store,
   hostedAuthenticationGeneration,
 } from '@/store/hostedApplications'
-import type { HostedApplication } from '@/types/entity/hostedApplication'
 
 import { APPLICATION_COLLECTIONS } from '../applicationCollections'
 import {
@@ -97,7 +96,6 @@ export const useHostedApplicationCatalog = () => {
     return () => clearTimeout(timer)
   }, [scope, searchKey, state.capabilities?.view, contextRevision])
 
-  const open = (app: HostedApplication) => navigate(hostedRoutes.view(app.id))
   return {
     state,
     navigate,
@@ -107,7 +105,6 @@ export const useHostedApplicationCatalog = () => {
     create,
     actionError,
     setActionError,
-    open,
     isCurrent,
     retry: () => {
       setActionError(null)

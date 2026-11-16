@@ -37,6 +37,8 @@ export interface CardProps {
   status?: React.ReactNode
   preview?: React.ReactNode
   topRight?: React.ReactNode
+  ariaLabel?: string
+  ariaDescribedBy?: string
   onClick: (e) => void
   id: string
 }
@@ -53,6 +55,8 @@ const Card: React.FC<CardProps> = ({
   status = null,
   topRight = null,
   preview = null,
+  ariaLabel,
+  ariaDescribedBy,
   id,
   onClick,
 }) => {
@@ -74,6 +78,8 @@ const Card: React.FC<CardProps> = ({
       <Tooltip target={'.' + tooltipClass} position="left" showDelay={100} />
       <div // NOSONAR - the card holds its own buttons (menu, actions), so it cannot be a native <button>
         role="button"
+        aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
         tabIndex={0}
         onClick={onClick}
         onKeyDown={(event) => {

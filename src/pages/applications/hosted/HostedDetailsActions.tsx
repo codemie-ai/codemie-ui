@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import EditSvg from '@/assets/icons/edit.svg?react'
-import EyeSvg from '@/assets/icons/eye.svg?react'
+import OpenSvg from '@/assets/icons/open.svg?react'
 import Button from '@/components/Button'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import type { NavigationMenuItem } from '@/components/NavigationMore/NavigationMore'
@@ -31,7 +31,7 @@ interface Props {
   onAction(key: HostedActionKey): void
 }
 
-// View and Edit are buttons; Share, Upload new version and the rest stay in the overflow menu,
+// Open and Edit are buttons; Share, Upload new version and the rest stay in the overflow menu,
 // and Versions has its own Upload version button.
 const BUTTON_KEYS: HostedActionKey[] = ['open', 'edit']
 
@@ -47,13 +47,14 @@ const HostedDetailsActions = ({
   const has = (key: HostedActionKey) => actions.find((action) => action.key === key)
   const open = has('open')
   // "Copy share link" in the Share popup is the only copy action (AC10).
-  const menu: NavigationMenuItem[] = menuItems(app, BUTTON_KEYS)
+  // This page is the details view, so its menu does not link back to Details.
+  const menu: NavigationMenuItem[] = menuItems(app, [...BUTTON_KEYS, 'details'])
   return (
     <div className="flex flex-wrap items-center gap-2">
       {open && (
         <Button disabled={busy || open.disabled} onClick={onOpen}>
-          <EyeSvg aria-hidden className="size-4" />
-          View
+          <OpenSvg aria-hidden className="size-4" />
+          Open
         </Button>
       )}
       {has('edit') && (

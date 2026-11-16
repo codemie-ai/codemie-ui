@@ -108,10 +108,8 @@ const HostedApplicationsPage = () => {
               collection={scope}
               canCreate={canCreate}
               onCreate={catalog.create}
-              onOpen={catalog.open}
               onLoadMore={() => store.loadApplications(true)}
-              // View has its own button on the card.
-              menuItems={(app) => cardActions.menuItems(app, ['open'])}
+              menuItems={(app) => cardActions.menuItems(app)}
             />
           )}
         </div>

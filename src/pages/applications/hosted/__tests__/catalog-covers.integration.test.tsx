@@ -86,7 +86,6 @@ it('renders covers on every card without issuing a single launch request', async
         collection="marketplace"
         canCreate={false}
         onCreate={vi.fn()}
-        onOpen={vi.fn()}
         onLoadMore={vi.fn()}
       />
     </MemoryRouter>

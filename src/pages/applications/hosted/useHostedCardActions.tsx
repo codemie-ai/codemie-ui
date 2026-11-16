@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router'
 import CopyLinkSvg from '@/assets/icons/copy-link.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
+import InfoSvg from '@/assets/icons/info.svg?react'
 import OpenSvg from '@/assets/icons/open.svg?react'
 import PlusSvg from '@/assets/icons/plus.svg?react'
 import PublishSvg from '@/assets/icons/publish.svg?react'
@@ -51,6 +52,7 @@ interface Options {
 
 const ICONS: Record<HostedActionKey, ReactNode> = {
   open: <OpenSvg />,
+  details: <InfoSvg />,
   edit: <EditSvg />,
   // New version, as on the details page; the up arrow stays with publishing.
   upload: <PlusSvg />,
@@ -114,6 +116,8 @@ export const useHostedCardActions = ({ isCurrent, onChanged, onDeleted, onError 
     switch (key) {
       case 'open':
         return navigate(hostedRoutes.view(app.id))
+      case 'details':
+        return navigate(hostedRoutes.details(app.id))
       // Editing is a page; it loads the latest revision itself.
       case 'edit':
         return navigate(hostedRoutes.edit(app.id))
@@ -131,10 +135,11 @@ export const useHostedCardActions = ({ isCurrent, onChanged, onDeleted, onError 
   const menuItems = (app: HostedApplication, skip: HostedActionKey[] = []): NavigationMenuItem[] =>
     hostedActions(app)
       .filter(({ key }) => !skip.includes(key))
-      .map(({ key, label, disabled }) => ({
+      .map(({ key, label, disabled, tooltip }) => ({
         title: label,
         icon: ICONS[key],
         disabled,
+        tooltip,
         onClick: () => select(key, app),
       }))
 

@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-17247_open-hosted-app-on-click",
+  "head": "e868ce27b2023951c783c6a2ec75100161301665",
+  "runner": "npm",
+  "started_at": "2026-11-13T16:31:52Z",
+  "completed_at": "2026-11-13T16:39:28Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 22248,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 16188,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 178912,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 910 passed (910); Tests 9518 passed | 1 skipped (9519)"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 90049,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 84 passed (84); Tests 906 passed | 1 skipped (907)"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17901,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2026,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 141,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: \"[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.\" Export SONAR_TOKEN (and ensure the Sonar host is reachable) to run the real scan locally; the MR-side sonar task remains owed to CI."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 260,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2793 files, 0 missing license headers"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 691,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: \"No staged files found.\" lint-staged only processes staged files, so its prettier --write and eslint --fix chain and its tsc --noEmit step did not run on this checkout. Whole-project lint and typecheck gates above passed; prettier formatting of staged files is not verified here. Stage files and rerun to cover it."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "",
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "mr-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "command": "",
+      "exit_code": null,
+      "notes": "External pre-ci-guard template (.gitlab-ci.yml::wait-ci-init) that waits on ci-pipeline and compliance-report contexts defined outside this repository; not runnable locally. Server-side tasks (gitleaks-scan, dockerfile-lint, dockerbuild-verify, sonar) are owed to the MR pipeline."
+    }
+  ],
+  "failures": {}
+}

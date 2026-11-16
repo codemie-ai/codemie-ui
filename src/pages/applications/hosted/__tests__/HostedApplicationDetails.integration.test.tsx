@@ -289,7 +289,7 @@ describe('details access model', () => {
   it('offers no way to open the app outside CodeMie from the header', async () => {
     const opened = vi.spyOn(window, 'open').mockReturnValue(null)
     show(make({ has_active_version: true }))
-    expect(await screen.findByRole('button', { name: 'View' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Open' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /new tab/i })).not.toBeInTheDocument()
     expect(opened).not.toHaveBeenCalled()
     opened.mockRestore()
@@ -301,9 +301,9 @@ describe('details access model', () => {
     expect(screen.queryByText(/Standalone link/i)).not.toBeInTheDocument()
   })
 
-  it('opens the application in its viewer from the header View', async () => {
+  it('opens the application in its viewer from the header Open', async () => {
     show(make({ has_active_version: true }))
-    fireEvent.click(await screen.findByRole('button', { name: 'View' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Open' }))
     expect(route.navigate).toHaveBeenCalledWith(hostedRoutes.view(route.id))
     expect(hostedRoutes.view(route.id)).toBe('/apps/' + route.id + '/view')
   })
@@ -399,6 +399,12 @@ describe('details access model', () => {
     expect(screen.queryByRole('button', { name: 'Copy link' })).not.toBeInTheDocument()
   })
 
+  it('does not link the details page to itself from the header menu', async () => {
+    show(make())
+    await screen.findByRole('heading', { name: 'Versions' })
+    expect(screen.queryByRole('button', { name: 'Details' })).not.toBeInTheDocument()
+  })
+
   it('does not offer Activate on a suspended application', async () => {
     show(make({ suspended: true, suspension_refuses: SUSPENDED_REFUSES }), [version()])
     await screen.findByRole('heading', { name: 'Versions' })
@@ -408,7 +414,7 @@ describe('details access model', () => {
   it('shows No active version yet in the details when nothing is active', async () => {
     show(make({ has_active_version: false }))
     expect(await screen.findByText('No active version yet')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'View' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Open' })).toBeDisabled()
   })
 
   it('shows the active version of a project-shared app, not "Not on the Marketplace"', async () => {

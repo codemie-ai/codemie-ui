@@ -31,7 +31,6 @@ interface Props {
   collection: HostedCollectionId
   canCreate: boolean
   onCreate(): void
-  onOpen(app: HostedApplication): void
   onLoadMore(): void
   menuItems?(app: HostedApplication): NavigationMenuItem[]
 }
@@ -45,7 +44,6 @@ const HostedCatalogResults = ({
   collection,
   canCreate,
   onCreate,
-  onOpen,
   onLoadMore,
   menuItems,
 }: Props) => {
@@ -87,12 +85,7 @@ const HostedCatalogResults = ({
         className="grid grid-cols-1 gap-4 card-grid-2:grid-cols-2 card-grid-3:grid-cols-3"
       >
         {items.map((app) => (
-          <HostedApplicationCard
-            key={app.id}
-            application={app}
-            onOpen={onOpen}
-            menuItems={menuItems?.(app)}
-          />
+          <HostedApplicationCard key={app.id} application={app} menuItems={menuItems?.(app)} />
         ))}
       </section>
       {hasMore && (

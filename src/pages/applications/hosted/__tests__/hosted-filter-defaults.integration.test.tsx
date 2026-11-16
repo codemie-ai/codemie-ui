@@ -24,7 +24,6 @@ import {
 } from '@/pages/applications/hosted/hostedCollections'
 import { useHostedApplicationCatalog } from '@/pages/applications/hosted/useHostedApplicationCatalog'
 import { userStore } from '@/store/user'
-import type { HostedApplication } from '@/types/entity/hostedApplication'
 
 vi.mock('valtio', async (importOriginal) => ({
   ...(await importOriginal<typeof import('valtio')>()),
@@ -205,15 +204,6 @@ it.each(['project', 'marketplace', 'shared'] as const)(
     expect(navigate).toHaveBeenLastCalledWith('/apps/new', { state: { from: scope } })
   }
 )
-
-it('launches an application from the catalog in its viewer, not on its details page', () => {
-  const opened = renderHook(() => useHostedApplicationCatalog(), {
-    wrapper: ({ children }) => <MemoryRouter initialEntries={['/apps']}>{children}</MemoryRouter>,
-  })
-  const { navigate } = opened.result.current
-  act(() => opened.result.current.open({ id: 'app-1' } as HostedApplication))
-  expect(navigate).toHaveBeenLastCalledWith('/apps/app-1/view')
-})
 
 it('lets the collection registry decide which filters a tab offers, keeps and sends', async () => {
   const declared = HOSTED_COLLECTIONS.marketplace.filters

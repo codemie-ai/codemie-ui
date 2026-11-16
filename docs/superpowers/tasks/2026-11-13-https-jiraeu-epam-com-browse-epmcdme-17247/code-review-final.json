@@ -1,0 +1,105 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "deterministic",
+    "rationale": "Targeted check round: both prior blocking findings (CR-001, CR-002) verified resolved against the fix-up diff and current source, 0 unresolved. confidence: high."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "deterministic",
+      "rationale": "code-review-orchestrator (compact profile): roster edge_case=ran, acceptance=n/a (no spec, expected for a spec-less compact round, not a coverage gap). 2 live findings: lost no-version aria-describedby, orphaned catalog.open reference."
+    },
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "deterministic",
+      "rationale": "Targeted check round: both prior blocking findings (CR-001, CR-002) verified resolved against the fix-up diff and current source, 0 unresolved. confidence: high."
+    }
+  ],
+  "reviewed_head": "e868ce27b2023951c783c6a2ec75100161301665",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "Both prior blocking findings verified resolved against current source: CR-001's Card.tsx now forwards ariaDescribedBy to the role=\"button\" div and HostedApplicationCard wires noVersionId when not openable; CR-002's orphaned catalog.open and its only caller/test were removed with no remaining references. 0 unresolved, 0 unaccounted.",
+  "confidence": "low",
+  "check_confidence": "high",
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 2,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Card/Card.tsx",
+      "line": 79,
+      "title": "Lost no-version aria-describedby on card",
+      "problem": "HostedApplicationCard still renders CoverBadge with id noVersionId for a non-openable app, but Card's role=\"button\" div only receives aria-label. Nothing points aria-describedby at that id since the diff deleted the OpenButtons button that carried it.",
+      "impact": "Screen-reader users focused on a card with no active version no longer hear the 'No active version yet' explanation; the card announces only its name.",
+      "recommendation": "Add an ariaDescribedBy prop to CardProps, render it as aria-describedby on the role=\"button\" div, and have HostedApplicationCard pass noVersionId when the app is not openable.",
+      "status": "resolved",
+      "check_notes": "CardProps gained ariaDescribedBy, wired to aria-describedby on the role=\"button\" div; HostedApplicationCard passes noVersionId when openable is false. New unit tests in Card.test.tsx and HostedApplicationCard.test.tsx cover it.",
+      "fix": {
+        "change": "Card takes an ariaDescribedBy prop rendered as aria-describedby on the role=button div; HostedApplicationCard passes the no-version badge id when the app is not openable",
+        "test": "Card.test.tsx: applies ariaDescribedBy to the clickable role=button element; HostedApplicationCard.test.tsx: describes the card button with the no-active-version notice"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/useHostedApplicationCatalog.ts",
+      "line": 100,
+      "title": "Orphaned catalog.open export after card-click rewire",
+      "problem": "This diff removed HostedApplicationsPage's only production use of catalog.open (onOpen={catalog.open}), but useHostedApplicationCatalog still defines and returns open with no remaining caller.",
+      "impact": "Dead exported code suggests the function is still wired to the UI and misleads future maintainers. AGENTS.md's surgical-changes rule requires removing symbols a change makes unused.",
+      "recommendation": "Remove the open function and its return entry from useHostedApplicationCatalog, updating the hook's direct unit test accordingly, or re-wire a real caller if it is still needed.",
+      "status": "resolved",
+      "check_notes": "open() and its return entry were deleted from useHostedApplicationCatalog.ts; its sole unit test was removed; grep confirms no remaining catalog.open/caller reference in HostedApplicationsPage.tsx or elsewhere.",
+      "fix": {
+        "change": "Removed the unused open function and its return entry from useHostedApplicationCatalog, with its now-obsolete direct-call test and unused imports",
+        "test": "n/a (removed test covered the deleted symbol; hosted-filter-defaults integration file green, typecheck and lint clean)"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not run: compact review profile, no standards path."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not run: compact review profile, no standards path."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not run: compact review profile, no standards path."
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "Acceptance did not run (no spec artifact), which caps confidence at low. Edge-case lens raised 4 candidates: 2 are real regressions from this diff (lost aria-describedby explanation for no-version cards as CR-001; orphaned catalog.open export as CR-002), and 2 claims that an empty app.name yields a blank aria-label were dismissed because name is required non-empty by the creation schema (formSchema.ts yup .trim().required()). 0 deferred; 2 dismissed.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

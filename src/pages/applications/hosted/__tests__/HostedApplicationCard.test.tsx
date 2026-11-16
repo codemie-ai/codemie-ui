@@ -80,7 +80,7 @@ const make = (over: Partial<HostedApplication> = {}): HostedApplication =>
 
 const wrapper = ({ children }: { children: ReactNode }) => <MemoryRouter>{children}</MemoryRouter>
 const renderCard = (app: HostedApplication) =>
-  render(<HostedApplicationCard application={app} onOpen={vi.fn()} />, { wrapper })
+  render(<HostedApplicationCard application={app} />, { wrapper })
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -149,15 +149,48 @@ describe('card without an active version', () => {
     expect(navigate).toHaveBeenCalledWith('/apps/' + make().id)
   })
 
-  it('opens the details page on a card click and launches only from Open', () => {
-    const onOpen = vi.fn()
+  it('opens the viewer on a card click when the app is openable', () => {
     const app = make()
-    render(<HostedApplicationCard application={app} onOpen={onOpen} />, { wrapper })
+    renderCard(app)
+    fireEvent.click(screen.getByText(app.name))
+    expect(navigate).toHaveBeenCalledWith('/apps/' + app.id + '/view')
+  })
+
+  it.each<[string, Partial<HostedApplication>]>([
+    ['reader', { user_abilities: ['read'] }],
+    ['manager', { user_abilities: ['read', 'write'] }],
+  ])('opens the details page on a card click without an active version, as a %s', (_role, over) => {
+    const app = make({ has_active_version: false, ...over })
+    renderCard(app)
     fireEvent.click(screen.getByText(app.name))
     expect(navigate).toHaveBeenCalledWith('/apps/' + app.id)
-    expect(onOpen).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: /^View/ }))
-    expect(onOpen).toHaveBeenCalledWith(app)
+  })
+
+  it.each([['Enter'], [' ']])('treats %j on the focused card like a click', (key) => {
+    const openable = make()
+    const { unmount } = renderCard(openable)
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Open ' + openable.name }), { key })
+    expect(navigate).toHaveBeenCalledWith('/apps/' + openable.id + '/view')
+    unmount()
+    navigate.mockClear()
+    const closed = make({ has_active_version: false })
+    renderCard(closed)
+    fireEvent.keyDown(screen.getByRole('button', { name: closed.name }), { key })
+    expect(navigate).toHaveBeenCalledWith('/apps/' + closed.id)
+  })
+
+  it('names the card button after the app, and says Open only when it opens it', () => {
+    const { unmount } = renderCard(make())
+    expect(screen.getByRole('button', { name: 'Open Visual' })).toBeInTheDocument()
+    unmount()
+    renderCard(make({ has_active_version: false }))
+    expect(screen.getByRole('button', { name: 'Visual' })).toBeInTheDocument()
+  })
+
+  it('renders no Open or View button on the card body', () => {
+    renderCard(make())
+    expect(screen.queryByRole('button', { name: /^View/ })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button')).toHaveLength(1)
   })
 
   it('offers no way to open the app outside CodeMie from the card', () => {
@@ -165,24 +198,24 @@ describe('card without an active version', () => {
     const app = make()
     renderCard(app)
     expect(screen.queryByRole('button', { name: /new tab/i })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /^View/ }))
+    fireEvent.click(screen.getByText(app.name))
     expect(opened).not.toHaveBeenCalled()
     opened.mockRestore()
   })
 
-  it('explains the disabled Open to someone who cannot manage the app', () => {
-    renderCard(make({ has_active_version: false }))
-    const open = screen.getByRole('button', { name: /^View/ })
-    expect(open).toBeDisabled()
-    expect(open).toHaveAccessibleDescription('No active version yet')
-    expect(open.parentElement).toHaveAttribute('data-tooltip-content', 'No active version yet')
+  it('describes the card button with the no-active-version notice', () => {
+    const app = make({ has_active_version: false })
+    renderCard(app)
+    const button = screen.getByRole('button', { name: app.name })
+    const describedBy = button.getAttribute('aria-describedby')
+    expect(describedBy).toBeTruthy()
+    expect(document.getElementById(describedBy!)).toHaveTextContent('No active version yet')
   })
 
-  it('shows the notice, disables Open and never launches a preview', async () => {
+  it('shows the notice and never launches a preview', async () => {
     const app = make({ has_active_version: false, artifact_kind: 'html' })
     renderCard(app)
     expect(screen.getByText('No active version yet')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^View/ })).toBeDisabled()
     await act(async () => {
       await Promise.resolve()
     })
@@ -191,17 +224,7 @@ describe('card without an active version', () => {
     expect(boundary.store.issueLaunch).not.toHaveBeenCalled()
   })
 
-  it('enables Open when a version is active, for managers too', () => {
-    const { unmount } = renderCard(make({ user_abilities: ['read', 'write'] }))
-    expect(screen.getByRole('button', { name: /^View/ })).toBeEnabled()
-    unmount()
-    renderCard(make())
-    expect(screen.getByRole('button', { name: /^View/ })).toBeEnabled()
-    expect(screen.getByRole('button', { name: /^View/ }).parentElement).not.toHaveAttribute(
-      'data-tooltip-content'
-    )
-    expect(screen.queryByText('No active version yet')).not.toBeInTheDocument()
-  })
+  // Open's disabled-state coverage moved to the card menu's Open item - see Task 5/EPMCDME-17247.
 })
 
 describe('card menu', () => {
@@ -224,6 +247,23 @@ describe('card menu', () => {
     const items = result.current.menuItems(app) as any[]
     expect(items.map((i) => i.title)).toEqual(hostedActions(app).map((a) => a.label))
     expect(items.map((i) => !!i.disabled)).toEqual(hostedActions(app).map((a) => !!a.disabled))
+  })
+
+  it.each(Object.keys(cases))('puts Open then Details first for %s', (name) => {
+    const actions = hostedActions(make(cases[name]))
+    expect(actions[0]).toMatchObject({ key: 'open', label: 'Open' })
+    expect(actions[1]).toMatchObject({ key: 'details', label: 'Details' })
+    expect(actions[1].disabled).toBeFalsy()
+  })
+
+  it('explains a disabled Open with a tooltip', () => {
+    const [open] = hostedActions(make({ has_active_version: false }))
+    expect(open).toMatchObject({ key: 'open', disabled: true, tooltip: 'No active version yet' })
+  })
+
+  it('leaves an openable Open without a tooltip', () => {
+    const [open] = hostedActions(make())
+    expect(open).not.toHaveProperty('tooltip')
   })
 })
 
@@ -283,6 +323,33 @@ describe('card menu actions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     expect(navigate).toHaveBeenCalledWith('/apps/' + app.id + '/edit')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('opens the viewer from Open', () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }))
+    expect(navigate).toHaveBeenCalledWith('/apps/' + app.id + '/view')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('opens the details page from Details', () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Details' }))
+    expect(navigate).toHaveBeenCalledWith('/apps/' + app.id)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(boundary.store.getApplication).not.toHaveBeenCalled()
+  })
+
+  it('passes the disabled Open tooltip through to the menu item', () => {
+    const { result } = renderHook(() => useHostedCardActions(options), { wrapper })
+    const [closed] = result.current.menuItems(make({ has_active_version: false })) as any[]
+    expect(closed).toMatchObject({
+      title: 'Open',
+      disabled: true,
+      tooltip: 'No active version yet',
+    })
+    const [open] = result.current.menuItems(app) as any[]
+    expect(open.tooltip).toBeUndefined()
   })
 
   it('opens the upload dialog', async () => {

@@ -15,7 +15,6 @@
 import { useNavigate } from 'react-router'
 
 import DiagramSvg from '@/assets/icons/diagram.svg?react'
-import EyeSvg from '@/assets/icons/eye.svg?react'
 import NotSharedSvg from '@/assets/icons/shared-no.svg?react'
 import SharedSvg from '@/assets/icons/shared-yes.svg?react'
 import Button from '@/components/Button'
@@ -36,7 +35,6 @@ import type { ReactNode } from 'react'
 interface Props {
   application: HostedApplication
   menuItems?: NavigationMenuItem[]
-  onOpen(application: HostedApplication): void
 }
 
 // One status line in the style of the assistant and skill cards: an icon and plain text.
@@ -83,42 +81,7 @@ const CoverBadge = ({
   </span>
 )
 
-/**
- * View as an icon with a tooltip, so the card row keeps room for the status; the details page
- * labels it. A disabled button gets no pointer events, so its wrapper explains it.
- */
-const OpenButtons = ({
-  app,
-  openable,
-  noVersionId,
-  onOpen,
-}: {
-  app: HostedApplication
-  openable: boolean
-  noVersionId: string
-  onOpen(application: HostedApplication): void
-}) => (
-  <span
-    className="inline-flex gap-2"
-    data-tooltip-id={openable ? undefined : 'react-tooltip'}
-    data-tooltip-content={openable ? undefined : NO_ACTIVE_VERSION}
-  >
-    <Button
-      size="small"
-      variant="secondary"
-      disabled={!openable}
-      aria-label={'View ' + app.name}
-      aria-describedby={openable ? undefined : noVersionId}
-      data-tooltip-id={openable ? 'react-tooltip' : undefined}
-      data-tooltip-content={openable ? 'View' : undefined}
-      onClick={() => onOpen(app)}
-    >
-      <EyeSvg aria-hidden className="size-4" />
-    </Button>
-  </span>
-)
-
-const HostedApplicationCard = ({ application: app, menuItems, onOpen }: Props) => {
+const HostedApplicationCard = ({ application: app, menuItems }: Props) => {
   const navigate = useNavigate()
   const openable = canOpen(app)
   const suspended = isSuspended(app)
@@ -150,6 +113,8 @@ const HostedApplicationCard = ({ application: app, menuItems, onOpen }: Props) =
       <Card
         id={app.id}
         titleId={titleId}
+        ariaLabel={openable ? 'Open ' + app.name : app.name}
+        ariaDescribedBy={openable ? undefined : noVersionId}
         title={app.name}
         subtitle={
           isCreator(app, userStore.user?.userId)
@@ -179,8 +144,8 @@ const HostedApplicationCard = ({ application: app, menuItems, onOpen }: Props) =
         }
         onClick={(event) => {
           if ((event.target as HTMLElement).closest('a,button,[role="menu"]')) return
-          // As for assistants: the card opens the details page; only Open launches the app.
-          navigate(hostedRoutes.details(app.id))
+          // An app that can run opens in the viewer; one that cannot falls back to its details.
+          navigate(openable ? hostedRoutes.view(app.id) : hostedRoutes.details(app.id))
         }}
         actions={
           !openable && isManager(app) ? (
@@ -191,9 +156,7 @@ const HostedApplicationCard = ({ application: app, menuItems, onOpen }: Props) =
             >
               {nextStepLabel(app)}
             </Button>
-          ) : (
-            <OpenButtons app={app} openable={openable} noVersionId={noVersionId} onOpen={onOpen} />
-          )
+          ) : null
         }
         status={status}
       />
