@@ -175,11 +175,11 @@ describe('OverviewView — the Summary tiles and the pie with likely production'
 
   it('shows likely production as its own slice, and the rest of Unclassified as "Unclassified, other"', () => {
     const likely = legendRow('Likely production')
-    expect(within(likely).getByText('$30,000')).toBeInTheDocument()
+    expect(within(likely).getByText('$30,000.00')).toBeInTheDocument()
     expect(within(likely).getByText('8.1%')).toBeInTheDocument()
 
     const other = legendRow('Unclassified, other')
-    expect(within(other).getByText('$70,000')).toBeInTheDocument()
+    expect(within(other).getByText('$70,000.00')).toBeInTheDocument()
     expect(within(other).getByText('18.9%')).toBeInTheDocument()
   })
 

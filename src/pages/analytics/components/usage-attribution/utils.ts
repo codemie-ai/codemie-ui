@@ -29,15 +29,16 @@ import {
 
 const minus = (v: number, shown: number): string => (v < 0 && shown > 0 ? '-' : '')
 
-/** $1,234 (whole dollars; cents under one dollar are shown as $0.xx); -$5 for negative amounts; — when unknown. */
+/** $1,234.00 (always two decimals); -$5.00 for negative amounts; — when unknown. */
 export const formatMoney = (value: number | null | undefined): string => {
   if (value === null || value === undefined) return '—'
   const v = Number(value)
   if (!Number.isFinite(v)) return '—'
   const abs = Math.abs(v)
-  if (abs > 0 && abs < 1) return `${minus(v, abs)}$${abs.toFixed(2)}`
-  const rounded = Math.round(abs)
-  return `${minus(v, rounded)}$${rounded.toLocaleString('en-US')}`
+  return `${minus(v, abs)}$${abs.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
 }
 
 /** $1.2K, $12.3K, $1.4M: for descriptions. Rounded first, so 999,950 reads $1.0M and not $1000.0K. */

@@ -174,8 +174,8 @@ describe('PeopleGroupsTable', () => {
     expect(project).toHaveTextContent('CodeMie project')
     expect(project).toHaveTextContent('Over $1,000')
     expect(project).toHaveTextContent('4 candidates · work inside it, no budget for them')
-    expect(project).toHaveTextContent('$2,400')
-    expect(project).toHaveTextContent('$300 estimated')
+    expect(project).toHaveTextContent('$2,400.00')
+    expect(project).toHaveTextContent('$300.00 estimated')
     expect(project).toHaveTextContent('median 11')
     const org = screen.getByRole('button', { name: 'acme' }).closest('tr') as HTMLElement
     expect(org).toHaveTextContent('Git organization')
@@ -201,7 +201,7 @@ describe('PeopleGroupsTable', () => {
     const jane = within(members)
       .getByRole('button', { name: 'Jane Example' })
       .closest('tr') as HTMLElement
-    expect(jane).toHaveTextContent('$1,200 of $1,500')
+    expect(jane).toHaveTextContent('$1,200.00 of $1,500.00')
     const sam = within(members)
       .getByRole('button', { name: 'Sam Other' })
       .closest('tr') as HTMLElement

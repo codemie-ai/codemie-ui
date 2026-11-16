@@ -183,10 +183,10 @@ describe('PeopleTable — chargeback candidates and who pays', () => {
     }
     expect(screen.getByText('Personal Budget').tagName).toBe('H4')
     const jane = screen.getByRole('button', { name: 'Jane Example' }).closest('tr') as HTMLElement
-    expect(jane).toHaveTextContent('$400')
-    expect(jane).toHaveTextContent('$300')
-    expect(jane).toHaveTextContent('$120')
-    expect(jane).toHaveTextContent('$80')
+    expect(jane).toHaveTextContent('$400.00')
+    expect(jane).toHaveTextContent('$300.00')
+    expect(jane).toHaveTextContent('$120.00')
+    expect(jane).toHaveTextContent('$80.00')
   })
 
   it('shows the summary tiles for candidates, with the days threshold', () => {
@@ -200,7 +200,7 @@ describe('PeopleTable — chargeback candidates and who pays', () => {
     )
     expect(tile('Their production on personal budgets')).toHaveTextContent('$48,210')
     expect(tile('Shared with other candidates')).toHaveTextContent('$30,500')
-    expect(tile('Groups over $1,000')).toHaveTextContent('7')
+    expect(tile('Groups over $1,000.00')).toHaveTextContent('7')
     expect(screen.getByText(/on 5 or more days in this period/)).toBeInTheDocument()
   })
 
@@ -237,11 +237,11 @@ describe('PeopleTable — chargeback candidates and who pays', () => {
     })
     render(<PeopleTable params={{}} onOpen={vi.fn()} />)
 
-    expect(screen.getByText('Groups over $2,000')).toBeInTheDocument()
+    expect(screen.getByText('Groups over $2,000.00')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'show them' }))
 
     expect(lastParams('people-groups')).toMatchObject({ group_by: 'common', min_amount: 2000 })
-    expect(screen.getAllByText('Groups over $2,000 per 30 days').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Groups over $2,000.00 per 30 days').length).toBeGreaterThan(0)
   })
 
   it('shows the summary tiles while they load and when they fail', () => {

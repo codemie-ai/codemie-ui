@@ -128,9 +128,9 @@ describe('PersonModal — who pays and the chargeback candidate', () => {
       'Production work from a personal budget on 12 days in this period.'
     )
     expect(section()).toHaveTextContent(
-      '$220 · CodeMie project northwind-payments, shared with 3 other candidates'
+      '$220.00 · CodeMie project northwind-payments, shared with 3 other candidates'
     )
-    expect(section()).toHaveTextContent('$80 · no other candidate shares this work')
+    expect(section()).toHaveTextContent('$80.00 · no other candidate shares this work')
     await user.click(
       within(section()).getByRole('button', { name: 'CodeMie project northwind-payments' })
     )

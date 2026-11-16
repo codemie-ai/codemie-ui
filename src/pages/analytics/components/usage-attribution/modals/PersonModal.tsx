@@ -231,7 +231,7 @@ const PersonModal: FC<Props> = ({ uid, params, periodQuery, onHide, onOpenGroup 
       numeric: true,
       render: (r) => (r.turns === null ? formatNumber(r.requests) : formatNumber(r.turns)),
     },
-    { key: 'spend', label: 'Cost', numeric: true, render: (r) => `$${r.spend.toFixed(2)}` },
+    { key: 'spend', label: 'Cost', numeric: true, render: (r) => formatMoney(r.spend) },
   ]
 
   const reasons = detail?.reasons ?? []
