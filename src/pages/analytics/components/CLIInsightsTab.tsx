@@ -106,7 +106,7 @@ const CLIInsightsTab: FC<CLIInsightsTabProps> = ({ filters, onOpenUsageAttributi
   const handleTopSpenderRowClick = (item: Record<string, unknown>) => {
     setSelectedUser({
       name: getPrimitiveString(item.user_name ?? item.user),
-      id: getPrimitiveString(item.userId) || null,
+      id: getPrimitiveString(item.user_id) || null,
     })
   }
 

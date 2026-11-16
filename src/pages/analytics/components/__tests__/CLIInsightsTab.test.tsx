@@ -13,13 +13,15 @@
 // limitations under the License.
 //
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
 import CLIInsightsTab from '../CLIInsightsTab'
+
+import type { ReactNode } from 'react'
 
 const flags = vi.hoisted(() => ({ usageAttribution: [false, true] as [boolean, boolean] }))
 
@@ -39,17 +41,39 @@ vi.mock('../widgets/DonutChartWidget', () => ({
 
 vi.mock('../widgets/MetricsWidget', () => ({ default: () => null }))
 
+const ROW = { user_name: 'Ada', user_id: 'u-ada' }
+
 vi.mock('../widgets/TableWidget', () => ({
-  default: ({ title, hiddenColumns }: { title: string; hiddenColumns?: string[] }) => (
-    <div>{`${title} hidden:${(hiddenColumns ?? []).join(',')}`}</div>
+  default: ({
+    title,
+    hiddenColumns,
+    customRenderColumns,
+  }: {
+    title: string
+    hiddenColumns?: string[]
+    customRenderColumns?: Record<string, (item: Record<string, unknown>) => ReactNode>
+  }) => (
+    <div data-testid={`table ${title}`}>
+      <div>{`${title} hidden:${(hiddenColumns ?? []).join(',')}`}</div>
+      {customRenderColumns?.user_name?.(ROW)}
+    </div>
   ),
 }))
 
 vi.mock('../cliInsights/EnrichedUserSection', () => ({ default: () => null }))
 
 vi.mock('../cliInsights/CLIInsightsUserDetailsModal', () => ({
-  default: ({ showClassification }: { showClassification?: boolean }) => (
-    <div>{`popup classification:${String(showClassification)}`}</div>
+  default: ({
+    showClassification,
+    userId,
+  }: {
+    showClassification?: boolean
+    userId?: string | null
+  }) => (
+    <>
+      <div>{`popup classification:${String(showClassification)}`}</div>
+      <div>{`userId:${String(userId)}`}</div>
+    </>
   ),
 }))
 
@@ -117,4 +141,23 @@ describe('CLIInsightsTab classification', () => {
   it('reads the Usage Attribution flag', () => {
     expect(FEATURE_FLAGS.USAGE_ATTRIBUTION).toBe('features:usageAttribution')
   })
+})
+
+describe('CLIInsightsTab user details', () => {
+  beforeEach(() => {
+    flags.usageAttribution = [false, true]
+  })
+
+  it.each(['Top Spenders', 'All Users'])(
+    'opens the details with the clicked row user_id from %s',
+    (table) => {
+      render(<CLIInsightsTab filters={filters} />)
+
+      fireEvent.click(
+        within(screen.getByTestId(`table ${table}`)).getByRole('button', { name: 'Ada' })
+      )
+
+      expect(screen.getByText('userId:u-ada')).toBeInTheDocument()
+    }
+  )
 })

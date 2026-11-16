@@ -1,0 +1,250 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "Check round approve: CR-001, CR-003 fixed; CR-002 user wont-fix"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "Fix CR-001 and CR-003; CR-002 let stand per spec non-goal"
+    },
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "Check round approve: CR-001, CR-003 fixed; CR-002 user wont-fix"
+    }
+  ],
+  "reviewed_head": "34b97e8d27dd520d4cc2e0bbfe12507cc9755854",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "All 3 prior blocking findings are resolved: CR-001 and CR-003 were verified against current source (the five new signatures now use parameterized generics; the AC8c test now derives repositories from the row's classifier input instead of literals). CR-002 was resolved by a recorded human decision (HITL disposition in code-review-dispositions.local.jsonl keeping the spec non-goal), accepted in place of the absent fix_evidence file, which caps confidence at medium. business_review and standards_review are carried forward unchanged from the final round, so their AC8c and code-quality partial rows predate these fixes; tests and Ruff were not run by this verifier.",
+  "confidence": "low",
+  "check_confidence": "medium",
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 3,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/codemie/service/analytics/handlers/cli/insights_handler.py",
+      "line": 672,
+      "title": "New detail helpers use bare dict/tuple annotations",
+      "problem": "code-quality.md (Types And Imports) requires parameterized generics, but the new methods use bare types: _cli_user_detail_es_reads(detail_query: dict) -> tuple (L672), _with_cli_user_charged_section(usage: dict, *, collections: dict, ...) -> dict (L1563-1565), the dict member of _prepare_cli_user_detail's return tuple (L650), and -> dict on _get_cli_insights_user_usage_payload (L598) and _get_cli_insights_user_charged_payload (L619).",
+      "impact": "A documented code-quality standard, which the standards audit treats as blocking for this gate, is not met by code this change introduces; the file's older bare-dict style does not exempt new signatures.",
+      "recommendation": "Annotate the new signatures with parameterized generics: dict[str, Any] for the payload, usage, collections and query dicts, and a concrete tuple[Awaitable[dict[str, Any]], Awaitable[dict[str, Any]]] (or Coroutine) for _cli_user_detail_es_reads.",
+      "status": "resolved",
+      "check_notes": "insights_handler.py in changed_files; current source: L598/L619 -> dict[str, Any], L650 tuple member dict[str, Any], L674 typed tuple[Awaitable[...], ...], L1567 usage/collections/return dict[str, Any]; Any/Awaitable imported once",
+      "fix": {
+        "change": "New detail helpers in insights_handler.py annotated with dict[str, Any] and tuple[Awaitable[dict[str, Any]], Awaitable[dict[str, Any]]]",
+        "test": "n/a (annotation only; ruff check + test_cli_handler.py green)"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "decision",
+      "severity": "major",
+      "triage": "decision_needed",
+      "file": "src/codemie/service/analytics/handlers/cli/insights_handler.py",
+      "line": 1268,
+      "title": "Details usage OR-matches name/email beside the user id",
+      "problem": "_build_cli_insights_entity_query (L1268-1274) scopes the details' Elasticsearch reads with a should-match on user name OR email OR user id, even when the row's user_id is known. The row aggregates by user_id bucket and the details' money now comes from that one id's ledger read, but sessions, repositories, branches and projects - and the classification and rule_reasons built from them in _with_cli_user_charged_section - can include documents from another user_id that shares the name or email term.",
+      "impact": "Original-task AC2 requires the details to apply the same user identity as the selected row; when two ES identities share a name/email term the modal mixes their usage beside one person's charged cost and classifies on the mix. Whether such collisions occur in live data was not confirmed. The story listed tightening this matching as a non-goal, so the two statements of intent conflict.",
+      "recommendation": "Human decision: either scope the details query to USER_ID_KEYWORD_FIELD alone when a resolved id exists (keeping the name/email match only for the no-id path), aligning usage with the row's identity per original-task AC2; or confirm the story's non-goal and record that details usage may include same-name identities.",
+      "status": "resolved",
+      "check_notes": "HITL disposition (2026-11-13T14:23:22Z, source hitl) keeps the spec non-goal: details usage keeps current ES matching; recommendation option 2. Read from dispositions file; no fix_evidence file",
+      "disposition": {
+        "rationale": "User decision at spec stage (answer 6, recorded spec non-goal): details usage metrics keep their current ES identity matching; only cost moves to the row's ledger figure. The ticket reports usage metrics already consistent between views; tightening the match could change usage numbers and is out of scope.",
+        "source": "hitl"
+      }
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "tests/codemie/service/analytics/handlers/test_cli_handler.py",
+      "line": 2884,
+      "title": "AC8c test checks repositories against literals",
+      "problem": "Story AC8c requires a backend test proving a self-matching user's details sessions, lines and repositories equal the row's for the same filters. test_a_self_matching_users_usage_equals_their_row compares total_sessions and net_lines to the row, but asserts unique_repositories == 1 and the repository set == {'Acme/payments'} as literals. The CLI Insights user row (insights_handler.py:969-979) emits no repositories value, so nothing ties the details' repositories to what the row aggregated.",
+      "impact": "A required story acceptance criterion is only partially met: the test still passes if the row's aggregation and the details disagree on repositories, leaving a hole in the regression coverage original-task AC5 asks for ('other usage metrics remain consistent').",
+      "recommendation": "Derive the expected repositories from the same source the row reads: assert the details' repository set and unique_repositories against the repositories in the row's user bucket (the shared fixture/aggregation the _row call consumes, e.g. via a shared constant or by capturing the row aggregation response), rather than hard-coded literals.",
+      "status": "resolved",
+      "check_notes": "test file in changed_files; test now wraps _classify_cli_entity during _row (single u-ada bucket) and asserts details repositories/unique_repositories equal the row's aggregated repositories",
+      "fix": {
+        "change": "AC8c test derives expected repositories from the list the row aggregated (captured at its classifier call) instead of literals",
+        "test": "tests/codemie/service/analytics/handlers/test_cli_handler.py::TestDetailsCostReconcilesWithTheRow::test_a_self_matching_users_usage_equals_their_row"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "story-ac",
+      "item": "AC1: details total_cost is the ledger CLI figure from the row's own per-user read; equals row total_cost and overview cli_cost",
+      "status": "pass",
+      "notes": "charged payload reads _cli_spend_by_user([resolved_id or ''], window, projects); card and meta from the same spend; test_overview_row_card_and_meta_carry_one_exact_figure"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC2: no resolved id or ledger failure -> no amount + spend_unavailable; partial -> spend_partial; never $0.00 for absence",
+      "status": "pass",
+      "notes": "'' id -> naming_nobody -> render_spend(None) with no ledger read; the port absorbs ledger failure; tests cover no-id and partial/unavailable"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC3: detail classification and rule_reasons take the AC1 figure as cost input; other inputs stay details-scoped",
+      "status": "pass",
+      "notes": "test_estimate_and_classification_follow_the_ledger_figure"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC4: est_monthly_20d projected from the AC1 figure, inherits unavailable/partial, labelled as a projection",
+      "status": "pass",
+      "notes": "EST_MONTHLY_COST_LABEL in cli/constants.py; test_detail_cost_labels_name_their_basis"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC5: per-repo/per-category cost stay ES-sourced, labelled 'Cost (usage metrics, not charged)'; modal category description matches",
+      "status": "pass",
+      "notes": "USAGE_METRIC_COST_LABEL on both cost columns; CLIInsightsUserDetailsModal.tsx description; tests in both repos"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC6: usage metrics in details keep their current ES matching",
+      "status": "pass",
+      "notes": "_prepare_cli_user_detail keeps the entity query; only money aggs removed from proxy_usage"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC7: CLIInsightsTab passes the row's user_id to the details modal",
+      "status": "pass",
+      "notes": "CLIInsightsTab.tsx:109 reads item.user_id; it is the modal's only entry point"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC8a: backend test: overview, row, detail card and meta total_cost equal exactly, incl. partial/unavailable and no-id",
+      "status": "pass",
+      "notes": "TestDetailsCostReconcilesWithTheRow"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC8b: backend test: classification and estimate follow the figure; estimate = figure / 30 x 20 on a 30-day window",
+      "status": "pass",
+      "notes": "test_estimate_and_classification_follow_the_ledger_figure"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC8c: backend test: a self-matching user's details sessions, lines and repositories equal the row's for the same filters",
+      "status": "partial",
+      "notes": "sessions and net_lines compared to the row; repositories asserted against literals (the row emits no repositories value) - CR-003"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AC8d: UI test: clicking a row opens the modal with that row's user_id",
+      "status": "pass",
+      "notes": "CLIInsightsTab.test.tsx, Top Spenders and All Users"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no change to overview/row cost path, ledger_group_spend.py, report_filter.py, service/spend/*",
+      "status": "pass",
+      "notes": "diff touches none of these"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no tightening of details' ES user/project matching for usage metrics",
+      "status": "pass",
+      "notes": "matching moved unchanged; CR-002 asks whether original-task AC2 overrides this non-goal"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no ledger breakdown per repository/category",
+      "status": "pass",
+      "notes": "repo/category cost remain ES-sourced"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: DistributionBarWidget absent-value rendering unchanged",
+      "status": "pass",
+      "notes": "not touched"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no router/OpenAPI change; card and meta ids total_cost, est_monthly_20d unchanged",
+      "status": "pass",
+      "notes": "router not in diff; ids kept"
+    },
+    {
+      "kind": "spec",
+      "item": "Constraint: money values are RenderedSpend emitted with spend_fields; never 'or 0'",
+      "status": "pass",
+      "notes": "spend_fields(spend) in the charged section; the only new 'or 0' is on timedelta.days"
+    },
+    {
+      "kind": "spec",
+      "item": "Constraint: usage section has no user-level money/classification; total_cost and coverage aggs removed from proxy_usage",
+      "status": "pass",
+      "notes": "test asserts proxy_usage aggs == tokens + models"
+    },
+    {
+      "kind": "spec",
+      "item": "Constraint: charged section = usage section + one RenderedSpend from _cli_spend_by_user([user_id or ''], ...)[0]",
+      "status": "pass",
+      "notes": "_get_cli_insights_user_charged_payload + _with_cli_user_charged_section"
+    },
+    {
+      "kind": "spec",
+      "item": "Constraint: only user_detail, key_metrics, classification_detail read the ledger, once each, inside the existing gather",
+      "status": "pass",
+      "notes": "test_usage_only_endpoints_make_no_ledger_read; test_charged_endpoints_make_exactly_one_ledger_read"
+    },
+    {
+      "kind": "spec",
+      "item": "Constraint: ledger read passes self._pipeline.access_scope as the rows do",
+      "status": "pass",
+      "notes": "reuses _cli_spend_by_user (insights_handler.py:170)"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "git-workflow.md requires EPMCDME-####: Description; both subjects in 83fb4ef6c9..HEAD use the EPMCDME-17180: <Capitalised description> form"
+    },
+    {
+      "kind": "code-quality",
+      "status": "partial",
+      "notes": "code-quality.md asks for parameterized generics; new insights_handler.py signatures use bare dict/tuple (L598, L619, L650, L672, L1563-1565), matching the file's local style, not the guide. Ruff not run."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "No endpoint, auth, logging, secret or external-parsing change; ledger read uses the resolved id or '' (names nobody) under the projects filter. No concrete defect. Backend repo only."
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "All four lenses and the backend standards audit ran (codemie-ui standards were not audited); 3 blocking: story AC8c is partial because the self-matching test asserts repositories against literals (CR-003), new handler signatures use bare dict/tuple annotations against code-quality.md (CR-001), and one decision_needed (CR-002): the details' ES query still OR-matches name/email beside the user id, so usage and classification can mix identities, which original-task AC2 asks to align but the story made a non-goal. 15 lens candidates dismissed after reading source (empty id never reaches the ledger, ledger failures already render as unavailable, the usage dict carries every key read, one modal entry point only); 0 deferred.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

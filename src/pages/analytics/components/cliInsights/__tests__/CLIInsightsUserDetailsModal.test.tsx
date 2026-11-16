@@ -52,9 +52,18 @@ vi.mock('@/components/Spinner', () => ({
 }))
 
 vi.mock('../../AnalyticsWidget', () => ({
-  default: ({ title, children }: { title: string; children: ReactNode }) => (
+  default: ({
+    title,
+    description,
+    children,
+  }: {
+    title: string
+    description?: string
+    children: ReactNode
+  }) => (
     <section>
       <h2>{title}</h2>
+      {description && <p>{`${title} description:${description}`}</p>}
       {children}
     </section>
   ),
@@ -73,8 +82,19 @@ vi.mock('../../widgets/DonutChartWidget', () => ({
 }))
 
 vi.mock('../../widgets/DistributionBarWidget', () => ({
-  default: ({ title, data }: { title: string; data: TabularResponse | null }) => (
-    <div>{`${title}:${data?.data.rows.length ?? 0}`}</div>
+  default: ({
+    title,
+    description,
+    data,
+  }: {
+    title: string
+    description?: string
+    data: TabularResponse | null
+  }) => (
+    <>
+      <div>{`${title}:${data?.data.rows.length ?? 0}`}</div>
+      <div>{`${title} description:${description ?? ''}`}</div>
+    </>
   ),
 }))
 
@@ -83,8 +103,19 @@ vi.mock('../../widgets/MetricCard', () => ({
 }))
 
 vi.mock('../../widgets/TableWidget', () => ({
-  default: ({ title, initialData }: { title: string; initialData?: TabularResponse | null }) => (
-    <div>{`${title}:${initialData?.data.rows.length ?? 0}`}</div>
+  default: ({
+    title,
+    description,
+    initialData,
+  }: {
+    title: string
+    description?: string
+    initialData?: TabularResponse | null
+  }) => (
+    <>
+      <div>{`${title}:${initialData?.data.rows.length ?? 0}`}</div>
+      {description && <div>{`${title} description:${description}`}</div>}
+    </>
   ),
 }))
 
@@ -283,6 +314,39 @@ describe('CLIInsightsUserDetailsModal', () => {
     expect(screen.queryByText('Classification')).not.toBeInTheDocument()
     expect(screen.queryByText(/Category Breakdown/)).not.toBeInTheDocument()
     expect(screen.getByText('Repositories (1):1')).toBeInTheDocument()
+  })
+
+  it('describes the category breakdown as the repository distribution only', async () => {
+    render(
+      <CLIInsightsUserDetailsModal
+        userName="Roman Pak"
+        userId="user-1"
+        filters={filters}
+        onHide={vi.fn()}
+        showClassification
+      />
+    )
+
+    expect(
+      await screen.findByText(
+        'Category Breakdown description:Repository distribution across deterministic CLI categories.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('shows the repositories table without a note', async () => {
+    render(
+      <CLIInsightsUserDetailsModal
+        userName="Roman Pak"
+        userId="user-1"
+        filters={filters}
+        onHide={vi.fn()}
+        showClassification
+      />
+    )
+
+    expect(await screen.findByText('Repositories (1):1')).toBeInTheDocument()
+    expect(screen.queryByText(/^Repositories \(1\) description:/)).not.toBeInTheDocument()
   })
 
   it('shows an error message when the user detail request fails', async () => {

@@ -86,17 +86,17 @@ const DistributionBarWidget: FC<DistributionBarWidgetProps> = ({
               {rows.map((item, index) => {
                 const label = getPrimitiveLabel(item[labelField])
                 const share = Number(item[valueField] ?? 0) * 100
-                const secondaryValue = secondaryValueField
-                  ? Number(item[secondaryValueField] ?? 0)
-                  : null
+                // An absent amount shows nothing rather than a $0.00 that claims the work was free.
+                const rawSecondaryValue = secondaryValueField ? item[secondaryValueField] : null
+                const secondaryValue = rawSecondaryValue == null ? null : Number(rawSecondaryValue)
                 return (
                   <span
                     key={`${label}-legend-${index}`}
                     style={{ color: colorByLabel(label, index) }}
                   >
                     {label}: {share.toFixed(1)}%
-                    {secondaryValueField
-                      ? ` (${formatMetricValue(secondaryValue ?? 0, 'currency' as MetricFormat)})`
+                    {secondaryValue !== null
+                      ? ` (${formatMetricValue(secondaryValue, 'currency' as MetricFormat)})`
                       : ''}
                   </span>
                 )
