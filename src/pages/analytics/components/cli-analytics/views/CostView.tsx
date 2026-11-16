@@ -28,15 +28,13 @@ import {
 import type { SessionRow } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
 
-import CostIncompleteNotice from './CostIncompleteNotice'
-import SessionCostValue, { aggregateCostOverride } from './SessionCostValue'
+import SessionCostValue from './SessionCostValue'
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
 import BarChartWidget from '../../widgets/BarChartWidget'
 import DonutChartWidget from '../../widgets/DonutChartWidget'
 import MetricCard from '../../widgets/MetricCard'
-import { isModelUnpriced } from '../costCompleteness'
 import { useCliAnalyticsCost } from '../hooks/useCliAnalyticsCost'
 import { useCliAnalyticsSessions } from '../hooks/useCliAnalyticsSessions'
 import { useSessionModal } from '../hooks/useSessionModal'
@@ -154,7 +152,7 @@ function buildKpiMetrics(kpis: {
 }
 
 const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
-  const { kpis, costByUser, costByModel, costState, loading, error } = useCliAnalyticsCost(
+  const { kpis, costByUser, costByModel, loading, error } = useCliAnalyticsCost(
     filters,
     repositories
   )
@@ -220,14 +218,7 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
             format: MetricFormat.CURRENCY,
           },
         ],
-        // A flagged model with a positive sum was priced in part (some token kinds had no rate): keep
-        // the bar and mark it. With a zero sum nothing was priced: unknown, no bar, not a $0 one.
-        rows: costByModel.map((row) => {
-          if (!isModelUnpriced(row.model_name, costState)) return row
-          return row.cost_usd > 0
-            ? { ...row, model_name: `${row.model_name} (partly priced)` }
-            : { model_name: `${row.model_name} (no price)`, cost_usd: null }
-        }) as unknown as Record<string, unknown>[],
+        rows: costByModel as unknown as Record<string, unknown>[],
       },
       metadata: { timestamp: '', data_as_of: '' },
       pagination: {
@@ -237,14 +228,8 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
         has_more: false,
       },
     }),
-    [costByModel, costState]
+    [costByModel]
   )
-
-  // Every model unpriced with nothing summed: the shared chart would drop the null bars and show "No data
-  // available", hiding which models are affected. Say the cost is unknown and name them instead.
-  const modelCostUnknown =
-    costByModel.length > 0 &&
-    costByModel.every((row) => isModelUnpriced(row.model_name, costState) && row.cost_usd <= 0)
 
   const errorDetails = error ? { message: error } : null
   const sessErrorDetails = sessError ? { message: sessError } : null
@@ -324,21 +309,10 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
     <div className="flex flex-col gap-6">
       {kpiMetrics.length > 0 && (
         <AnalyticsWidget title="Summary" expandable={false} loading={loading} error={errorDetails}>
-          <div className="flex flex-col gap-3">
-            <CostIncompleteNotice state={costState} />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {kpiMetrics.map((metric) => (
-                <MetricCard
-                  key={metric.id}
-                  metric={metric}
-                  valueOverride={
-                    metric.format === MetricFormat.CURRENCY
-                      ? aggregateCostOverride(metric.value as number, costState)
-                      : undefined
-                  }
-                />
-              ))}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {kpiMetrics.map((metric) => (
+              <MetricCard key={metric.id} metric={metric} />
+            ))}
           </div>
         </AnalyticsWidget>
       )}
@@ -362,30 +336,15 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
           }
         />
 
-        {modelCostUnknown ? (
-          <AnalyticsWidget
-            title="Cost by Model"
-            description="Estimated CLI cost per model."
-            expandable={false}
-          >
-            <div
-              data-testid="cost-by-model-unknown"
-              className="flex justify-center items-center w-full h-[400px] px-4 text-center text-text-quaternary"
-            >
-              Cost unknown: no price for {costByModel.map((row) => row.model_name).join(', ')}
-            </div>
-          </AnalyticsWidget>
-        ) : (
-          <BarChartWidget
-            title="Cost by Model"
-            description="Estimated CLI cost per model."
-            labelField="model_name"
-            valueField="cost_usd"
-            yAxisLabel="cost_usd"
-            horizontal
-            dataOverride={costByModelTabularData}
-          />
-        )}
+        <BarChartWidget
+          title="Cost by Model"
+          description="Estimated CLI cost per model."
+          labelField="model_name"
+          valueField="cost_usd"
+          yAxisLabel="cost_usd"
+          horizontal
+          dataOverride={costByModelTabularData}
+        />
       </div>
 
       <AnalyticsWidget

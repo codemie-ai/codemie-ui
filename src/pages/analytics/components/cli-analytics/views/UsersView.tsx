@@ -33,7 +33,6 @@ import { formatSpend } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 
 import { customColumn } from './columns'
-import CostIncompleteNotice from './CostIncompleteNotice'
 import ExtendedSessionsModal from './ExtendedSessionsModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
@@ -147,17 +146,8 @@ const USER_CELL_RENDERERS = {
 }
 
 const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
-  const {
-    chartRows,
-    tableRows,
-    costState,
-    totalCount,
-    currentPage,
-    pageSize,
-    loading,
-    error,
-    setPage,
-  } = useCliAnalyticsUsers(filters, repositories)
+  const { chartRows, tableRows, totalCount, currentPage, pageSize, loading, error, setPage } =
+    useCliAnalyticsUsers(filters, repositories)
 
   const [usersTopN, setUsersTopN] = useState<TopN>(TopNFilter.TEN)
   const [selectedTarget, setSelectedTarget] = useState<ExtendedSessionsTarget | null>(null)
@@ -235,8 +225,7 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <CostIncompleteNotice state={costState} />
+      <div className="grid grid-cols-1 lg:grid-cols-1">
         <DonutChartWidget
           metricType={TabularMetricType.CLI_LLMS}
           title="Cost Share by User"
@@ -263,7 +252,6 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
         error={errorDetails}
       >
         <div className="flex flex-col gap-4">
-          <CostIncompleteNotice state={costState} />
           {tableRows.length === 0 && !loading && !error ? (
             <p className="text-text-quaternary text-sm">No user data for the selected filters.</p>
           ) : (

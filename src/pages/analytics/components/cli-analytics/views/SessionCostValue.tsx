@@ -13,14 +13,11 @@
 // limitations under the License.
 //
 
-import { FC, ReactNode } from 'react'
+import { FC } from 'react'
 
 import AlertIcon from '@/assets/icons/alert.svg?react'
 import { ABSENT_VALUE_MARKER } from '@/constants'
 import { formatSpend } from '@/utils/currency'
-
-import { METRIC_VALUE_CLASS_NAME } from '../../widgets/MetricCard'
-import { isCostUnknown, type CostState } from '../costCompleteness'
 
 interface SessionCostValueProps {
   value: number | null | undefined
@@ -64,20 +61,5 @@ const SessionCostValue: FC<SessionCostValueProps> = ({
     </span>
   )
 }
-
-/** A metric card value for a selection total: undefined (the plain value) unless the selection has unpriced models. */
-export const aggregateCostOverride = (
-  value: number | null | undefined,
-  state: CostState
-): ReactNode =>
-  state.incomplete ? (
-    <p className={METRIC_VALUE_CLASS_NAME}>
-      <SessionCostValue
-        value={value}
-        costAvailable={!isCostUnknown(value, state)}
-        unpricedModels={state.unpricedModels}
-      />
-    </p>
-  ) : undefined
 
 export default SessionCostValue

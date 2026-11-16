@@ -27,7 +27,6 @@ import type { ReactNode } from 'react'
 
 vi.mock('../hooks/useCliAnalyticsCost', () => ({
   useCliAnalyticsCost: vi.fn(() => ({
-    costState: { incomplete: false, unpricedModels: [] },
     kpis: {
       total_cost_usd: 12.5,
       total_tokens: 2420000,
@@ -168,7 +167,6 @@ describe('CostView', () => {
 
   it('renders non-summary widgets when kpis are null', () => {
     vi.mocked(useCliAnalyticsCost).mockReturnValueOnce({
-      costState: { incomplete: false, unpricedModels: [] },
       kpis: null,
       costByUser: [],
       costByModel: [],
@@ -186,7 +184,6 @@ describe('CostView', () => {
 
   it('shows an error from the cost hook in the summary widget', () => {
     vi.mocked(useCliAnalyticsCost).mockReturnValueOnce({
-      costState: { incomplete: false, unpricedModels: [] },
       kpis: {
         total_cost_usd: 12.5,
         total_tokens: 2420000,

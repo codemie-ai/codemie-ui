@@ -23,7 +23,6 @@ import OverviewView from '../views/OverviewView'
 // Simulates the CLI Analytics store slice resolving `data: null` (empty/zero backend response).
 vi.mock('../hooks/useCliAnalyticsOverview', () => ({
   useCliAnalyticsOverview: vi.fn(() => ({
-    costState: { incomplete: false, unpricedModels: [] },
     kpis: null,
     dailyBuckets: [],
     modelBreakdown: [],

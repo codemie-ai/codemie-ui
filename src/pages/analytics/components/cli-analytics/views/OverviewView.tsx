@@ -25,7 +25,6 @@ import {
 } from '@/types/analytics'
 import type { ExtendedSessionsTarget, RepositoryRow } from '@/types/cliAnalytics'
 
-import CostIncompleteNotice from './CostIncompleteNotice'
 import ExtendedSessionsModal from './ExtendedSessionsModal'
 import RepositoriesTable from './RepositoriesTable'
 import AnalyticsWidget from '../../AnalyticsWidget'
@@ -39,7 +38,6 @@ import { useCliAnalyticsOverview } from '../hooks/useCliAnalyticsOverview'
 import { useCliAnalyticsRepositories } from '../hooks/useCliAnalyticsRepositories'
 import { useCliAnalyticsUserCount } from '../hooks/useCliAnalyticsUserCount'
 import { buildOverviewSummaryGroups, type OverviewMetricGroup } from '../overviewMetrics'
-import { aggregateCostOverride } from './SessionCostValue'
 
 interface OverviewViewProps {
   filters: AnalyticsQueryParams
@@ -72,7 +70,7 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
     clearSelectionRef.current?.()
   }, [])
 
-  const { kpis, dailyBuckets, modelBreakdown, personalBilledCost, costState, loading, error } =
+  const { kpis, dailyBuckets, modelBreakdown, personalBilledCost, loading, error } =
     useCliAnalyticsOverview(filters, repositories)
 
   const {
@@ -150,10 +148,6 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
           error={errorDetails}
         >
           <div className="flex flex-col gap-4">
-            <CostIncompleteNotice state={costState}>
-              {' '}
-              Missing prices can also affect Subscription Usage and Bloat %.
-            </CostIncompleteNotice>
             {summaryGroups.map((group) => (
               <div
                 key={group.id}
@@ -161,15 +155,7 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
                 className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 max-sm:gap-2"
               >
                 {group.metrics.map((metric) => (
-                  <MetricCard
-                    key={metric.id}
-                    metric={metric}
-                    valueOverride={
-                      metric.id === 'total_cost_usd'
-                        ? aggregateCostOverride(kpis?.total_cost_usd, costState)
-                        : undefined
-                    }
-                  />
+                  <MetricCard key={metric.id} metric={metric} />
                 ))}
               </div>
             ))}

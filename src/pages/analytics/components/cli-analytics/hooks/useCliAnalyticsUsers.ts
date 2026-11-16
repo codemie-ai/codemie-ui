@@ -20,13 +20,11 @@ import { cliAnalyticsStore } from '@/store/cliAnalytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 import type { ChartUserRow, UserRow } from '@/types/cliAnalytics'
 
-import { getCostState, type CostState } from '../costCompleteness'
 import { buildCliAnalyticsParams } from './params'
 
 export interface UseCliAnalyticsUsersResult {
   chartRows: ChartUserRow[]
   tableRows: UserRow[]
-  costState: CostState
   totalCount: number
   currentPage: number
   pageSize: number
@@ -98,7 +96,6 @@ export function useCliAnalyticsUsers(
   return {
     chartRows: snap.users?.table?.chart ?? [],
     tableRows: snap.users?.table?.rows ?? [],
-    costState: getCostState(snap.users?.table),
     totalCount: snap.users?.table?.total_count ?? 0,
     currentPage,
     pageSize,

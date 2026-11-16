@@ -32,7 +32,6 @@ import { cn } from '@/utils/utils'
 
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { buildRepoMetrics, formatLines, formatToolSuccess, linesTitle } from '../format'
-import CostIncompleteNotice from './CostIncompleteNotice'
 import ExtendedSessionsModal from './ExtendedSessionsModal'
 import { useCliAnalyticsProjects } from '../hooks/useCliAnalyticsProjects'
 
@@ -101,7 +100,6 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
   // The server pages projects; each row carries its repositories and their branches.
   const {
     rows: projects,
-    costState,
     loading,
     error,
     page,
@@ -214,7 +212,6 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
         error={error ? { message: error } : null}
       >
         <div className="flex flex-col gap-4">
-          <CostIncompleteNotice state={costState} />
           <input
             type="text"
             placeholder="Search projects or repositories..."
