@@ -1,5 +1,205 @@
 [
   {
+    "version": "2.68.0",
+    "date": "2026-11-16",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Platform Model Management",
+            "description": "Introduces centralized platform model management, including safer bulk-update controls.",
+            "issues": [
+              {
+                "key": "EPMCDME-15077",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15077"
+              }
+            ]
+          },
+          {
+            "title": "New Gemini models",
+            "description": "Adds Gemini Carbon 4 and Gemini 4 Hydrogen models to CodeMie environments.",
+            "issues": [
+              {
+                "key": "EPMCDME-17159",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17159"
+              },
+              {
+                "key": "EPMCDME-17204",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17204"
+              }
+            ]
+          },
+          {
+            "title": "Hosted Applications",
+            "description": "Adds the ability to upload, share, view, and use static HTML or ZIP applications in CodeMie.",
+            "issues": [
+              {
+                "key": "EPMCDME-15659",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15659"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "Standalone CodeMie improvements",
+            "description": "Delivers improvements to the standalone CodeMie experience.",
+            "issues": [
+              {
+                "key": "EPMCDME-15683",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15683"
+              }
+            ]
+          },
+          {
+            "title": "Assistant budget attribution",
+            "description": "Adds an attribution matrix for tracking assistant-related budget usage.",
+            "issues": [
+              {
+                "key": "EPMCDME-16625",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16625"
+              }
+            ]
+          },
+          {
+            "title": "Spend tracking improvements",
+            "description": "Enables backend spend tracking across environments and records repository and branch details in the spend ledger.",
+            "issues": [
+              {
+                "key": "EPMCDME-16761",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16761"
+              },
+              {
+                "key": "EPMCDME-17217",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17217"
+              }
+            ]
+          },
+          {
+            "title": "Security maintenance",
+            "description": "Includes routine security remediation in platform dependencies.",
+            "issues": []
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Budget management performance",
+            "description": "Improves performance when assigning, updating, and overriding budgets for projects with many users.",
+            "issues": [
+              {
+                "key": "EPMCDME-14996",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14996"
+              },
+              {
+                "key": "EPMCDME-16071",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16071"
+              }
+            ]
+          },
+          {
+            "title": "MCP authentication error handling",
+            "description": "Makes MCP authentication discovery failures visible instead of silently ignoring them.",
+            "issues": [
+              {
+                "key": "EPMCDME-14867",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14867"
+              }
+            ]
+          },
+          {
+            "title": "Assistant icon visibility",
+            "description": "Fixes access to uploaded assistant icons for users other than the uploader.",
+            "issues": [
+              {
+                "key": "EPMCDME-16095",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16095"
+              }
+            ]
+          },
+          {
+            "title": "Model selection consistency",
+            "description": "Ensures newly added platform models remain selected for projects configured to use all models.",
+            "issues": [
+              {
+                "key": "EPMCDME-17119",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17119"
+              }
+            ]
+          },
+          {
+            "title": "User project setup",
+            "description": "Corrects default-project setup and activity tracking for users whose email addresses contain uppercase letters.",
+            "issues": [
+              {
+                "key": "EPMCDME-16566",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16566"
+              },
+              {
+                "key": "EPMCDME-17316",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17316"
+              }
+            ]
+          },
+          {
+            "title": "Project model configuration for agents",
+            "description": "Ensures Claude Desktop and CLI agents respect the project model configuration.",
+            "issues": [
+              {
+                "key": "EPMCDME-17163",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17163"
+              }
+            ]
+          },
+          {
+            "title": "CLI Insights cost accuracy",
+            "description": "Aligns user-detail costs with filtered overview and user-row values in CLI Insights.",
+            "issues": [
+              {
+                "key": "EPMCDME-17180",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17180"
+              }
+            ]
+          },
+          {
+            "title": "MCP link validation and recovery",
+            "description": "Strengthens MCP link validation and restores invalid configurations safely.",
+            "issues": [
+              {
+                "key": "EPMCDME-16489",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16489"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.67.0",
     "date": "2026-11-12",
     "sections": [
