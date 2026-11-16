@@ -19,6 +19,7 @@ import { useSnapshot } from 'valtio'
 
 import ConfigureSvg from '@/assets/icons/configure.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
+import RefreshSvg from '@/assets/icons/refresh.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
@@ -62,6 +63,8 @@ const AnalyticsPage: FC = () => {
   const { filters, selectedFilters, handleFilterChange } = useAnalyticsFilters()
   const [showDashboardList, setShowDashboardList] = useState(false)
   const [dashboardsLoaded, setDashboardsLoaded] = useState(false)
+  // Bumped by the Refresh button: remounting the dashboard makes every widget fetch again.
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // Seed user options for pre-selected users arriving via URL (e.g. from the
   // "View analytics" button in ProjectMembersManager) or restored from storage.  Fetched once on mount
@@ -161,6 +164,10 @@ const AnalyticsPage: FC = () => {
 
   const actions = (
     <div className="flex gap-2">
+      <Button variant="secondary" onClick={() => setRefreshKey((key) => key + 1)}>
+        <RefreshSvg />
+        Refresh
+      </Button>
       {isCustomizationEnabled && isCustomDashboard && (
         <Button variant="primary" onClick={handleEditDashboard}>
           <EditSvg />
@@ -198,6 +205,7 @@ const AnalyticsPage: FC = () => {
       <PageLayout title="Analytics Dashboard" rightContent={actions}>
         <div className="min-h-full flex flex-col pb-24 pt-6 min-w-0">
           <AnalyticsDashboard
+            key={refreshKey}
             activeTab={tab}
             filters={filters}
             isLeaderboardEnabled={isLeaderboardEnabled}
