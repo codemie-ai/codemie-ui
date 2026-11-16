@@ -83,9 +83,10 @@ const DefaultModelsSelector: FC<DefaultModelsSelectorProps> = ({
   const modelOptions = useMemo(
     () =>
       models.map((model) => ({
-        label: model.label,
+        label: model.status === 'deprecated' ? `${model.label} (Deprecated)` : model.label,
         value: model.value,
         isPremium: model.isPremium,
+        disabled: model.status === 'deprecated' || model.status === 'disabled',
       })),
     [models]
   )

@@ -16,10 +16,10 @@
 import { FC } from 'react'
 import { Control, Controller, FieldErrors } from 'react-hook-form'
 
-import FormAutocomplete from '@/components/form/FormAutocomplete'
 import Input from '@/components/form/Input'
 
 import { FormValues } from '../hooks/useEditPopupForm'
+import EmbeddingsModelField from './shared/EmbeddingsModelField'
 import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
 
@@ -111,14 +111,7 @@ const IndexTypeXWiki: FC<Props> = ({
         integrationPlaceholder="Integration for xWiki"
       />
 
-      <FormAutocomplete
-        name="embeddingsModel"
-        control={control}
-        id="embeddingsModel"
-        label="Model used for embeddings"
-        options={embeddingModels}
-        placeholder="Embeddings Model Type"
-      />
+      <EmbeddingsModelField control={control} embeddingModels={embeddingModels} />
     </div>
   )
 }

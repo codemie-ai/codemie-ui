@@ -19,11 +19,12 @@ import { useSnapshot } from 'valtio'
 
 import Autocomplete from '@/components/form/Autocomplete'
 import FilesDropzone from '@/components/form/FilesDropzone'
-import FormAutocomplete from '@/components/form/FormAutocomplete'
 import Input from '@/components/form/Input'
 import { CSV_SEPARATORS } from '@/constants/dataSources'
 import { appInfoStore } from '@/store/appInfo'
 import { cn } from '@/utils/utils'
+
+import EmbeddingsModelField from './shared/EmbeddingsModelField'
 
 interface Props {
   control
@@ -125,14 +126,7 @@ const IndexTypeFile: FC<Props> = ({
         </div>
       )}
 
-      <FormAutocomplete
-        name="embeddingsModel"
-        control={control}
-        id="embeddingsModel"
-        label="Model used for embeddings"
-        options={embeddingModels}
-        placeholder="Embeddings Model Type"
-      />
+      <EmbeddingsModelField control={control} embeddingModels={embeddingModels} />
     </div>
   )
 }

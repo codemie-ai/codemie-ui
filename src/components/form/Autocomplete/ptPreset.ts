@@ -50,6 +50,7 @@ const preset: PrimeReactPTOptions['autocomplete'] = {
       'mt-2 py-2 px-0.5 max-w-[400px] shadow-md bg-surface-base-secondary border rounded-lg border border-border-specific-panel-outline flex flex-col-reverse',
   },
   item: ({ context }: AutoCompletePassThroughMethodOptions) => ({
+    'aria-disabled': context.disabled || undefined,
     className: [
       'text-sm rounded-lg py-1.5 pl-2.5 mx-2 text-text-primary cursor-pointer hover:bg-surface-specific-dropdown-hover hover:text-text-accent transition',
       'overflow-hidden whitespace-nowrap truncate',
@@ -65,6 +66,7 @@ const preset: PrimeReactPTOptions['autocomplete'] = {
       // was tried first but is itself only ~1.09:1 against the panel (#212224),
       // effectively invisible.
       { 'bg-surface-specific-dropdown-focused text-text-primary': context.selected },
+      { 'opacity-50 pointer-events-none cursor-default': context.disabled },
     ],
   }),
   list: { className: 'show-scroll max-h-[200px] overflow-auto' },

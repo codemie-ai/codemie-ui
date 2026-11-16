@@ -38,6 +38,13 @@ const { mockAppInfoStore } = vi.hoisted(() => ({
     llmModels: [
       { label: 'Claude Opus 4.1', value: 'claude-opus-4-1', isDefault: false, isPremium: true },
       { label: 'GPT-4o', value: 'gpt-4o', isDefault: true },
+      {
+        label: 'Old Model',
+        value: 'old-model',
+        isDefault: false,
+        isPremium: false,
+        status: 'deprecated' as const,
+      },
     ],
     llmRouters: [] as LLMRouterOption[],
     imageGenerationModels: [],
@@ -54,6 +61,47 @@ vi.mock('valtio', () => ({
   subscribe: vi.fn(),
 }))
 vi.mock('@/store/appInfo', () => ({ appInfoStore: mockAppInfoStore }))
+
+describe('LLMSelector deprecated indication', () => {
+  it('shows a Deprecated meta line for a deprecated model option', () => {
+    const { container } = render(<LLMSelector value="gpt-4o" onChange={vi.fn()} allowEmpty />)
+
+    const trigger = container.querySelector('.p-multiselect')!
+    fireEvent.click(trigger)
+
+    const rows = document.querySelectorAll<HTMLElement>('[data-testid="llm-option-row"]')
+    const deprecatedRow = Array.from(rows).find((row) => row.textContent?.includes('Old Model'))
+    expect(deprecatedRow).not.toBeNull()
+    const meta = deprecatedRow!.querySelector('[data-testid="llm-option-meta"]')
+    expect(meta).not.toBeNull()
+    expect(meta!.textContent).toContain('Deprecated')
+  })
+
+  it('shows no Deprecated meta line for an enabled model option', () => {
+    const { container } = render(<LLMSelector value="gpt-4o" onChange={vi.fn()} allowEmpty />)
+
+    const trigger = container.querySelector('.p-multiselect')!
+    fireEvent.click(trigger)
+
+    const rows = document.querySelectorAll<HTMLElement>('[data-testid="llm-option-row"]')
+    const enabledRow = Array.from(rows).find((row) => row.textContent?.includes('GPT-4o'))
+    expect(enabledRow).not.toBeNull()
+    const meta = enabledRow!.querySelector('[data-testid="llm-option-meta"]')
+    expect(meta).toBeNull()
+  })
+
+  it('disables the deprecated option so it cannot be selected for new work', () => {
+    const { container } = render(<LLMSelector value="gpt-4o" onChange={vi.fn()} allowEmpty />)
+
+    const trigger = container.querySelector('.p-multiselect')!
+    fireEvent.click(trigger)
+
+    const allItems = document.querySelectorAll('.p-multiselect-item')
+    const deprecatedItem = Array.from(allItems).find((el) => el.textContent?.includes('Old Model'))
+    expect(deprecatedItem).not.toBeNull()
+    expect(deprecatedItem).toHaveClass('p-disabled')
+  })
+})
 
 // The indication itself is unchanged — a premium selection says so on the closed
 // surface and a standard one says nothing. Only the wording moved: the badge

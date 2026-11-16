@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "flow": "sdlc-standard",
+  "slug": "admin-ui",
+  "branch": "EPMCDME-15077_model-management_FE",
+  "phase": "maintenance",
+  "started_at": "2026-09-21T00:00:00Z",
+  "completed_at": "2026-09-21T11:43:00Z",
+  "last_sync_commit": "0b2223bff"
+}

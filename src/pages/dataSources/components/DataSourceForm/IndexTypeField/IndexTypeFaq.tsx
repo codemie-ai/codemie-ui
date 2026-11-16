@@ -16,11 +16,11 @@
 import { FC } from 'react'
 import { Controller } from 'react-hook-form'
 
-import FormAutocomplete from '@/components/form/FormAutocomplete'
 import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import { INDEX_TYPES } from '@/constants/dataSources'
 
+import EmbeddingsModelField from './shared/EmbeddingsModelField'
 import FilesFilterField from './shared/FilesFilterField'
 import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
@@ -104,15 +104,7 @@ const IndexTypeFaq: FC<Props> = ({
           or plain markdown with a heading title."
       />
 
-      <FormAutocomplete
-        name="embeddingsModel"
-        control={control}
-        id="embeddingsModel"
-        label="Model used for embeddings"
-        options={embeddingModels}
-        placeholder="Embeddings Model Type"
-        className="mt-0"
-      />
+      <EmbeddingsModelField control={control} embeddingModels={embeddingModels} className="mt-0" />
 
       <IntegrationSection
         // FAQ datasources authenticate with Git credentials — resolve the

@@ -458,6 +458,7 @@ describe('appInfoStore.getLLMModels', () => {
       defaultForCategories: ['reasoning'],
       cost: { input: 0.000015, output: 0.000075 },
       cliOnly: false,
+      status: 'enabled',
     })
     expect(models[1].isPremium).toBeUndefined()
     expect(models[1].cost).toBeUndefined()
@@ -483,6 +484,7 @@ describe('appInfoStore.getLLMModels routers', () => {
         },
         {
           base_name: 'smart-router',
+          status: 'deprecated',
           label: 'Smart Router',
           is_router: true,
           provider: 'azure_openai',
@@ -510,6 +512,7 @@ describe('appInfoStore.getLLMModels routers', () => {
     expect(appInfoStore.llmRouters).toHaveLength(1)
     expect(appInfoStore.llmRouters[0]).toEqual({
       value: 'smart-router',
+      status: 'deprecated',
       label: 'Smart Router',
       provider: 'azure_openai',
       isPremium: true,

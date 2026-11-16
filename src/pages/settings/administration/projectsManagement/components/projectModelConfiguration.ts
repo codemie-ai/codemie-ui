@@ -60,7 +60,15 @@ export const selectionToSettings = (
     return {
       ...base,
       mode: 'allow_list',
-      models: entries.filter(([, value]) => value === 'enabled').map(([model]) => model),
+      // Hidden platform models retain their saved project permissions until explicitly changed.
+      models: [
+        ...new Set([
+          ...(base.mode === 'allow_list'
+            ? base.models.filter((model) => !(model in selection))
+            : []),
+          ...entries.filter(([, value]) => value === 'enabled').map(([model]) => model),
+        ]),
+      ],
     }
   }
   const disabled = entries.filter(([, value]) => value === 'disabled').map(([model]) => model)

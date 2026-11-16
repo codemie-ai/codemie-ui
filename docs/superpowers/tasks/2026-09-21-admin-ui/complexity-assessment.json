@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "task": "Add a new flat admin route /settings/administration/models listing all platform models with their status, with row actions to set Enable/Disable/Deprecated per model, following the ProvidersManagementPage.tsx pattern.",
+  "generated": "2026-09-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 14,
+  "size": "S",
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four to five new/modified frontend components: ModelsManagementPage, ModelActions row-actions component, a new Valtio store, router.tsx registration, and AdministrationPage.tsx card/nav entry. ProvidersManagementPage.tsx is a direct structural analog, so coordination is clear but the count of components crosses into M."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Estimated 7–8 files: new ModelsManagementPage.tsx, ModelActions.tsx, Valtio store file, test file, and types/constants file; modified router.tsx, AdministrationPage.tsx, and possibly a barrel index. Spans three directories — pages/settings/administration/, store/, and the router root — pushing this into L."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

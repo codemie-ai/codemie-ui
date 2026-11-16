@@ -1,0 +1,30 @@
+{
+  "findings_fixed": [
+    {
+      "id": "CR-009",
+      "file": "src/pages/help/ModelsCatalog/ModelsCatalogPage.tsx",
+      "line": 56,
+      "change": "Changed deprecatedCount to count from `filtered` instead of `llmModels`, so the summary stat matches the visible rows when provider/search/premiumOnly filters are active."
+    },
+    {
+      "id": "CR-010",
+      "file": "src/pages/help/ModelsCatalog/ModelsCatalogPage.tsx",
+      "line": 163,
+      "change": "Added a second conditional chip for `status === 'disabled'` using muted styling (text-text-tertiary border-border-secondary, labelled 'Disabled'), so disabled models are visually distinct from active ones in the Status column."
+    }
+  ],
+  "tests_added": [
+    {
+      "file": "src/pages/help/ModelsCatalog/__tests__/ModelsCatalogPage.test.tsx",
+      "case": "deprecated count in summary reflects filtered rows, not the full list",
+      "covers": "CR-009"
+    },
+    {
+      "file": "src/pages/help/ModelsCatalog/__tests__/ModelsCatalogPage.test.tsx",
+      "case": "renders a Disabled badge for a model with status disabled",
+      "covers": "CR-010"
+    }
+  ],
+  "test_command": "npx vitest run --project unit src/pages/help/ModelsCatalog/__tests__/ModelsCatalogPage.test.tsx",
+  "test_result": "10 passed, 0 failed"
+}

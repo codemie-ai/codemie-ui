@@ -16,7 +16,6 @@
 import { FC } from 'react'
 import { Controller } from 'react-hook-form'
 
-import FormAutocomplete from '@/components/form/FormAutocomplete'
 import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Link from '@/components/Link'
@@ -24,6 +23,7 @@ import { INDEX_TYPES } from '@/constants/dataSources'
 import { GOOGLE_OAUTH_CREDENTIAL_TYPE } from '@/constants/integration'
 import { Setting } from '@/types/entity/setting'
 
+import EmbeddingsModelField from './shared/EmbeddingsModelField'
 import IntegrationSection from './shared/IntegrationSection'
 import { useIntegrationManager } from './shared/useIntegrationManager'
 
@@ -123,15 +123,7 @@ const IndexTypeGoogle: FC<Props> = ({
         </div>
       </div>
 
-      <FormAutocomplete
-        name="embeddingsModel"
-        control={control}
-        id="embeddingsModel"
-        label="Model used for embeddings"
-        options={embeddingModels}
-        placeholder="Embeddings Model Type"
-        className="mt-0"
-      />
+      <EmbeddingsModelField control={control} embeddingModels={embeddingModels} className="mt-0" />
     </div>
   )
 }

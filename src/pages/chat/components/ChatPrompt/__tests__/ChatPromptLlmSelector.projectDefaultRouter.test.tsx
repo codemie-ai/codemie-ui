@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -68,9 +68,7 @@ vi.mock('primereact/overlaypanel', () => ({
   }),
 }))
 
-// Not marked isDefault — defaultRouter (the globally-default router) must stay
-// null so this scenario exercises the project-default-is-a-router path, not
-// the pre-existing "a router wins globally" guard.
+// The router is selected by the project's default, rather than a platform isDefault flag.
 const ROUTER: LLMRouterOption = {
   value: 'smart-router',
   label: 'Smart Router',
@@ -120,15 +118,12 @@ describe('ChatPromptLlmSelector — project default stored as a router (CR-001)'
 
     render(<ChatPromptLlmSelector />)
 
-    await waitFor(() => {
-      const recommendedRow = document.getElementById('chat-llm-selector-option-recommended')
-      expect(recommendedRow).toHaveTextContent('Smart Router')
+    const recommendedRouter = await screen.findByRole('option', {
+      name: 'Smart Router Recommended',
     })
-
-    // Not the generic isDefault model fallback.
-    expect(screen.queryByRole('option', { name: /^GPT-4$/ })).toBeInTheDocument()
-    const recommendedRow = document.getElementById('chat-llm-selector-option-recommended')
-    expect(recommendedRow).not.toHaveTextContent('GPT-4')
+    expect(recommendedRouter).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /^GPT-4$/ })).toBeInTheDocument()
+    expect(document.getElementById('chat-llm-selector-option-recommended')).toBeNull()
   })
 
   it('does not also render the router as a duplicate plain row', async () => {
@@ -136,15 +131,57 @@ describe('ChatPromptLlmSelector — project default stored as a router (CR-001)'
 
     render(<ChatPromptLlmSelector />)
 
-    await waitFor(() => {
-      const recommendedRow = document.getElementById('chat-llm-selector-option-recommended')
-      expect(recommendedRow).toHaveTextContent('Smart Router')
-    })
-
-    expect(document.getElementById('chat-llm-selector-router-option-smart-router')).toBeNull()
+    await screen.findByRole('option', { name: 'Smart Router Recommended' })
+    expect(screen.getAllByRole('option', { name: /Smart Router/ })).toHaveLength(1)
   })
 
-  it('still lets the global router-default guard win when a router is marked isDefault', async () => {
+  it('prefers an enabled project model over the platform default router', async () => {
+    mockChatsStore.filteredRouters = [{ ...ROUTER, isDefault: true }]
+    mockProjectsStore.getProject.mockResolvedValue({ default_model: 'claude-2' })
+    mockChatsStore.currentChat = chat(null)
+
+    render(<ChatPromptLlmSelector />)
+
+    expect(await screen.findByRole('option', { name: 'Claude-2 Recommended' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Smart Router' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('option', { name: 'Smart Router Recommended' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('preserves deprecated status when the project default resolves to a router', async () => {
+    mockAppInfoStore.llmRouters = [{ ...ROUTER, status: 'deprecated' }]
+    mockChatsStore.filteredRouters = mockAppInfoStore.llmRouters
+    mockChatsStore.currentChat = chat(null)
+
+    render(<ChatPromptLlmSelector />)
+
+    await waitFor(() => {
+      const recommendedRow = screen.getByRole('option', { name: /Smart Router/ })
+      expect(recommendedRow).toHaveTextContent('Deprecated')
+      expect(recommendedRow).toBeDisabled()
+    })
+
+    fireEvent.click(screen.getByRole('option', { name: /Smart Router/ }))
+    expect(mockChatsStore.updateChat).not.toHaveBeenCalled()
+  })
+
+  it('keeps a deprecated router disabled when searching removes the recommended row', async () => {
+    mockAppInfoStore.llmRouters = [{ ...ROUTER, status: 'deprecated' }]
+    mockChatsStore.filteredRouters = mockAppInfoStore.llmRouters
+    mockChatsStore.currentChat = chat(null)
+
+    render(<ChatPromptLlmSelector />)
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Smart' } })
+
+    const routerRow = screen.getByRole('option', { name: /Smart Router/ })
+    expect(routerRow).toHaveTextContent('Deprecated')
+    expect(routerRow).toBeDisabled()
+    fireEvent.click(routerRow)
+    expect(mockChatsStore.updateChat).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the platform default router when the project default is unavailable', async () => {
     mockAppInfoStore.llmRouters = [{ ...ROUTER, isDefault: true, value: 'global-router' }]
     mockChatsStore.filteredRouters = mockAppInfoStore.llmRouters
     mockProjectsStore.getProject.mockResolvedValue({ default_model: 'smart-router' })
@@ -156,7 +193,7 @@ describe('ChatPromptLlmSelector — project default stored as a router (CR-001)'
       expect(mockProjectsStore.getProject).toHaveBeenCalled()
     })
 
-    // defaultRouter guard still returns null for defaultModel first — no recommended row at all.
+    // The unavailable project default falls back to the platform router in the Routers section.
     expect(document.getElementById('chat-llm-selector-option-recommended')).toBeNull()
     expect(screen.getByRole('option', { name: /Smart Router Recommended/ })).toBeInTheDocument()
   })

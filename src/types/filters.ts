@@ -30,6 +30,7 @@ export interface FilterOption {
   id?: string
   badge?: string
   isPremium?: boolean
+  disabled?: boolean
 }
 
 export interface SelectOption<

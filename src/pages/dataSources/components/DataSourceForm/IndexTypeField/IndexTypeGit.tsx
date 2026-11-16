@@ -31,6 +31,7 @@ import { cn } from '@/utils/utils'
 import EmbeddingsModelField from './shared/EmbeddingsModelField'
 import FilesFilterField from './shared/FilesFilterField'
 import IntegrationSection from './shared/IntegrationSection'
+import { getModelOptions, renderModelOption } from './shared/modelOptions'
 import { useIntegrationManager } from './shared/useIntegrationManager'
 
 interface Props {
@@ -162,7 +163,8 @@ const IndexTypeGit: FC<Props> = ({
                     onChange={summaryField.onChange}
                     name="summarizationModel"
                     label="Model used for summary generation"
-                    options={llmModels}
+                    options={getModelOptions(llmModels)}
+                    itemTemplate={renderModelOption}
                     placeholder="Summarization Model Type"
                   />
                 )}

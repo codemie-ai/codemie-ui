@@ -113,6 +113,12 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
             },
           ]
         : []),
+      {
+        id: SettingsTab.MODELS_MANAGEMENT,
+        name: 'Model management',
+        title: 'Model management',
+        url: '/settings/administration/models',
+      },
       ...(ctx.isEnterprise ? getEnterpriseAdminItems(ctx.isMcpFeatureEnabled) : []),
     ].sort((a, b) => a.name.localeCompare(b.name))
   }

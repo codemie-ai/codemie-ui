@@ -56,6 +56,7 @@ const referenceKeys = [
   'onPaginationChange',
   'selected',
   'isAllSelected',
+  'isRowSelectable',
   'onToggleExpand',
   'renderExpandedRow',
   'onRowClick',
@@ -63,6 +64,7 @@ const referenceKeys = [
   'rowTestIdPrefix',
   'emptyState',
   'paginationTestId',
+  'rowClassName',
 ] as const satisfies ReadonlyArray<keyof TableProps<unknown>>
 
 // Props compared by value, since callers commonly pass a fresh object/array each render.

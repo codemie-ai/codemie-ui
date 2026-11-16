@@ -22,20 +22,24 @@ interface ModelMetaLineProps {
   isPremium?: boolean
   /** Hidden from web chat (forbidden_for_web); offered only through CodeMie CLI and its connectors. */
   cliOnly?: boolean
+  /** Retired by an admin; still visible in history but not newly selectable. */
+  isDeprecated?: boolean
   className?: string
   testId?: string
 }
 
 /**
  * The second line under a model name: "Router" in blue, "Premium" in amber, "CLI only" in grey,
- * joined with " · ". The same line in every model list, so a router, a premium model and a
- * CLI-only one read the same way in pickers, the project model table and the help catalog.
- * Pass isPremium only where premium has no badge of its own. Renders nothing when no flag is set.
+ * "Deprecated" in red, joined with " · ". The same line in every model list, so a router, a
+ * premium model and a CLI-only one read the same way in pickers, the project model table and the
+ * help catalog. Pass isPremium only where premium has no badge of its own. Renders nothing when
+ * no flag is set.
  */
 const ModelMetaLine: FC<ModelMetaLineProps> = ({
   isRouter = false,
   isPremium = false,
   cliOnly = false,
+  isDeprecated = false,
   className = '',
   testId = 'model-meta-line',
 }) => {
@@ -58,6 +62,11 @@ const ModelMetaLine: FC<ModelMetaLineProps> = ({
         data-tooltip-content={CLI_ONLY_MODEL_TOOLTIP}
       >
         CLI only
+      </span>
+    ),
+    isDeprecated && (
+      <span key="deprecated" className="text-not-started-primary">
+        Deprecated
       </span>
     ),
   ].filter(Boolean)

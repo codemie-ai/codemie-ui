@@ -8,20 +8,12 @@ import Input from '@/components/form/Input'
 import Select from '@/components/form/Select'
 import PageLayout from '@/components/Layouts/Layout'
 import PremiumModelBadge from '@/components/PremiumModelBadge'
+import StatusBadge, { StatusEnum } from '@/components/StatusBadge'
 import { appInfoStore } from '@/store/appInfo'
+import { PROVIDER_LABELS, formatCost } from '@/utils/modelCatalog'
 import { cn } from '@/utils/utils'
 
 import RoutersSection from './components/RoutersSection'
-import { PROVIDER_LABELS } from './constants'
-
-const formatCost = (cost?: { input: number; output: number }) =>
-  cost ? `$${(cost.input * 1_000_000).toFixed(2)} / $${(cost.output * 1_000_000).toFixed(2)}` : '—'
-
-const getDefaultFor = (model: any) => {
-  if (model.value === 'GPT-4.1 2025-04-14') return 'global'
-  if (model.value === 'GPT-5 2025-08-07') return 'CLI'
-  return '—'
-}
 
 const ReadOnlyModelsCatalogPage: FC = () => {
   // The full catalog: web models, plus routers marked CLI only.
@@ -128,10 +120,13 @@ const ReadOnlyModelsCatalogPage: FC = () => {
               {filtered.map((m) => (
                 <tr key={m.value} className={cn(m.isPremium && 'bg-yellow-500/5')}>
                   <td className="break-words px-4 py-3 font-medium text-text-primary">
-                    <span className="flex items-center gap-2">
-                      {m.label}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span>{m.label}</span>
                       {m.isPremium && <PremiumModelBadge />}
-                    </span>
+                      {m.status === 'deprecated' && (
+                        <StatusBadge status={StatusEnum.NotStarted} text="Deprecated" />
+                      )}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-text-quaternary">
                     {(m.provider && (PROVIDER_LABELS[m.provider] ?? m.provider)) || '—'}
@@ -169,7 +164,9 @@ const ReadOnlyModelsCatalogPage: FC = () => {
                       {formatCost(m.cost)}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-text-quaternary">{getDefaultFor(m)}</td>
+                  <td className="px-4 py-3 text-text-quaternary">
+                    {m.defaultForCategories?.join(', ') || '—'}
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (

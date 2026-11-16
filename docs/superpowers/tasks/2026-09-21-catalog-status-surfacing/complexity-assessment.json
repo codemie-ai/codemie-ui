@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "task": "Extend ModelsCatalogPage and model-list consumers to display new read-only status field, factoring out PROVIDER_LABELS/cost-formatting duplication shared with unmerged AvailableModelsSection.",
+  "generated": "2026-09-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 14,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Touches ModelsCatalogPage.tsx, a new shared helper module for PROVIDER_LABELS/cost-formatting, and the LLMSelector family consumers — 3–4 components but all within the UI layer of one repo; no layer boundary crossed beyond a utility extraction."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "Slice scope is clearly bounded (read-only status display, no mutations), but the backend API field name is an unresolved contract dependency explicitly noted in Section 9, and it is unclear which LLMSelector consumers need display changes and how — 1–2 minor design decisions remain open."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "Estimated 5–7 files: ModelsCatalogPage.tsx (modify), new shared helper module (new), AvailableModelsSection.tsx on sibling branch (modify to import shared helper), ModelsCatalogPage.test.tsx (extend), and up to 3 consumer test files that assert on model list shape — spanning src/pages/help/ModelsCatalog/ and src/utils/ (or similar), across 2 directories."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

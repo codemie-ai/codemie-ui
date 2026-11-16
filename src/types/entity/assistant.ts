@@ -140,7 +140,13 @@ export interface Assistant {
   /** Single switch enabling the A2UI interactive catalog for this assistant. */
   interactive_enabled?: boolean
   effective_llm_model?: string | null
-  effective_llm_model_source?: 'assistant' | 'project_default' | null
+  effective_llm_model_source?:
+    | 'assistant'
+    | 'project_default'
+    | 'platform_fallback'
+    | 'unavailable'
+    | null
+  effective_llm_model_reason?: string | null
   /** When true the backend serves only the final response to end users. */
   hide_tool_outputs?: boolean
   system_prompt_history: {

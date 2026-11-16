@@ -47,6 +47,8 @@ const toDraft = (
   defaultModel: settings.default_model ?? globalDefault,
 })
 
+const canSelectDefault = (model: ModelOption) => !model.status || model.status === 'enabled'
+
 const isSameDraft = (a: DraftState, b: DraftState) =>
   a.defaultModel === b.defaultModel &&
   Object.keys({ ...a.selection, ...b.selection }).every(
@@ -60,6 +62,7 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
   const [initialDraft, setInitialDraft] = useState<DraftState | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [resetRequested, setResetRequested] = useState(false)
   const [navigationDialogVisible, setNavigationDialogVisible] = useState(false)
 
   // CLI-only routers can be allowed, but web chat starts on the default, so it must be a web model.
@@ -67,8 +70,8 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
   const checklistModels = useMemo(() => getChecklistModels(catalog), [catalog])
   const globalDefaultModel = useMemo(
     () =>
-      defaultModelCandidates.find((model) => model.isDefault)?.value ??
-      defaultModelCandidates[0]?.value ??
+      defaultModelCandidates.find((model) => canSelectDefault(model) && model.isDefault)?.value ??
+      defaultModelCandidates.find(canSelectDefault)?.value ??
       '',
     [defaultModelCandidates]
   )
@@ -90,7 +93,7 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
         // Web models plus CLI-only routers: a project's selection also decides what CodeMie CLI
         // and the apps it connects (e.g. Claude Desktop) offer.
         const platformCatalog = [...models, ...routers.map(routerToModelOption)]
-        const configurable = getDefaultModelCandidates(platformCatalog)
+        const configurable = getDefaultModelCandidates(platformCatalog).filter(canSelectDefault)
         const checklist = getChecklistModels(platformCatalog)
         const globalDefault =
           configurable.find((model) => model.isDefault)?.value ?? configurable[0]?.value ?? ''
@@ -99,6 +102,7 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
         setSavedSettings(settings)
         setDraft(nextDraft)
         setInitialDraft(nextDraft)
+        setResetRequested(false)
       })
       .catch((error) => {
         console.error('Failed to load project model settings:', error)
@@ -109,14 +113,27 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
     }
   }, [projectName])
 
-  const hasChanges = !!draft && !!initialDraft && !isSameDraft(draft, initialDraft)
+  const hasHiddenConfiguredModels =
+    !!draft &&
+    savedSettings?.mode === 'allow_list' &&
+    savedSettings.models.some((model) => !(model in draft.selection))
+  const hasChanges =
+    !!draft &&
+    !!initialDraft &&
+    (!isSameDraft(draft, initialDraft) || (resetRequested && hasHiddenConfiguredModels))
   const defaultsDraft = useMemo(
     () => toDraft(DEFAULT_PROJECT_MODEL_SETTINGS, checklistModels, globalDefaultModel),
     [globalDefaultModel, checklistModels]
   )
-  const isAtDefaults = !!draft && isSameDraft(draft, defaultsDraft)
+  const isAtDefaults =
+    !!draft && isSameDraft(draft, defaultsDraft) && (!hasHiddenConfiguredModels || resetRequested)
   const availableModels = draft
-    ? defaultModelCandidates.filter((model) => isModelAvailable(model, draft.selection, false))
+    ? defaultModelCandidates.filter(
+        (model) =>
+          isModelAvailable(model, draft.selection, false) &&
+          (canSelectDefault(model) ||
+            (model.status === 'deprecated' && model.value === savedSettings?.default_model))
+      )
     : []
   const checklistAvailableCount = draft
     ? checklistModels.filter((model) => isModelAvailable(model, draft.selection, false)).length
@@ -168,11 +185,13 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
 
   const resetToDefaults = () => {
     setDraft(defaultsDraft)
+    setResetRequested(true)
   }
 
   const applySaved = (saved: ProjectModelSettings) => {
     const savedDraft = toDraft(saved, checklistModels, globalDefaultModel)
     setSavedSettings(saved)
+    setResetRequested(false)
     setDraft(savedDraft)
     setInitialDraft(savedDraft)
   }
@@ -217,7 +236,10 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
   const saveChanges = async () => {
     if (!draft || !hasChanges || !defaultIsValid) return false
 
-    if (isSameDraft(draft, defaultsDraft)) return persistReset()
+    // Only an explicit reset may remove permissions for currently hidden platform models.
+    if (isSameDraft(draft, defaultsDraft) && (!hasHiddenConfiguredModels || resetRequested)) {
+      return persistReset()
+    }
     return persistDraft(draft)
   }
 
@@ -228,6 +250,7 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
 
   const discardChangesAndNavigate = () => {
     setDraft(initialDraft)
+    setResetRequested(false)
     setNavigationDialogVisible(false)
     blocker.proceed?.()
   }

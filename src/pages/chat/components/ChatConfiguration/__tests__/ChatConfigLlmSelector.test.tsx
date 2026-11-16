@@ -16,6 +16,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import type { ModelOption } from '@/types/entity/configuration'
 import { Conversation } from '@/types/entity/conversation'
 
 import ChatConfigLlmSelector from '../ChatConfigLlmSelector'
@@ -41,7 +42,7 @@ const { mockChatsStore, mockAppInfoStore } = vi.hoisted(() => {
         { label: 'GPT-4', value: 'gpt-4', isDefault: true },
         { label: 'GPT-3.5', value: 'gpt-3.5-turbo', isDefault: false },
         { label: 'Claude-2', value: 'claude-2', isDefault: false },
-      ],
+      ] as ModelOption[],
       llmRouters: [],
       projectLlmModels: {} as Record<string, { label: string; value: string }[]>,
       imageGenerationModels: [{ label: 'GPT Image 1', value: 'gpt-image-1', isDefault: true }],
@@ -240,5 +241,38 @@ describe('ChatConfigLlmSelector', () => {
 
     expect(screen.queryByText('Backend Pipeline Model')).not.toBeInTheDocument()
     expect(screen.queryByText('GPT-4')).not.toBeInTheDocument()
+  })
+
+  it('disables the deprecated model option and labels it Deprecated', () => {
+    const models = [
+      { label: 'GPT-4', value: 'gpt-4', isDefault: true },
+      {
+        label: 'Old Model',
+        value: 'old-model',
+        isDefault: false,
+        status: 'deprecated' as const,
+      },
+    ]
+    mockAppInfoStore.llmModels = models
+    // The chat is project-scoped, so options come from chatsStore.filteredModels, not
+    // appInfoStore directly — leaving it empty renders no options at all.
+    mockChatsStore.filteredModelsProjectId = 'project-123'
+    mockChatsStore.filteredModels = models
+    mockChatsStore.currentChat = mockChat
+    const { container } = render(<ChatConfigLlmSelector />)
+
+    const trigger = container.querySelector('.p-multiselect')!
+    fireEvent.click(trigger)
+
+    const allItems = document.querySelectorAll('.p-multiselect-item')
+    const deprecatedItem = Array.from(allItems).find((el) => el.textContent?.includes('Old Model'))
+    expect(deprecatedItem).toBeDefined()
+    // EPMCDME-15078 made deprecated models unselectable for new work.
+    expect(deprecatedItem).toHaveClass('p-disabled')
+
+    const row = deprecatedItem!.querySelector('[data-testid="llm-option-row"]')
+    expect(row?.querySelector('[data-testid="llm-option-meta"]')?.textContent).toContain(
+      'Deprecated'
+    )
   })
 })

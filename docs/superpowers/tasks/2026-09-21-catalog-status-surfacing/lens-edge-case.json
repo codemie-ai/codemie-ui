@@ -1,0 +1,86 @@
+[
+  {
+    "location": "src/utils/modelCatalog.ts:27",
+    "trigger_condition": "ModelStatus type uses 'enabled' but spec and API contract use 'active'",
+    "guard_snippet": "export type ModelStatus = 'active' | 'deprecated' | 'disabled'",
+    "potential_consequence": "Type diverges from API contract; 'active' values never match ModelStatus literal"
+  },
+  {
+    "location": "src/types/entity/configuration.ts:47",
+    "trigger_condition": "ModelOption.status typed 'enabled' | 'deprecated' | 'disabled' instead of 'active'",
+    "guard_snippet": "status?: 'active' | 'deprecated' | 'disabled'",
+    "potential_consequence": "API response value 'active' is not assignable; store default 'enabled' also mismatches spec"
+  },
+  {
+    "location": "src/store/appInfo.ts:337",
+    "trigger_condition": "Default fallback stores 'enabled' but spec requires default to be 'active'",
+    "guard_snippet": "status: model.status ?? 'active',",
+    "potential_consequence": "Absent-status models stored as 'enabled'; catalog filter compares against 'deprecated' so they pass, but type contract and spec are violated"
+  },
+  {
+    "location": "src/pages/help/ModelsCatalog/ModelsCatalogPage.tsx:51",
+    "trigger_condition": "Filter nullish-coalesces status to 'enabled' to compare against 'deprecated'",
+    "guard_snippet": "(showDeprecated || (m.status ?? 'active') !== 'deprecated')",
+    "potential_consequence": "If spec's default 'active' is ever enforced, the coalesce to 'enabled' is redundant dead code; currently harmless but misleading"
+  },
+  {
+    "location": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx:107",
+    "trigger_condition": "OptionMeta renders isPremium and isDeprecated without separator between them",
+    "guard_snippet": "{isPremium && isDeprecated && ' · '} before the Deprecated span",
+    "potential_consequence": "A model that is both premium and deprecated renders 'PremiumDeprecated' with no visual separator"
+  },
+  {
+    "location": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx:254-261",
+    "trigger_condition": "OPTION_ID_RECOMMENDED item rendered without status; defaultModel may be deprecated",
+    "guard_snippet": "pass recommended={true} status={defaultModel.status} to ModelOptionRow for the recommended slot",
+    "potential_consequence": "A deprecated default model shown in 'Recommended' slot without Deprecated label"
+  },
+  {
+    "location": "src/components/SearchableCombobox/SearchableCombobox.tsx:130-136",
+    "trigger_condition": "ArrowUp/ArrowDown navigation stops on disabled items; user cannot skip past them",
+    "guard_snippet": "skip disabled indices in the ArrowDown/ArrowUp handler before calling setHighlightedIndex",
+    "potential_consequence": "Keyboard navigation halts at a deprecated item; Enter press at that index silently no-ops"
+  },
+  {
+    "location": "src/components/SearchableCombobox/SearchableCombobox.tsx:209-210",
+    "trigger_condition": "disabled button has role='option' with no aria-disabled attribute",
+    "guard_snippet": "aria-disabled={item.disabled ?? false} alongside the disabled prop",
+    "potential_consequence": "Screen readers see a focusable option with no accessible disabled state; ARIA pattern violated"
+  },
+  {
+    "location": "src/pages/help/ModelsCatalog/ModelsCatalogPage.tsx:56",
+    "trigger_condition": "deprecatedCount counts all deprecated models, not only those matching current filters",
+    "guard_snippet": "const deprecatedCount = filtered.filter((m) => m.status === 'deprecated').length (or use llmModels consistently and document intent)",
+    "potential_consequence": "Summary line says N deprecated while none are visible even with showDeprecated=true + provider filter active"
+  },
+  {
+    "location": "src/pages/help/ModelsCatalog/ModelsCatalogPage.tsx:160-179",
+    "trigger_condition": "Status cell renders empty (no element) for 'enabled' and 'disabled' — 'disabled' is a live enum value",
+    "guard_snippet": "add an else branch or chip for status === 'disabled' if backend ever surfaces it",
+    "potential_consequence": "A 'disabled' model shows no Status badge despite having a non-default lifecycle status"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx:88",
+    "trigger_condition": "disabled: status === 'deprecated' also fires for status === 'disabled'; spec says treat both the same display-wise",
+    "guard_snippet": "disabled: status === 'deprecated' || status === 'disabled'",
+    "potential_consequence": "'disabled' status models remain selectable in assistant form selector despite spec intent"
+  },
+  {
+    "location": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx:180",
+    "trigger_condition": "disabled: m.status === 'deprecated' does not cover status === 'disabled'",
+    "guard_snippet": "disabled: m.status === 'deprecated' || m.status === 'disabled'",
+    "potential_consequence": "'disabled' status models remain selectable in chat prompt selector"
+  },
+  {
+    "location": "src/pages/assistants/components/AssistantForm/components/__tests__/LLMSelector.test.tsx:172-183",
+    "trigger_condition": "Test asserts '.p-disabled' class but SearchableCombobox sets HTML disabled, not a CSS class",
+    "guard_snippet": "assert button[disabled] or use toBeDisabled() matcher instead of class-name sniff",
+    "potential_consequence": "Test may pass vacuously or target wrong element; real disabled state unverified"
+  },
+  {
+    "location": "src/pages/chat/components/ChatConfiguration/__tests__/ChatConfigLlmSelector.test.tsx:235-239",
+    "trigger_condition": "Test asserts '.p-disabled' class; same mismatch as LLMSelector.test.tsx",
+    "guard_snippet": "assert toBeDisabled() on the rendered option button instead",
+    "potential_consequence": "Test does not actually verify the option is disabled; regression possible"
+  }
+]

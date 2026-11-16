@@ -1,0 +1,127 @@
+{
+  "decision": "approve",
+  "rationale": "Both previously unresolved findings are now fixed: CR-009 computes deprecatedCount from filtered (line 56), and CR-010 renders a Disabled chip for status === 'disabled' (lines 174-183). All 11 prior blocking findings are resolved; no deferred findings.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "implementation",
+      "item": "src/utils/modelCatalog.ts exports PROVIDER_LABELS, formatCost, and ModelStatus; no other file defines its own copy",
+      "status": "partial",
+      "notes": "File created and exports all three. ModelStatus uses 'enabled' where spec requires 'active'."
+    },
+    {
+      "kind": "implementation",
+      "item": "ModelOption.status is typed 'active' | 'deprecated' | 'disabled' | undefined",
+      "status": "fail",
+      "notes": "configuration.ts:47 types field as 'enabled' | 'deprecated' | 'disabled'; 'active' absent, 'enabled' present instead."
+    },
+    {
+      "kind": "implementation",
+      "item": "appInfoStore.getLLMModels() maps model.status, defaulting to 'active' when absent",
+      "status": "fail",
+      "notes": "appInfo.ts:337 defaults to 'enabled' not 'active'."
+    },
+    {
+      "kind": "implementation",
+      "item": "ModelsCatalogPage renders Status column; deprecated shows amber badge; active shows no badge",
+      "status": "pass",
+      "notes": "Status column added; Deprecated chip rendered when status === 'deprecated'; active rows empty cell."
+    },
+    {
+      "kind": "implementation",
+      "item": "Deprecated models hidden by default in ModelsCatalogPage; Show deprecated toggle reveals them",
+      "status": "pass",
+      "notes": "showDeprecated defaults false; filter excludes deprecated unless toggled; checkbox labelled 'Show deprecated' present."
+    },
+    {
+      "kind": "implementation",
+      "item": "Deprecated model rows are visually muted (reduced opacity, italic label)",
+      "status": "pass",
+      "notes": "opacity-60 and italic applied to rows and labels when status === 'deprecated'."
+    },
+    {
+      "kind": "implementation",
+      "item": "Each LLMSelector family component renders a Deprecated meta line for status === 'deprecated'; absent for active models",
+      "status": "pass",
+      "notes": "All three selectors pass status through and render Deprecated span conditionally."
+    },
+    {
+      "kind": "implementation",
+      "item": "Deprecated models remain selectable in all selectors",
+      "status": "fail",
+      "notes": "disabled: status === 'deprecated' set in ChatPromptLlmSelector and LLMSelector; SearchableCombobox enforces HTML disabled and blocks keyboard Enter. Spec non-goal #3 explicitly prohibits this."
+    },
+    {
+      "kind": "implementation",
+      "item": "All existing tests continue to pass without modification",
+      "status": "pending-stage-7",
+      "notes": "Store defaults to 'enabled' not 'active'; functional behaviour unaffected for existing fixtures. Test suite must be run to confirm."
+    },
+    {
+      "kind": "implementation",
+      "item": "New test cases cover the four display scenarios listed in spec §6",
+      "status": "partial",
+      "notes": "ChatConfigLlmSelector.test.tsx omits deprecated meta line assertion; both LLMSelector.test.tsx and ChatConfigLlmSelector.test.tsx assert .p-disabled CSS class rather than HTML disabled attribute, so disabled state is unverified."
+    }
+  ],
+  "standards_review": [],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "SearchableCombobox ArrowDown/ArrowUp handlers now iterate with a skip-disabled loop (lines 134-148), bypassing items where item.disabled is true."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "SearchableCombobox line 222 now sets aria-disabled={item.disabled ? true : undefined} on the option button alongside the existing disabled prop."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "LLMSelector options map (lines 138-143) carries only { label, value, isPremium, status } with no disabled field; ChatPromptLlmSelector items (lines 177-182) push { id, value } with no disabled field. Status 'disabled' models are no longer blocked."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "The disabled: status === 'deprecated' condition has been removed from both LLMSelector and ChatPromptLlmSelector. Deprecated models are now fully selectable, matching spec non-goal #3."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "LLMSelector.test.tsx line 81-93 now queries .p-multiselect-item items and asserts not.toHaveAttribute('disabled') instead of the vacuous .p-disabled class check."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "ChatConfigLlmSelector.test.tsx lines 169-175 now queries .p-multiselect-item and asserts not.toHaveAttribute('disabled'). The .p-disabled class assertion is gone."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "ChatPromptLlmSelector.tsx OptionMeta (lines 104-108) now includes {isPremium && isDeprecated && ' · '} between the Premium and Deprecated spans."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "The OPTION_ID_RECOMMENDED ModelOptionRow (lines 256-262) now passes status={defaultModel.status}, so a deprecated default model shows the Deprecated meta label in the recommended slot."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "notes": "ModelsCatalogPage.tsx line 56 now computes deprecatedCount from filtered (not llmModels). Summary stat matches visible rows when provider, search, or premiumOnly filters are active. Covered by new test at line 145-157."
+    },
+    {
+      "id": "CR-010",
+      "status": "resolved",
+      "notes": "ModelsCatalogPage.tsx lines 174-183 now render a Disabled chip for status === 'disabled' with text-text-tertiary border-border-secondary styling. Disabled models are visually distinct from active ones. Covered by new test at line 159-164."
+    },
+    {
+      "id": "CR-011",
+      "status": "resolved",
+      "notes": "modelCatalog.ts line 27 now exports 'active' | 'deprecated' | 'disabled'. configuration.ts line 47 matches. appInfo.ts line 337 defaults to 'active'. ModelsCatalogPage filter coalesces to 'active'."
+    }
+  ]
+}

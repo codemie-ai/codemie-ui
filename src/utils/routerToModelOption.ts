@@ -23,6 +23,7 @@ export const routerToModelOption = (router: LLMRouterOption): ModelOption => ({
   isPremium: router.isPremium,
   multimodal: router.multimodal,
   supportsTools: router.supportsTools,
+  status: router.status,
   isRouter: true,
   cliOnly: router.cliOnly,
 })

@@ -25,6 +25,7 @@ import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { appInfoStore } from '@/store/appInfo'
 import { chatsStore } from '@/store/chats'
 import { projectsStore } from '@/store/projects'
+import { ModelStatus } from '@/types/entity/configuration'
 import { routerToModelOption } from '@/utils/routerToModelOption'
 import toaster from '@/utils/toaster'
 import { composeRowTooltip } from '@/utils/tooltipContent'
@@ -95,16 +96,19 @@ const OptionRow: FC<{ content: string; children: ReactNode }> = ({ content, chil
 // competes with the model name for horizontal width — the race the badge kept
 // losing in one panel and winning in the other. A model that is both gets one
 // line, not two. The amber token carries the premium signal the badge used to.
-const OptionMeta: FC<{ recommended: boolean; isPremium: boolean }> = ({
+const OptionMeta: FC<{ recommended: boolean; isPremium: boolean; isDeprecated?: boolean }> = ({
   recommended,
   isPremium,
+  isDeprecated,
 }) => {
-  if (!recommended && !isPremium) return null
+  if (!recommended && !isPremium && !isDeprecated) return null
   return (
     <span data-testid="llm-option-meta" className="truncate text-xs text-text-tertiary">
       {recommended && 'Recommended'}
       {recommended && isPremium && ' · '}
       {isPremium && <span className="text-aborted-primary">Premium</span>}
+      {isPremium && isDeprecated && ' · '}
+      {isDeprecated && <span className="text-not-started-primary">Deprecated</span>}
     </span>
   )
 }
@@ -117,7 +121,8 @@ const ModelOptionRow: FC<{
   isPremium: boolean
   selected: boolean
   recommended?: boolean
-}> = ({ label, isPremium, selected, recommended = false }) => {
+  status?: ModelStatus
+}> = ({ label, isPremium, selected, recommended = false, status }) => {
   const labelRef = useRef<HTMLSpanElement>(null)
   const isTruncated = useIsTruncated(labelRef)
   const content = composeRowTooltip([isTruncated && label, isPremium && PREMIUM_MODEL_TOOLTIP])
@@ -128,7 +133,11 @@ const ModelOptionRow: FC<{
         <span ref={labelRef} className="truncate">
           {label}
         </span>
-        <OptionMeta recommended={recommended} isPremium={isPremium} />
+        <OptionMeta
+          recommended={recommended}
+          isPremium={isPremium}
+          isDeprecated={status === 'deprecated'}
+        />
       </OptionMain>
       <OptionCheckSlot selected={selected} />
     </OptionRow>
@@ -211,25 +220,26 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     return llmRouters
   }, [projectId, hasCurrentProjectModels, projectFilteredRouters, llmRouters])
 
-  // A router marked default wins, matching the backend's router-first global default.
-  // It is recommended on its own row in the Routers section, so no model row is.
-  const defaultRouter = useMemo(
-    () => routersToDisplay.find((r) => r.isDefault) ?? null,
-    [routersToDisplay]
-  )
-
-  const defaultModel = useMemo(() => {
-    if (defaultRouter) return null
-    if (projectDefaultModelId) {
-      const liveDefaultModel = modelsToDisplay.find((m) => m.value === projectDefaultModelId)
-      if (liveDefaultModel) return liveDefaultModel
-      // The project's default can itself be a router (not necessarily the one marked
-      // isDefault globally, handled by defaultRouter above) — it only lives in llmRouters.
-      const liveDefaultRouter = llmRouters.find((r) => r.value === projectDefaultModelId)
-      if (liveDefaultRouter) return routerToModelOption(liveDefaultRouter)
-    }
-    return modelsToDisplay.find((m) => m.isDefault) ?? modelsToDisplay[0] ?? null
-  }, [modelsToDisplay, defaultRouter, projectDefaultModelId, llmRouters])
+  // A selectable project default takes precedence over the platform default, including routers.
+  const recommendedModel = useMemo(() => {
+    const models = modelsToDisplay.filter((model) => !model.status || model.status === 'enabled')
+    const routers = routersToDisplay
+      .filter((router) => !router.status || router.status === 'enabled')
+      .map(routerToModelOption)
+    const projectDefault = [...models, ...routers].find(
+      (model) => model.value === projectDefaultModelId
+    )
+    return (
+      projectDefault ??
+      routers.find((router) => router.isDefault) ??
+      models.find((model) => model.isDefault) ??
+      models[0] ??
+      routers[0] ??
+      null
+    )
+  }, [modelsToDisplay, routersToDisplay, projectDefaultModelId])
+  const defaultRouter = recommendedModel?.isRouter ? recommendedModel : null
+  const defaultModel = recommendedModel?.isRouter ? null : recommendedModel
 
   const selectedModel = useMemo(() => {
     if (!currentChat?.llmModel) return null
@@ -288,22 +298,38 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
     if (!search) {
       list.push({ id: OPTION_ID_DEFAULT, value: ASSISTANT_DEFAULT_VALUE })
       if (!isGrouped && defaultModel) {
-        list.push({ id: OPTION_ID_RECOMMENDED, value: defaultModel.value })
+        list.push({
+          id: OPTION_ID_RECOMMENDED,
+          value: defaultModel.value,
+          disabled: defaultModel.status === 'deprecated',
+        })
       }
     }
     filteredRouters.forEach((r) => {
       // The recommended router already has its own row (pushed above/below as
       // OPTION_ID_RECOMMENDED); don't repeat it here.
       if (recommendedShown && r.value === defaultModel?.value) return
-      list.push({ id: optionIdForRouter(r.value), value: r.value })
+      list.push({
+        id: optionIdForRouter(r.value),
+        value: r.value,
+        disabled: r.status === 'deprecated',
+      })
     })
     if (isGrouped && !search && defaultModel) {
-      list.push({ id: OPTION_ID_RECOMMENDED, value: defaultModel.value })
+      list.push({
+        id: OPTION_ID_RECOMMENDED,
+        value: defaultModel.value,
+        disabled: defaultModel.status === 'deprecated',
+      })
     }
     filteredSearchResults.forEach((m) => {
       // The recommended model already has its own row above; don't repeat it here.
       if (recommendedShown && m.value === defaultModel?.value) return
-      list.push({ id: optionIdForModel(m.value), value: m.value })
+      list.push({
+        id: optionIdForModel(m.value),
+        value: m.value,
+        disabled: m.status === 'deprecated',
+      })
     })
     return list
   }, [search, defaultModel, filteredRouters, filteredSearchResults, isGrouped])
@@ -435,6 +461,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
           recommended
           isPremium={defaultModel.isPremium ?? false}
           selected={state.selected}
+          status={defaultModel.status}
         />
       )
     }
@@ -446,6 +473,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
           recommended={router.value === defaultRouter?.value}
           isPremium={router.isPremium ?? false}
           selected={state.selected}
+          status={router.status}
         />
       )
     }
@@ -456,6 +484,7 @@ const ChatPromptLlmSelector: FC<ChatPromptLlmSelectorProps> = ({ disabled = fals
         label={model.label}
         isPremium={model.isPremium ?? false}
         selected={state.selected}
+        status={model.status}
       />
     )
   }

@@ -37,7 +37,7 @@ import { useIsTruncated } from '@/hooks/useIsTruncated'
 import { useProjectLLMModels } from '@/hooks/useProjectLLMModels'
 import { HELP_MODELS_ROUTE } from '@/pages/help/ModelsCatalog'
 import { appInfoStore } from '@/store/appInfo'
-import { ModelOption } from '@/types/entity/configuration'
+import { ModelOption, ModelStatus } from '@/types/entity/configuration'
 import { composeRowTooltip } from '@/utils/tooltipContent'
 
 import { AssistantFormContext } from '../AssistantForm'
@@ -50,11 +50,12 @@ import { AssistantFormContext } from '../AssistantForm'
 // selector's rows use, so hovering a row behaves the same in either dropdown.
 // Router gets the identical meta-line treatment, in blue rather than Premium's
 // amber, joined on the same line when a router also happens to be premium.
-const LlmOptionRow: FC<{ label: string; isPremium: boolean; isRouter?: boolean }> = ({
-  label,
-  isPremium,
-  isRouter = false,
-}) => {
+const LlmOptionRow: FC<{
+  label: string
+  isPremium: boolean
+  isRouter?: boolean
+  status?: ModelStatus
+}> = ({ label, isPremium, isRouter = false, status }) => {
   const labelRef = useRef<HTMLSpanElement>(null)
   const isTruncated = useIsTruncated(labelRef)
   const content = composeRowTooltip([isTruncated && label, isPremium && PREMIUM_MODEL_TOOLTIP])
@@ -68,7 +69,12 @@ const LlmOptionRow: FC<{ label: string; isPremium: boolean; isRouter?: boolean }
       <span ref={labelRef} className="min-w-0 truncate">
         {label}
       </span>
-      <ModelMetaLine isRouter={isRouter} isPremium={isPremium} testId="llm-option-meta" />
+      <ModelMetaLine
+        isRouter={isRouter}
+        isPremium={isPremium}
+        isDeprecated={status === 'deprecated'}
+        testId="llm-option-meta"
+      />
     </span>
   )
 }
@@ -80,6 +86,7 @@ interface SelectableModel {
   isDefault: boolean
   isPremium?: boolean
   isRouter?: boolean
+  status?: ModelStatus
 }
 
 interface LLMSelectorProps {
@@ -140,14 +147,17 @@ const LLMSelector = forwardRef<
     // Routers only apply to the 'llm' model type — image generation has no router concept.
     const globalModels = useMemo<SelectableModel[]>(() => {
       const source = modelType === 'imageGeneration' ? imageGenerationModels : llmModels
-      return source.map(({ value, deploymentName, label, isDefault, isPremium, isRouter }) => ({
-        value,
-        deploymentName,
-        label,
-        isDefault,
-        isPremium,
-        isRouter: modelType === 'llm' && !!isRouter,
-      }))
+      return source.map(
+        ({ value, deploymentName, label, isDefault, isPremium, isRouter, status }) => ({
+          value,
+          deploymentName,
+          label,
+          isDefault,
+          isPremium,
+          isRouter: modelType === 'llm' && !!isRouter,
+          status,
+        })
+      )
     }, [modelType, imageGenerationModels, llmModels])
 
     // Explicit filteredModels (passed down from ChatConfigLlmSelector, its one caller) wins
@@ -170,8 +180,9 @@ const LLMSelector = forwardRef<
     )
 
     const defaultLlmModel = useMemo(() => {
-      const defaultModel = models.find((model) => model.isDefault)
-      const fallbackModel = models[0]
+      const selectableModels = models.filter((model) => model.status !== 'deprecated')
+      const defaultModel = selectableModels.find((model) => model.isDefault)
+      const fallbackModel = selectableModels[0]
       return defaultModel ?? fallbackModel ?? {}
     }, [models])
 
@@ -184,11 +195,13 @@ const LLMSelector = forwardRef<
     const options = useMemo(() => {
       const remainingModels = models
         .filter((model) => !showDefaultRow || model.value !== defaultLlmModel?.value)
-        .map(({ label, value, isPremium, isRouter }) => ({
+        .map(({ label, value, isPremium, isRouter, status }) => ({
           label,
           value,
           isPremium,
           isRouter,
+          status,
+          disabled: status === 'deprecated',
         }))
 
       // Mirrors MultiSelect's own sort (alphabetical, selected value floated to
@@ -216,6 +229,8 @@ const LLMSelector = forwardRef<
                 value: defaultLlmModel?.value,
                 isPremium: defaultLlmModel?.isPremium,
                 isRouter: defaultLlmModel?.isRouter,
+                status: defaultLlmModel?.status,
+                disabled: defaultLlmModel?.status === 'deprecated',
               },
             ]
           : []),
@@ -226,6 +241,7 @@ const LLMSelector = forwardRef<
       defaultLlmModel?.isPremium,
       defaultLlmModel?.isRouter,
       defaultLlmModel?.label,
+      defaultLlmModel?.status,
       defaultLlmModel?.value,
       defaultOptionLabelPrefix,
       models,
@@ -268,7 +284,9 @@ const LLMSelector = forwardRef<
     }, [invalidModel, resetValue, value])
 
     const renderOption = (
-      option: { label: string; isPremium?: boolean; isRouter?: boolean } | undefined
+      option:
+        | { label: string; isPremium?: boolean; isRouter?: boolean; status?: ModelStatus }
+        | undefined
     ) => {
       if (!option) return null
       return (
@@ -276,6 +294,7 @@ const LLMSelector = forwardRef<
           label={option.label}
           isPremium={option.isPremium ?? false}
           isRouter={option.isRouter ?? false}
+          status={option.status}
         />
       )
     }

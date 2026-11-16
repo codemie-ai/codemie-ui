@@ -24,6 +24,14 @@
     @apply mt-8;
   }
 
+  &.codemie-toast-info {
+    @apply bg-gradient-to-br from-in-progress-primary/25 via-transparent to-transparent;
+  }
+
+  &.codemie-toast-info .codemie-toast-header {
+    @apply text-in-progress-primary;
+  }
+
   &.codemie-toast-err {
     @apply bg-[url('~images/toaster-bg-error.svg')];
   }

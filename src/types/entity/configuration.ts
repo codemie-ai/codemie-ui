@@ -13,6 +13,12 @@
 // limitations under the License.
 //
 
+/**
+ * The CodeMie-owned persisted status of a model, mirroring the backend
+ * `ModelStatus` enum. A model without a persisted override reads as `enabled`.
+ */
+export type ModelStatus = 'enabled' | 'disabled' | 'deprecated'
+
 export interface ConfigItem {
   id: string
   settings: {
@@ -52,6 +58,7 @@ export interface ModelOption {
   cost?: { input: number; output: number }
   /** Hidden from web chat (forbidden_for_web); offered only through CodeMie CLI and its connectors. */
   cliOnly?: boolean
+  status?: ModelStatus
 }
 
 export interface RouterTierModel {
@@ -69,6 +76,7 @@ export interface RouterTiers {
 export interface LLMRouterOption {
   value: string
   label: string
+  status?: ModelStatus
   isDefault?: boolean
   isPremium?: boolean
   provider?: string

@@ -1,0 +1,74 @@
+{
+  "decision": "request-changes",
+  "rationale": "Four major findings across correctness, stability, test coverage, and commit standards. All are mechanical fixes with no architectural impact. Blind, edge-case, and acceptance lenses all ran successfully. Deferred: concurrent double-click race (EC-001/EC-007), indexModels in-flight deduplication (EC-003), modal-dismiss-before-settle UX (EC-006), and the Array.isArray guard on response data (pre-existing codebase pattern, not introduced here). Dismissed: useSnapshot cast, menuItems without useMemo, enterprise-tab async-config race (all pre-existing patterns).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "id": "AC-001", "criterion": "Type layer: ModelPlatformStatus union and AdminModel interface (§3)", "status": "pass", "notes": "adminModel.ts defines all required fields correctly." },
+    { "id": "AC-002", "criterion": "Store: indexModels calls GET include_all=true, sets models, flips loading (§4)", "status": "pass", "notes": "URL, models assignment, and loading flip all correct." },
+    { "id": "AC-003", "criterion": "Store: setModelStatus calls PUT with base_name path and status body (§4)", "status": "pass", "notes": "URL pattern and body shape correct." },
+    { "id": "AC-004", "criterion": "Store: setModelStatus patches models[i].status in place using base_name identity key (§4)", "status": "pass", "notes": "findIndex on m.base_name, direct status mutation. Store tests confirm." },
+    { "id": "AC-005", "criterion": "Store: setModelStatus re-throws on API error (§4)", "status": "pass", "notes": "No try/catch in setModelStatus; errors propagate to caller. Store test confirms." },
+    { "id": "AC-006", "criterion": "Page: SettingsLayout + Table, 4 columns at correct widths (§5)", "status": "pass", "notes": "Column definitions match spec: 45%/20%/20%/15%." },
+    { "id": "AC-007", "criterion": "Page: model cell — label bold, base_name subtitle, Provider offline chip when enabled===false (§5)", "status": "pass", "notes": "renderModelCell implements all three. Page tests cover chip presence/absence." },
+    { "id": "AC-008", "criterion": "Page: provider cell uses PROVIDER_LABELS lookup, defined locally (§5, §10)", "status": "pass", "notes": "PROVIDER_LABELS defined locally per spec constraint. Page test verifies Azure OpenAI mapping." },
+    { "id": "AC-009", "criterion": "Page: handleStatusChange calls setModelStatus and toaster.error on catch (§5)", "status": "partial", "notes": "Implementation correct. Page test suite does not exercise the error-toast path." },
+    { "id": "AC-010", "criterion": "Page: useEffect calls indexModels on mount, console.error on catch (§5)", "status": "pass", "notes": "Matches spec and follows ProvidersManagementPage pattern." },
+    { "id": "AC-011", "criterion": "ModelStatusBadge: 3 states with Tailwind theme tokens only (§6)", "status": "pass", "notes": "bg-success-primary / bg-warning-primary / bg-surface-base-quaternary. All token names." },
+    { "id": "AC-012", "criterion": "ModelActions: contextual menu, Enable no-confirm, Disable/Deprecated confirmed with ButtonType.DELETE (§7)", "status": "pass", "notes": "All 9 ModelActions tests cover menu filtering and confirmation flows." },
+    { "id": "AC-013", "criterion": "Navigation: MODELS_MANAGEMENT enum, getEnterpriseAdminItems entry, flat route (§8)", "status": "pass", "notes": "All three wired correctly." },
+    { "id": "AC-014", "criterion": "Tests §9: error toast on rejection, Enable wiring through page, router-context rendering", "status": "fail", "notes": "Three specific test requirements from §9 are absent from ModelsManagementPage.test.tsx." }
+  ],
+  "standards_review": [
+    {
+      "standard": "Commit message format (git-workflow.md)",
+      "status": "fail",
+      "blocking": true,
+      "notes": "All 6 branch commits use lowercase first word after colon ('add ...', 'wire ...'). Pattern requires [A-Z][a-z]* first word. Enforced by Tekton CI. Fix by amending/rebasing before MR, or ensure squash commit subject is correctly capitalised."
+    },
+    {
+      "standard": "Security patterns (security-patterns.md)",
+      "status": "pass",
+      "blocking": false,
+      "notes": "No dangerouslySetInnerHTML, no HTML sinks, no open-redirect, no secrets. model.label interpolated into JSX text nodes and ConfirmationModal header prop (both safe text rendering)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/store/adminModels.ts:45",
+      "problem": "baseName is interpolated into the PUT URL path without encodeURIComponent. A model whose base_name contains a forward slash (e.g. 'org/model', a valid format in some LiteLLM registries) silently creates extra path segments and hits a wrong or nonexistent endpoint.",
+      "impact": "Status updates for slash-containing model names silently 404 or hit an unintended resource with no indication to the user beyond the generic error toast.",
+      "recommendation": "Change: api.put(`v1/admin/llm/${encodeURIComponent(baseName)}/status`, { status })"
+    },
+    {
+      "id": "CR-002",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/pages/settings/administration/components/ModelStatusBadge.tsx:25",
+      "problem": "STATUS_CONFIG[status] returns undefined when the server returns an unrecognised status value (future enum extension, typo, or null). Destructuring { label, dotClass } from undefined throws, crashing the row render for every affected model.",
+      "impact": "One model row with a bad or future status value crashes the entire table render with no error boundary. Page shows a white crash instead of degrading gracefully.",
+      "recommendation": "Add a fallback: const config = STATUS_CONFIG[status as ModelPlatformStatus] ?? { label: String(status) || 'Unknown', dotClass: 'bg-surface-base-quaternary' }. This keeps the table rendering and surfaces the raw value."
+    },
+    {
+      "id": "CR-003",
+      "severity": "major",
+      "triage": "patch",
+      "location": "src/pages/settings/administration/__tests__/ModelsManagementPage.test.tsx",
+      "problem": "Three test requirements from spec §9 are missing from the page test suite: (a) API error on status change shows error toast — toaster.error is mocked but never asserted; (b) Enable action (no confirmation) wiring through the page's handleStatusChange — tested only in ModelActions isolation; (c) ModelsManagementPage rendered at /settings/administration/models in a router context — all page tests mount the component bare.",
+      "impact": "The integration between ModelActions' onStatusChange prop and the page's store dispatch is unverified. Route registration typos and error-toast regressions would not be caught.",
+      "recommendation": "(a) Add a test that rejects setModelStatus and asserts toaster.error is called. (b) Add a test that renders a disabled model row, clicks Enable, and asserts setModelStatus was called with the base_name and 'enabled'. (c) Add a test that wraps the page in a MemoryRouter at the /settings/administration/models path and asserts 'Model management' is visible."
+    },
+    {
+      "id": "CR-004",
+      "severity": "major",
+      "triage": "patch",
+      "location": "all 6 branch commits",
+      "problem": "All 6 commit subjects use a lowercase first word after the ticket prefix ('add ...', 'wire ...'). The git-workflow.md blocking standard requires the first word to start with uppercase (e.g. 'Add', 'Wire') and this format is enforced by Tekton CI.",
+      "impact": "CI will block the MR unless corrected. Per the squash-merge strategy this can be fixed by ensuring the squash commit subject is correctly capitalised at MR creation time.",
+      "recommendation": "At MR creation, set the squash commit subject to follow the format: 'EPMCDME-15078: Add model management admin UI'. Alternatively, rebase and rename individual commits if branch commit history is to be preserved."
+    }
+  ]
+}

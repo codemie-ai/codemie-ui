@@ -50,6 +50,129 @@ const TABLE_VARIANT_CLASSES: Record<TableVariant, string> = {
   nested: NESTED_CLASSES,
 }
 
+interface TableBodyRowProps<T> {
+  value: T
+  rowIndex: number
+  idField: keyof T
+  totalRows: number
+  hasFooter: boolean
+  isExpandable: boolean
+  expandedRowIds?: ReadonlyArray<string>
+  rowTestIdPrefix?: string
+  onRowClick?: (item: T) => void
+  onSelectRow?: (value: T[]) => void
+  rowClassName?: (item: T, index: number) => string | undefined
+  isRowSelectable?: (item: T) => boolean
+  renderedColumns: Array<ColumnDefinition>
+  customRenderColumns: Record<string, (item: T, i: number) => React.ReactNode>
+  noWrap: boolean
+  selected?: T[] | null
+  handleRowClick: (item: T, event: MouseEvent<HTMLTableRowElement>) => void
+  handleRowKeyDown: (item: T, event: KeyboardEvent<HTMLTableRowElement>) => void
+  handleRowSelect: (item: T) => void
+  onToggleExpand?: (id: string) => void
+  renderExpandedRow?: (item: T) => React.ReactNode
+}
+
+const TableBodyRow = <T,>({
+  value,
+  rowIndex,
+  idField,
+  totalRows,
+  hasFooter,
+  isExpandable,
+  expandedRowIds,
+  rowTestIdPrefix,
+  onRowClick,
+  onSelectRow,
+  rowClassName,
+  isRowSelectable,
+  renderedColumns,
+  customRenderColumns,
+  noWrap,
+  selected,
+  handleRowClick,
+  handleRowKeyDown,
+  handleRowSelect,
+  onToggleExpand,
+  renderExpandedRow,
+}: TableBodyRowProps<T>): React.ReactNode => {
+  const idValue = value[idField]
+  const isSelected = !!selected?.find((s) => s[idField] === value[idField])
+
+  const customRender = (value as { _meta?: { customRender?: (item: T) => React.ReactNode } })._meta
+    ?.customRender
+  if (customRender) return customRender(value)
+
+  const isExpanded = isExpandable && !!expandedRowIds?.includes(String(idValue))
+  const isLastRow = totalRows - 1 === rowIndex
+  const isExpansionLast = isLastRow && isExpanded && !hasFooter
+
+  return (
+    <>
+      <tr
+        data-testid={
+          rowTestIdPrefix && idValue ? `${rowTestIdPrefix}-${String(idValue)}` : undefined
+        }
+        onClick={(e) => handleRowClick(value, e)}
+        onKeyDown={onSelectRow ? (e) => handleRowKeyDown(value, e) : undefined}
+        tabIndex={onSelectRow ? 0 : undefined}
+        // F-65: this row used to declare role="button", which
+        // replaces the implicit `row` role and detaches it from
+        // its table — so the table stopped being a table to
+        // assistive technology, app-wide, and `getByRole('row')`
+        // stopped finding anything. A selectable row is a row
+        // whose selection state is `aria-selected`; the keyboard
+        // handler above keeps Enter/Space working without
+        // lying about what the element is.
+        aria-selected={onSelectRow ? isSelected : undefined}
+        className={cn(
+          rowClassName?.(value, rowIndex),
+          (onRowClick || (onSelectRow && (isRowSelectable?.(value) ?? true))) &&
+            !isSelected &&
+            '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
+          isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer',
+          onSelectRow && 'focus-visible:outline-none focus-visible:[&_td]:bg-surface-base-tertiary'
+        )}
+      >
+        {renderedColumns.map((definition, colIndex) => (
+          <TableCell
+            value={value}
+            index={isExpandable ? colIndex - 1 : colIndex}
+            key={definition.key}
+            definition={definition}
+            colIndex={colIndex}
+            isLastRow={isLastRow && !isExpanded}
+            hasFooter={hasFooter}
+            columnsLength={renderedColumns.length}
+            customRender={customRenderColumns[definition.key]}
+            shrink={definition.shrink}
+            noWrap={noWrap}
+            isSelected={isSelected}
+            isSelectable={isRowSelectable?.(value) ?? true}
+            onSelect={() => handleRowSelect(value)}
+            isExpanded={isExpanded}
+            onToggleExpand={() => onToggleExpand?.(String(idValue))}
+          />
+        ))}
+      </tr>
+      {isExpanded && (
+        <tr>
+          <td
+            colSpan={renderedColumns.length}
+            className={cn(
+              'bg-surface-base-secondary/40 border-b border-l border-r border-border-structural p-0',
+              isExpansionLast && 'rounded-b-lg overflow-hidden'
+            )}
+          >
+            {renderExpandedRow?.(value)}
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
 export interface TableProps<T = TableItem> {
   items: Array<T> | ReadonlyArray<T>
   columnDefinitions: Array<ColumnDefinition>
@@ -68,11 +191,18 @@ export interface TableProps<T = TableItem> {
   className?: string
   tableClassName?: string
   variant?: TableVariant
+  /**
+   * Extra classes for a body row, keyed off the item. Applied beneath the
+   * selection and hover states so those still win. Memoize it — the table
+   * compares this prop by reference.
+   */
+  rowClassName?: (item: T, index: number) => string | undefined
 
   selected?: T[] | null
   onSelectRow?: (value: T[]) => void
   isAllSelected?: boolean
   onSelectAllChange?: (checked: boolean) => void
+  isRowSelectable?: (item: T) => boolean
 
   expandedRowIds?: ReadonlyArray<string>
   onToggleExpand?: (id: string) => void
@@ -104,11 +234,13 @@ const Table = <T,>({
   className,
   tableClassName,
   variant = 'default',
+  rowClassName,
 
   selected,
   onSelectRow,
   isAllSelected = false,
   onSelectAllChange,
+  isRowSelectable,
 
   expandedRowIds,
   onToggleExpand,
@@ -130,12 +262,12 @@ const Table = <T,>({
             selected,
             isAllSelected,
             isLazyMode,
-            items,
+            items: isRowSelectable ? items.filter(isRowSelectable) : items,
             onSelectRow,
             onSelectAllChange,
           }
         : undefined,
-    [selected, isAllSelected, isLazyMode, items, onSelectRow, onSelectAllChange]
+    [selected, isAllSelected, isLazyMode, items, onSelectRow, onSelectAllChange, isRowSelectable]
   )
 
   const sortProps: SortProps | undefined = useMemo(
@@ -167,11 +299,12 @@ const Table = <T,>({
 
   const handleRowSelect = useCallback(
     (item: T) => {
+      if (isRowSelectable && !isRowSelectable(item)) return
       const isSelected = !!selected?.find((s) => s[idPath!] === item[idPath!])
       if (isSelected) onSelectRow?.(selected?.filter((s) => s[idPath!] !== item[idPath!]) ?? [])
       else onSelectRow?.([...(selected ?? []), item])
     },
-    [selected, idPath, onSelectRow]
+    [selected, idPath, onSelectRow, isRowSelectable]
   )
 
   const handleRowClick = useCallback(
@@ -255,6 +388,7 @@ const Table = <T,>({
             getRowId={getRowId}
             isRowSelected={(item) => !!selected?.find((s) => s[idField] === item[idField])}
             onRowSelect={handleRowSelect}
+            isRowSelectable={isRowSelectable}
             onCardSelect={onSelectRow ? handleRowSelect : undefined}
             onCardOpen={onRowClick}
             selectionProps={selectionProps}
@@ -299,82 +433,34 @@ const Table = <T,>({
                 />
               ) : (
                 items.map((value, rowIndex) => {
-                  const idField = idPath ?? 'id'
                   const idValue = value[idField]
                   const rowKey = idValue ? String(idValue) : `fallback-row-${rowIndex}`
-                  const isSelected = !!selected?.find(
-                    (s) => s[idField as keyof T] === value[idField]
-                  )
-
-                  if (value._meta?.customRender) return value._meta?.customRender(value)
-
-                  const isExpanded = isExpandable && !!expandedRowIds?.includes(String(idValue))
-                  const isLastRow = items.length - 1 === rowIndex
-                  const isExpansionLast = isLastRow && isExpanded && !footer
 
                   return (
-                    <React.Fragment key={rowKey}>
-                      <tr
-                        data-testid={
-                          rowTestIdPrefix && idValue
-                            ? `${rowTestIdPrefix}-${String(idValue)}`
-                            : undefined
-                        }
-                        onClick={(e) => handleRowClick(value, e)}
-                        onKeyDown={onSelectRow ? (e) => handleRowKeyDown(value, e) : undefined}
-                        tabIndex={onSelectRow ? 0 : undefined}
-                        // F-65: this row used to declare role="button", which
-                        // replaces the implicit `row` role and detaches it from
-                        // its table — so the table stopped being a table to
-                        // assistive technology, app-wide, and `getByRole('row')`
-                        // stopped finding anything. A selectable row is a row
-                        // whose selection state is `aria-selected`; the keyboard
-                        // handler above keeps Enter/Space working without
-                        // lying about what the element is.
-                        aria-selected={onSelectRow ? isSelected : undefined}
-                        className={cn(
-                          (onSelectRow || onRowClick) &&
-                            !isSelected &&
-                            '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
-                          isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer',
-                          onSelectRow &&
-                            'focus-visible:outline-none focus-visible:[&_td]:bg-surface-base-tertiary'
-                        )}
-                      >
-                        {renderedColumns.map((definition, colIndex) => (
-                          <TableCell
-                            value={value}
-                            index={isExpandable ? colIndex - 1 : colIndex}
-                            key={definition.key}
-                            definition={definition}
-                            colIndex={colIndex}
-                            isLastRow={isLastRow && !isExpanded}
-                            hasFooter={!!footer}
-                            columnsLength={renderedColumns.length}
-                            customRender={customRenderColumns[definition.key]}
-                            shrink={definition.shrink}
-                            noWrap={noWrap}
-                            isSelected={isSelected}
-                            onSelect={() => handleRowSelect(value)}
-                            isExpanded={isExpanded}
-                            onToggleExpand={() => onToggleExpand?.(String(idValue))}
-                          />
-                        ))}
-                      </tr>
-                      {isExpanded && (
-                        <tr>
-                          <td
-                            colSpan={renderedColumns.length}
-                            className={cn(
-                              'bg-surface-base-secondary/40 border-b border-l border-r border-border-structural p-0',
-                              isExpansionLast && 'rounded-b-lg overflow-hidden'
-                            )}
-                          >
-                            {renderExpandedRow?.(value)}
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
+                    <TableBodyRow
+                      key={rowKey}
+                      value={value}
+                      rowIndex={rowIndex}
+                      idField={idField}
+                      totalRows={items.length}
+                      hasFooter={!!footer}
+                      isExpandable={isExpandable}
+                      expandedRowIds={expandedRowIds}
+                      rowTestIdPrefix={rowTestIdPrefix}
+                      onRowClick={onRowClick}
+                      onSelectRow={onSelectRow}
+                      rowClassName={rowClassName}
+                      isRowSelectable={isRowSelectable}
+                      renderedColumns={renderedColumns}
+                      customRenderColumns={customRenderColumns}
+                      noWrap={noWrap}
+                      selected={selected}
+                      handleRowClick={handleRowClick}
+                      handleRowKeyDown={handleRowKeyDown}
+                      handleRowSelect={handleRowSelect}
+                      onToggleExpand={onToggleExpand}
+                      renderExpandedRow={renderExpandedRow}
+                    />
                   )
                 })
               )}

@@ -17,10 +17,13 @@ import { FC } from 'react'
 import { Control } from 'react-hook-form'
 
 import FormAutocomplete from '@/components/form/FormAutocomplete'
+import { ModelOption } from '@/types/entity/configuration'
+
+import { getModelOptions, renderModelOption } from './modelOptions'
 
 interface EmbeddingsModelFieldProps {
   control: Control<any>
-  embeddingModels: { value: string; label: string }[]
+  embeddingModels: readonly Pick<ModelOption, 'value' | 'label' | 'status'>[]
   className?: string
 }
 
@@ -34,7 +37,8 @@ const EmbeddingsModelField: FC<EmbeddingsModelFieldProps> = ({
     control={control}
     id="embeddingsModel"
     label="Model used for embeddings"
-    options={embeddingModels}
+    options={getModelOptions(embeddingModels)}
+    itemTemplate={renderModelOption}
     placeholder="Embeddings Model Type"
     className={className}
   />

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "generated": "2026-09-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 18,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 12,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Four distinct areas touched: the shared SearchableCombobox component, appInfo Valtio store (getLLMModels mapping), two product page areas (chat ChatPromptLlmSelector and assistants LLMSelector), and the new ModelsCatalogPage — plus a new modelCatalog utility and ModelOption type extension. That breadth crosses a shared component boundary and two page subsystems, putting scope at L."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "12 files changed per diffstat (11–15 file range maps to XL=5). Files span src/components/, src/store/, src/types/, src/utils/, and three distinct page directories, confirming wide spread."
+    },
+    {
+      "dimension": "requirements_clarity",
+      "reason": "The implementation is coherent and fully self-contained — status/cost/deprecation surfacing is implemented consistently across catalog page, chat selector, and assistant selector. No ambiguity evident from the diff. Scored M as a conservative middle: the feature set is clear but spans multiple surfaces."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Established patterns used throughout: Valtio snapshot, useMemo/useEffect hooks, PrimeReact OverlayPanel, and the existing composeRowTooltip/useIsTruncated utilities. SearchableCombobox introduces some complexity (keyboard navigation, ARIA combobox pattern) but follows the WAI-ARIA combobox spec with NOSONAR justifications present. No security surface, no performance-critical path. Scored M."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

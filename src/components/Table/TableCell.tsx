@@ -36,6 +36,7 @@ interface TableCellProps<T = Record<string, unknown>> {
   shrink?: boolean
   noWrap?: boolean
   isSelected?: boolean
+  isSelectable?: boolean
   onSelect?: () => void
   isExpanded?: boolean
   onToggleExpand?: () => void
@@ -81,6 +82,7 @@ type TableCellContentProps<T> = Pick<
   | 'definition'
   | 'customRender'
   | 'isSelected'
+  | 'isSelectable'
   | 'onSelect'
   | 'isExpanded'
   | 'onToggleExpand'
@@ -93,6 +95,7 @@ export const TableCellContent = <T,>({
   value,
   customRender,
   isSelected,
+  isSelectable = true,
   onSelect,
   isExpanded = false,
   onToggleExpand,
@@ -126,7 +129,7 @@ export const TableCellContent = <T,>({
   } else if (isSelectionCell) {
     content = (
       <div data-selection-checkbox="true">
-        <Checkbox checked={isSelected} onChange={onSelect ?? (() => {})} />
+        <Checkbox checked={isSelected} onChange={onSelect ?? (() => {})} disabled={!isSelectable} />
       </div>
     )
   } else if (definition.type === DefinitionTypes.Custom && customRender) {
@@ -155,6 +158,7 @@ const TableCell = <T,>({
   shrink = false,
   noWrap = false,
   isSelected,
+  isSelectable = true,
   onSelect,
   isExpanded = false,
   onToggleExpand,
@@ -187,6 +191,7 @@ const TableCell = <T,>({
         value={value}
         customRender={customRender}
         isSelected={isSelected}
+        isSelectable={isSelectable}
         onSelect={onSelect}
         isExpanded={isExpanded}
         onToggleExpand={onToggleExpand}

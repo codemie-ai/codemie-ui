@@ -1,0 +1,203 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two acceptance criteria fail outright (ModelOption.status typed 'enabled' not 'active'; deprecated models are non-selectable in violation of spec non-goal #3); two are partial (ModelStatus literal and test coverage). No findings were deferred or dismissed. Standards review was intentionally omitted for the compact profile.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [
+    {
+      "kind": "implementation",
+      "item": "src/utils/modelCatalog.ts exports PROVIDER_LABELS, formatCost, and ModelStatus; no other file defines its own copy",
+      "status": "partial",
+      "notes": "File created and exports all three. ModelStatus uses 'enabled' where spec requires 'active'."
+    },
+    {
+      "kind": "implementation",
+      "item": "ModelOption.status is typed 'active' | 'deprecated' | 'disabled' | undefined",
+      "status": "fail",
+      "notes": "configuration.ts:47 types field as 'enabled' | 'deprecated' | 'disabled'; 'active' absent, 'enabled' present instead."
+    },
+    {
+      "kind": "implementation",
+      "item": "appInfoStore.getLLMModels() maps model.status, defaulting to 'active' when absent",
+      "status": "fail",
+      "notes": "appInfo.ts:337 defaults to 'enabled' not 'active'."
+    },
+    {
+      "kind": "implementation",
+      "item": "ModelsCatalogPage renders Status column; deprecated shows amber badge; active shows no badge",
+      "status": "pass",
+      "notes": "Status column added; Deprecated chip rendered when status === 'deprecated'; active rows empty cell."
+    },
+    {
+      "kind": "implementation",
+      "item": "Deprecated models hidden by default in ModelsCatalogPage; Show deprecated toggle reveals them",
+      "status": "pass",
+      "notes": "showDeprecated defaults false; filter excludes deprecated unless toggled; checkbox labelled 'Show deprecated' present."
+    },
+    {
+      "kind": "implementation",
+      "item": "Deprecated model rows are visually muted (reduced opacity, italic label)",
+      "status": "pass",
+      "notes": "opacity-60 and italic applied to rows and labels when status === 'deprecated'."
+    },
+    {
+      "kind": "implementation",
+      "item": "Each LLMSelector family component renders a Deprecated meta line for status === 'deprecated'; absent for active models",
+      "status": "pass",
+      "notes": "All three selectors pass status through and render Deprecated span conditionally."
+    },
+    {
+      "kind": "implementation",
+      "item": "Deprecated models remain selectable in all selectors",
+      "status": "fail",
+      "notes": "disabled: status === 'deprecated' set in ChatPromptLlmSelector and LLMSelector; SearchableCombobox enforces HTML disabled and blocks keyboard Enter. Spec non-goal #3 explicitly prohibits this."
+    },
+    {
+      "kind": "implementation",
+      "item": "All existing tests continue to pass without modification",
+      "status": "pending-stage-7",
+      "notes": "Store defaults to 'enabled' not 'active'; functional behaviour unaffected for existing fixtures. Test suite must be run to confirm."
+    },
+    {
+      "kind": "implementation",
+      "item": "New test cases cover the four display scenarios listed in spec §6",
+      "status": "partial",
+      "notes": "ChatConfigLlmSelector.test.tsx omits deprecated meta line assertion; both LLMSelector.test.tsx and ChatConfigLlmSelector.test.tsx assert .p-disabled CSS class rather than HTML disabled attribute, so disabled state is unverified."
+    }
+  ],
+  "standards_review": [],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/SearchableCombobox/SearchableCombobox.tsx",
+      "line": 130,
+      "title": "Keyboard navigation halts at disabled items",
+      "problem": "ArrowDown and ArrowUp handlers in the keyboard event listener increment/decrement the highlighted index unconditionally without skipping items that have item.disabled === true. When a deprecated (disabled) option sits between two enabled ones, pressing ArrowDown stops at it and Enter silently no-ops because the guard at line 140 blocks selection.",
+      "impact": "A keyboard-only user reaches the deprecated option and cannot move past it without pressing the key again; if the disabled item is at the end of the list, navigation wraps but the Enter guard means the user can never act. With the current spec violation (CR-004) making deprecated items disabled, every list containing deprecated models breaks keyboard navigation.",
+      "recommendation": "In the ArrowDown and ArrowUp branches, skip indices whose item is disabled before calling setHighlightedIndex. For example: iterate from the next/previous index and advance until a non-disabled item is found, wrapping if needed."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/SearchableCombobox/SearchableCombobox.tsx",
+      "line": 209,
+      "title": "role=option button missing aria-disabled",
+      "problem": "The option button sets the HTML disabled attribute when item.disabled is true but does not set aria-disabled. The element carries role='option', and the ARIA authoring practices for the combobox pattern require aria-disabled='true' alongside the native disabled attribute on option elements that must remain announced as disabled to assistive technologies.",
+      "impact": "Screen readers see a focusable option with no accessible disabled state. Depending on the AT, the element may be announced as interactive when it is not, or its disabled state may be silently swallowed. Users of voice control or switch access receive incorrect affordance information.",
+      "recommendation": "Add aria-disabled={item.disabled ?? false} to the button element alongside the existing disabled prop."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx",
+      "line": 143,
+      "title": "'disabled' status models remain selectable in both selectors",
+      "problem": "Both LLMSelector (line 143) and ChatPromptLlmSelector (line 180) set disabled: status === 'deprecated' on ComboboxItem entries. The condition does not cover status === 'disabled'. A model whose backend status is 'disabled' will not have the disabled flag set and remains fully selectable and keyboard-activatable.",
+      "impact": "A model the backend has administratively disabled can still be selected in both the assistant form and the chat prompt LLM selectors, potentially routing requests to a non-operational model.",
+      "recommendation": "Change the condition to disabled: status === 'deprecated' || status === 'disabled' in both LLMSelector.tsx:143 and ChatPromptLlmSelector.tsx:180. Note: if CR-004 is resolved by removing the deprecated disabled flag entirely, only the status === 'disabled' branch remains."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/LLMSelector.tsx",
+      "line": 143,
+      "title": "Deprecated models non-selectable, violating spec non-goal #3",
+      "problem": "LLMSelector sets disabled: status === 'deprecated' on every deprecated ComboboxItem entry. ChatPromptLlmSelector does the same at line 180. SearchableCombobox enforces this by setting the HTML disabled attribute on the button, blocking click events, and guarding Enter in the keyboard handler. The spec non-goal #3 explicitly states: 'No hiding or disabling of deprecated models in selectors — selectable for backward compatibility'.",
+      "impact": "Any user or assistant configuration that references a deprecated model cannot be re-selected or retained. Backward-compat use cases (a user who knowingly wants to keep using a deprecated model) are broken. This is a direct contract contradiction between the implementation and the approved spec.",
+      "recommendation": "Remove disabled: status === 'deprecated' from the ComboboxItem mapping in both LLMSelector.tsx and ChatPromptLlmSelector.tsx. Deprecated models should appear in the list with the Deprecated meta label (already implemented) but remain fully selectable. Only status === 'disabled' (if spec intent supports it) should render a disabled item."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/__tests__/LLMSelector.test.tsx",
+      "line": 87,
+      "title": "LLMSelector test asserts .p-disabled class, not HTML disabled",
+      "problem": "The test at line 87 queries document.querySelectorAll('.p-disabled') to assert that a deprecated option is non-selectable. SearchableCombobox sets the HTML disabled attribute on the button element; it does not add a .p-disabled CSS class. The assertion targets a class that will never be present, so it either passes vacuously (empty NodeList matched against some()), which misreads as a green test, or fails for the wrong reason.",
+      "impact": "The test suite reports coverage of the disabled-state requirement that it does not actually verify. A regression that removes the HTML disabled attribute would not be caught.",
+      "recommendation": "Replace the .p-disabled class query with a query by the button's accessible name or data-testid, and assert toBeDisabled() from @testing-library/jest-dom, which checks the HTML disabled attribute."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatConfiguration/__tests__/ChatConfigLlmSelector.test.tsx",
+      "line": 169,
+      "title": "ChatConfigLlmSelector test asserts .p-disabled class, not HTML disabled",
+      "problem": "The test at line 169 uses document.querySelectorAll('.p-disabled') with the same mismatch as LLMSelector.test.tsx: SearchableCombobox sets the HTML disabled attribute, not a .p-disabled class. The assertion verifies the wrong signal.",
+      "impact": "Same as CR-005: the real disabled state is unverified; a regression on the HTML disabled attribute would not be caught by this test.",
+      "recommendation": "Query the option button by its label or data-testid and assert toBeDisabled() instead of sniffing a CSS class."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx",
+      "line": 106,
+      "title": "Premium and Deprecated labels concatenate without separator",
+      "problem": "In OptionMeta, the JSX renders {isPremium && <span>Premium</span>} immediately followed by {isDeprecated && <span>Deprecated</span>} with no conditional separator between them. The separator ' · ' is added only between the Recommended label and the Premium label (line 104); no equivalent guard exists between Premium and Deprecated.",
+      "impact": "A model that is both premium and deprecated renders the two labels visually adjacent with no delimiter, producing 'PremiumDeprecated' as concatenated text. This is visually ambiguous and does not match the separator pattern used elsewhere in the same component.",
+      "recommendation": "Add {isPremium && isDeprecated && ' · '} between the Premium span and the Deprecated span in OptionMeta, mirroring the existing recommended+premium separator."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatPrompt/ChatPromptLlmSelector.tsx",
+      "line": 254,
+      "title": "Recommended slot omits deprecated label for deprecated default model",
+      "problem": "The ModelOptionRow rendered for the OPTION_ID_RECOMMENDED slot (lines 254-262) passes no isDeprecated prop. If the deployment's default model has status === 'deprecated', the recommended slot shows the model with the 'Recommended' label and no Deprecated indicator, silently misrepresenting its lifecycle status.",
+      "impact": "A user selecting from the Recommended slot cannot tell the default model is deprecated. This is inconsistent with every other slot in the same dropdown where the Deprecated label is shown, and may lead users to unknowingly rely on a model the operator intends to retire.",
+      "recommendation": "Add isDeprecated={defaultModel.status === 'deprecated'} to the ModelOptionRow props in the OPTION_ID_RECOMMENDED rendering block."
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/help/ModelsCatalog/ModelsCatalogPage.tsx",
+      "line": 56,
+      "title": "deprecatedCount counts unfiltered models, not filtered rows",
+      "problem": "Line 56 computes deprecatedCount by filtering llmModels (the full unfiltered set). The rows rendered in the table come from filtered, which applies the current provider, search query, and premiumOnly constraints. When a provider filter is active, the count may report N deprecated models while the table shows zero — because none of the deprecated models match the active filter.",
+      "impact": "The summary line that shows the deprecated count becomes misleading whenever provider, search, or premiumOnly filters are active. A user enabling the 'Show deprecated' toggle after filtering by provider will see a count that includes deprecated models from other providers not visible in the table.",
+      "recommendation": "Compute deprecatedCount from filtered rather than llmModels: const deprecatedCount = filtered.filter((m) => m.status === 'deprecated').length. If the design intent is to show the global count regardless, document that clearly in a comment."
+    },
+    {
+      "id": "CR-010",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/help/ModelsCatalog/ModelsCatalogPage.tsx",
+      "line": 163,
+      "title": "Status cell renders empty for 'disabled' models",
+      "problem": "The Status table cell at line 163 conditionally renders a Deprecated chip only when m.status === 'deprecated'. The value 'disabled' is a live member of the ModelStatus enum (and of the backend contract once the 'enabled'/'active' mismatch is corrected), but no chip is rendered for it. A disabled model shows an empty Status cell despite having a non-default lifecycle status.",
+      "impact": "Operators and users browsing the catalog cannot distinguish a disabled model from an active one by looking at the Status column, defeating the purpose of surfacing status in the catalog.",
+      "recommendation": "Add an else-if branch or a second conditional for status === 'disabled' that renders a distinct chip (e.g., text-text-tertiary border-border-secondary, labelled 'Disabled')."
+    },
+    {
+      "id": "CR-011",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/utils/modelCatalog.ts",
+      "line": 27,
+      "title": "ModelStatus literal 'enabled' diverges from API contract 'active'",
+      "problem": "ModelStatus is typed 'enabled' | 'deprecated' | 'disabled' (modelCatalog.ts:27). The same incorrect literal propagates to ModelOption.status in configuration.ts:47 ('enabled' | 'deprecated' | 'disabled') and to the store fallback in appInfo.ts:337 (status: model.status ?? 'enabled'). The spec and the API contract both specify 'active' as the live-model status value. The catalog filter at ModelsCatalogPage.tsx:51 coalesces to 'enabled' when comparing against 'deprecated', introducing a second inconsistency. An API response bearing status: 'active' will not match any branch expecting 'enabled', and TypeScript will not catch assignments of 'active' because the type does not include it.",
+      "impact": "Models returned from the backend with status 'active' are stored with the wrong runtime shape. Comparison logic that relies on status === 'enabled' (or the coalesce fallback of 'enabled') will silently misclassify them. This is a latent type-contract break that will surface as runtime misbehavior once real API data is in use.",
+      "recommendation": "Change ModelStatus to 'active' | 'deprecated' | 'disabled' in modelCatalog.ts. Update ModelOption.status in configuration.ts to match. Change the store default in appInfo.ts to status: model.status ?? 'active'. Update the filter coalesce in ModelsCatalogPage.tsx from ?? 'enabled' to ?? 'active'. Propagate the type fix through any other locations that reference the 'enabled' literal."
+    }
+  ]
+}

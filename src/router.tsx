@@ -96,13 +96,13 @@ import CategoriesManagementPage from '@/pages/settings/administration/Categories
 import CostCenterDetailsPage from '@/pages/settings/administration/CostCenterDetailsPage'
 import CostCentersManagementPage from '@/pages/settings/administration/CostCentersManagementPage'
 import CustomerConfigurationPage from '@/pages/settings/administration/CustomerConfigurationPage'
-import GlobalModelsManagementPage from '@/pages/settings/administration/GlobalModelsManagementPage'
 import MarketplaceAssistantsPage from '@/pages/settings/administration/MarketplaceAssistantsPage'
 import MarketplaceCleanupPage from '@/pages/settings/administration/MarketplaceCleanupPage'
 import MarketplaceManagementLayout from '@/pages/settings/administration/marketplaceManagement/MarketplaceManagementLayout'
 import MarketplaceSettingsTab from '@/pages/settings/administration/marketplaceManagement/MarketplaceSettingsTab'
 import MarketplaceOverviewPage from '@/pages/settings/administration/MarketplaceOverviewPage'
 import MCPManagementPage from '@/pages/settings/administration/MCPManagementPage'
+import ModelsManagementPage from '@/pages/settings/administration/ModelsManagementPage'
 import ProjectDetailsPage from '@/pages/settings/administration/ProjectDetailsPage'
 import ProjectsManagementPage from '@/pages/settings/administration/ProjectsManagementPage'
 import ProvidersCreatePage from '@/pages/settings/administration/ProvidersCreatePage'
@@ -614,11 +614,6 @@ const settingsRoutes: RouteObject[] = [
     Component: ProfilePage,
   },
   {
-    id: 'models-management',
-    path: '/settings/administration/models',
-    Component: GlobalModelsManagementPage,
-  },
-  {
     id: 'projects-management',
     path: '/settings/administration/projects',
     Component: ProjectsManagementPage,
@@ -754,6 +749,11 @@ const settingsRoutes: RouteObject[] = [
   {
     path: '/settings/administration/categories',
     Component: CategoriesManagementPage,
+  },
+  {
+    id: 'models-management',
+    path: '/settings/administration/models',
+    Component: ModelsManagementPage,
   },
   {
     id: 'providers-management',

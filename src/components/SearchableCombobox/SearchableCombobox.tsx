@@ -31,6 +31,7 @@ import { cn } from '@/utils/utils'
 export interface ComboboxItem<T> {
   id: string
   value: T
+  disabled?: boolean
 }
 
 export interface ComboboxOptionState {
@@ -132,14 +133,26 @@ const SearchableCombobox = <T,>({
     if (len === 0) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setHighlightedIndex((i) => (i + 1) % len)
+      setHighlightedIndex((i) => {
+        for (let step = 1; step <= len; step += 1) {
+          const next = (i + step) % len
+          if (!items[next]?.disabled) return next
+        }
+        return i
+      })
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setHighlightedIndex((i) => (i - 1 + len) % len)
+      setHighlightedIndex((i) => {
+        for (let step = 1; step <= len; step += 1) {
+          const prev = (i - step + len) % len
+          if (!items[prev]?.disabled) return prev
+        }
+        return i
+      })
     } else if (e.key === 'Enter') {
       e.preventDefault()
       const item = items[highlightedIndex] ?? items[0]
-      if (item) handleSelect(item.value)
+      if (item && !item.disabled) handleSelect(item.value)
     }
   }
 
@@ -205,20 +218,23 @@ const SearchableCombobox = <T,>({
               return (
                 <div key={item.id}>
                   {renderSeparatorBefore?.(item, index) ?? null}
-                  <button
+                  <button // NOSONAR: option within the custom combobox; native <option> not viable here.
                     type="button"
                     id={item.id}
-                    role="option" // NOSONAR: option within the custom combobox; native <option> not viable here.
+                    role="option"
                     aria-selected={state.selected}
+                    aria-disabled={item.disabled ? true : undefined}
+                    disabled={item.disabled}
                     ref={(el) => {
                       itemRefs.current[index] = el
                     }}
-                    onClick={() => handleSelect(item.value)}
+                    onClick={() => !item.disabled && handleSelect(item.value)}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     className={cn(
                       'w-full flex items-center justify-between gap-2 px-3 py-2',
                       'text-sm text-left transition-colors hover:bg-surface-elevated cursor-pointer',
                       state.highlighted && 'bg-surface-elevated',
+                      item.disabled && 'opacity-50 cursor-not-allowed hover:bg-transparent',
                       extraClass
                     )}
                   >

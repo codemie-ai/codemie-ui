@@ -89,6 +89,7 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
     ref
   ) => {
     const autocompleteEl = useRef<AutoComplete<FilterOption> | null>(null)
+    const inputRef = useRef<HTMLInputElement>(null)
     const [textValue, setTextValue] = useState<string>('')
     const [filteredOptions, setFilteredOptions] = useState<FilterOption[]>(options)
     const inputWidth = useInputWidth(autocompleteEl)
@@ -137,6 +138,17 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
       }
     }
 
+    const resetText = (restoreInput = false) => {
+      const selectedOption = options.find((option) => option.value === value)
+      const label = selectedOption?.label ?? ''
+      setTextValue(label)
+      // PrimeReact writes the input before emitting a selection; undo that write when rejected.
+      if (restoreInput) {
+        const input = inputRef.current
+        if (input) input.value = label
+      }
+    }
+
     const updateValue = (newValue: FilterOption | string | null) => {
       if (!newValue) {
         setTextValue('')
@@ -146,14 +158,13 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
       if (typeof newValue === 'string') {
         setTextValue(newValue)
       } else {
+        if (newValue.disabled) {
+          resetText(true)
+          return
+        }
         onChange?.(newValue.value ? newValue.value.toString() : '')
         setTextValue(newValue.label)
       }
-    }
-
-    const resetText = () => {
-      const selectedOption = options.find((option) => option.value === value)
-      setTextValue(selectedOption?.label ?? '')
     }
 
     const handleBlur = () => {
@@ -233,12 +244,19 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
     const autocompleteElement = (
       <AutoComplete
         ref={autocompleteEl}
+        inputRef={inputRef}
         id={id}
         name={name}
         value={autocompleteValue}
         suggestions={filteredOptions}
         completeMethod={search}
-        onChange={(e) => setTextValue(e.value as unknown as string)}
+        onChange={(e) => {
+          if (e.value && typeof e.value === 'object' && e.value.disabled) {
+            resetText(true)
+            return
+          }
+          setTextValue(e.value as unknown as string)
+        }}
         onSelect={(e) => updateValue(e.value)}
         onClick={handleClick}
         onBlur={handleBlur}

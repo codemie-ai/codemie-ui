@@ -37,6 +37,7 @@ interface TableCardListProps<T> {
   getRowId: (item: T, index: number) => string
   isRowSelected: (item: T) => boolean
   onRowSelect: (item: T) => void
+  isRowSelectable?: (item: T) => boolean
   /** Selects a row by tapping its card, for tables without a selection column (e.g. drill-downs). */
   onCardSelect?: (item: T) => void
   /** Opens a row by tapping its card, as a click on its table row does (e.g. a details popup). */
@@ -62,6 +63,7 @@ const TableCardList = <T,>({
   getRowId,
   isRowSelected,
   onRowSelect,
+  isRowSelectable,
   onCardSelect,
   onCardOpen,
   selectionProps,
@@ -74,7 +76,6 @@ const TableCardList = <T,>({
   const selectionColumn = columnDefinitions.find(({ type }) => type === DefinitionTypes.Selection)
   // With a selection column, its checkbox selects the row; opening a row takes the card tap.
   const isCardSelectable = !!onCardSelect && !selectionColumn && !onCardOpen
-  const isCardTappable = isCardSelectable || !!onCardOpen
   const actionsColumn = columnDefinitions.find(({ key }) => key === ACTIONS_COLUMN_KEY)
   const [titleColumn, ...detailColumns] = columnDefinitions.filter(
     (column) => column !== selectionColumn && column !== actionsColumn
@@ -123,6 +124,7 @@ const TableCardList = <T,>({
               label="Select all"
               checked={selectAll.isAllPageSelected}
               mixed={selectAll.isIndeterminate}
+              disabled={selectionProps?.items.length === 0}
               onChange={selectAll.toggleAll}
             />
           )}
@@ -140,6 +142,8 @@ const TableCardList = <T,>({
           const rowId = getRowId(item, index)
           const titleId = `${titleIdPrefix}-${index}`
           const isSelected = isRowSelected(item)
+          const canSelect = isRowSelectable?.(item) ?? true
+          const isCardTappable = !!onCardOpen || (isCardSelectable && canSelect)
           const isExpanded = isExpandable && !!expandedRowIds?.includes(rowId)
 
           const renderCell = (definition: ColumnDefinition) => (
@@ -149,6 +153,7 @@ const TableCardList = <T,>({
               definition={definition}
               customRender={customRenderColumns[definition.key]}
               isSelected={isSelected}
+              isSelectable={canSelect}
               onSelect={() => onRowSelect(item)}
               isExpanded={isExpanded}
               onToggleExpand={() => onToggleExpand?.(rowId)}

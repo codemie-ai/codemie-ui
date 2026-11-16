@@ -1,0 +1,28 @@
+{
+  "decision": "approve",
+  "rationale": "All four prior findings resolved. CR-001: encodeURIComponent applied to baseName in PUT URL, confirmed by new slash-encoding test. CR-002: FALLBACK_CONFIG null-coalescing guard added to ModelStatusBadge. CR-003: All three missing page tests present — error toast, Enable wiring through handleStatusChange, and MemoryRouter routing-context test. CR-004: Fix-up commit uses correct capitalisation; squash commit at MR time should follow the same pattern. No new high-risk issues introduced in the fix-up diff.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "standard": "Commit message format (git-workflow.md)",
+      "status": "fail",
+      "blocking": true,
+      "notes": "Carried forward from final round. All 6 original branch commits use lowercase first word. Fix-up commit (EPMCDME-15078: Fix encodeURIComponent...) uses correct capitalisation. Squash commit subject at MR time must also use uppercase first word."
+    },
+    {
+      "standard": "Security patterns (security-patterns.md)",
+      "status": "pass",
+      "blocking": false,
+      "notes": "Carried forward. No HTML sinks or security issues in fix-up diff."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "encodeURIComponent(baseName) applied on adminModels.ts line 45. New test asserts 'org%2Fmodel-v2' URL encoding." },
+    { "id": "CR-002", "status": "resolved", "notes": "FALLBACK_CONFIG constant added; STATUS_CONFIG[status] ?? FALLBACK_CONFIG applied in ModelStatusBadge render." },
+    { "id": "CR-003", "status": "resolved", "notes": "Three tests added to ModelsManagementPage.test.tsx: (1) error toast on rejected setModelStatus, (2) Enable action calls setModelStatus directly, (3) renders in MemoryRouter at /settings/administration/models." },
+    { "id": "CR-004", "status": "superseded", "notes": "Fix-up commit uses correct capitalisation. Original branch commits cannot be changed by a code fix; squash commit subject at MR time is the action item (unchanged recommendation)." }
+  ]
+}

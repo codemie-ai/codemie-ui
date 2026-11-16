@@ -74,8 +74,9 @@ interface NavigationMoreProps {
   childrenFirst?: boolean
   renderInRoot?: boolean
   alignment?: Alignment | null
-  placement?: Placement
   autoAlignment?: boolean
+  /** When set, uses `flip` with this as the preferred placement instead of `autoPlacement`. */
+  placement?: Placement
   onClick?: MouseEventHandler<Element>
   onOpenChange?: (open: boolean) => void
   className?: string
@@ -95,8 +96,8 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   customIcon = null,
   renderInRoot,
   alignment = 'end',
-  placement,
   autoAlignment,
+  placement,
   className,
   buttonClassName,
   menuClassName,
@@ -122,6 +123,8 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
   const visibleItems = items?.filter((item) => isNavigationDivider(item) || !item.hidden)
   const hasMenuContent =
     Boolean(children) || (visibleItems?.some((item) => !isNavigationDivider(item)) ?? false)
+  const hasIcons =
+    visibleItems?.some((item) => !isNavigationDivider(item) && Boolean(item.icon)) ?? false
 
   const { refs, floatingStyles, context } = useFloating({
     open: show,
@@ -164,7 +167,8 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
         <div
           id={menuId}
           className={cn(
-            'z-50 flex w-max min-w-44 max-w-[calc(100vw-1rem)] flex-col rounded-lg border border-border-structural bg-surface-base-secondary px-2 py-2',
+            'z-50 flex w-max max-w-[calc(100vw-1rem)] flex-col rounded-lg border border-border-structural bg-surface-base-secondary px-2 py-2',
+            hasIcons && 'min-w-44',
             menuClassName
           )}
           role="menu"
@@ -193,12 +197,14 @@ const NavigationMore: React.FC<NavigationMoreProps> = ({
 
                 const itemContent = (
                   <>
-                    <span
-                      className="flex size-5 shrink-0 items-center justify-center"
-                      aria-hidden="true"
-                    >
-                      {item.icon}
-                    </span>
+                    {item.icon && (
+                      <span
+                        className="flex size-5 shrink-0 items-center justify-center"
+                        aria-hidden="true"
+                      >
+                        {item.icon}
+                      </span>
+                    )}
                     <span className="min-w-0 grow truncate text-left">{item.title}</span>
                   </>
                 )

@@ -24,13 +24,11 @@ import NavigationMore from '@/components/NavigationMore'
 import PremiumModelBadge from '@/components/PremiumModelBadge'
 import BulkActions from '@/components/Table/BulkActions'
 import { appInfoStore } from '@/store/appInfo'
+import { PROVIDER_LABELS, formatCost } from '@/utils/modelCatalog'
 import { cn } from '@/utils/utils'
 
 import RoutersSection from './components/RoutersSection'
-import { CHIP_CLASS, PROVIDER_LABELS } from './constants'
-
-const formatCost = (cost?: { input: number; output: number }) =>
-  cost ? `$${(cost.input * 1_000_000).toFixed(2)} / $${(cost.output * 1_000_000).toFixed(2)}` : '—'
+import { CHIP_CLASS } from './constants'
 
 const getModelStatus = (model: any) => {
   if (model.deprecated) return 'deprecated'

@@ -116,6 +116,7 @@ const TableColHeader = <T,>({
         <Checkbox
           checked={isAllPageSelected}
           mixed={isIndeterminate ?? undefined}
+          disabled={selectionProps.items.length === 0}
           onChange={handleSelectionChange}
         />
       )}

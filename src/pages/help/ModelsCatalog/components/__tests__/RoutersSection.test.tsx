@@ -60,6 +60,21 @@ describe('RoutersSection', () => {
     expect(screen.getByText('Classifier routing → Label(gpt-5-mini)')).toBeInTheDocument()
   })
 
+  it('shows a deprecated flag alongside the premium badge when reported by the API', () => {
+    render(<RoutersSection routers={[{ ...baseRouter, status: 'deprecated' }]} />)
+    expect(screen.getByRole('status', { name: 'Deprecated' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Premium' })).toBeInTheDocument()
+  })
+
+  it('does not flag a router whose status is absent or enabled', () => {
+    render(
+      <RoutersSection
+        routers={[baseRouter, { ...baseRouter, value: 'other', status: 'enabled' }]}
+      />
+    )
+    expect(screen.queryByRole('status', { name: 'Deprecated' })).not.toBeInTheDocument()
+  })
+
   it('renders all 4 tiers in order with their model labels', () => {
     render(<RoutersSection routers={[baseRouter]} />)
     ;['Simple', 'Medium', 'Complex', 'Reasoning'].forEach((label) =>

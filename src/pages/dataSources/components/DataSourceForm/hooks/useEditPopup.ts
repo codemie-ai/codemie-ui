@@ -86,16 +86,18 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
   const getDefaultEmbeddingModel = (prevOption: string): string | undefined => {
     if (prevOption?.trim()) return prevOption
     const { embeddingModels } = appInfoStore
+    const selectableModels = embeddingModels.filter((model) => model.status !== 'deprecated')
     return (
-      embeddingModels.find((model) => model.value.includes(TEXT_EMBEDDING_ADA))?.value ||
-      embeddingModels[0]?.value
+      selectableModels.find((model) => model.value.includes(TEXT_EMBEDDING_ADA))?.value ??
+      selectableModels[0]?.value
     )
   }
 
   const getDefaultSummarizationModel = (prevOption: string): string | undefined => {
     if (prevOption?.trim()) return prevOption
     const { llmModels } = appInfoStore
-    return llmModels.find((model) => model.isDefault)?.value ?? llmModels[0]?.value
+    const selectableModels = llmModels.filter((model) => model.status !== 'deprecated')
+    return selectableModels.find((model) => model.isDefault)?.value ?? selectableModels[0]?.value
   }
 
   const hasNoSettings = (indexType) => {

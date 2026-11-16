@@ -184,6 +184,7 @@ const mapLlmModel = (model: any): ModelOption => ({
   defaultForCategories: model.default_for_categories,
   cost: model.cost ? { input: model.cost.input, output: model.cost.output } : undefined,
   cliOnly: model.forbidden_for_web === true,
+  status: model.status ?? 'enabled',
 })
 
 const mapLlmRouter = (router: any): LLMRouterOption => ({
@@ -199,6 +200,7 @@ const mapLlmRouter = (router: any): LLMRouterOption => ({
   classifierModel: router.classifier_model,
   tiers: router.tiers,
   cliOnly: router.forbidden_for_web === true,
+  status: router.status ?? 'enabled',
 })
 
 let sttModelsRequest: Promise<ModelOption[]> | null = null
@@ -485,11 +487,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
       const response = await api.get('v1/llm_models/image_generation')
       const data = await response.json()
 
-      appInfoStore.imageGenerationModels = data.map((model: any) => ({
-        value: model.base_name,
-        label: model.label,
-        isDefault: model.default,
-      }))
+      appInfoStore.imageGenerationModels = data.map(mapLlmModel)
       return appInfoStore.imageGenerationModels
     } catch (error) {
       console.error('Failed to fetch image generation models:', error)
@@ -504,6 +502,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
       appInfoStore.embeddingModels = data.map((model: any) => ({
         value: model.base_name,
         label: model.label,
+        status: model.status ?? 'enabled',
       }))
       return appInfoStore.embeddingModels
     } catch (error) {

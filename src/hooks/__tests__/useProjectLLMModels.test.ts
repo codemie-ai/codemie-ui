@@ -81,4 +81,22 @@ describe('useProjectLLMModels', () => {
     expect(result.current).toBe(PROJECT)
     expect(mockAppInfoStore.getProjectLLMModels).not.toHaveBeenCalled()
   })
+
+  it('refetches after invalidation and exposes the refreshed statuses', () => {
+    mockAppInfoStore.projectLlmModels = { p: PROJECT }
+    const { result, rerender } = renderHook(() => useProjectLLMModels('p'))
+    expect(result.current).toBe(PROJECT)
+
+    mockAppInfoStore.projectLlmModels = {}
+    rerender()
+    expect(mockAppInfoStore.getProjectLLMModels).toHaveBeenCalledWith('p')
+    expect(result.current).toEqual([])
+
+    mockAppInfoStore.projectLlmModels.p = [
+      { label: 'B', value: 'b', isDefault: false, status: 'deprecated' },
+    ]
+    rerender()
+    expect(result.current).toMatchObject([{ value: 'b', status: 'deprecated' }])
+    expect(mockAppInfoStore.getProjectLLMModels).toHaveBeenCalledOnce()
+  })
 })

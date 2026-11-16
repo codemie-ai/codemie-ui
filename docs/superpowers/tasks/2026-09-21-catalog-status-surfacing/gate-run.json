@@ -1,0 +1,96 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15077_model-management_FE_catalog",
+  "head": "b10ad4fa927f67abf672c74b6ff5f82f1dd690f7",
+  "runner": "npm",
+  "started_at": "2026-09-21T11:28:47Z",
+  "completed_at": "2026-09-21T11:35:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 6000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 8000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5000,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 3000,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 59320,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29580,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 500,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "No staged files found — lint-staged skipped without linting. To run meaningfully: stage files before committing."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 4000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 500,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Skipped: SONAR_TOKEN is not set. Set SONAR_TOKEN to run locally; CI runs the real scan via the ci-pipeline context."
+    }
+  ],
+  "failures": {}
+}

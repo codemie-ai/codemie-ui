@@ -17,3 +17,4 @@ export const dataSourceNameId = (id: string) => `datasource-name-${id}`
 export const providerNameId = (id: string) => `provider-name-${id}`
 export const mcpServerNameId = (id: string) => `admin-mcp-name-${id}`
 export const workflowNameId = (id: string) => `workflow-name-${id}`
+export const modelLabelId = (baseName: string) => `model-label-${baseName}`

@@ -17,10 +17,12 @@ import { FC } from 'react'
 
 import ModelMetaLine from '@/components/ModelMetaLine'
 import PremiumModelBadge from '@/components/PremiumModelBadge'
+import StatusBadge, { StatusEnum } from '@/components/StatusBadge'
 import { appInfoStore } from '@/store/appInfo'
 import type { LLMRouterOption, RouterTiers } from '@/types/entity/configuration'
+import { PROVIDER_LABELS } from '@/utils/modelCatalog'
 
-import { CHIP_CLASS, PROVIDER_LABELS } from '../constants'
+import { CHIP_CLASS } from '../constants'
 
 const ROUTER_TYPE_LABELS: Record<string, string> = {
   switchyard: 'Switchyard',
@@ -70,10 +72,13 @@ const RoutersSection: FC<RoutersSectionProps> = ({ routers }) => {
               key={router.value}
               className="border border-border-structural rounded-lg p-4 bg-surface-base-secondary"
             >
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="text-text-primary font-medium">{router.label}</span>
                 {router.isPremium && <PremiumModelBadge />}
                 <ModelMetaLine cliOnly={router.cliOnly} />
+                {router.status === 'deprecated' && (
+                  <StatusBadge status={StatusEnum.NotStarted} text="Deprecated" />
+                )}
                 <span className="ml-auto text-xs text-text-tertiary">
                   {(router.provider && (PROVIDER_LABELS[router.provider] ?? router.provider)) ||
                     '—'}

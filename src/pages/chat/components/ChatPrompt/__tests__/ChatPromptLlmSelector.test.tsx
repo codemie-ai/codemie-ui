@@ -595,6 +595,52 @@ describe('ChatPromptLlmSelector — row-level hover', () => {
   })
 })
 
+describe('ChatPromptLlmSelector — deprecated model', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockChatsStore.currentChat = mockChat
+    mockChatsStore.updateChat = vi.fn()
+    mockAppInfoStore.getLLMModels = vi.fn()
+    mockAppInfoStore.llmModels = [
+      { label: 'GPT-4', value: 'gpt-4', isDefault: true },
+      {
+        label: 'Old Model',
+        value: 'old-model',
+        isDefault: false,
+        status: 'deprecated' as const,
+      },
+    ] as ModelOption[]
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
+  it('shows a Deprecated label for a deprecated model option', () => {
+    render(<ChatPromptLlmSelector />)
+
+    const deprecatedRow = screen.getByRole('option', { name: /Old Model/ })
+    const meta = deprecatedRow.querySelector('[data-testid="llm-option-meta"]')
+    expect(meta).not.toBeNull()
+    expect(meta!.textContent).toContain('Deprecated')
+  })
+
+  it('disables the deprecated option so it cannot be selected for new work', () => {
+    render(<ChatPromptLlmSelector />)
+
+    const deprecatedRow = screen.getByRole('option', { name: /Old Model/ })
+    expect(deprecatedRow).toBeDisabled()
+
+    fireEvent.click(deprecatedRow)
+    expect(mockChatsStore.updateChat).not.toHaveBeenCalled()
+  })
+
+  it('does not show Deprecated label for an enabled model', () => {
+    render(<ChatPromptLlmSelector />)
+
+    const enabledRow = screen.getByRole('option', { name: /^GPT-4/ })
+    expect(enabledRow).not.toHaveTextContent('Deprecated')
+    expect(enabledRow).toBeEnabled()
+  })
+})
+
 // The container query fired in one panel and not the other, so the same premium
 // row rendered `● PREMIUM` in the chat panel and a lone dot in the assistant
 // form. Rows no longer race horizontally at all: no query container, no badge,

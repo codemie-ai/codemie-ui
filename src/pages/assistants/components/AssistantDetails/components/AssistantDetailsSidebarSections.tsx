@@ -161,9 +161,15 @@ const AssistantDetailsSidebarSections = ({
   }, [assistant.context, onContextClick])
 
   const llmModelLabel = useMemo(() => {
+    if (assistant.effective_llm_model_source === 'unavailable') return 'Unavailable'
     const modelValue = assistant.effective_llm_model ?? assistant.llm_model_type
     return modelValue ? appInfoStore.findLLMLabel(modelValue) : null
-  }, [assistant.effective_llm_model, assistant.llm_model_type, appInfoStore.llmModels])
+  }, [
+    assistant.effective_llm_model,
+    assistant.effective_llm_model_source,
+    assistant.llm_model_type,
+    appInfoStore.llmModels,
+  ])
 
   return (
     <>
@@ -237,6 +243,9 @@ const AssistantDetailsSidebarSections = ({
             <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-sm leading-5">
               {llmModelLabel}
             </div>
+            {assistant.effective_llm_model_reason && (
+              <p className="text-xs text-text-quaternary">{assistant.effective_llm_model_reason}</p>
+            )}
           </div>
         )}
 
