@@ -169,12 +169,12 @@ const ModelsManagementPage = () => {
         <ModelStatusSelector
           model={item}
           onStatusChange={handleStatusChange}
-          disabled={saving || loading || loadError}
+          disabled={saving || loading || loadError || selected.length > 1}
         />
       ) : (
         <ModelStatusBadge status={item.status} />
       ),
-    [handleStatusChange, saving, loading, loadError]
+    [handleStatusChange, saving, loading, loadError, selected.length]
   )
 
   const customRenderColumns = useMemo(

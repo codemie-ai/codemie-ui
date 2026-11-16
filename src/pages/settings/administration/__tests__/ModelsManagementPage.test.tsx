@@ -565,6 +565,33 @@ describe('ModelsManagementPage default options', () => {
 })
 
 describe('ModelsManagementPage bulk and filters', () => {
+  it('blocks status dropdowns for multiple selections and restores single-model editing', async () => {
+    await renderPage()
+    fireEvent.click(modelTable().getByText('Claude 3'))
+    fireEvent.click(modelTable().getByText('Gemini Pro'))
+    expect(screen.getByText('2 selected')).toBeInTheDocument()
+
+    for (const baseName of ['gpt-4', 'claude-3', 'gemini', 'auto']) {
+      const selector = document.getElementById(`model-status-${baseName}`)!
+      expect(selector).toHaveAttribute('data-p-disabled', 'true')
+    }
+    fireEvent.click(document.getElementById('model-status-gpt-4')!)
+    expect(document.querySelector('.p-dropdown-panel')).toBeNull()
+    expect(statusValue('claude-3')).toBe('Disabled')
+    expect(statusValue('gemini')).toBe('Deprecated')
+    expect(applyButton()).toBeDisabled()
+    expect(writes).toEqual([])
+
+    fireEvent.click(modelTable().getByText('GPT-4'))
+    fireEvent.click(modelTable().getByText('Gemini Pro'))
+    expect(screen.getByText('1 selected')).toBeInTheDocument()
+    await changeStatus('claude-3', 'Enabled')
+    expect(statusValue('claude-3')).toBe('Enabled')
+    fireEvent.click(applyButton())
+    await waitFor(() => expect(toaster.info).toHaveBeenCalledWith('Model settings updated'))
+    expect(adminModelsStore.bulkSetModelStatus).toHaveBeenCalledWith(['claude-3'], 'enabled')
+  })
+
   it('stages bulk changes and saves only models whose status changed', async () => {
     await renderPage()
     fireEvent.click(modelTable().getByText('Claude 3'))
