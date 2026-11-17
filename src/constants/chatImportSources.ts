@@ -51,6 +51,22 @@ const VALID_IMPORT_SOURCES: ReadonlySet<string> = new Set<ImportSourceKind>([
 export const isValidImportSourceKind = (value: unknown): value is ImportSourceKind =>
   typeof value === 'string' && VALID_IMPORT_SOURCES.has(value)
 
+const AGENT_FOLDER_KINDS: ReadonlySet<string> = new Set<ImportSourceKind>([
+  'codex',
+  'gemini',
+  'copilot_cli',
+  'opencode',
+  'pi',
+  'kimi',
+])
+
+/**
+ * True when a folder name equals a known CLI agent import source (case-insensitive,
+ * `-` treated as `_`). Used to hide empty duplicates of the `import:<kind>` groups.
+ */
+export const isAgentImportFolderName = (name?: string | null): boolean =>
+  typeof name === 'string' && AGENT_FOLDER_KINDS.has(name.trim().toLowerCase().replace(/-/g, '_'))
+
 /** Display metadata keyed by canonical import source. */
 export const IMPORT_SOURCE_DISPLAY: Record<ImportSourceKind, ChatImportSource> = {
   claude_desktop: { name: 'Claude Desktop', iconUrl: FolderSvg },

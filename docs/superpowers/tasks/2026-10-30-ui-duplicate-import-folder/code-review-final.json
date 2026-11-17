@@ -1,0 +1,21 @@
+{
+  "decision": "approve",
+  "rationale": "Both compact-profile lenses ran. 3 candidates dismissed: case-variant key concern (chats under a differing key still render via additionalFolderKeys, so AC7 is met), and the empty-agent-named-folder-hidden concern (the specified behavior). 0 deferred. Standards not expected for this profile.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "story-ac", "item": "AC1", "status": "pass", "notes": "Registered empty gemini plus import:gemini chats yields only import key." },
+    { "kind": "story-ac", "item": "AC2", "status": "pass", "notes": "Covers codex, gemini, copilot-cli, opencode, pi, kimi." },
+    { "kind": "story-ac", "item": "AC3", "status": "pass", "notes": "Claude excluded from agent kinds; legacy path unchanged." },
+    { "kind": "story-ac", "item": "AC4", "status": "pass", "notes": "Non-agent custom folder kept when empty." },
+    { "kind": "story-ac", "item": "AC5", "status": "pass", "notes": "Empty agent-named folder with no import group is hidden." },
+    { "kind": "story-ac", "item": "AC6", "status": "pass", "notes": "Predicate tests cover case, hyphen, underscore, Kimi." },
+    { "kind": "story-ac", "item": "AC7", "status": "pass", "notes": "Folder with chats kept; case-variant keys still surface via additionalFolderKeys." }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for this profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for this profile." }
+  ],
+  "findings": []
+}

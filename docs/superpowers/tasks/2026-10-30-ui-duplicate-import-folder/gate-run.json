@@ -1,0 +1,90 @@
+{
+ "schema": 1,
+ "branch": "EPMCDME-16623-duplicate-import-folder",
+ "head": "b65aece4587fa05ac74a3e73c25548f117de66e2",
+ "runner": "npm",
+ "started_at": "2026-10-30T00:00:00Z",
+ "completed_at": "2026-10-30T00:10:00Z",
+ "status": "PASSED",
+ "drift_detected": false,
+ "gates": [
+  {
+   "id": "lint",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 18000,
+   "command": "npm run lint",
+   "exit_code": 0
+  },
+  {
+   "id": "typecheck",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 14000,
+   "command": "npm run typecheck",
+   "exit_code": 0
+  },
+  {
+   "id": "license-check",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 2000,
+   "command": "npm run license-check",
+   "exit_code": 0
+  },
+  {
+   "id": "secrets",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 9000,
+   "command": "npm run secrets:check",
+   "exit_code": 0,
+   "notes": "output: no leaks found"
+  },
+  {
+   "id": "unit",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 140000,
+   "command": "npm run test:unit:slnt",
+   "exit_code": 0,
+   "notes": "Test Files 800 passed (800)"
+  },
+  {
+   "id": "integration",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 73000,
+   "command": "npm run test:integration:slnt",
+   "exit_code": 0,
+   "notes": "Test Files 55 passed (55)"
+  },
+  {
+   "id": "license-headers",
+   "source": "hook",
+   "status": "PASS",
+   "duration_ms": 500,
+   "command": "npm run license-headers:check",
+   "exit_code": 0
+  },
+  {
+   "id": "sonar-local",
+   "source": "hook",
+   "status": "N/A",
+   "duration_ms": 0,
+   "command": "npm run sonar-local",
+   "exit_code": null,
+   "notes": "Needs local SonarQube infrastructure; not run. Only CI/Sonar settles it."
+  },
+  {
+   "id": "test-harness",
+   "source": "guide",
+   "status": "SKIPPED",
+   "duration_ms": 0,
+   "command": "npm run test-harness",
+   "exit_code": null,
+   "notes": "~/.codemie/test-harness.json missing and stack not up; required for MR compliance, still owed."
+  }
+ ],
+ "failures": {}
+}

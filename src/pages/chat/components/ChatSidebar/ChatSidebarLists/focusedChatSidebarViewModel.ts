@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { isAgentImportFolderName } from '@/constants/chatImportSources'
 import { AVATAR_CHAT_FOLDER } from '@/constants/chats'
 import type { AssistantFolderListItem } from '@/types/chats'
 import type { ChatListItem, FolderListItem } from '@/types/entity/conversation'
@@ -123,6 +124,8 @@ export const buildFocusedChatSidebarViewModel = (
     if (folder.name === AVATAR_CHAT_FOLDER) continue
     if (classifyFolderListItemName(folder.name).kind !== 'custom') continue
     if (chatFolderNames.has(folder.name)) continue
+    // Empty folder named after a CLI agent duplicates that agent's `import:<kind>` group.
+    if (isAgentImportFolderName(folder.name)) continue
     collections.sourceFolderChats.set(folder.name, [])
   }
   const folders = buildFolderGroups(collections.sourceFolderChats, collections.chatLocations)

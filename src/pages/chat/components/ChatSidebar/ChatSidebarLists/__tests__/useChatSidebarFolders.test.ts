@@ -79,3 +79,42 @@ describe('useChatSidebarFolders — folder sort grouping (EPMCDME-15165)', () =>
     expect(result.current.folders).toEqual(['custom:Folder B', 'custom:Folder A'])
   })
 })
+
+describe('useChatSidebarFolders — agent-named duplicate folders (EPMCDME-16623)', () => {
+  const run = (names: string[], foldersToChatsMap: Record<string, ChatListItem[]>) =>
+    renderHook(() =>
+      useChatSidebarFolders({
+        chatFolders: names.map((name) => ({ name } as never)),
+        foldersToChatsMap,
+      })
+    ).result.current.folders
+
+  it.each([
+    ['codex', 'codex'],
+    ['gemini', 'gemini'],
+    ['copilot-cli', 'copilot_cli'],
+    ['opencode', 'opencode'],
+    ['pi', 'pi'],
+    ['kimi', 'kimi'],
+  ])('shows only import:%s when registered folder is empty', (name, kind) => {
+    const folders = run([name], { [`import:${kind}`]: [createChat({ id: 'a' })] })
+    expect(folders).toEqual([`import:${kind}`])
+  })
+
+  it('drops an empty registered agent-named folder', () => {
+    expect(run(['gemini'], {})).toEqual([])
+  })
+
+  it('hides Gemini and Copilot_CLI when empty', () => {
+    expect(run(['Gemini', 'Copilot_CLI'], {})).toEqual([])
+  })
+
+  it('keeps custom:gemini when it holds chats', () => {
+    const folders = run(['gemini'], { 'custom:gemini': [createChat({ id: 'a' })] })
+    expect(folders).toContain('custom:gemini')
+  })
+
+  it('keeps an empty non-agent folder', () => {
+    expect(run(['my-folder'], {})).toEqual(['custom:my-folder'])
+  })
+})

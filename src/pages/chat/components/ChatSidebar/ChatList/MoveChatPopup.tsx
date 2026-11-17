@@ -24,11 +24,13 @@ import FolderSvg from '@/assets/icons/folder-add.svg?react'
 import Button from '@/components/Button'
 import Autocomplete from '@/components/form/Autocomplete'
 import Popup from '@/components/Popup'
+import { isAgentImportFolderName } from '@/constants/chatImportSources'
 import { VALIDATION_MESSAGES } from '@/constants/validation'
 import { chatsStore } from '@/store/chats'
 import { ChatListItem } from '@/types/entity/conversation'
 import { FilterOption } from '@/types/filters'
 
+import { isImportedChat } from '../ChatSidebarLists/chatSidebarFolderHelpers'
 import {
   getFolderKindFromKey,
   isWorkflowAssociatedFolder,
@@ -73,6 +75,9 @@ const MoveChatPopup = ({ isVisible, selectedChat, onHide, onMove }: MoveChatPopu
       .filter(({ name }) => {
         if (getFolderKindFromKey(sidebarFolderKeyFromName(name)) !== 'custom') return false
         const folderChats = (chats as ChatListItem[]).filter((chat) => chat.folder === name)
+        // Agent-named folders duplicate the import groups; imported chats carry the agent name as
+        // `folder`, so only a folder holding a non-imported chat is a real custom folder.
+        if (isAgentImportFolderName(name) && folderChats.every(isImportedChat)) return false
         return !isWorkflowAssociatedFolder(folderChats)
       })
       .map(({ name }) => ({

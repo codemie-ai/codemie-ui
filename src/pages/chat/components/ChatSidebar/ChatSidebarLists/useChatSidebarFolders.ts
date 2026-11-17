@@ -14,6 +14,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 
+import { isAgentImportFolderName } from '@/constants/chatImportSources'
 import { ChatListItem, FolderListItem } from '@/types/entity/conversation'
 
 import {
@@ -49,10 +50,12 @@ export const useChatSidebarFolders = ({
     const namedFolderKeys = Array.from(
       new Set(
         chatFolders
-          .map((folder) => classifyFolderListItemName(folder.name))
-          .filter(({ key, kind }) => {
+          .map((folder) => ({ ...classifyFolderListItemName(folder.name), name: folder.name }))
+          .filter(({ key, kind, name }) => {
+            const isEmpty = (foldersToChatsMap[key] ?? []).length === 0
+            if (kind === 'custom') return !(isAgentImportFolderName(name) && isEmpty)
             if (kind !== 'import' && kind !== 'legacy-import') return true
-            return (foldersToChatsMap[key] ?? []).length > 0
+            return !isEmpty
           })
           .map(({ key }) => key)
       )
