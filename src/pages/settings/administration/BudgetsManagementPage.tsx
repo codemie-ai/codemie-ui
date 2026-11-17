@@ -17,15 +17,17 @@ import { FC, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useSnapshot } from 'valtio'
 
+import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
 import RefreshSvg from '@/assets/icons/refresh.svg?react'
 import Button from '@/components/Button'
+import ConfirmationModal from '@/components/ConfirmationModal'
 import Select from '@/components/form/Select/Select'
 import NavigationMore from '@/components/NavigationMore/NavigationMore'
 import Table from '@/components/Table'
-import { ButtonSize, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
+import { ButtonSize, ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import BudgetDetailsPopup from '@/pages/settings/administration/components/BudgetDetailsPopup'
 import BudgetModal from '@/pages/settings/administration/components/BudgetModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
@@ -115,11 +117,21 @@ const renderBudgetCreatedByCell = (item: Budget) => (
   <span className="text-text-primary">{getBudgetCreatorDisplay(item)}</span>
 )
 
+// Budgets with assigned users cannot be deleted; the backend refuses them with a 409.
+const getDeleteBlockedHint = (item: Budget): string | undefined => {
+  const userCount = item.user_count ?? 0
+  const assigned = userCount === 1 ? '1 user is' : `${userCount} users are`
+  return userCount > 0
+    ? `${assigned} assigned to this budget. Unassign them before deleting.`
+    : undefined
+}
+
 interface BudgetActionsCellProps {
   budget: Budget
   canEdit: boolean
   onViewDetails: (budget: Budget) => void
   onEdit: (budget: Budget) => void
+  onDelete: (budget: Budget) => void
 }
 
 const BudgetActionsCell: FC<BudgetActionsCellProps> = ({
@@ -127,6 +139,7 @@ const BudgetActionsCell: FC<BudgetActionsCellProps> = ({
   canEdit,
   onViewDetails,
   onEdit,
+  onDelete,
 }) => (
   <div className="flex justify-end">
     <NavigationMore
@@ -134,7 +147,18 @@ const BudgetActionsCell: FC<BudgetActionsCellProps> = ({
       contextId={`budget-mgmt-name-${budget.budget_id}`}
       items={[
         { title: 'View details', icon: <InfoSvg />, onClick: () => onViewDetails(budget) },
-        ...(canEdit ? [{ title: 'Edit', icon: <EditSvg />, onClick: () => onEdit(budget) }] : []),
+        ...(canEdit
+          ? [
+              { title: 'Edit', icon: <EditSvg />, onClick: () => onEdit(budget) },
+              {
+                title: 'Delete',
+                icon: <DeleteSvg />,
+                onClick: () => onDelete(budget),
+                disabled: (budget.user_count ?? 0) > 0,
+                tooltip: getDeleteBlockedHint(budget),
+              },
+            ]
+          : []),
       ]}
     />
   </div>
@@ -155,6 +179,10 @@ const BudgetsManagementPage: FC = () => {
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [detailsBudget, setDetailsBudget] = useState<Budget | null>(null)
+  // The budget stays set while the popup closes, so its name does not blank out mid-animation.
+  const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (currentUser && !canViewBudgets) {
@@ -192,6 +220,34 @@ const BudgetsManagementPage: FC = () => {
     setEditingBudget(budget)
     setShowModal(true)
   }, [])
+
+  const handleDeleteRequest = useCallback((budget: Budget) => {
+    setBudgetToDelete(budget)
+    setShowDeleteConfirm(true)
+  }, [])
+
+  const handleDeleteCancel = useCallback(() => {
+    if (!deleting) setShowDeleteConfirm(false)
+  }, [deleting])
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!budgetToDelete || deleting) return
+
+    setDeleting(true)
+    try {
+      await budgetsStore.deleteBudget(budgetToDelete.budget_id)
+      toaster.info('Budget deleted successfully')
+      const { page } = budgetsStore.pagination
+      const wasLastOnPage = budgetsStore.budgets.length === 1 && page > 0
+      loadBudgets(wasLastOnPage ? page - 1 : page)
+    } catch (error) {
+      // The store has already shown the backend error message.
+      console.error('Failed to delete budget:', error)
+    } finally {
+      setShowDeleteConfirm(false)
+      setDeleting(false)
+    }
+  }, [budgetToDelete, deleting, loadBudgets])
 
   const handleModalClose = useCallback(() => {
     setEditingBudget(null)
@@ -266,9 +322,10 @@ const BudgetsManagementPage: FC = () => {
           canEdit: canManageBudgets && !item.is_preconfigured,
           onViewDetails: setDetailsBudget,
           onEdit: handleEdit,
+          onDelete: handleDeleteRequest,
         }),
     }),
-    [canManageBudgets, handleEdit]
+    [canManageBudgets, handleEdit, handleDeleteRequest]
   )
 
   const rightContent = useMemo(
@@ -319,12 +376,25 @@ const BudgetsManagementPage: FC = () => {
       />
 
       {canManageBudgets ? (
-        <BudgetModal
-          visible={showModal}
-          budget={editingBudget}
-          onHide={handleModalClose}
-          onSubmit={handleModalSubmit}
-        />
+        <>
+          <BudgetModal
+            visible={showModal}
+            budget={editingBudget}
+            onHide={handleModalClose}
+            onSubmit={handleModalSubmit}
+          />
+          <ConfirmationModal
+            visible={showDeleteConfirm}
+            header="Delete budget"
+            message={`Delete budget "${budgetToDelete?.name}" (${budgetToDelete?.budget_id})? This cannot be undone.`}
+            confirmText="Delete"
+            confirmButtonType={ButtonType.DELETE}
+            confirmDisabled={deleting}
+            onCancel={handleDeleteCancel}
+            onConfirm={handleDeleteConfirm}
+            limitWidth
+          />
+        </>
       ) : null}
 
       <BudgetDetailsPopup budget={detailsBudget} onHide={() => setDetailsBudget(null)} />

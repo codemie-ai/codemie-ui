@@ -35,6 +35,7 @@ export interface Budget {
   created_by_name?: string | null
   created_at?: string | null
   updated_at?: string | null
+  user_count?: number | null
 }
 
 export interface BudgetPayload {
