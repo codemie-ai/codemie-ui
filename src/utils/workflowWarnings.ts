@@ -82,7 +82,7 @@ const OWNER_INTEGRATION_TOAST_MS = 8000
 const notifyConsumerSlots = (warnings: WorkflowWarning[], prefixSaved?: boolean) => {
   const tools = warnings.map((w) => formatWarning(w).message).join('; ')
   const prefix = prefixSaved ? 'Saved. ' : ''
-  toaster.info(`${prefix}These tools will use each user's own integration: ${tools}.`)
+  toaster.warning(`${prefix}These tools will use each user's own integration: ${tools}.`)
 }
 
 const notifyScriptOwnerIntegration = (warnings: WorkflowWarning[], prefixSaved?: boolean) => {
@@ -91,7 +91,7 @@ const notifyScriptOwnerIntegration = (warnings: WorkflowWarning[], prefixSaved?:
   const rest = names.length - MAX_LISTED_TOOLS
   const more = rest > 0 ? ` and ${rest} more` : ''
   const prefix = prefixSaved ? 'Saved. ' : ''
-  toaster.info(
+  toaster.warning(
     `${prefix}Script steps run these tools under the workflow author's integration for everyone who runs the workflow: ${listed}${more}.`,
     { duration: OWNER_INTEGRATION_TOAST_MS }
   )
@@ -99,7 +99,7 @@ const notifyScriptOwnerIntegration = (warnings: WorkflowWarning[], prefixSaved?:
 
 const notifyUnknown = (warnings: WorkflowWarning[]) => {
   const messages = warnings.map((w) => formatWarning(w).message).filter(Boolean)
-  if (messages.length) toaster.info(messages.join('; '))
+  if (messages.length) toaster.warning(messages.join('; '))
 }
 
 /**

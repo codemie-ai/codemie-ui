@@ -1,0 +1,19 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case and acceptance lenses ran clean with no findings; all four acceptance criteria pass. Standards omitted by compact profile; 0 deferred, 0 dismissed.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "Info/advisory toasts visually distinguishable from success in shared Toaster", "status": "pass", "notes": "New warning toast with yellow header and warning background SVG."},
+    {"kind": "story-ac", "item": "consumer_slot and tool_access_owner_integration advisories not green", "status": "pass", "notes": "Advisory notifiers now call toaster.warning."},
+    {"kind": "story-ac", "item": "Successful-save notification retains success appearance", "status": "pass", "notes": "toaster.success untouched in diff."},
+    {"kind": "story-ac", "item": "Saving behavior and advisory message content unchanged", "status": "pass", "notes": "Only the toaster method changed."}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "na", "notes": "Standards audit not part of compact profile."},
+    {"kind": "code-quality", "status": "na", "notes": "Standards audit not part of compact profile."},
+    {"kind": "security", "status": "na", "notes": "Standards audit not part of compact profile."}
+  ],
+  "findings": [],
+  "deferred": []
+}

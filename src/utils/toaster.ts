@@ -66,6 +66,11 @@ const successOpts: ToastOptions = {
   duration: 3000,
 }
 
+const warnOpts: ToastOptions = {
+  className: 'codemie-toast codemie-toast-warn',
+  duration: 3000,
+}
+
 const errOpts: ToastOptions = {
   className: 'codemie-toast codemie-toast-err',
   duration: 10000,
@@ -88,6 +93,7 @@ const prepareText = (text: string): string => {
 interface Toaster {
   info: (text: string, options?: { duration?: number }) => void
   success: (text: string) => void
+  warning: (text: string, options?: { duration?: number }) => void
   error: (text: string) => void
 }
 
@@ -154,6 +160,12 @@ const toaster: Toaster = {
   success: (text: string) => {
     if (!text) return
     Toastify({ ...defaultOpts, ...successOpts, text: prepareText(text) }).showToast()
+    fixCloseButton()
+    announcer?.(toAnnouncement(text))
+  },
+  warning: (text: string, options?: { duration?: number }) => {
+    if (!text) return
+    Toastify({ ...defaultOpts, ...warnOpts, ...options, text: prepareText(text) }).showToast()
     fixCloseButton()
     announcer?.(toAnnouncement(text))
   },

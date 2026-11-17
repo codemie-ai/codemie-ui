@@ -466,6 +466,9 @@ const themeTokens: ThemeConfig = {
     secondary: [c['yellow']['600'], c['yellow']['500']],
     tertiary: [c['yellow']['800'], '#FAF2E7'],
   },
+  warning: {
+    primary: [c['yellow']['500'], c['yellow']['500']],
+  },
   advanced: {
     primary: [c['purple']['700'], c['purple']['450']],
     secondary: [c['purple']['350'], c['purple']['400']],

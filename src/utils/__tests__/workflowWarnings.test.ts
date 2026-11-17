@@ -18,7 +18,7 @@ import toaster from '@/utils/toaster'
 
 import { notifyAboutWarnings } from '../workflowWarnings'
 
-vi.mock('@/utils/toaster', () => ({ default: { info: vi.fn(), error: vi.fn() } }))
+vi.mock('@/utils/toaster', () => ({ default: { warning: vi.fn(), error: vi.fn() } }))
 
 describe('notifyAboutWarnings', () => {
   afterEach(() => {
@@ -40,8 +40,8 @@ describe('notifyAboutWarnings', () => {
       { prefixSaved: true }
     )
 
-    expect(toaster.info).toHaveBeenCalledTimes(1)
-    expect(toaster.info).toHaveBeenCalledWith(
+    expect(toaster.warning).toHaveBeenCalledTimes(1)
+    expect(toaster.warning).toHaveBeenCalledWith(
       "Saved. These tools will use each user's own integration: generic_confluence_tool (Confluence); generic_jira_tool (Jira)."
     )
   })
@@ -50,6 +50,6 @@ describe('notifyAboutWarnings', () => {
     notifyAboutWarnings({ warnings: [] })
     notifyAboutWarnings(undefined)
 
-    expect(toaster.info).not.toHaveBeenCalled()
+    expect(toaster.warning).not.toHaveBeenCalled()
   })
 })

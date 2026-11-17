@@ -32,6 +32,14 @@
     @apply text-in-progress-primary;
   }
 
+  &.codemie-toast-warn {
+    @apply bg-[url('~images/toaster-bg-warning.svg')];
+  }
+
+  &.codemie-toast-warn .codemie-toast-header {
+    @apply text-warning-primary;
+  }
+
   &.codemie-toast-err {
     @apply bg-[url('~images/toaster-bg-error.svg')];
   }
