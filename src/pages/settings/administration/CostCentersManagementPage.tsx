@@ -14,11 +14,13 @@
 //
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSnapshot } from 'valtio'
 
 import Cross18Svg from '@/assets/icons/cross.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import PlusFilledSvg from '@/assets/icons/plus-filled.svg?react'
+import ProjectManagementSvg from '@/assets/icons/project_management.svg?react'
 import ViewSvg from '@/assets/icons/view.svg?react'
 import Button from '@/components/Button'
 import ConfirmationModal from '@/components/ConfirmationModal'
@@ -29,8 +31,10 @@ import { ButtonSize, ButtonType, DECIMAL_PAGINATION_OPTIONS, InfoWarningType } f
 import { useVueRouter } from '@/hooks/useVueRouter'
 import CostCenterFormPopup from '@/pages/settings/administration/components/CostCenterFormPopup'
 import NameLinkCell from '@/pages/settings/administration/components/NameLinkCell'
+import ResourceCounterBadge from '@/pages/settings/administration/projectsManagement/ResourceCounterBadge'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { costCentersStore } from '@/store/costCenters'
+import { userStore } from '@/store/user'
 import { PaginatedResponse } from '@/types/common'
 import { CostCenterListItem } from '@/types/entity/costCenter'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
@@ -49,7 +53,7 @@ const columnDefinitions: ColumnDefinition[] = [
   {
     key: 'project_count',
     label: 'Projects',
-    type: DefinitionTypes.String,
+    type: DefinitionTypes.Custom,
     headClassNames: 'w-[10%]',
   },
   {
@@ -72,8 +76,30 @@ const initialResponse: PaginatedResponse<CostCenterListItem> = {
   },
 }
 
+const ProjectCountCell = ({
+  costCenter,
+  projectsLink,
+}: {
+  costCenter: CostCenterListItem
+  projectsLink: string
+}) => (
+  <ResourceCounterBadge
+    icon={ProjectManagementSvg}
+    count={costCenter.project_count}
+    tooltip="Projects"
+    to={projectsLink}
+  />
+)
+
+const renderProjectCountColumn =
+  (buildProjectsLink: (costCenter: CostCenterListItem) => string) =>
+  (costCenter: CostCenterListItem) =>
+    <ProjectCountCell costCenter={costCenter} projectsLink={buildProjectsLink(costCenter)} />
+
 const CostCentersManagementPage = () => {
   const router = useVueRouter()
+  const { user: currentUser } = useSnapshot(userStore)
+  const canLinkToFilteredProjects = !!(currentUser?.isAdmin || currentUser?.isMaintainer)
   const [response, setResponse] = useState(initialResponse)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
@@ -145,6 +171,19 @@ const CostCentersManagementPage = () => {
     await loadCostCenters(page, perPage)
   }
 
+  const buildProjectsLink = useCallback(
+    (costCenter: CostCenterListItem): string => {
+      if (!canLinkToFilteredProjects) return ''
+
+      const { path, searchParamsString } = router.resolve({
+        name: 'projects-management',
+        query: { cost_center_ids: costCenter.id },
+      })
+      return searchParamsString ? `${path}?${searchParamsString}` : path
+    },
+    [canLinkToFilteredProjects, router]
+  )
+
   const customRenderColumns = useMemo(
     () => ({
       name: (costCenter: CostCenterListItem) => (
@@ -159,6 +198,7 @@ const CostCentersManagementPage = () => {
           {displayValue(costCenter.description)}
         </span>
       ),
+      project_count: renderProjectCountColumn(buildProjectsLink),
       actions: (costCenter: CostCenterListItem) => {
         const menuItems: NavigationItem[] = [
           {
@@ -194,7 +234,7 @@ const CostCentersManagementPage = () => {
         )
       },
     }),
-    [handleCostCenterOpen]
+    [handleCostCenterOpen, buildProjectsLink]
   )
 
   const headerActions = useMemo(

@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "No spec/story artifact existed, so acceptance was skipped (business_review empty) and standards is not expected for the compact profile (standards_review rows na, no coverage gap); together these cap confidence at low. The one edge-case lens that ran was verified against the real code: CR-001 (major) is a newly introduced bug where the Cost Centers 'Projects' badge always links with cost_center_ids but ProjectsManagementFull.tsx silently drops that filter for non-admin/non-maintainer users since the Cost Centers route carries no role gate. One further candidate (identical aria-label across badge rows) is deferred as pre-existing in the shared ResourceCounterBadge/ProjectResourceCounters pattern from EPMCDME-12726; 0 findings dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for the compact review profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for the compact review profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for the compact review profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/CostCentersManagementPage.tsx",
+      "line": 164,
+      "title": "Projects badge silently drops cost-center filter",
+      "problem": "The project_count column always renders a ResourceCounterBadge link to Project Management with cost_center_ids set, but Project Management only honors cost_center_ids when the visiting user is admin or maintainer (canFilterByCostCenter in ProjectsManagementFull.tsx:221-222); the Cost Centers route itself has no role gate, only a COST_CENTERS FeatureGuard, so any authenticated user with the feature flag on can reach this badge.",
+      "impact": "A non-admin/non-maintainer user clicking the badge lands on the full, unfiltered Project Management list with no indication the expected filter was dropped, making the new navigation feature silently misleading for that audience.",
+      "recommendation": "Gate the link the same way the destination page does (reuse the isAdmin/isMaintainer check) and render a plain, non-link count — matching the badge's pre-change behavior — when the viewer cannot filter by cost center."
+    }
+  ]
+}

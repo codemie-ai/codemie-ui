@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15632_department-assignment",
+  "head": "6e821b36bd686d91bd6f7cbcccb8af68d4d286cf",
+  "runner": "npm",
+  "started_at": "2026-10-15T12:50:58Z",
+  "completed_at": "2026-10-15T13:08:24Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17418,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13379,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if met: diff vs merge-base touches no package.json/package-lock.json — no dependency added, removed, or moved."
+    },
+    {
+      "id": "secrets-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 7567,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Ran for real (gitleaks scanned ~35.99MB, 'no leaks found'); not a self-skip."
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 204392,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "696 test files passed, 7037 passed | 1 skipped (within suite, not a gate skip)."
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 63947,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "49 test files passed, 558 passed | 1 skipped (within suite, not a gate skip)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "Diff touches a UI surface (CostCentersManagementPage.tsx, matches ui_globs) but quality-gates.md defines no separate UI test script/gate; browser verification is a separate caller decision (feature-verification / local-verification.md)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 554670,
+      "command": "npm run test-harness",
+      "exit_code": 1,
+      "notes": "Infra unreachable locally: all 93 sanity-ui tests errored identically with 'playwright._impl._errors.Error: Page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/' — the frontend dev server is not running (only a stub answering on :8080 with 404s). Per quality-gates.md: 'Needs the stack up ... A gate that could not run is unverified, not passed.' Enable locally by starting the full stack (dev server on :5173 + backend) before re-running. CI will exercise this gate with its own stack; this result does not substitute for it."
+    },
+    {
+      "id": "license-headers-check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 389,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Husky pre-commit chain step not covered by quality-gates.md's own gate list. Checked 2349 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 249,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: script printed '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' and exited 0 without scanning — not evidence of a pass. Set SONAR_TOKEN (see .sonarlint/connectedMode.json, host https://sonar.core.kuberocketci.io) to run this locally. Only CI's compliance-report job settles this."
+    }
+  ],
+  "failures": {}
+}
