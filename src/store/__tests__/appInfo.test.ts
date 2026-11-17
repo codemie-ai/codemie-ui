@@ -463,6 +463,33 @@ describe('appInfoStore.getLLMModels', () => {
     expect(models[1].isPremium).toBeUndefined()
     expect(models[1].cost).toBeUndefined()
   })
+
+  it('maps effort and temperature capability fields from features, and leaves them undefined when features is absent', async () => {
+    mockGet.mockResolvedValue(
+      okResponse([
+        {
+          base_name: 'claude-opus-4-1',
+          label: 'Claude Opus 4.1',
+          default: false,
+          provider: 'anthropic',
+          features: { effort: ['low', 'high'], temperature: false },
+        },
+        {
+          base_name: 'gpt-4o',
+          label: 'GPT-4o',
+          default: true,
+          provider: 'azure_openai',
+        },
+      ])
+    )
+
+    const models = await appInfoStore.getLLMModels()
+
+    expect(models[0].effortLevels).toEqual(['low', 'high'])
+    expect(models[0].temperatureSupported).toBe(false)
+    expect(models[1].effortLevels).toBeUndefined()
+    expect(models[1].temperatureSupported).toBeUndefined()
+  })
 })
 
 describe('appInfoStore.getLLMModels routers', () => {

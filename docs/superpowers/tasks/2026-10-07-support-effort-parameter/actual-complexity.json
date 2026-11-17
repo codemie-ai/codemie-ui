@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "generated": "2026-10-13T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk": { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 3, "label": "M" }
+  },
+  "total": 21,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 40,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Effort propagates through 4+ production touchpoints across distinct subsystems: assistant-page components (AssistantForm, AssistantSetupSection, AssistantDetailsSidebarSections), workflow-editor components (AssistantTab, VirtualAssistantForm), a new shared util (effortConstraints.ts mirroring temperatureConstraints.ts), the global appInfo Valtio store, the assistant DTO transform (store/utils/assistants.ts), and three type-definition files. Red flags for 'touches core shared utilities' and 'affects multiple workflows/agents' both apply (effortConstraints/VALIDATION_CONSTRAINTS reused by both AssistantSetupSection and VirtualAssistantForm; the feature spans both the standalone Assistant form and the workflow editor's virtual-assistant tab), pushing the score to the XXL cap."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "diffstat reports 40 files changed, 2314 insertions(+) — well above the 16+ threshold for XXL — even though only 23 of those (13 production + 10 test files) were enumerated in changed_files for direct inspection; the remainder are additional test/support files captured only in the aggregate diffstat."
+    }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped: touches core shared utilities (new effortConstraints.ts util and VALIDATION_CONSTRAINTS/VALIDATION_MESSAGES reused across AssistantSetupSection and VirtualAssistantForm).",
+    "Component Scope bumped: affects multiple workflows/agents (effort support implemented in parallel for the standalone Assistant form/details view and the workflow editor's virtual-assistant configuration tab)."
+  ],
+  "split_recommendation": null
+}

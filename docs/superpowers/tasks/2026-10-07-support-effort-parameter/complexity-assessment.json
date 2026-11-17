@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "task": "Add Anthropic effort parameter support to CodeMie UI model settings, replacing/augmenting the deprecated temperature parameter with model-capability-aware field display and a high-cost warning.",
+  "generated": "2026-10-07T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 6, "label": "XXL" },
+    "requirements_clarity": { "score": 6, "label": "XXL" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 24,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Six-plus components span the validation/utils layer (new effort-constraints module mirroring temperatureConstraints.ts), two independently-maintained forms (AssistantForm, VirtualAssistantForm), the shared appInfoStore/ModelOption model-capability surface, the assistant DTO/transform layer, the read-only sidebar display, and the workflow-editor field registry — multiple subsystems plus new abstractions (a capability flag and a cost-warning UI pattern that doesn't exist today)." },
+    { "dimension": "requirements_clarity", "reason": "The ticket's own comment flags the original acceptance criteria (specific model names, specific effort value list) as stale and asks to disregard them without supplying a replacement; the actual effort value set and qualifying model/provider list cannot be derived from this codebase and must come from a product/spec decision before implementation." },
+    { "dimension": "technical_risk", "reason": "No existing pattern in this repo for model-capability-aware conditional field display or a submit/on-change cost-consumption warning (current cost display is passive, not a warning); the three-plus-one provider-string fragmentation already seen in temperature capping will likely recur for effort/model detection. Partially mitigated by the established name/provider-regex fallback pattern in temperatureConstraints.ts." },
+    { "dimension": "file_change_estimate", "reason": "Effort logic mirrors temperature across roughly 10-12 files: a new constraints util, two independent form components plus their parent/tab wiring, the DTO/transform layer (assistant.ts, store/utils/assistants.ts), ModelOption/appInfoStore, the read-only sidebar, the workflow-editor field registry, and corresponding unit/integration/schema/registry test updates." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from XL (5) to XXL (6): change touches core shared utilities (appInfoStore.llmModels / ModelOption capability surface, visualEditorFieldRegistry.ts) consumed by multiple unrelated pages (LLMSelector, ModelsCatalogPage, both assistant forms).",
+    "Component Scope red flag 'affects multiple workflows/agents' also applies (assistant-creation form and workflow-editor virtual-assistant form are independently maintained) — already at the cap of 6.",
+    "Requirements Clarity bumped from XL (5) to XXL (6): acceptance criteria explicitly flagged stale by a ticket comment with no replacement effort-value list or qualifying-model list supplied."
+  ],
+  "split_recommendation": null
+}

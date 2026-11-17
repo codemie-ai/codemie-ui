@@ -18,6 +18,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
+import { appInfoStore } from '@/store/appInfo'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 import * as featureFlags from '@/utils/featureFlags'
 import toaster from '@/utils/toaster'
@@ -1509,6 +1510,208 @@ describe('NewAssistantPage - Integration', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Temperature must be between/)).not.toBeInTheDocument()
+      })
+    })
+
+    describe('Effort and Temperature capability gating', () => {
+      // useProjectLLMModels only refetches a project's models when that project's cache
+      // entry is unset, so every test here must reset the shared store cache first:
+      // otherwise a test can silently receive a prior test's mocked model list instead of
+      // its own `mockAPI` fixture.
+      beforeEach(() => {
+        appInfoStore.projectLlmModels = {}
+        appInfoStore.llmModels = []
+      })
+
+      it('includes effort in POST body for an effort-capable model', async () => {
+        mockAPI('GET', 'v1/user', userWithProject)
+        mockAPI('POST', 'v1/assistants', { id: 'new-id', assistantId: 'new-id' })
+        mockAPI('GET', 'v1/llm_models', [
+          {
+            base_name: 'claude-opus-4-1',
+            label: 'Claude Opus 4.1',
+            default: true,
+            provider: 'anthropic',
+            features: { effort: ['low', 'high'], temperature: true },
+          },
+        ])
+
+        renderPage('/assistants/new')
+
+        await waitFor(() => {
+          expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+        })
+        await waitFor(() => {
+          expect(screen.getByText('test-project')).toBeInTheDocument()
+        })
+
+        await user.type(screen.getByPlaceholderText('Name*'), 'My Assistant')
+        await user.type(screen.getByPlaceholderText(/description/i), 'A useful assistant')
+        await user.type(screen.getByPlaceholderText(/system instructions/i), 'You are helpful')
+
+        const effortSelect = screen.getByRole('button', { name: 'Effort' })
+        await user.click(effortSelect)
+        // PrimeReact's Dropdown panel never reports a non-"display:none" computed style in
+        // jsdom (it always takes the "hidden measurement" branch when positioning the overlay,
+        // since jsdom has no layout and `offsetParent` is always null), so getByRole excludes
+        // its options as inaccessible. getByText has no such visibility filter.
+        await user.click(await screen.findByText('high'))
+
+        await user.click(screen.getByRole('button', { name: 'Save' }))
+
+        await waitFor(() => {
+          expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('v1/assistants'),
+            expect.objectContaining({
+              method: 'POST',
+              body: expect.stringContaining('"effort":"high"'),
+            })
+          )
+        })
+      })
+
+      it('omits effort from POST body for a model without effort levels', async () => {
+        mockAPI('GET', 'v1/user', userWithProject)
+        mockAPI('POST', 'v1/assistants', { id: 'new-id', assistantId: 'new-id' })
+
+        renderPage('/assistants/new')
+
+        await waitFor(() => {
+          expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+        })
+        await waitFor(() => {
+          expect(screen.getByText('test-project')).toBeInTheDocument()
+        })
+
+        await user.type(screen.getByPlaceholderText('Name*'), 'My Assistant')
+        await user.type(screen.getByPlaceholderText(/description/i), 'A useful assistant')
+        await user.type(screen.getByPlaceholderText(/system instructions/i), 'You are helpful')
+
+        await user.click(screen.getByRole('button', { name: 'Save' }))
+
+        await waitFor(() => {
+          expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('v1/assistants'),
+            expect.objectContaining({
+              method: 'POST',
+              body: expect.not.stringContaining('"effort"'),
+            })
+          )
+        })
+      })
+
+      it('shows the effort warning only for a warning-level selection', async () => {
+        mockAPI('GET', 'v1/user', userWithProject)
+        mockAPI('GET', 'v1/llm_models', [
+          {
+            base_name: 'claude-opus-4-1',
+            label: 'Claude Opus 4.1',
+            default: true,
+            provider: 'anthropic',
+            features: { effort: ['low', 'xhigh'], temperature: true },
+          },
+        ])
+
+        renderPage('/assistants/new')
+
+        await waitFor(() => {
+          expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+        })
+        await waitFor(() => {
+          expect(screen.getByRole('button', { name: 'Effort' })).toBeInTheDocument()
+        })
+
+        const warningText =
+          'Higher effort increases model thinking and may significantly increase token usage.'
+
+        await user.click(screen.getByRole('button', { name: 'Effort' }))
+        await user.click(await screen.findByText('xhigh'))
+
+        await waitFor(() => {
+          expect(screen.getByText(warningText)).toBeInTheDocument()
+        })
+
+        await user.click(screen.getByRole('button', { name: 'Effort' }))
+        await user.click(await screen.findByText('low'))
+
+        await waitFor(() => {
+          expect(screen.queryByText(warningText)).not.toBeInTheDocument()
+        })
+      })
+
+      it('shows fields by the selected model capabilities and resets effort on model change, with no stale warning', async () => {
+        mockAPI('GET', 'v1/user', userWithProject)
+        mockAPI('GET', 'v1/llm_models', [
+          {
+            base_name: 'claude-model-a',
+            label: 'Claude Model A',
+            default: true,
+            provider: 'anthropic',
+            features: { effort: ['low', 'xhigh'], temperature: true },
+          },
+          {
+            base_name: 'notemp-model-b',
+            label: 'No Temp Model B',
+            provider: 'azure_openai',
+            features: { temperature: false, effort: ['low', 'xhigh'] },
+          },
+          {
+            base_name: 'noeffort-model-c',
+            label: 'No Effort Model C',
+            provider: 'azure_openai',
+            features: { temperature: true },
+          },
+        ])
+
+        renderPage('/assistants/new')
+
+        await waitFor(() => {
+          expect(screen.getByText('Create Assistant')).toBeInTheDocument()
+        })
+        // Model A (the default) supports Effort: Effort replaces Temperature/Top P.
+        await waitFor(() => {
+          expect(screen.getByRole('button', { name: 'Effort' })).toBeInTheDocument()
+        })
+        expect(screen.queryByTestId('assistant-temperature-input')).not.toBeInTheDocument()
+        expect(screen.queryByPlaceholderText('0-1')).not.toBeInTheDocument()
+
+        const warningText =
+          'Higher effort increases model thinking and may significantly increase token usage.'
+
+        // Select the warning effort level while on Model A.
+        await user.click(screen.getByRole('button', { name: 'Effort' }))
+        await user.click(await screen.findByText('xhigh'))
+        await waitFor(() => {
+          expect(screen.getByText(warningText)).toBeInTheDocument()
+        })
+
+        // The combobox input PrimeReact renders for accessibility is visually hidden with
+        // `pointer-events: none`; the actual clickable trigger is its `.p-multiselect` wrapper.
+        const llmSelect = screen
+          .getByRole('combobox', { name: 'LLM model' })
+          .closest('.p-multiselect') as HTMLElement
+
+        // Switch to Model B (temperatureSupported: false): the form resets, so the selected
+        // effort and its warning are gone; Effort stays and Temperature/Top P stay hidden.
+        await user.click(llmSelect)
+        await user.click(await screen.findByText('No Temp Model B'))
+
+        await waitFor(() => {
+          expect(screen.queryByText(warningText)).not.toBeInTheDocument()
+        })
+        expect(screen.getByRole('button', { name: 'Effort' })).toBeInTheDocument()
+        expect(screen.queryByTestId('assistant-temperature-input')).not.toBeInTheDocument()
+        expect(screen.queryByPlaceholderText('0-1')).not.toBeInTheDocument()
+
+        // Switch to Model C (no effortLevels): Effort hides and Temperature/Top P appear.
+        await user.click(llmSelect)
+        await user.click(await screen.findByText('No Effort Model C'))
+
+        await waitFor(() => {
+          expect(screen.getByTestId('assistant-temperature-input')).toBeInTheDocument()
+        })
+        expect(screen.getByPlaceholderText('0-1')).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Effort' })).not.toBeInTheDocument()
       })
     })
   })

@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import { appInfoStore } from '@/store/appInfo'
+import { EffortLevel } from '@/types/entity/assistant'
 import { ModelOption } from '@/types/entity/configuration'
 
 import { virtualAssistantValidationSchema } from '../VirtualAssistantForm'
@@ -66,6 +67,47 @@ describe('VirtualAssistantForm validation schema — temperature', () => {
         ...baseValues,
         llm_model_type: 'gpt-4o-2024-08-06',
         temperature: 1.5,
+      })
+    ).resolves.toBeDefined()
+  })
+})
+
+describe('VirtualAssistantForm validation schema — effort', () => {
+  beforeEach(() => {
+    appInfoStore.llmModels = [
+      model({
+        value: 'claude-opus-4-1',
+        provider: 'anthropic',
+        label: 'Claude Opus 4.1',
+        effortLevels: [EffortLevel.LOW, EffortLevel.HIGH],
+      }),
+      model({ value: 'gpt-4o-2024-08-06', provider: 'azure_openai', label: 'GPT-4o' }),
+    ]
+  })
+
+  it('validates an in-list effort value and rejects one outside it for a model with effortLevels', async () => {
+    await expect(
+      virtualAssistantValidationSchema.validate({
+        ...baseValues,
+        llm_model_type: 'claude-opus-4-1',
+        effort: EffortLevel.HIGH,
+      })
+    ).resolves.toBeDefined()
+
+    await expect(
+      virtualAssistantValidationSchema.validate({
+        ...baseValues,
+        llm_model_type: 'claude-opus-4-1',
+        effort: EffortLevel.XHIGH,
+      })
+    ).rejects.toThrow('Effort is not supported for this model')
+  })
+
+  it('accepts effort left absent for a model with no effortLevels', async () => {
+    await expect(
+      virtualAssistantValidationSchema.validate({
+        ...baseValues,
+        llm_model_type: 'gpt-4o-2024-08-06',
       })
     ).resolves.toBeDefined()
   })

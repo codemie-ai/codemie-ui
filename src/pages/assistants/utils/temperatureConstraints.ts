@@ -63,15 +63,28 @@ export function isClaudeOnAnthropicProvider(model: ModelOption | undefined): boo
 // Resolves the temperature ceiling for a given model.
 // Store miss (in-flight fetch, `getLLMModels` failure) falls back to a name-based
 // check so Claude on EditAssistant still gets the stricter cap.
-export function getTemperatureMax(modelValue: string | undefined): number {
+// Components pass `useSnapshot(appInfoStore).llmModels`; the default store read is not reactive.
+export function getTemperatureMax(
+  modelValue: string | undefined,
+  models: readonly ModelOption[] = appInfoStore.llmModels
+): number {
   if (!modelValue) return DEFAULT_RULE.max
-  const model = appInfoStore.llmModels.find((m) => m.value === modelValue)
+  const model = models.find((m) => m.value === modelValue)
   if (model) {
     return matchRule(model.provider, model.value)?.max ?? DEFAULT_RULE.max
   }
   // Store miss: match by name only against every rule.
   const byName = TEMPERATURE_RULES.find((r) => r.nameMatch.test(modelValue))
   return byName?.max ?? DEFAULT_RULE.max
+}
+
+// A missing flag means supported, matching the backend default.
+export function isTemperatureSupported(
+  modelValue: string | undefined,
+  models: readonly ModelOption[] = appInfoStore.llmModels
+): boolean {
+  if (!modelValue) return true
+  return models.find((m) => m.value === modelValue)?.temperatureSupported !== false
 }
 
 function messageForMax(max: number): string {

@@ -181,6 +181,8 @@ const mapLlmModel = (model: any): ModelOption => ({
   multimodal: model.multimodal,
   supportsImageGeneration: model.supports_image_generation,
   supportsTools: model.features?.tools ?? model.supports_tools,
+  effortLevels: model.features?.effort,
+  temperatureSupported: model.features?.temperature,
   defaultForCategories: model.default_for_categories,
   cost: model.cost ? { input: model.cost.input, output: model.cost.output } : undefined,
   cliOnly: model.forbidden_for_web === true,

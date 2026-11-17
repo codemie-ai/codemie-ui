@@ -22,6 +22,7 @@ import { ModelOption } from '@/types/entity/configuration'
 import {
   isClaudeOnAnthropicProvider,
   getTemperatureMax,
+  isTemperatureSupported,
   buildTemperatureRule,
 } from '../temperatureConstraints'
 
@@ -139,6 +140,41 @@ describe('getTemperatureMax', () => {
     appInfoStore.llmModels = []
     expect(getTemperatureMax('gpt-4o-2024-08-06')).toBe(2)
     expect(getTemperatureMax('gemini-2.5-pro')).toBe(2)
+  })
+})
+
+describe('isTemperatureSupported', () => {
+  beforeEach(() => {
+    appInfoStore.llmModels = [
+      model({ value: 'claude-3-5-sonnet', provider: 'aws_bedrock', temperatureSupported: true }),
+      model({ value: 'claude-opus-reasoning', provider: 'anthropic', temperatureSupported: false }),
+      model({ value: 'gpt-4o-2024-08-06', provider: 'azure_openai' }),
+    ]
+  })
+
+  it('returns true when the model explicitly supports temperature', () => {
+    expect(isTemperatureSupported('claude-3-5-sonnet')).toBe(true)
+  })
+
+  it('returns false when the model explicitly reports no temperature support', () => {
+    expect(isTemperatureSupported('claude-opus-reasoning')).toBe(false)
+  })
+
+  it('returns true when temperatureSupported is absent (not yet populated by the backend)', () => {
+    expect(isTemperatureSupported('gpt-4o-2024-08-06')).toBe(true)
+  })
+
+  it('returns true for a model not in the store (store miss)', () => {
+    expect(isTemperatureSupported('does-not-exist')).toBe(true)
+  })
+
+  it('returns true for undefined model value', () => {
+    expect(isTemperatureSupported(undefined)).toBe(true)
+  })
+
+  it('accepts an explicit models array instead of reading the store', () => {
+    const models = [model({ value: 'local-model', provider: 'local', temperatureSupported: false })]
+    expect(isTemperatureSupported('local-model', models)).toBe(false)
   })
 })
 

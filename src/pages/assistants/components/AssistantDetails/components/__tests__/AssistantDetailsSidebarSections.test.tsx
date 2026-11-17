@@ -17,7 +17,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { userStore } from '@/store/user'
-import { Assistant } from '@/types/entity/assistant'
+import { Assistant, EffortLevel } from '@/types/entity/assistant'
 import { User } from '@/types/entity/user'
 
 import AssistantDetailsSidebarSections from '../AssistantDetailsSidebarSections'
@@ -228,5 +228,20 @@ describe('AssistantDetailsSidebarSections — shared with section', () => {
     )
     expect(await findByText('Alice')).toBeInTheDocument()
     expect(queryByText('Owner')).not.toBeInTheDocument()
+  })
+})
+
+describe('AssistantDetailsSidebarSections — effort display', () => {
+  it('renders the effort label and value when effort is set', () => {
+    const { getByText } = render(
+      <AssistantDetailsSidebarSections assistant={{ ...assistant, effort: EffortLevel.HIGH }} />
+    )
+    expect(getByText('Effort')).toBeInTheDocument()
+    expect(getByText('high')).toBeInTheDocument()
+  })
+
+  it('does not render the effort block when effort is not set', () => {
+    const { queryByText } = render(<AssistantDetailsSidebarSections assistant={assistant} />)
+    expect(queryByText('Effort')).toBeNull()
   })
 })

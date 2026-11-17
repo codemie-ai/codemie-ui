@@ -13,10 +13,10 @@
 // limitations under the License.
 //
 
-import { useEffect } from 'react'
 import {
   Control,
   FieldErrors,
+  UseFormGetValues,
   UseFormSetValue,
   UseFormTrigger,
   Controller,
@@ -29,8 +29,7 @@ import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import ProjectSelector from '@/components/ProjectSelector'
-import { VALIDATION_CONSTRAINTS } from '@/constants/validation'
-import { getTemperatureMax } from '@/pages/assistants/utils/temperatureConstraints'
+import { useModelParamsFields } from '@/pages/assistants/hooks/useModelParamsFields'
 import { AssistantAIFieldMarkers, AssistantPromptVariable } from '@/types/entity/assistant'
 import { cn } from '@/utils/utils'
 
@@ -40,6 +39,7 @@ import DescriptionField from './DescriptionField'
 import LogoUploadPanel from './LogoUploadPanel'
 import SlugField from './SlugField'
 import { AssistantFormSchema } from '../../AssistantForm'
+import EffortSelect, { EffortWarning } from '../EffortSelect'
 import LLMSelector from '../LLMSelector'
 import SystemPrompt from '../SystemPrompt/SystemPrompt'
 
@@ -48,6 +48,7 @@ interface AssistantSetupSectionProps {
   errors: FieldErrors<AssistantFormSchema>
   setValue: UseFormSetValue<AssistantFormSchema>
   trigger: UseFormTrigger<AssistantFormSchema>
+  getValues: UseFormGetValues<AssistantFormSchema>
   hasUserSettings: boolean
   aiGeneratedFieldMarkers: AssistantAIFieldMarkers
   setAiGeneratedFieldMarkers: (
@@ -63,6 +64,7 @@ const AssistantSetupSection = ({
   errors,
   setValue,
   trigger,
+  getValues,
   hasUserSettings,
   aiGeneratedFieldMarkers,
   setAiGeneratedFieldMarkers,
@@ -73,12 +75,31 @@ const AssistantSetupSection = ({
   const selectedModel = useWatch({ control, name: 'llm_model_type' })
   const projectId = useWatch({ control, name: 'project' }) || undefined
   const isGlobal = useWatch({ control, name: 'is_global' })
-  const temperatureMax = getTemperatureMax(selectedModel)
-  const temperaturePlaceholder = `${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}-${temperatureMax}`
+  const temperature = useWatch({ control, name: 'temperature' })
+  const effort = useWatch({ control, name: 'effort' })
+  const {
+    temperaturePlaceholder,
+    effortLevels,
+    showEffortWarning,
+    showTemperature,
+    resetModelParams,
+    clearTemperature,
+  } = useModelParamsFields({
+    selectedModel,
+    temperature,
+    effort: effort ?? undefined,
+    clearField: (name) => setValue(name, undefined),
+    validateField: trigger,
+  })
 
-  useEffect(() => {
-    trigger('temperature')
-  }, [selectedModel, trigger])
+  const handleModelChange = (newModel: string) => {
+    const previousModel = getValues('llm_model_type')
+    if (newModel === previousModel) return
+
+    setValue('llm_model_type', newModel, { shouldDirty: false })
+    // The select fills in the default model when none is set yet; only a real switch clears saved params.
+    if (previousModel) resetModelParams()
+  }
 
   return (
     <div data-onboarding="assistant-setup-accordion">
@@ -285,9 +306,7 @@ const AssistantSetupSection = ({
                         className="w-full"
                         value={field.value ?? ''}
                         projectId={isGlobal ? undefined : projectId}
-                        onChange={(value) =>
-                          setValue('llm_model_type', value, { shouldDirty: false })
-                        }
+                        onChange={handleModelChange}
                       />
                     )}
                   />
@@ -308,34 +327,56 @@ const AssistantSetupSection = ({
 
                 <div className={cn('flex flex-col gap-6', !isCompactView && 'flex-1')}>
                   <div className="flex gap-8">
-                    <Controller
-                      name="temperature"
-                      control={control}
-                      render={({ field, fieldState }) => (
-                        <Input
-                          label="Temperature"
-                          placeholder={temperaturePlaceholder}
-                          rootClass="w-24"
-                          error={fieldState.error?.message}
-                          data-testid="assistant-temperature-input"
-                          {...field}
+                    {showTemperature && (
+                      <>
+                        <Controller
+                          name="temperature"
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <Input
+                              label="Temperature"
+                              placeholder={temperaturePlaceholder}
+                              rootClass="w-24"
+                              error={fieldState.error?.message}
+                              data-testid="assistant-temperature-input"
+                              {...field}
+                            />
+                          )}
                         />
-                      )}
-                    />
-                    <Controller
-                      name="top_p"
-                      control={control}
-                      render={({ field, fieldState }) => (
-                        <Input
-                          label="Top P"
-                          placeholder="0-1"
-                          rootClass="w-24"
-                          error={fieldState.error?.message}
-                          {...field}
+                        <Controller
+                          name="top_p"
+                          control={control}
+                          render={({ field, fieldState }) => (
+                            <Input
+                              label="Top P"
+                              placeholder="0-1"
+                              rootClass="w-24"
+                              error={fieldState.error?.message}
+                              {...field}
+                            />
+                          )}
                         />
-                      )}
-                    />
+                      </>
+                    )}
+                    {effortLevels.length > 0 && (
+                      <Controller
+                        name="effort"
+                        control={control}
+                        render={({ field, fieldState }) => (
+                          <EffortSelect
+                            levels={effortLevels}
+                            value={field.value}
+                            error={fieldState.error?.message}
+                            onChange={(value) => {
+                              field.onChange(value)
+                              clearTemperature()
+                            }}
+                          />
+                        )}
+                      />
+                    )}
                   </div>
+                  {showEffortWarning && <EffortWarning />}
                 </div>
               </div>
             </Accordion>

@@ -50,6 +50,7 @@ import {
   useMissingIntegrationsModal,
   SubmitResponse,
 } from '@/pages/assistants/hooks/useMissingIntegrationsModal'
+import { buildEffortRule } from '@/pages/assistants/utils/effortConstraints'
 import { buildTemperatureRule } from '@/pages/assistants/utils/temperatureConstraints'
 import { assistantsStore, userStore } from '@/store'
 import { providersStore } from '@/store/providers'
@@ -140,6 +141,7 @@ const formSchema = Yup.object()
       Yup.object().shape({ id: Yup.string().required(), name: Yup.string().required() })
     ),
     temperature: buildTemperatureRule().nullable(),
+    effort: buildEffortRule().nullable(),
     top_p: Yup.number()
       .nullable()
       .min(0, 'Top P must be at least 0')
@@ -300,6 +302,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
           file_attachment_enabled: assistant?.file_attachment_enabled ?? true,
           slug: assistant?.slug?.length ? assistant.slug : getSlugFromName(assistant?.name),
           temperature: assistant?.temperature ?? undefined,
+          effort: assistant?.effort ?? undefined,
           top_p: assistant?.top_p ?? undefined,
           tools_tokens_size_limit: assistant?.tools_tokens_size_limit ?? undefined,
           context: assistant?.context ?? [],
@@ -346,11 +349,17 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         if (value != null && value !== '') return Number(value)
         return isEditing ? null : undefined
       }
+      // Same clear-on-edit contract as the numeric params above.
+      const toEffortOrNull = (value: string | null | undefined): string | null | undefined => {
+        if (value) return value
+        return isEditing ? null : undefined
+      }
 
       return {
         ...preparedValues,
         temperature: toNumberOrNull(values.temperature),
         top_p: toNumberOrNull(values.top_p),
+        effort: toEffortOrNull(values.effort),
         tools_tokens_size_limit: toNumberOrNull(values.tools_tokens_size_limit),
         tool_permissions:
           isCodemieAssistant && toolPermissionsEnabled
@@ -670,6 +679,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
             errors={errors}
             setValue={setValue}
             trigger={trigger}
+            getValues={getValues}
             hasUserSettings={hasUserSettings}
             aiGeneratedFieldMarkers={aiGeneratedFieldMarkers}
             setAiGeneratedFieldMarkers={setAiGeneratedFieldMarkers}

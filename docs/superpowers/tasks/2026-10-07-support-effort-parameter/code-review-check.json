@@ -1,0 +1,54 @@
+{
+  "decision": "approve",
+  "rationale": "Records the fixes for the five findings the rebased review round left open (CR-001, CR-002, CR-003, CR-007, CR-008); all five are resolved at HEAD. CR-007 was the only code defect: the workflow model change had stopped marking the form dirty, so the panel could close without the unsaved-changes prompt; it now goes through the field onChange, and a new test fails if the fix is reverted (verified by mutation). CR-001 was a commit subject without the ticket prefix, reworded. CR-002, CR-003 and CR-008 were test gaps, now covered by three EditAssistantPage PUT-body tests and two VirtualAssistantForm tests, with the self-registering effort assertion in visualEditorFieldRegistry.test.ts reverted. Verification was the host suites for the touched areas (157 files, 1572 tests) plus typecheck and eslint; the test-harness run in the MR description predates these commits. Five further candidates from that round (CR-004, CR-005, CR-006, CR-009, CR-010) were dismissed with reasons rather than patched: the backend already drops unsupported temperature/top_p and clamps effort, main already nulls a top_p of 0, the backend contract fixes the capability shape, the lookup mirrors the pre-existing temperatureConstraints pattern, and the positional warning level is the behaviour the earlier round asked for.",
+  "confidence": "medium",
+  "risk_flags": [
+    "public-api"
+  ],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "All 9 subjects match the documented 'EPMCDME-13335: Capital sentence' format from .ai-run/guides/standards/git-workflow.md: capitalized first word, no trailing period, correct ticket prefix."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "No code-quality guide exists at .ai-run/guides/standards/code-quality.md (confirmed absent) and no code_quality ArtifactRef was passed; absent standard, not a gap."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Checked 19 changed files against security-patterns.md (HTML sinks, redirects, cross-window messages, config/secrets). No dangerouslySetInnerHTML, untrusted redirects, postMessage, or new secret usage."
+    }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "Commit b26eabeb2 reworded to 'EPMCDME-13335: Add planning artifacts'; every subject on the branch now carries the ticket prefix."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "EditAssistantPage.integration.test.tsx: a saved effort is still in the PUT body when Effort is untouched."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "EditAssistantPage.integration.test.tsx: picking an effort nulls temperature/top_p in the PUT body, and a model change nulls all three."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "VirtualAssistantForm.tsx handleModelChange calls the field onChange instead of setValue, so isDirty() turns true; VirtualAssistantForm.integration.test.tsx asserts it and fails when the fix is reverted."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "visualEditorFieldRegistry.test.ts no longer registers 'effort' itself; VirtualAssistantForm.integration.test.tsx asserts the real registration via isFieldSupported and covers the token-usage warning on the model's highest level."
+    }
+  ]
+}

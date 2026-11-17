@@ -56,6 +56,7 @@ export const VALIDATION_MESSAGES = {
   TEMPERATURE_MAX_STANDARD: `Temperature must be between ${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN} and ${VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_STANDARD}`,
   TEMPERATURE_MAX_CLAUDE: `Temperature must be between ${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN} and ${VALIDATION_CONSTRAINTS.TEMPERATURE_MAX_CLAUDE} for Claude models`,
   TEMPERATURE_TYPE: 'Temperature must be a number',
+  EFFORT_INVALID: 'Effort is not supported for this model',
 }
 
 // Password requirement labels for UI

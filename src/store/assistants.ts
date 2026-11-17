@@ -884,6 +884,9 @@ export const assistantsStore = proxy<AssistantsStoreType>({
   ): Promise<AssistantCreateResponse> {
     const assistantData: CreateAssistantDto = {
       ...transformAssistantToCreateDTO(values),
+      temperature: values.temperature ?? null,
+      effort: values.effort ?? null,
+      top_p: values.top_p ?? null,
       skip_integration_validation: skipIntegrationValidation,
     }
 

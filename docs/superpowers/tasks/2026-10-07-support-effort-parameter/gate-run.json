@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-13335_support-effort-parameter",
+  "head": "696c187f113eca85ed0f3c767962028a21cf053a",
+  "runner": "npm",
+  "started_at": "2026-10-13T15:40:39Z",
+  "completed_at": "2026-10-13T15:54:43Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 26704,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Hook also runs `npx lint-staged` (prettier --write, eslint --fix, tsc --noEmit on staged files) — fully subsumed by this full-tree lint plus the typecheck gate, so not recorded as a separate gate."
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19305,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2126,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 20041,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 438048,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 679 passed (679); Tests 6926 passed | 1 skipped (6927)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 127695,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 50 passed (50); Tests 564 passed | 1 skipped (565)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 692,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Pre-commit hook gate not in the guide's gate list; checked all 2324 source files, 0 missing headers."
+    },
+    {
+      "id": "sonar",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 440,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipped: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit code 0 but no scan was performed. To run locally, export SONAR_TOKEN for https://sonar.core.kuberocketci.io (see .sonarlint/connectedMode.json). CI still enforces this independently and is not settled by this run."
+    }
+  ],
+  "failures": {}
+}

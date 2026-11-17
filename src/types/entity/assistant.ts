@@ -24,6 +24,15 @@ import type { MCPServerDetails } from './mcp'
 import type { Setting } from './setting'
 import type { Skill } from './skill'
 
+// Reasoning effort a request asks for, in ascending order (mirrors the backend EffortLevel).
+export enum EffortLevel {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  XHIGH = 'xhigh',
+  MAX = 'max',
+}
+
 export interface HedgingToolDetails {
   name: string
 }
@@ -105,6 +114,7 @@ export interface Assistant {
   system_prompt: string
   model?: string
   temperature?: number | null
+  effort?: EffortLevel | null
   max_tokens?: number
   top_p?: number | null
   tools_tokens_size_limit?: number | null
@@ -222,6 +232,7 @@ export interface AssistantTemplate {
   system_prompt?: string
   model?: string
   temperature?: number
+  effort?: EffortLevel
   max_tokens?: number
   top_p?: number
   frequency_penalty?: number
@@ -486,6 +497,7 @@ export interface CreateAssistantDto {
   plan_prompt?: string
   slug?: string
   temperature?: number | null
+  effort?: EffortLevel | null
   top_p?: number | null
   tools_tokens_size_limit?: number | null
   mcp_servers?: MCPServerDetails[]

@@ -267,4 +267,23 @@ describe('transformAssistantToCreateDTO', () => {
       expect(dto.file_attachment_enabled).toBe(true)
     })
   })
+
+  describe('effort', () => {
+    it('includes effort when provided', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        effort: 'high',
+      } as Assistant)
+
+      expect(dto.effort).toBe('high')
+    })
+
+    it('sets effort to undefined when it is not set', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+      } as Assistant)
+
+      expect(dto.effort).toBeUndefined()
+    })
+  })
 })

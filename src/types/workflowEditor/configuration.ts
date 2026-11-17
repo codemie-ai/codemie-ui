@@ -14,7 +14,7 @@
 //
 
 import { DynamicFormFieldSchema } from '@/types/dynamicForm'
-import { AssistantPromptVariable } from '@/types/entity/assistant'
+import { AssistantPromptVariable, EffortLevel } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 
 export interface RetryPolicy {
@@ -33,6 +33,7 @@ export interface AssistantConfiguration {
   id: string
   assistant_id?: string
   temperature?: number
+  effort?: EffortLevel
   name?: string
   model?: string
   system_prompt?: string

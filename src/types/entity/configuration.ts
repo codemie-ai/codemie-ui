@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import type { EffortLevel } from '@/types/entity/assistant'
+
 /**
  * The CodeMie-owned persisted status of a model, mirroring the backend
  * `ModelStatus` enum. A model without a persisted override reads as `enabled`.
@@ -54,6 +56,8 @@ export interface ModelOption {
   multimodal?: boolean
   supportsImageGeneration?: boolean
   supportsTools?: boolean
+  effortLevels?: EffortLevel[]
+  temperatureSupported?: boolean
   defaultForCategories?: string[]
   cost?: { input: number; output: number }
   /** Hidden from web chat (forbidden_for_web); offered only through CodeMie CLI and its connectors. */

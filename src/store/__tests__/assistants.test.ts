@@ -206,6 +206,39 @@ describe('assistantsStore', () => {
     })
   })
 
+  describe('updateAssistant', () => {
+    const sentBody = () => mockPut.mock.calls[0][1]
+
+    beforeEach(() => {
+      mockPut.mockResolvedValue({ json: async () => ({ id: 'a-1' }) })
+    })
+
+    it('sends explicit nulls for cleared temperature, effort and top_p', async () => {
+      await assistantsStore.updateAssistant('a-1', {
+        id: 'a-1',
+        name: 'Root',
+        description: 'd',
+        slug: 'root',
+      } as Assistant)
+
+      expect(sentBody()).toMatchObject({ temperature: null, effort: null, top_p: null })
+    })
+
+    it('sends set temperature, effort and top_p values as they are', async () => {
+      await assistantsStore.updateAssistant('a-1', {
+        id: 'a-1',
+        name: 'Root',
+        description: 'd',
+        slug: 'root',
+        temperature: 0.5,
+        effort: 'high',
+        top_p: 0.9,
+      } as Assistant)
+
+      expect(sentBody()).toMatchObject({ temperature: 0.5, effort: 'high', top_p: 0.9 })
+    })
+  })
+
   describe('getAssistant', () => {
     it('maps nested_assistants to nestedAssistants for the id-based Edit route', async () => {
       const nested = [{ id: 'sub-1', name: 'Sub Assistant' }]

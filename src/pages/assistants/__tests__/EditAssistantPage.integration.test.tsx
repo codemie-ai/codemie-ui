@@ -19,6 +19,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { assistantsStore } from '@/store'
+import { appInfoStore } from '@/store/appInfo'
 import { marketplaceManagementStore } from '@/store/marketplaceManagement'
 import { renderPage, mockAPI } from '@/test-utils/integration'
 
@@ -163,6 +164,115 @@ describe('EditAssistantPage - Integration', () => {
 
       // Verify at least the back button exists (full form may still be loading)
       expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
+    })
+  })
+
+  describe('Effort and Temperature on save', () => {
+    const effortModel = {
+      base_name: 'claude-opus-4-1',
+      label: 'Claude Opus 4.1',
+      default: true,
+      provider: 'anthropic',
+      features: { effort: ['low', 'high'], temperature: true },
+    }
+    const temperatureModel = {
+      base_name: 'gpt-4',
+      label: 'GPT-4',
+      provider: 'azure_openai',
+      features: { temperature: true },
+    }
+
+    beforeEach(() => {
+      appInfoStore.projectLlmModels = {}
+      appInfoStore.llmModels = []
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/llm_models', [effortModel, temperatureModel])
+      mockAPI('PUT', 'v1/assistants/asst-123', { message: 'Updated' })
+    })
+
+    const lastPutBody = () => {
+      const putCall = vi
+        .mocked(global.fetch)
+        .mock.calls.findLast(([, init]) => init?.method === 'PUT')
+      return JSON.parse((putCall?.[1] as RequestInit).body as string)
+    }
+
+    const renderAndWaitForForm = async () => {
+      renderPage('/assistants/asst-123/edit')
+      await screen.findByRole('button', { name: 'Effort' })
+    }
+
+    it('keeps a saved effort in the PUT body when Effort is not touched', async () => {
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({ llm_model_type: 'claude-opus-4-1', effort: 'high' })
+      )
+      await renderAndWaitForForm()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() => expect(lastPutBody()).toMatchObject({ effort: 'high' }))
+    })
+
+    it('keeps a saved effort when the default model is filled in where none was set', async () => {
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({
+          llm_model_type: 'claude-opus-4-1',
+          effective_llm_model_source: 'project_default',
+          effort: 'high',
+        })
+      )
+      await renderAndWaitForForm()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() =>
+        expect(lastPutBody()).toMatchObject({ llm_model_type: 'claude-opus-4-1', effort: 'high' })
+      )
+    })
+
+    it('clears a saved temperature and top_p when an effort is picked', async () => {
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({ llm_model_type: 'claude-opus-4-1', temperature: 0.7, top_p: 0.9 })
+      )
+      await renderAndWaitForForm()
+      expect(await screen.findByTestId('assistant-temperature-input')).toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Effort' }))
+      // PrimeReact dropdown options are not accessible in jsdom, so query by text.
+      await userEvent.click(await screen.findByText('high'))
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() =>
+        expect(lastPutBody()).toMatchObject({ effort: 'high', temperature: null, top_p: null })
+      )
+    })
+
+    it('clears a saved temperature and top_p when the model changes', async () => {
+      mockAPI(
+        'GET',
+        'v1/assistants/id/asst-123',
+        createAssistantFixture({ llm_model_type: 'claude-opus-4-1', temperature: 0.7, top_p: 0.9 })
+      )
+      await renderAndWaitForForm()
+
+      await userEvent.click(screen.getByText(/Claude Opus 4\.1/))
+      await userEvent.click(await screen.findByText('GPT-4'))
+      await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+      await waitFor(() =>
+        expect(lastPutBody()).toMatchObject({
+          llm_model_type: 'gpt-4',
+          temperature: null,
+          top_p: null,
+          effort: null,
+        })
+      )
     })
   })
 

@@ -220,6 +220,7 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
           id: assistantId,
           model: virtualAssistantValues.llm_model_type,
           temperature: virtualAssistantValues.temperature,
+          effort: virtualAssistantValues.effort,
           system_prompt: virtualAssistantValues.system_prompt,
           limit_tool_output_tokens: parsedLimit,
           mcp_servers: (virtualAssistantValues.mcp_servers || []).map((server) => ({

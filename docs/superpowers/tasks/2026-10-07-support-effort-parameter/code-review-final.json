@@ -1,0 +1,243 @@
+{
+  "decision": "request-changes",
+  "rationale": "All four lenses and the standards audit ran. Blocking: the workflow model change no longer marks the form dirty (CR-007), three test-coverage gaps (CR-002, CR-003, CR-008), and one commit (b26eabeb2) lacks the EPMCDME prefix (CR-001). Code-quality was not adjudicated (no code-quality guide in the repo). 0 deferred; 10 candidates dismissed as noise. All five findings listed here were subsequently fixed on the branch; see code-review-check.json for the per-finding resolution and evidence.",
+  "confidence": "medium",
+  "risk_flags": [
+    "breaking-change",
+    "public-api"
+  ],
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Visibility recomputed per model: effort model shows Effort, hides Temperature/Top P unless saved temperature",
+      "status": "pass",
+      "notes": "useModelParamsFields.ts:75 showTemperature"
+    },
+    {
+      "kind": "spec",
+      "item": "Mutual exclusivity: selecting an effort clears temperature and top_p",
+      "status": "pass",
+      "notes": "clearTemperature() in both forms; matches caller's product note"
+    },
+    {
+      "kind": "spec",
+      "item": "Changing the model resets temperature, top_p, effort; same model is a no-op",
+      "status": "pass",
+      "notes": "handleModelChange in both forms"
+    },
+    {
+      "kind": "spec",
+      "item": "effortConstraints.ts exports getEffortLevels and buildEffortRule",
+      "status": "pass",
+      "notes": "effortConstraints.ts:23-41"
+    },
+    {
+      "kind": "spec",
+      "item": "Effort renders as a Select of resolved effortLevels beside Temperature/Top P in both forms",
+      "status": "pass",
+      "notes": "EffortSelect in AssistantSetupSection and VirtualAssistantForm"
+    },
+    {
+      "kind": "spec",
+      "item": "Warning-tier selection shows non-blocking inline message; no modal",
+      "status": "pass",
+      "notes": "EffortWarning InfoWarning; trigger levels covered by warning-constant row"
+    },
+    {
+      "kind": "spec",
+      "item": "effort?: string added to Assistant, AssistantTemplate, CreateAssistantDto, workflow node config",
+      "status": "pass",
+      "notes": "types updated"
+    },
+    {
+      "kind": "spec",
+      "item": "transformAssistantToCreateDTO copies effort through",
+      "status": "pass",
+      "notes": "store/utils/assistants.ts; tested"
+    },
+    {
+      "kind": "spec",
+      "item": "Both forms' submit coercion maps empty/null effort to undefined",
+      "status": "pass",
+      "notes": "AssistantForm.tsx:352-353; VirtualAssistantForm getValues"
+    },
+    {
+      "kind": "spec",
+      "item": "effort registered in visualEditorFieldRegistry alongside temperature",
+      "status": "pass",
+      "notes": "VirtualAssistantForm registerFields includes 'effort'"
+    },
+    {
+      "kind": "spec",
+      "item": "AssistantTab save copies effort into finalAssistantConfig",
+      "status": "pass",
+      "notes": "AssistantTab.tsx:223; tested"
+    },
+    {
+      "kind": "spec",
+      "item": "AssistantDetailsSidebarSections shows Effort only when set",
+      "status": "pass",
+      "notes": "tested both cases"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no hardcoded model-name to effort-values table",
+      "status": "pass",
+      "notes": "levels come from ModelOption.effortLevels"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no change to temperature/top_p validation ranges",
+      "status": "pass",
+      "notes": "ranges untouched"
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goal: no generic warn-on-top-entries logic",
+      "status": "fail",
+      "notes": "isWarningEffortLevel warns on levels.at(-1); tests lock it in"
+    },
+    {
+      "kind": "story-ac",
+      "item": "effortConstraints.ts exports getEffortLevels, buildEffortRule, isWarningEffortLevel, tested",
+      "status": "partial",
+      "notes": "isWarningEffortLevel signature and tests use positional semantics"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AssistantSetupSection renders Effort dropdown of model levels; hidden when none",
+      "status": "pass",
+      "notes": "NewAssistantPage integration test covers hide"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Effort model shows Effort, hides Temperature/Top P; temperature-capable model shows Temperature/Top P",
+      "status": "pass",
+      "notes": "useModelParamsFields.ts:75; integration test"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Saved temperature on effort model shows and submits until an effort is selected, which clears it",
+      "status": "pass",
+      "notes": "temperature != null branch; clearTemperature"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Changing the model resets temperature, top_p and effort in both forms",
+      "status": "pass",
+      "notes": "resetModelParams in both forms"
+    },
+    {
+      "kind": "story-ac",
+      "item": "VirtualAssistantForm replicates behavior; effort registered in visualEditorFieldRegistry",
+      "status": "pass",
+      "notes": "uses useModelParamsFields, EffortSelect, EffortWarning"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Effort from workflow-editor form survives AssistantTab save path",
+      "status": "pass",
+      "notes": "AssistantTab.test asserts effort 'high'"
+    },
+    {
+      "kind": "story-ac",
+      "item": "effort added to types; DTO transform and both forms' submit coercion carry it",
+      "status": "pass",
+      "notes": "types, transform and coercion updated"
+    },
+    {
+      "kind": "story-ac",
+      "item": "AssistantDetailsSidebarSections shows effort read-only when present",
+      "status": "pass",
+      "notes": "implemented and tested"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Existing models without effort/temperature features render and submit as today",
+      "status": "pass",
+      "notes": "defaults keep Temperature/Top P path"
+    },
+    {
+      "kind": "story-ac",
+      "item": "Unit/integration tests for effortConstraints, three visibility branches, warning, and registry registration",
+      "status": "partial",
+      "notes": "no VirtualAssistantForm warning test; registry test registers 'effort' itself"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "partial",
+      "notes": "17 of 18 subjects conform; b26eabeb2 'support-effort-parameter: add planning artifacts' lacks EPMCDME ticket prefix and starts lowercase"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": ".ai-run/guides/standards/code-quality.md is absent from the repo and no ref was passed; absent standard, not adjudicated"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "security-patterns.md checklist checked against 29 changed src files and 19 docs artifacts: no HTML sinks, navigation, postMessage, env config, nosonar or secrets"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "git history (commit b26eabeb2)",
+      "title": "Commit subject missing ticket prefix",
+      "problem": "git-workflow.md requires subjects matching 'EPMCDME-XXXX: Capital sentence'; commit b26eabeb2 is 'support-effort-parameter: add planning artifacts' — a branch-slug prefix with no ticket key and a lowercase first word.",
+      "impact": "Tekton CI blocks on commit-format violations and AGENTS.md requires the ticket key on every commit, so the branch cannot merge as-is.",
+      "recommendation": "Reword the subject of b26eabeb2 to 'EPMCDME-13335: Add planning artifacts' (or squash it into an adjacent EPMCDME-13335 commit) before merge."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/__tests__/EditAssistantPage.integration.test.tsx",
+      "title": "No edit-path test for preserved effort",
+      "problem": "Regression gap: updateAssistant (src/store/assistants.ts:866-868) now converts a missing effort into explicit effort: null, but no test edits an existing assistant with a saved effort and checks the PUT body still carries it. EditAssistantPage.integration.test.tsx has no effort/temperature/top_p/PUT-body assertions; store tests use hand-built objects only.",
+      "impact": "Consumers EditAssistantPage.tsx:75 and ChatConfigAssistantForm.tsx:58 both feed form values into updateAssistant; if the edit form stops seeding effort (default-value line dropped, or a mount-time model onChange resets params), every save of an effort assistant clears its effort on the backend and no test fails.",
+      "recommendation": "In EditAssistantPage.integration.test.tsx, mock GET v1/assistants/<id> returning effort 'high' on an effort-capable model, save without touching Effort, and assert the PUT body carries \"effort\":\"high\" (not null)."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/AssistantSetup/AssistantSetupSection.tsx",
+      "line": 370,
+      "title": "No form test for effort clearing params",
+      "problem": "Regression gap: on the assistant form, no test checks that picking an effort clears a saved temperature/top_p, or that changing the model clears them, at the request-body level. useModelParamsFields.test.ts only checks mocked clearField callbacks; VirtualAssistantForm tests exercise separate wiring; NewAssistantPage tests never set a temperature before picking an effort or switching models.",
+      "impact": "AssistantSetupSection is rendered on /assistants/new, the edit route and ChatConfigAssistantForm; if clearTemperature() or resetModelParams() is dropped from its handlers, effort ships alongside stale temperature/top_p (violating the intended mutual exclusivity) and no test fails.",
+      "recommendation": "Add NewAssistantPage/EditAssistantPage integration tests: set temperature 0.7 and top_p 0.9 on an effort-capable model, pick an effort, save, and assert the body has the effort and no temperature/top_p (null on PUT); separately type a temperature, switch model, save, and assert temperature is absent."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/components/VirtualAssistantForm.tsx",
+      "line": 194,
+      "title": "Workflow model change not marked dirty",
+      "problem": "The llm_model_type FieldController now passes onChange={handleModelChange}, which calls setValue('llm_model_type', newModel) without shouldDirty and bypasses FieldController's wrappedOnChange; clearField likewise calls setValue(name, undefined) without shouldDirty. Previously field.onChange marked the form dirty and the workflow validation issue resolved.",
+      "impact": "Regression: after changing only the model on a workflow assistant node, isDirty() stays false, so WorkflowEditor closes the config panel and ConfigPanel's unsaved-changes guard lets navigation proceed without a prompt — the user's edit is silently lost; the 'model' validation issue is also never marked dirty/resolved.",
+      "recommendation": "In handleModelChange use the FieldController's field.onChange(newModel) (which marks the form dirty and the workflow issue resolved) or setValue('llm_model_type', newModel, { shouldDirty: true }) plus field.markIssueDirty(); make clearField call setValue(name, undefined, { shouldDirty: true })."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/utils/__tests__/visualEditorFieldRegistry.test.ts",
+      "title": "Test-coverage acceptance criterion only partly met",
+      "problem": "The story's testing AC is partial: visualEditorFieldRegistry.test.ts calls registerFields(['effort'], ...) inside the test, so it passes even if 'effort' is removed from VirtualAssistantForm's real registration; VirtualAssistantForm.schema.test.ts covers only effort validation, and no test checks the effort warning in VirtualAssistantForm.",
+      "impact": "A required story criterion is unmet, and regressions in the workflow form's effort registration or warning would ship undetected.",
+      "recommendation": "Make visualEditorFieldRegistry.test assert the registration VirtualAssistantForm actually performs (render the form or import its registered field list) instead of calling registerFields(['effort']) itself, and add a VirtualAssistantForm test for the effort token-usage warning."
+    }
+  ]
+}

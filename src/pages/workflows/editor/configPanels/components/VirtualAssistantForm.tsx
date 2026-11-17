@@ -36,19 +36,20 @@ import ExpandableTextarea from '@/components/form/ExpandableTextarea/ExpandableT
 import Input from '@/components/form/Input'
 import SkillSelector from '@/components/SkillSelector'
 import { MAX_SKILLS_PER_ASSISTANT } from '@/constants/skills'
-import { VALIDATION_CONSTRAINTS } from '@/constants/validation'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { AssistantFormContext } from '@/pages/assistants/components/AssistantForm/AssistantForm'
 import ContextSelector from '@/pages/assistants/components/AssistantForm/components/ContextSelector'
+import EffortSelect, {
+  EffortWarning,
+} from '@/pages/assistants/components/AssistantForm/components/EffortSelect'
 import LLMSelector from '@/pages/assistants/components/AssistantForm/components/LLMSelector'
 import SystemPromptGenAIPopup from '@/pages/assistants/components/AssistantForm/components/SystemPrompt/SystemPromptGenAIPopup'
 import ToolsConfiguration, {
   ToolkitSection,
 } from '@/pages/assistants/components/AssistantForm/components/Toolkits/ToolsConfiguration'
-import {
-  buildTemperatureRule,
-  getTemperatureMax,
-} from '@/pages/assistants/utils/temperatureConstraints'
+import { useModelParamsFields } from '@/pages/assistants/hooks/useModelParamsFields'
+import { buildEffortRule } from '@/pages/assistants/utils/effortConstraints'
+import { buildTemperatureRule } from '@/pages/assistants/utils/temperatureConstraints'
 import { assistantsStore } from '@/store'
 import { projectsStore } from '@/store/projects'
 import { settingsStore } from '@/store/settings'
@@ -70,7 +71,7 @@ import { useWorkflowContext } from '../../hooks/useWorkflowContext'
 import { registerFields } from '../../utils/visualEditorFieldRegistry'
 
 registerFields(
-  ['system_prompt', 'model', 'temperature', 'datasource_ids', 'skill_ids'],
+  ['system_prompt', 'model', 'temperature', 'effort', 'datasource_ids', 'skill_ids'],
   NodeTypes.ASSISTANT
 )
 
@@ -78,6 +79,7 @@ export interface VirtualAssistantFormValues {
   system_prompt: string
   llm_model_type?: string
   temperature?: number
+  effort?: string
   top_p?: number
   toolkits: AssistantToolkit[]
   mcp_servers: MCPServerDetails[]
@@ -105,6 +107,7 @@ export const virtualAssistantValidationSchema = Yup.object().shape({
   system_prompt: Yup.string().required('System instructions are required'),
   llm_model_type: Yup.string().optional(),
   temperature: buildTemperatureRule().optional(),
+  effort: buildEffortRule().optional(),
   top_p: Yup.number()
     .min(0, 'Top P must be at least 0')
     .max(1, 'Top P must be at most 1')
@@ -132,6 +135,7 @@ const getDefaultValues = (config?: AssistantConfiguration): VirtualAssistantForm
   system_prompt: config?.system_prompt || '',
   llm_model_type: config?.model || '',
   temperature: config?.temperature,
+  effort: config?.effort,
   top_p: undefined,
   toolkits: [],
   mcp_servers: [],
@@ -169,12 +173,30 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
     const mcpServers = watch('mcp_servers')
     const systemPrompt = watch('system_prompt')
     const selectedModel = watch('llm_model_type')
-    const temperatureMax = getTemperatureMax(selectedModel)
-    const temperaturePlaceholder = `${VALIDATION_CONSTRAINTS.TEMPERATURE_MIN}-${temperatureMax}`
+    const {
+      temperaturePlaceholder,
+      effortLevels,
+      showEffortWarning,
+      showTemperature,
+      resetModelParams,
+      clearTemperature,
+    } = useModelParamsFields({
+      selectedModel,
+      temperature: watch('temperature'),
+      effort: watch('effort'),
+      clearField: (name) => setValue(name, undefined),
+      validateField: trigger,
+    })
 
-    useEffect(() => {
-      trigger('temperature')
-    }, [selectedModel, trigger])
+    // Goes through the field's onChange so the form turns dirty and the workflow issue resolves.
+    const handleModelChange = (newModel: string, onChange: (value: string) => void) => {
+      const previousModel = getValues('llm_model_type')
+      if (newModel === previousModel) return
+
+      onChange(newModel)
+      // The select fills in the default model when none is set yet; only a real switch clears saved params.
+      if (previousModel) resetModelParams()
+    }
 
     // Fetch project default model on initial load
     useEffect(() => {
@@ -240,6 +262,8 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
           )
             values.temperature = Number(values.temperature)
           else delete values.temperature
+
+          if (!values.effort) delete values.effort
 
           return values
         },
@@ -381,25 +405,48 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
                   preserveUnavailableSelection
                   onDropdownOpen={handleLLMDropdownOpen}
                   {...field}
+                  onChange={(newModel: string) => handleModelChange(newModel, field.onChange)}
                 />
               )}
             />
 
-            <FieldController
-              name="temperature"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Input
-                  label="Temperature"
-                  placeholder={temperaturePlaceholder}
-                  rootClass="w-24"
-                  error={fieldState.error?.message}
-                  data-testid="virtual-assistant-temperature-input"
-                  {...field}
-                />
-              )}
-            />
+            {showTemperature && (
+              <FieldController
+                name="temperature"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Input
+                    label="Temperature"
+                    placeholder={temperaturePlaceholder}
+                    rootClass="w-24"
+                    error={fieldState.error?.message}
+                    data-testid="virtual-assistant-temperature-input"
+                    {...field}
+                  />
+                )}
+              />
+            )}
+
+            {effortLevels.length > 0 && (
+              <FieldController
+                name="effort"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <EffortSelect
+                    levels={effortLevels}
+                    value={field.value}
+                    error={fieldState.error?.message}
+                    onChange={(value) => {
+                      field.onChange(value)
+                      clearTemperature()
+                    }}
+                  />
+                )}
+              />
+            )}
           </div>
+
+          {showEffortWarning && <EffortWarning />}
 
           <FieldController
             name="context"

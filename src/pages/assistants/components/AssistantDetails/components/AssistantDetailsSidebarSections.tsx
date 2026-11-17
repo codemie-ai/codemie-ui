@@ -267,6 +267,15 @@ const AssistantDetailsSidebarSections = ({
           </div>
         )}
 
+        {assistant.effort && (
+          <div className="flex flex-row items-center gap-2">
+            <p className="text-sm text-text-quaternary">Effort</p>
+            <div className="w-fit px-2 py-1.5 flex items-center bg-surface-base-chat rounded-lg border border-border-specific-panel-outline text-sm leading-5">
+              {assistant.effort}
+            </div>
+          </div>
+        )}
+
         <SidebarTags
           label="Additional datasource context"
           noItemsMessage="No datasources chosen"
