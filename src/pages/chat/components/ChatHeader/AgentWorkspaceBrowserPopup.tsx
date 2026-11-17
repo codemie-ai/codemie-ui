@@ -123,6 +123,7 @@ const AgentWorkspaceBrowserPopup: FC<AgentWorkspaceBrowserPopupProps> = ({
     isFilesLoading,
     isPreviewLoading,
     isDownloading,
+    isDownloadingAll,
     error,
   } = useSnapshot(agentWorkspaceStore)
 
@@ -236,6 +237,17 @@ const AgentWorkspaceBrowserPopup: FC<AgentWorkspaceBrowserPopupProps> = ({
         >
           <div className="border-b border-border-structural px-4 py-3 text-sm font-semibold text-text-primary">
             Files
+            <Button
+              variant="secondary"
+              aria-label="Download all workspace files"
+              data-testid="workspace-download-all"
+              disabled={files.length === 0 || isDownloadingAll}
+              isLoading={isDownloadingAll}
+              onClick={() => agentWorkspaceStore.downloadAllFiles()}
+            >
+              <DownloadSvg aria-hidden="true" />
+              Download all
+            </Button>
           </div>
 
           <div

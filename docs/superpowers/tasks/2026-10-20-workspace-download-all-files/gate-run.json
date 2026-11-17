@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15770_workspace-download-all-files",
+  "head": "d531e9b1b104108cfc939450ffa7d32ca9df351c",
+  "runner": "npm",
+  "started_at": "2026-10-20T14:43:00Z",
+  "completed_at": "2026-10-20T15:03:10Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 100237,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 81267,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 6220,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29100,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks pulled its image and scanned ~39MB, printed 'no leaks found'; also enforced server-side as the MR pipeline's gitleaks-scan task — scans working tree only, not git history."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 596702,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 714 passed (714); Tests 7229 passed | 1 skipped (7230)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 358404,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 50 passed (50); Tests 564 passed | 1 skipped (565)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (AgentWorkspaceBrowserPopup.tsx) but no configured UI test script exists in this repo's gate plan; browser verification is a separate caller decision (feature-verification / local-verification.md)."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Requires a running stack and ~/.codemie/test-harness.json; neither is present in this environment, so the gate was not invoked. A gate that could not run is unverified, not passed — still owed before MR."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 577,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Pre-commit hook gate not already covered by the quality-gates.md guide list; checked 2370 files, 0 missing headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 207,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Exit 0 is not evidence it ran. Set SONAR_TOKEN in the environment to run this locally; CI still owes this check."
+    }
+  ],
+  "failures": {}
+}

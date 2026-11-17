@@ -44,11 +44,13 @@ const { mockChatsStore, mockAgentWorkspaceStore } = vi.hoisted(() => ({
     isFilesLoading: false,
     isPreviewLoading: false,
     isDownloading: false,
+    isDownloadingAll: false,
     error: null,
     openForConversation: vi.fn(),
     listFiles: vi.fn(),
     selectFile: vi.fn(),
     downloadSelectedFile: vi.fn(),
+    downloadAllFiles: vi.fn(),
     reset: vi.fn(),
   },
 }))
@@ -122,6 +124,7 @@ describe('ChatHeaderBrowseFilesButton', () => {
       isFilesLoading: false,
       isPreviewLoading: false,
       isDownloading: false,
+      isDownloadingAll: false,
       error: null,
     })
   })
@@ -394,12 +397,12 @@ describe('ChatHeaderBrowseFilesButton', () => {
       'language-dockerfile'
     )
     expect(screen.queryByTestId('workspace-preview-expand')).not.toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /download/i })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: /download selected file/i })).toHaveLength(1)
 
     await user.click(screen.getByRole('button', { name: 'Expand' }))
 
     expect(document.querySelector('span.font-mono')).toHaveTextContent('infra/Dockerfile')
-    expect(screen.getAllByRole('button', { name: /download/i })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: /download selected file/i })).toHaveLength(1)
   })
 
   it('shows the updated hint for unsupported files', async () => {
@@ -501,5 +504,53 @@ describe('ChatHeaderBrowseFilesButton', () => {
       document.removeEventListener('keydown', spy)
       expect(spy).toHaveBeenCalledTimes(1)
     })
+  })
+
+  it('disables download all when the workspace has no files', async () => {
+    render(<ChatHeaderBrowseFilesButton />)
+    await user.click(screen.getByRole('button', { name: 'Browse files' }))
+
+    expect(screen.getByRole('button', { name: 'Download all workspace files' })).toBeDisabled()
+  })
+
+  it('enables download all once files are loaded and calls downloadAllFiles on click', async () => {
+    mockAgentWorkspaceStore.files = [
+      {
+        path: 'src/app.py',
+        mime_type: 'text/x-python',
+        checksum: 'hash',
+        size: 123,
+        version: 1,
+        update_date: '2026-04-23T10:05:00',
+      },
+    ]
+
+    render(<ChatHeaderBrowseFilesButton />)
+    await user.click(screen.getByRole('button', { name: 'Browse files' }))
+    const button = screen.getByRole('button', { name: 'Download all workspace files' })
+    expect(button).toBeEnabled()
+
+    await user.click(button)
+
+    expect(mockAgentWorkspaceStore.downloadAllFiles).toHaveBeenCalled()
+  })
+
+  it('disables download all while the archive is being prepared', async () => {
+    mockAgentWorkspaceStore.files = [
+      {
+        path: 'src/app.py',
+        mime_type: 'text/x-python',
+        checksum: 'hash',
+        size: 123,
+        version: 1,
+        update_date: '2026-04-23T10:05:00',
+      },
+    ]
+    mockAgentWorkspaceStore.isDownloadingAll = true
+
+    render(<ChatHeaderBrowseFilesButton />)
+    await user.click(screen.getByRole('button', { name: 'Browse files' }))
+
+    expect(screen.getByRole('button', { name: 'Download all workspace files' })).toBeDisabled()
   })
 })

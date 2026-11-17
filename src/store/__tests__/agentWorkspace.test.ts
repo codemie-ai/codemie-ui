@@ -220,4 +220,126 @@ describe('agentWorkspaceStore', () => {
       'example.py'
     )
   })
+
+  it('does not call downloadFileStream when no workspace is set', async () => {
+    const { agentWorkspaceStore } = await import('@/store/agentWorkspace')
+
+    const result = await agentWorkspaceStore.downloadAllFiles()
+
+    expect(result).toBe(false)
+    expect(mockDownloadFileStream).not.toHaveBeenCalled()
+  })
+
+  it('downloads the whole workspace as an archive', async () => {
+    mockDownloadFileStream.mockResolvedValue(true)
+    const { agentWorkspaceStore } = await import('@/store/agentWorkspace')
+    agentWorkspaceStore.workspace = {
+      id: 'workspace-1',
+      conversation_id: 'chat-123',
+      user_id: 'user-1',
+      name: null,
+      status: 'active',
+      date: '2026-04-23T10:00:00',
+      update_date: '2026-04-23T10:00:00',
+    }
+
+    const result = await agentWorkspaceStore.downloadAllFiles()
+
+    expect(result).toBe(true)
+    expect(mockDownloadFileStream).toHaveBeenCalledWith(
+      'v1/workspaces/workspace-1/files/download-all',
+      undefined,
+      'workspace-files.zip',
+      expect.any(Function)
+    )
+  })
+
+  it('shows a toast naming the skipped count when the archive is partial', async () => {
+    mockDownloadFileStream.mockResolvedValue(true)
+    const toaster = (await import('@/utils/toaster')).default
+    const { agentWorkspaceStore } = await import('@/store/agentWorkspace')
+    agentWorkspaceStore.workspace = {
+      id: 'workspace-1',
+      conversation_id: 'chat-123',
+      user_id: 'user-1',
+      name: null,
+      status: 'active',
+      date: '2026-04-23T10:00:00',
+      update_date: '2026-04-23T10:00:00',
+    }
+
+    await agentWorkspaceStore.downloadAllFiles()
+    const onSuccessHeaders = mockDownloadFileStream.mock.calls[0][3]
+    onSuccessHeaders(new Headers({ 'x-workspace-skipped-count': '3' }))
+
+    expect(toaster.info).toHaveBeenCalledWith(expect.stringContaining('3'))
+  })
+
+  it('does not toast when the skipped-count header is absent', async () => {
+    mockDownloadFileStream.mockResolvedValue(true)
+    const toaster = (await import('@/utils/toaster')).default
+    const { agentWorkspaceStore } = await import('@/store/agentWorkspace')
+    agentWorkspaceStore.workspace = {
+      id: 'workspace-1',
+      conversation_id: 'chat-123',
+      user_id: 'user-1',
+      name: null,
+      status: 'active',
+      date: '2026-04-23T10:00:00',
+      update_date: '2026-04-23T10:00:00',
+    }
+
+    await agentWorkspaceStore.downloadAllFiles()
+    const onSuccessHeaders = mockDownloadFileStream.mock.calls[0][3]
+    onSuccessHeaders(new Headers())
+
+    expect(toaster.info).not.toHaveBeenCalled()
+  })
+
+  it('returns false and clears isDownloadingAll when the download fails', async () => {
+    mockDownloadFileStream.mockResolvedValue(false)
+    const { agentWorkspaceStore } = await import('@/store/agentWorkspace')
+    agentWorkspaceStore.workspace = {
+      id: 'workspace-1',
+      conversation_id: 'chat-123',
+      user_id: 'user-1',
+      name: null,
+      status: 'active',
+      date: '2026-04-23T10:00:00',
+      update_date: '2026-04-23T10:00:00',
+    }
+
+    const result = await agentWorkspaceStore.downloadAllFiles()
+
+    expect(result).toBe(false)
+    expect(agentWorkspaceStore.isDownloadingAll).toBe(false)
+  })
+
+  it('ignores a second call while a download is already in flight', async () => {
+    let resolveDownload: (value: boolean) => void = () => {}
+    mockDownloadFileStream.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        resolveDownload = resolve
+      })
+    )
+    const { agentWorkspaceStore } = await import('@/store/agentWorkspace')
+    agentWorkspaceStore.workspace = {
+      id: 'workspace-1',
+      conversation_id: 'chat-123',
+      user_id: 'user-1',
+      name: null,
+      status: 'active',
+      date: '2026-04-23T10:00:00',
+      update_date: '2026-04-23T10:00:00',
+    }
+
+    const first = agentWorkspaceStore.downloadAllFiles()
+    const second = await agentWorkspaceStore.downloadAllFiles()
+
+    expect(second).toBe(false)
+    expect(mockDownloadFileStream).toHaveBeenCalledTimes(1)
+
+    resolveDownload(true)
+    expect(await first).toBe(true)
+  })
 })

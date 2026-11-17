@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "task": "Add a 'Download all files' action to the Agent Workspace UI that calls the existing backend archive endpoint and surfaces its 400/413/500 and partial-skip-header outcomes.",
+  "generated": "2026-10-20T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 16,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "The single-file download/blob-stream pattern (api.downloadFileStream + agentWorkspaceStore.downloadSelectedFile) is an exact precedent, but the backend's three distinct failure modes (400 empty/forbidden, 413 over-cap, 500 unreadable) plus the non-fatal X-Workspace-Skipped-Count partial-failure header are new behavior with no existing frontend test template — AC #10 explicitly requires coverage for these cases." },
+    { "dimension": "component_scope", "reason": "Two components across two layers: a new agentWorkspaceStore action/flag (store layer) and a new Button in AgentWorkspaceBrowserPopup.tsx (component layer); pattern is clear from downloadSelectedFile/isDownloading." },
+    { "dimension": "requirements_clarity", "reason": "ACs are concretely enumerated, but the tech analysis flags open design decisions: whether to surface per-status-code messaging (400 vs 413 vs 500) distinctly, and where to add X-Workspace-Skipped-Count header-reading (shared downloadFileStream helper vs. new store-level logic)." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: ACs enumerate specific error/edge cases (400 empty/forbidden, 413 over-cap, 500 unreadable, partial-skip header) and no existing frontend test template covers this defensive pattern (per Testing Landscape § Coverage Gaps in technical-analysis.md)."
+  ],
+  "split_recommendation": null
+}

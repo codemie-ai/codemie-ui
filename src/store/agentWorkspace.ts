@@ -30,11 +30,13 @@ interface AgentWorkspaceStoreType {
   isFilesLoading: boolean
   isPreviewLoading: boolean
   isDownloading: boolean
+  isDownloadingAll: boolean
   error: string | null
   openForConversation: (conversationId: string, name?: string) => Promise<void>
   listFiles: (workspaceId: string) => Promise<AgentWorkspaceFile[]>
   selectFile: (filePath: string) => Promise<void>
   downloadSelectedFile: () => Promise<boolean>
+  downloadAllFiles: () => Promise<boolean>
   reset: () => void
 }
 
@@ -89,6 +91,7 @@ export const agentWorkspaceStore = proxy<AgentWorkspaceStoreType>({
   isFilesLoading: false,
   isPreviewLoading: false,
   isDownloading: false,
+  isDownloadingAll: false,
   error: null,
 
   async openForConversation(conversationId: string, name?: string) {
@@ -221,6 +224,32 @@ export const agentWorkspaceStore = proxy<AgentWorkspaceStoreType>({
     }
   },
 
+  async downloadAllFiles() {
+    if (!this.workspace || this.isDownloadingAll) return false
+
+    this.isDownloadingAll = true
+
+    try {
+      const onSuccessHeaders = (headers: Headers) => {
+        const skippedCount = Number(headers.get('x-workspace-skipped-count'))
+        if (skippedCount > 0) {
+          toaster.info(
+            `${skippedCount} file(s) were skipped. See _SKIPPED_FILES.txt in the archive for details.`
+          )
+        }
+      }
+
+      return await api.downloadFileStream(
+        `v1/workspaces/${this.workspace.id}/files/download-all`,
+        undefined,
+        'workspace-files.zip',
+        onSuccessHeaders
+      )
+    } finally {
+      this.isDownloadingAll = false
+    }
+  },
+
   reset() {
     revokePreviewUrl(this.selectedFilePreviewUrl)
     this.workspace = null
@@ -233,6 +262,7 @@ export const agentWorkspaceStore = proxy<AgentWorkspaceStoreType>({
     this.isFilesLoading = false
     this.isPreviewLoading = false
     this.isDownloading = false
+    this.isDownloadingAll = false
     this.error = null
   },
 })

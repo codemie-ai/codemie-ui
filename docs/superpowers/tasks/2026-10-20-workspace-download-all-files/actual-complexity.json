@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "generated": "2026-10-20T00:00:00Z",
+  "dimensions": {
+    "component_scope": { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk": { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies": { "score": 1, "label": "XS" },
+    "affected_layers": { "score": 3, "label": "M" }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 6,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Three components touched — AgentWorkspaceBrowserPopup.tsx (UI), agentWorkspace.ts store method (Service), api.ts downloadFileStream (shared HTTP utility) — but the store/UI wiring mirrors the existing downloadSelectedFile pattern exactly, and the api.ts change is a single additive, backward-compatible optional callback parameter, not a new abstraction."
+    },
+    {
+      "dimension": "affected_layers",
+      "reason": "Three layers: UI (download-all button + disabled/loading states), Service/Store (downloadAllFiles with re-entrant guard), Infrastructure (downloadFileStream reading response headers). No persistence or schema layer touched."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

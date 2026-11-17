@@ -294,6 +294,28 @@ describe('downloadFileStream', () => {
 
     expect(appendChildSpy).not.toHaveBeenCalled()
   })
+
+  it('calls onSuccessHeaders with the response headers on success', async () => {
+    mockFetchResponse(mockBlob, { 'x-workspace-skipped-count': '2' })
+    const onSuccessHeaders = vi.fn()
+
+    await api.downloadFileStream('v1/files/123', undefined, 'report.pdf', onSuccessHeaders)
+
+    expect(onSuccessHeaders).toHaveBeenCalledTimes(1)
+    expect(onSuccessHeaders.mock.calls[0][0].get('x-workspace-skipped-count')).toBe('2')
+  })
+
+  it('does not call onSuccessHeaders when response is not ok', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: { message: 'Not found' } }),
+    })
+    const onSuccessHeaders = vi.fn()
+
+    await api.downloadFileStream('v1/files/123', undefined, undefined, onSuccessHeaders)
+
+    expect(onSuccessHeaders).not.toHaveBeenCalled()
+  })
 })
 
 describe('makeRequest URL building', () => {

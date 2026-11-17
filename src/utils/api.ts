@@ -336,7 +336,12 @@ class API {
     return response.body!.pipeThrough(new TextDecoderStream()).getReader()
   }
 
-  async downloadFileStream(url: string, _type?: string, fileName?: string): Promise<boolean> {
+  async downloadFileStream(
+    url: string,
+    _type?: string,
+    fileName?: string,
+    onSuccessHeaders?: (headers: Headers) => void
+  ): Promise<boolean> {
     try {
       const headers: HeadersInit = {
         ...this.authHeaders(),
@@ -354,6 +359,8 @@ class API {
         this.handleError(body)
         return false
       }
+
+      onSuccessHeaders?.(response.headers)
 
       const reader = response.body!.getReader()
       const stream = new ReadableStream({

@@ -1,0 +1,53 @@
+{
+  "decision": "approve",
+  "rationale": "All four lenses and the standards audit ran cleanly with no coverage gaps or oversized diff; 7 findings survived triage, but the frozen diff spans 4 pre-existing unrelated-ticket commits (EPMCDME-12586, 8478, 8561, 16049) already on this branch ahead of main, plus this task's 3 new commits (EPMCDME-15770). The user scoped the fix-up to this task's own findings only: CR-006 (missing failure-path test in the new downloadAllFiles) and CR-007 (missing re-entrancy guard in the new downloadAllFiles). CR-001 through CR-005 belong to the unrelated pre-existing commits and are explicitly out of scope for this run; they are kept below for the record but are not to be fixed here. Both CR-006 and CR-007 were fixed in commit d531e9b and verified by the code-review.check round (code-review-check.local.json, decision: approve).",
+  "confidence": "high",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    { "kind": "spec", "item": "AC#1: New 'Download all' button in the workspace popup triggers the archive download", "status": "pass", "notes": "Button added in AgentWorkspaceBrowserPopup.tsx, onClick calls agentWorkspaceStore.downloadAllFiles()" },
+    { "kind": "spec", "item": "AC#2-4: Archive creation and folder/content fidelity are backend-enforced; frontend streams the response unchanged", "status": "na", "notes": "Not testable in this frontend diff; existing streaming body in api.ts is untouched" },
+    { "kind": "spec", "item": "AC#5: Authorization enforced server-side (400 on foreign/missing workspace)", "status": "na", "notes": "Backend-only; no frontend status-code branching added, matching design" },
+    { "kind": "spec", "item": "AC#6: isDownloadingAll-driven progress state and a failure toast", "status": "pass", "notes": "isLoading={isDownloadingAll} on the button; generic error toast reuses the pre-existing handleError path" },
+    { "kind": "spec", "item": "AC#7: Button disabled when files.length === 0, backend 400 as backstop", "status": "pass", "notes": "disabled={files.length === 0 || isDownloadingAll} on the button" },
+    { "kind": "spec", "item": "AC#8: toaster.error for total failure, toaster.info naming skipped count for partial failure, no file-level detail leaked", "status": "pass", "notes": "onSuccessHeaders reads x-workspace-skipped-count and toasts count+pointer; total failure reuses existing handleError; covered by tests" },
+    { "kind": "spec", "item": "AC#9: downloadSelectedFile and every other downloadFileStream call site untouched; new onSuccessHeaders param optional/additive", "status": "pass", "notes": "api.ts's only change is the added optional 4th param and one onSuccessHeaders?.() call" },
+    { "kind": "spec", "item": "AC#10: Test coverage per Testing section (store URL/args, no-op without workspace, skipped-count callback; component disabled states)", "status": "pass", "notes": "agentWorkspace.test.ts and ChatHeaderBrowseFilesButton.test.tsx cover the listed cases" },
+    { "kind": "spec", "item": "downloadAllFiles mirrors downloadSelectedFile's lifecycle: guard on missing workspace, isDownloadingAll in try, reset in finally, no catch", "status": "pass", "notes": "agentWorkspace.ts matches: if (!this.workspace) return false; try/finally only" },
+    { "kind": "spec", "item": "reset() resets isDownloadingAll to false", "status": "pass", "notes": "Confirmed in agentWorkspace.ts reset()" },
+    { "kind": "spec", "item": "onSuccessHeaders called once, right after the !response.ok check passes, before the blob/stream is built", "status": "pass", "notes": "Placed between the response.ok check and reader/stream construction in api.ts" },
+    { "kind": "spec", "item": "No success toast added for downloadAllFiles (browser's own download affordance is the signal)", "status": "pass", "notes": "No toaster.success/info call outside the skipped-count branch" },
+    { "kind": "spec", "item": "Non-goals held: no client-side file-count/size cap mirror, no per-status-code UI copy, no retry/resume affordance, no new env var/flag", "status": "pass", "notes": "No such additions appear anywhere in the diff's relevant hunks" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "All 7 commit subjects in the review range match the documented 'EPMCDME-XXXX: Capital sentence' format" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality standards guide exists in the repo and no code_quality ArtifactRef was passed" },
+    { "kind": "security", "status": "pass", "notes": "Download-all filename derived only from Content-Disposition via existing sanitizeFileName helpers; no new HTML/navigation sink or secret/credential logging found" }
+  ],
+  "findings": [
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/__tests__/agentWorkspace.test.ts",
+      "title": "downloadAllFiles has no test for a failed download",
+      "problem": "The new downloadAllFiles tests cover no-workspace, success, and both skipped-count-toast cases, but none mock api.downloadFileStream resolving false to exercise the failure path.",
+      "impact": "isDownloadingAll resetting to false and the method returning false cleanly on a failed/aborted download is currently only guaranteed by the finally block's correctness, not asserted by any test — exactly the path most likely to regress silently under a later refactor.",
+      "recommendation": "Add a case that mocks downloadFileStream to resolve false and asserts downloadAllFiles() resolves false with isDownloadingAll back to false.",
+      "outcome": "fixed"
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/agentWorkspace.ts",
+      "line": 227,
+      "title": "downloadAllFiles has no re-entrancy guard",
+      "problem": "downloadAllFiles only guards on !this.workspace; it has no check on its own isDownloadingAll flag before setting it and firing the request, relying entirely on the UI disabling the button.",
+      "impact": "A second call before the Valtio snapshot re-renders and disables the button (double-click, or any other caller) kicks off a second overlapping archive-download request for the same workspace.",
+      "recommendation": "Add `if (this.isDownloadingAll) return false` before setting this.isDownloadingAll = true.",
+      "outcome": "fixed"
+    }
+  ]
+}
