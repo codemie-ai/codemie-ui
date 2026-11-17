@@ -13,28 +13,13 @@
 // limitations under the License.
 //
 
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip as ChartTooltip,
-  Legend,
-  ChartOptions,
-} from 'chart.js'
-import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { FC, useMemo, useEffect, useState, ReactElement } from 'react'
-import { Doughnut } from 'react-chartjs-2'
 
 import CurrencySvg from '@/assets/icons/currency.svg?react'
 import InfoIcon from '@/assets/icons/info.svg?react'
 import DetailsBadge from '@/components/details/DetailsBadge'
 import Spinner from '@/components/Spinner'
 import Tooltip from '@/components/Tooltip/Tooltip'
-import { ABSENT_VALUE_MARKER } from '@/constants'
-import {
-  getStatusColor,
-  getStatusColorWithOpacity,
-} from '@/pages/analytics/components/widgets/RatioWidget/utils'
-import SpendingProgressBar from '@/pages/analytics/components/widgets/SpendingProgressBar'
 import TableWidget from '@/pages/analytics/components/widgets/TableWidget'
 import { analyticsStore } from '@/store/analytics'
 import {
@@ -46,19 +31,10 @@ import {
   TabularResponse,
 } from '@/types/analytics'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
-import { getTailwindColor } from '@/utils/tailwindColors'
 
 import InfoCard from './InfoCard'
-
-ChartJS.register(ArcElement, ChartTooltip, Legend, ChartDataLabels)
-
-const SPENDING_DANGER_THRESHOLD = 75
-const SPENDING_WARNING_THRESHOLD = 50
-
-// The colour this app already uses for "nothing is known here" - the empty-state labels below and in
-// DonutChartWidget. An unknown consumption must not borrow the green/yellow/red vocabulary that only
-// a measured one has earned.
-const UNKNOWN_CONSUMPTION_COLOR_PROPERTY = '--colors-text-quaternary'
+import SpendingDoughnutUsage from './SpendingDoughnutUsage'
+import SpendingUsage from './SpendingUsage'
 
 interface SpendingCardProps {
   userId?: string
@@ -109,66 +85,17 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
   const currentMetric = summaries?.data.metrics.find((m: any) => m.id === 'current_spending')
   const limitMetric = summaries?.data.metrics.find((m: any) => m.id === 'budget_limit')
 
-  // null, never 0: the backend refuses to compute a percentage when the spend figure is absent or no
-  // limit is configured, and "0% consumed" would assert a fact nobody has.
-  const percentage = useMemo(() => {
-    if (!keySpendingData || rowCount !== 1) return null
+  const totalMetric = summaries?.data.metrics.find((m: any) => m.id === 'total')
+  const spendingLabel = userId ? 'Spending' : 'Your spending'
 
-    const { total } = keySpendingData.data.rows[0]
-    return typeof total === 'number' ? Math.min(total, 100) : null
-  }, [keySpendingData, rowCount])
+  const getLimitLabel = (isDefaultProject: boolean) => {
+    if (userId) return 'User limit'
+    return isDefaultProject ? 'Personal limit' : 'Available to you'
+  }
 
-  const statusColor = useMemo(() => {
-    if (percentage === null) return getTailwindColor(UNKNOWN_CONSUMPTION_COLOR_PROPERTY)
-    return getStatusColor(percentage, SPENDING_DANGER_THRESHOLD, SPENDING_WARNING_THRESHOLD)
-  }, [percentage])
-
-  const statusColorWithOpacity = useMemo(() => {
-    if (percentage === null) {
-      return getTailwindColor(UNKNOWN_CONSUMPTION_COLOR_PROPERTY, undefined, 0.2)
-    }
-    return getStatusColorWithOpacity(
-      percentage,
-      SPENDING_DANGER_THRESHOLD,
-      SPENDING_WARNING_THRESHOLD
-    )
-  }, [percentage])
-
-  const chartData = useMemo(() => {
-    // An unknown consumption draws no filled arc at all, leaving a neutral empty ring.
-    const consumedPercentage = percentage ?? 0
-    return {
-      labels: ['Value', 'Remaining'],
-      datasets: [
-        {
-          data: [consumedPercentage, Math.max(0, 100 - consumedPercentage)],
-          backgroundColor: [statusColor, statusColorWithOpacity],
-          borderColor: 'transparent',
-          borderWidth: 2,
-        },
-      ],
-    }
-  }, [percentage, statusColor, statusColorWithOpacity])
-
-  const chartOptions: ChartOptions<'doughnut'> = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: true,
-      cutout: '80%',
-      plugins: {
-        legend: {
-          display: false,
-        },
-        tooltip: {
-          enabled: false,
-        },
-        datalabels: {
-          display: false,
-        },
-      },
-    }),
-    []
-  )
+  const SHARED_LIMIT_TOOLTIP = 'This budget is shared across the project with other members'
+  const getLimitLabelTooltip = (isSharedLimit: boolean) =>
+    isSharedLimit ? SHARED_LIMIT_TOOLTIP : undefined
 
   const renderContent = () => {
     if (isLoadingKeySpending) {
@@ -223,14 +150,7 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
         </div>
 
         {currentMetric && limitMetric && (
-          <div className="flex-shrink-0 relative w-32 h-32">
-            <Doughnut data={chartData} options={chartOptions} />
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-2">
-              <div className="text-base font-bold" style={{ color: statusColor }}>
-                {percentage === null ? ABSENT_VALUE_MARKER : `${percentage.toFixed(1)}%`}
-              </div>
-            </div>
-          </div>
+          <SpendingDoughnutUsage percentage={totalMetric?.value ?? null} />
         )}
       </div>
     )
@@ -254,15 +174,15 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
       }
       if (col.format === MetricFormat.PERCENTAGE && col.id === 'total') {
         customColumns[col.id] = (item: Record<string, MetricValue>) => {
-          const value = item[col.id]
-          // A zero-length bar reads as "none of the budget consumed" - a claim nobody can make when
-          // the backend declined to compute the percentage.
-          if (typeof value !== 'number') return <span>{ABSENT_VALUE_MARKER}</span>
+          const limitLabel = getLimitLabel(item.is_default === true)
           return (
-            <SpendingProgressBar
-              percentage={value}
-              dangerThreshold={SPENDING_DANGER_THRESHOLD}
-              warningThreshold={SPENDING_WARNING_THRESHOLD}
+            <SpendingUsage
+              percentage={item[col.id]}
+              spent={item.current_spending}
+              limit={item.budget_limit}
+              limitLabel={limitLabel}
+              limitLabelTooltip={getLimitLabelTooltip(item.is_shared_limit === true)}
+              spendingLabel={spendingLabel}
             />
           )
         }
@@ -302,17 +222,16 @@ const SpendingCard: FC<SpendingCardProps> = ({ userId }) => {
               initialData={keySpendingData}
               hideWrapper
               hidePagination
-              hiddenColumns={['budget_limit']}
+              hiddenColumns={['budget_limit', 'current_spending', 'is_shared_limit']}
               tableStyles={{
                 className: 'spending-table-widget',
                 minWidth: '100%',
                 cellPadding: '0.75rem',
                 columnWidths: {
-                  project_name: '228px',
-                  current_spending: '120px',
-                  budget_reset_at: '114px',
-                  time_until_reset: '132px',
-                  total: '186px',
+                  project_name: '30%',
+                  budget_reset_at: '14%',
+                  time_until_reset: '17%',
+                  total: '40%',
                 },
               }}
               customRenderColumns={getSpendingCustomRenderColumns()}

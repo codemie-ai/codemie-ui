@@ -46,12 +46,13 @@ const buildResponse = (rows: Record<string, unknown>[]) =>
     pagination: {},
   } as any)
 
-const row = (projectName: string, isDefault?: boolean) => ({
+const row = (projectName: string, isDefault?: boolean, isSharedLimit?: boolean) => ({
   project_name: projectName,
   current_spending: 10,
   budget_limit: 100,
   total: 10,
   ...(isDefault === undefined ? {} : { is_default: isDefault }),
+  ...(isSharedLimit === undefined ? {} : { is_shared_limit: isSharedLimit }),
 })
 
 describe('SpendingCard default project badge', () => {
@@ -81,5 +82,48 @@ describe('SpendingCard default project badge', () => {
 
     await waitFor(() => expect(screen.getByText('alpha-project')).toBeInTheDocument())
     expect(screen.queryByText('DEFAULT')).not.toBeInTheDocument()
+  })
+})
+
+describe('SpendingCard usage block', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('renders the doughnut for a single project instead of the limit/progress/spend row', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue(
+      buildResponse([row('alpha-project', true)])
+    )
+
+    render(<SpendingCard />)
+
+    await waitFor(() => expect(screen.getByTestId('doughnut')).toBeInTheDocument())
+    expect(screen.queryByText('Personal limit')).not.toBeInTheDocument()
+    expect(screen.queryByText('Available to you')).not.toBeInTheDocument()
+  })
+
+  it('labels the default project "Personal limit" and a non-default project "Available to you"', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue(
+      buildResponse([row('alpha-project', true), row('beta-project', false)])
+    )
+
+    render(<SpendingCard />)
+
+    await waitFor(() => expect(screen.getByText('Personal limit')).toBeInTheDocument())
+    expect(screen.getByText('Available to you')).toBeInTheDocument()
+    expect(screen.queryByTestId('doughnut')).not.toBeInTheDocument()
+  })
+
+  it('shows the shared-limit tooltip icon only for a project whose budget is shared', async () => {
+    vi.mocked(analyticsStore.fetchTabularData).mockResolvedValue(
+      buildResponse([row('alpha-project', true, false), row('beta-project', false, true)])
+    )
+
+    render(<SpendingCard />)
+
+    await waitFor(() => expect(screen.getByText('Personal limit')).toBeInTheDocument())
+
+    const sharedLimitTooltip = 'This budget is shared across the project with other members'
+    expect(document.querySelectorAll(`[data-pr-tooltip="${sharedLimitTooltip}"]`)).toHaveLength(1)
   })
 })

@@ -25,6 +25,7 @@ interface SpendingProgressBarProps {
   percentage: number
   className?: string
   fullWidth?: boolean
+  hideLabel?: boolean
   dangerThreshold?: number
   warningThreshold?: number
 }
@@ -33,6 +34,7 @@ const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
   percentage,
   className,
   fullWidth = false,
+  hideLabel = false,
   dangerThreshold = 90,
   warningThreshold = 75,
 }) => {
@@ -62,12 +64,14 @@ const SpendingProgressBar: FC<SpendingProgressBarProps> = ({
           }}
         />
       </div>
-      <span
-        className="text-sm font-semibold leading-none whitespace-nowrap w-12 text-right"
-        style={{ color: barColor }}
-      >
-        {normalizedPercentage.toFixed(1)}%
-      </span>
+      {!hideLabel && (
+        <span
+          className="text-sm font-semibold leading-none whitespace-nowrap w-12 text-right"
+          style={{ color: barColor }}
+        >
+          {normalizedPercentage.toFixed(1)}%
+        </span>
+      )}
     </div>
   )
 }
