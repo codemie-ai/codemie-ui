@@ -111,6 +111,8 @@ const minimalProps = {
   isLeaderboardEnabled: false,
   isCustomizationEnabled: false,
   isCliAnalyticsEnabled: false,
+  isInsightsEnabled: true,
+  isCliInsightsEnabled: true,
 }
 
 describe('AnalyticsDashboardComponent', () => {

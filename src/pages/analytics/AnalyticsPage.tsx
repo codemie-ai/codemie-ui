@@ -58,6 +58,11 @@ const AnalyticsPage: FC = () => {
   // Admins, maintainers and auditors only; project admins and other users never see the tab.
   const isUsageAttributionEnabled =
     (isAdmin || isMaintainer || isAuditor) && isUsageAttributionConfigEnabled
+  // Environment-determined (LiteLLM proxy availability); not role-gated.
+  const [isInsightsEnabled, isInsightsFlagLoaded] = useFeatureFlag(FEATURE_FLAGS.ANALYTICS_INSIGHTS)
+  const [isCliInsightsEnabled, isCliInsightsFlagLoaded] = useFeatureFlag(
+    FEATURE_FLAGS.ANALYTICS_CLI_INSIGHTS
+  )
 
   const [searchParams, setSearchParams] = useSearchParams()
   const { filters, selectedFilters, handleFilterChange } = useAnalyticsFilters()
@@ -110,6 +115,28 @@ const AnalyticsPage: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // One entry per flag-gated tab, in fallback priority order. `loaded: true` marks tabs gated by
+  // role-derived flags only; the others wait for the flag, which arrives with the app config.
+  const tabFlags: Array<{ tab: AnalyticsDashboardType; enabled: boolean; loaded: boolean }> = [
+    {
+      tab: AnalyticsDashboardType.insights,
+      enabled: isInsightsEnabled,
+      loaded: isInsightsFlagLoaded,
+    },
+    {
+      tab: AnalyticsDashboardType.cliInsights,
+      enabled: isCliInsightsEnabled,
+      loaded: isCliInsightsFlagLoaded,
+    },
+    {
+      tab: AnalyticsDashboardType.usageAttribution,
+      enabled: isUsageAttributionEnabled,
+      loaded: isUsageAttributionFlagLoaded,
+    },
+    { tab: AnalyticsDashboardType.leaderboard, enabled: isLeaderboardEnabled, loaded: true },
+    { tab: AnalyticsDashboardType.cliAnalytics, enabled: isCliAnalyticsEnabled, loaded: true },
+  ]
+
   useEffect(() => {
     if (!dashboardsLoaded) return
     // Links saved before the tab was renamed to AI Attribution.
@@ -123,16 +150,14 @@ const AnalyticsPage: FC = () => {
       )
       return
     }
+    const flag = tabFlags.find((f) => f.tab === tab)
+    if (flag && !flag.loaded) return
     const isKnownTab = (Object.values(AnalyticsDashboardType) as string[]).includes(tab)
-    // The flag arrives with the app config: do not leave the tab before it is known.
-    if (tab === AnalyticsDashboardType.usageAttribution && !isUsageAttributionFlagLoaded) return
-    const isFlagGatedTabEnabled =
-      (tab !== AnalyticsDashboardType.cliAnalytics || isCliAnalyticsEnabled) &&
-      (tab !== AnalyticsDashboardType.leaderboard || isLeaderboardEnabled) &&
-      (tab !== AnalyticsDashboardType.usageAttribution || isUsageAttributionEnabled)
-    const isValidTab = (isKnownTab && isFlagGatedTabEnabled) || dashboards.some((d) => d.id === tab)
+    const isValidTab =
+      (isKnownTab && (flag?.enabled ?? true)) || dashboards.some((d) => d.id === tab)
     if (!isValidTab) {
-      setSearchParams({ tab: AnalyticsDashboardType.insights }, { replace: true })
+      const fallbackTab = tabFlags.find((f) => f.enabled)?.tab
+      if (fallbackTab) setSearchParams({ tab: fallbackTab }, { replace: true })
     }
   }, [
     tab,
@@ -143,6 +168,10 @@ const AnalyticsPage: FC = () => {
     isLeaderboardEnabled,
     isUsageAttributionEnabled,
     isUsageAttributionFlagLoaded,
+    isInsightsEnabled,
+    isInsightsFlagLoaded,
+    isCliInsightsEnabled,
+    isCliInsightsFlagLoaded,
   ])
 
   const handleFiltersChange = (newFilters: AnalyticsQueryParams, options?: FilterChangeOptions) => {
@@ -212,6 +241,8 @@ const AnalyticsPage: FC = () => {
             isCustomizationEnabled={isCustomizationEnabled}
             isCliAnalyticsEnabled={isCliAnalyticsEnabled}
             isUsageAttributionEnabled={isUsageAttributionEnabled}
+            isInsightsEnabled={isInsightsEnabled}
+            isCliInsightsEnabled={isCliInsightsEnabled}
           />
         </div>
       </PageLayout>

@@ -46,6 +46,8 @@ vi.mock('@/hooks/useFeatureFlags', () => ({
   useFeatureFlag: vi.fn((flag: string) => {
     if (flag === 'feature:dashboardCustomization') return [true, true]
     if (flag === 'aiChampionsLeaderboard') return [true, true]
+    if (flag === 'features:analyticsInsights') return [true, true]
+    if (flag === 'features:analyticsCLIInsights') return [true, true]
     return [false, true]
   }),
 }))
@@ -212,6 +214,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
       if (flag === 'feature:dashboardCustomization') return [true, true]
       if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:analyticsInsights') return [true, true]
+      if (flag === 'features:analyticsCLIInsights') return [true, true]
       return [false, true]
     })
     mockSearchParams.get.mockImplementation((key: string) => {
@@ -230,6 +234,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
       if (flag === 'feature:dashboardCustomization') return [true, true]
       if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:analyticsInsights') return [true, true]
+      if (flag === 'features:analyticsCLIInsights') return [true, true]
       if (flag === 'features:cliAnalytics') return [true, true]
       return [false, true]
     })
@@ -244,6 +250,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
       if (flag === 'feature:dashboardCustomization') return [true, true]
       if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:analyticsInsights') return [true, true]
+      if (flag === 'features:analyticsCLIInsights') return [true, true]
       if (flag === 'features:cliAnalytics') return [false, true]
       return [true, true]
     })
@@ -268,6 +276,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
       if (flag === 'feature:dashboardCustomization') return [true, true]
       if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:analyticsInsights') return [true, true]
+      if (flag === 'features:analyticsCLIInsights') return [true, true]
       if (flag === 'features:cliAnalytics') return [true, true]
       return [false, true]
     })
@@ -289,6 +299,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
       if (flag === 'feature:dashboardCustomization') return [true, true]
       if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:analyticsInsights') return [true, true]
+      if (flag === 'features:analyticsCLIInsights') return [true, true]
       if (flag === 'features:cliAnalytics') return [true, true]
       return [false, true]
     })
@@ -309,6 +321,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
       if (flag === 'feature:dashboardCustomization') return [true, true]
       if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:analyticsInsights') return [true, true]
+      if (flag === 'features:analyticsCLIInsights') return [true, true]
       if (flag === 'features:cliAnalytics') return [true, true]
       return [false, true]
     })
@@ -336,6 +350,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
       vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
         if (flag === 'feature:dashboardCustomization') return [true, true]
         if (flag === 'aiChampionsLeaderboard') return [true, true]
+        if (flag === 'features:analyticsInsights') return [true, true]
+        if (flag === 'features:analyticsCLIInsights') return [true, true]
         if (flag === 'features:cliAnalytics') return [true, true]
         if (flag === 'features:usageAttribution') return [true, true]
         return [false, true]
@@ -361,6 +377,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
       if (flag === 'feature:dashboardCustomization') return [true, true]
       if (flag === 'aiChampionsLeaderboard') return [true, true]
+      if (flag === 'features:analyticsInsights') return [true, true]
+      if (flag === 'features:analyticsCLIInsights') return [true, true]
       if (flag === 'features:cliAnalytics') return [false, true]
       return [false, true]
     })
@@ -391,6 +409,8 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
       if (flag === 'feature:dashboardCustomization') return [true, true]
       if (flag === 'aiChampionsLeaderboard') return [false, true]
+      if (flag === 'features:analyticsInsights') return [true, true]
+      if (flag === 'features:analyticsCLIInsights') return [true, true]
       if (flag === 'features:cliAnalytics') return [true, true]
       return [false, true]
     })
@@ -440,6 +460,8 @@ describe('AnalyticsPage - Usage Attribution tab gate', () => {
   const mockFlag = (enabled: boolean, loaded = true) => {
     vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
       if (flag === USAGE_ATTRIBUTION) return [enabled, loaded]
+      if (flag === 'features:analyticsInsights') return [true, true]
+      if (flag === 'features:analyticsCLIInsights') return [true, true]
       return [false, true]
     })
   }

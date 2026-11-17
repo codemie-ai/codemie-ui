@@ -36,6 +36,8 @@ interface AnalyticsDashboardProps {
   isCustomizationEnabled: boolean
   isCliAnalyticsEnabled: boolean
   isUsageAttributionEnabled?: boolean
+  isInsightsEnabled: boolean
+  isCliInsightsEnabled: boolean
 }
 
 const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
@@ -45,6 +47,8 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
   isCustomizationEnabled,
   isCliAnalyticsEnabled,
   isUsageAttributionEnabled = false,
+  isInsightsEnabled,
+  isCliInsightsEnabled,
 }) => {
   const { dashboards } = useSnapshot(analyticsStore)
 
@@ -65,14 +69,19 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
   }, [setSearchParams])
 
   const tabs: Tab<string>[] = useMemo(() => {
-    const tabsList: Tab<string>[] = [
-      {
+    const tabsList: Tab<string>[] = []
+
+    if (isInsightsEnabled) {
+      tabsList.push({
         id: AnalyticsDashboard.insights,
         label: 'Insights',
         element: <InsightsTab filters={filters} />,
         className: '[overflow-wrap:normal]',
-      },
-      {
+      })
+    }
+
+    if (isCliInsightsEnabled) {
+      tabsList.push({
         id: AnalyticsDashboard.cliInsights,
         label: 'CLI Insights',
         element: (
@@ -82,8 +91,8 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
           />
         ),
         className: '[overflow-wrap:normal]',
-      },
-    ]
+      })
+    }
 
     if (isCliAnalyticsEnabled) {
       tabsList.push({
@@ -130,6 +139,8 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
     isCustomizationEnabled,
     isCliAnalyticsEnabled,
     isUsageAttributionEnabled,
+    isInsightsEnabled,
+    isCliInsightsEnabled,
     openUsageAttribution,
   ])
 
@@ -146,6 +157,7 @@ const AnalyticsDashboardComponent: FC<AnalyticsDashboardProps> = ({
         activeTab={activeTab}
         onChange={handleTabChange}
         isEmbedded={false}
+        alwaysShowTabs
         className="min-w-0"
         tabClassName="min-w-0"
       />

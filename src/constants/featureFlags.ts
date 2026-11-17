@@ -49,6 +49,8 @@ export const FEATURE_FLAGS = {
   AI_CHAMPIONS_LEADERBOARD: 'aiChampionsLeaderboard',
   CLI_ANALYTICS: 'features:cliAnalytics',
   USAGE_ATTRIBUTION: 'features:usageAttribution',
+  ANALYTICS_INSIGHTS: 'features:analyticsInsights',
+  ANALYTICS_CLI_INSIGHTS: 'features:analyticsCLIInsights',
   PROJECT_MODEL_OVERRIDE: 'features:projectModelOverride',
   WORKSPACE_SCRIPT_BRIDGE: 'features:workspaceScriptBridge',
   MARKETPLACE_MANAGEMENT: 'features:marketplaceManagement',
