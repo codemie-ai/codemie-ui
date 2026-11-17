@@ -25,7 +25,7 @@ import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useToolkitSelection } from '@/hooks/useToolkitSelection'
 import { assistantsStore } from '@/store'
 import { settingsStore } from '@/store/settings'
-import { AssistantToolkit, Tool } from '@/types/entity/assistant'
+import { AssistantContext, AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 import { getCredentialType } from '@/utils/settings'
@@ -35,7 +35,7 @@ import { cn } from '@/utils/utils'
 import AvailableToolsSection from './AvailableToolsSection'
 import ExternalToolsSection from './ExternalToolsSection'
 import McpServersSection from './McpServersSection'
-import Toolkit from './Toolkit'
+import Toolkit, { DefaultToolsState } from './Toolkit'
 import { AssistantFormContext } from '../../AssistantForm'
 
 export const DEFAULT_TOOLS_DESCRIPTION = "Extend your assistant's abilities with additional tools"
@@ -46,6 +46,9 @@ export const SECTION = {
 } as const
 
 export type ToolkitSection = (typeof SECTION)[keyof typeof SECTION]
+
+const NO_DEFAULT_TOOLS: string[] = []
+const noop = () => {}
 
 interface ToolsConfigurationProps {
   toolkits: AssistantToolkit[]
@@ -70,6 +73,9 @@ interface ToolsConfigurationProps {
   description?: string
   availableToolsDescription?: string
   showWrapper?: boolean
+  context?: AssistantContext[]
+  disabledContextTools?: string[]
+  onDisabledContextToolsChange?: (next: string[]) => void
 }
 
 const ToolsConfiguration = ({
@@ -91,6 +97,9 @@ const ToolsConfiguration = ({
   description = DEFAULT_TOOLS_DESCRIPTION,
   availableToolsDescription,
   showWrapper = true,
+  context,
+  disabledContextTools = NO_DEFAULT_TOOLS,
+  onDisabledContextToolsChange = noop,
 }: ToolsConfigurationProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const { settings, indexSettings } = useSnapshot(settingsStore)
@@ -135,14 +144,19 @@ const ToolsConfiguration = ({
   }, [settings, project]) as Record<string, Setting[]>
 
   const {
-    toggleSingleTool,
-    toggleMultiTool,
     toggleAllTools,
     updateToolkitSetting,
     updateToolSetting,
     updateToolkitAutoLookup,
     updateToolAutoLookup,
-  } = useToolkitSelection({ selectedToolkits, onToolkitsChange })
+    toggleDefaultTool,
+    toggleToolAndSyncDefaults,
+  } = useToolkitSelection({
+    selectedToolkits,
+    onToolkitsChange,
+    disabledContextTools,
+    onDisabledContextToolsChange,
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -196,11 +210,18 @@ const ToolsConfiguration = ({
     indexSettings()
   }, [project, indexSettings])
 
+  const defaultTools = useMemo<DefaultToolsState | undefined>(
+    () =>
+      context === undefined ? undefined : { context, disabledContextTools, toggleDefaultTool },
+    [context, disabledContextTools, toggleDefaultTool]
+  )
+
   const toolkitRenderProps = useMemo(
     () => ({
       settings: filteredSettings,
       selectedToolkits,
-      toggleTool: singleToolSelection ? toggleSingleTool : toggleMultiTool,
+      toggleTool: (tk: AssistantToolkit, tool: Tool) =>
+        toggleToolAndSyncDefaults(tk, tool, singleToolSelection),
       toggleAllTools,
       updateToolSetting,
       updateToolkitSetting,
@@ -211,13 +232,13 @@ const ToolsConfiguration = ({
         showNewIntegrationPopup(project, credentialType),
       isChatConfig,
       onToolkitsChange,
+      defaultTools,
     }),
     [
       filteredSettings,
       selectedToolkits,
       singleToolSelection,
-      toggleSingleTool,
-      toggleMultiTool,
+      toggleToolAndSyncDefaults,
       toggleAllTools,
       updateToolSetting,
       updateToolkitSetting,
@@ -227,6 +248,7 @@ const ToolsConfiguration = ({
       project,
       isChatConfig,
       onToolkitsChange,
+      defaultTools,
     ]
   )
 

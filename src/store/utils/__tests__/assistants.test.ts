@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
 
 import { AssistantType } from '@/constants/assistants'
 import { transformAssistantToCreateDTO } from '@/store/utils/assistants'
-import { Assistant, HedgingConfig } from '@/types/entity/assistant'
+import { Assistant, ContextType, HedgingConfig } from '@/types/entity/assistant'
 
 const baseAssistant: Partial<Assistant> = {
   name: 'Test Assistant',
@@ -265,6 +265,46 @@ describe('transformAssistantToCreateDTO', () => {
       const dto = transformAssistantToCreateDTO(baseAssistant as Assistant)
 
       expect(dto.file_attachment_enabled).toBe(true)
+    })
+  })
+
+  describe('disabled_context_tools', () => {
+    it('includes disabled_context_tools in the create DTO, defaulting to []', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        disabled_context_tools: ['search_kb'],
+      } as Assistant)
+      expect(dto.disabled_context_tools).toEqual(['search_kb'])
+    })
+
+    it('defaults disabled_context_tools to [] when the assistant has none', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        disabled_context_tools: undefined,
+      } as Assistant)
+      expect(dto.disabled_context_tools).toEqual([])
+    })
+
+    it('keeps default tools out of toolkits when a datasource is attached, and sends the deselection', () => {
+      const toolkit = (name: string, tools: string[]) => ({
+        toolkit: name,
+        label: name,
+        settings_config: false,
+        is_external: false,
+        tools: tools.map((toolName) => ({ name: toolName, label: toolName })),
+      })
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        context: [{ name: 'repo', context_type: ContextType.CODE, id: '1' }],
+        toolkits: [
+          toolkit('Codebase Tools', ['get_repository_file_tree', 'read_file']),
+          toolkit('Search', ['search_code_repo']),
+        ],
+        disabled_context_tools: ['get_repository_file_tree'],
+      } as Assistant)
+
+      expect(dto.toolkits?.map((tk) => tk.tools?.map((tool) => tool.name))).toEqual([['read_file']])
+      expect(dto.disabled_context_tools).toEqual(['get_repository_file_tree'])
     })
   })
 

@@ -139,6 +139,7 @@ export interface Assistant {
   display_name?: string | null
   context?: AssistantContext[]
   toolkits?: AssistantToolkit[]
+  disabled_context_tools?: string[]
   mcp_servers: MCPServerDetails[]
   agent_card?: AgentCard
   integration_id?: string
@@ -489,6 +490,7 @@ export interface CreateAssistantDto {
   image_generation_model?: string | null
   file_attachment_enabled?: boolean | null
   toolkits?: ToolKitDetails[]
+  disabled_context_tools?: string[]
   conversation_starters?: string[]
   shared?: boolean
   is_react?: boolean

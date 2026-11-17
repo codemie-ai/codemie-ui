@@ -26,6 +26,8 @@ const mockGetSharedWith = vi.fn().mockResolvedValue([])
 
 vi.mock('@/store/assistants', () => ({
   assistantsStore: {
+    availableToolkits: [],
+    getAssistantToolkits: vi.fn().mockResolvedValue([]),
     sharing: { loadSharedWith: (...args: unknown[]) => mockGetSharedWith(...args) },
   },
 }))

@@ -39,6 +39,7 @@ export interface AssistantConfiguration {
   system_prompt?: string
   limit_tool_output_tokens?: number
   tools?: AssistantTool[]
+  disabled_context_tools?: string[]
   datasource_ids?: string[]
   mcp_servers?: MCPServerDetails[]
   exclude_extra_context_tools?: boolean

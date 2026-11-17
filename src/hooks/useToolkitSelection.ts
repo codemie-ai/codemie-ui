@@ -17,10 +17,13 @@ import { useCallback } from 'react'
 
 import type { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import type { Setting } from '@/types/entity/setting'
+import { findExclusivePairTool, isDefaultToolName } from '@/utils/defaultDatasourceTools'
 
 interface UseToolkitSelectionProps {
   selectedToolkits: AssistantToolkit[]
   onToolkitsChange: (toolkits: AssistantToolkit[]) => void
+  disabledContextTools?: string[]
+  onDisabledContextToolsChange?: (next: string[]) => void
 }
 
 export interface SettingUpdateOptions {
@@ -41,6 +44,8 @@ const recordedAutoLookup = (options?: SettingUpdateOptions) =>
 export const useToolkitSelection = ({
   selectedToolkits,
   onToolkitsChange,
+  disabledContextTools,
+  onDisabledContextToolsChange,
 }: UseToolkitSelectionProps) => {
   const updateSelectedToolkits = useCallback(
     (toolkit: AssistantToolkit, updatedTools: Tool[]) => {
@@ -115,27 +120,57 @@ export const useToolkitSelection = ({
     [selectedToolkits, updateSelectedToolkits]
   )
 
+  /**
+   * `bulkTools` is passed by surfaces that model default datasource tools (see
+   * `getBulkSelectableTools`). `deselectListNames` are the default tools whose state lives in
+   * `disabledContextTools` (a matching datasource is attached), so they are toggled there; any
+   * other bulk tool, default or not, is stored in the toolkit list. The "with filtering" variants
+   * left out of `bulkTools` are dropped on select-all to keep the pairs exclusive.
+   */
   const toggleAllTools = useCallback(
-    (toolkit: AssistantToolkit, allToolsSelected: boolean) => {
+    (
+      toolkit: AssistantToolkit,
+      allToolsSelected: boolean,
+      bulkTools?: Tool[],
+      deselectListNames: string[] = []
+    ) => {
       const existingToolkit = selectedToolkits.find((tk) => tk.toolkit === toolkit.toolkit)
+      const candidates = bulkTools
+        ? bulkTools.filter((tl) => !deselectListNames.includes(tl.name))
+        : toolkit.tools
 
       let updatedTools: Tool[] = []
       if (allToolsSelected) {
         updateSelectedToolkits(toolkit, [])
       } else if (existingToolkit) {
+        const bulkNames = new Set(bulkTools?.map((tl) => tl.name))
+        const kept = bulkTools
+          ? existingToolkit.tools.filter(
+              (tl) =>
+                !deselectListNames.includes(tl.name) &&
+                (bulkNames.has(tl.name) || !toolkit.tools.some((t) => t.name === tl.name))
+            )
+          : existingToolkit.tools
         updatedTools = [
-          ...toolkit.tools.filter(
-            (tl) => !existingToolkit.tools.some((existingTl) => tl.name === existingTl.name)
-          ),
-          ...existingToolkit.tools,
+          ...candidates.filter((tl) => !kept.some((existingTl) => tl.name === existingTl.name)),
+          ...kept,
         ]
       } else {
-        updatedTools = toolkit.tools
+        updatedTools = candidates
       }
 
       updateSelectedToolkits(toolkit, updatedTools)
+
+      if (deselectListNames.length) {
+        const current = disabledContextTools ?? []
+        onDisabledContextToolsChange?.(
+          allToolsSelected
+            ? [...current, ...deselectListNames.filter((name) => !current.includes(name))]
+            : current.filter((name) => !deselectListNames.includes(name))
+        )
+      }
     },
-    [selectedToolkits, updateSelectedToolkits]
+    [selectedToolkits, updateSelectedToolkits, disabledContextTools, onDisabledContextToolsChange]
   )
 
   const updateToolkitSetting = useCallback(
@@ -225,6 +260,91 @@ export const useToolkitSelection = ({
     [selectedToolkits, onToolkitsChange]
   )
 
+  /**
+   * Flip `tool.name` in/out of the deselected-default-tools list. When this selects a default
+   * tool back on, and that tool has an exclusive "with filtering" pair that is currently selected
+   * in `selectedToolkits`, remove that pair tool too — the two are mutually exclusive, so
+   * re-enabling the default must not leave both active.
+   */
+  const toggleDefaultTool = useCallback(
+    (toolkit: AssistantToolkit, tool: Tool) => {
+      const currentlyDeselected = disabledContextTools ?? []
+      const isCurrentlyDeselected = currentlyDeselected.includes(tool.name)
+
+      const nextDeselected = isCurrentlyDeselected
+        ? currentlyDeselected.filter((name) => name !== tool.name)
+        : [...currentlyDeselected, tool.name]
+
+      onDisabledContextToolsChange?.(nextDeselected)
+
+      // With a datasource attached the deselected list is the only home of this tool, so drop any
+      // copy stored while none was attached. Re-enabling also drops the exclusive pair. One update:
+      // separate ones would each rebuild the list from the same snapshot.
+      const dropNames = new Set([tool.name])
+      if (isCurrentlyDeselected) {
+        const pairTool = findExclusivePairTool(toolkit, tool)
+        if (pairTool) dropNames.add(pairTool.name)
+      }
+      const existingToolkit = selectedToolkits.find((tk) => tk.toolkit === toolkit.toolkit)
+      if (existingToolkit?.tools.some((t) => dropNames.has(t.name))) {
+        updateSelectedToolkits(
+          toolkit,
+          existingToolkit.tools.filter((t) => !dropNames.has(t.name))
+        )
+      }
+    },
+    [selectedToolkits, disabledContextTools, onDisabledContextToolsChange, updateSelectedToolkits]
+  )
+
+  /**
+   * Toggle a regular tool selection (single or multi mode) and, when that newly selects a tool
+   * whose exclusive pair is a default tool, deselect that default tool — selecting the
+   * "with filtering" variant makes the plain default tool redundant.
+   */
+  const toggleToolAndSyncDefaults = useCallback(
+    (toolkit: AssistantToolkit, tool: Tool, isSingleSelection: boolean) => {
+      const existingToolkit = selectedToolkits.find((tk) => tk.toolkit === toolkit.toolkit)
+      const wasSelected = !!existingToolkit?.tools.find((t) => t.name === tool.name)
+
+      const pairTool = findExclusivePairTool(toolkit, tool)
+      const pairInToolkitList =
+        !!pairTool && !!existingToolkit?.tools.some((t) => t.name === pairTool.name)
+
+      if (isSingleSelection) {
+        toggleSingleTool(toolkit, tool)
+      } else if (!wasSelected && pairInToolkitList) {
+        // Without a datasource a default tool is kept in the toolkit list like any other tool, so
+        // the exclusive pair has to leave that list in the same update; two separate updates
+        // would each rebuild the list from the same snapshot and the second would undo the first.
+        updateSelectedToolkits(toolkit, [
+          ...existingToolkit!.tools.filter((t) => t.name !== pairTool.name),
+          tool,
+        ])
+      } else {
+        toggleMultiTool(toolkit, tool)
+      }
+
+      if (!wasSelected) {
+        const currentlyDeselected = disabledContextTools ?? []
+        if (
+          pairTool &&
+          isDefaultToolName(pairTool.name) &&
+          !currentlyDeselected.includes(pairTool.name)
+        ) {
+          onDisabledContextToolsChange?.([...currentlyDeselected, pairTool.name])
+        }
+      }
+    },
+    [
+      selectedToolkits,
+      disabledContextTools,
+      onDisabledContextToolsChange,
+      toggleSingleTool,
+      toggleMultiTool,
+      updateSelectedToolkits,
+    ]
+  )
+
   return {
     updateSelectedToolkits,
     toggleSingleTool,
@@ -234,5 +354,7 @@ export const useToolkitSelection = ({
     updateToolSetting,
     updateToolkitAutoLookup,
     updateToolAutoLookup,
+    toggleDefaultTool,
+    toggleToolAndSyncDefaults,
   }
 }

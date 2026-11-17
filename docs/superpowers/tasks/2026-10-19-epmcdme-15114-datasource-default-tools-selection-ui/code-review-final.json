@@ -1,0 +1,72 @@
+{
+  "decision": "request-changes",
+  "rationale": "Two real defects in the new default-tool checkbox routing: a silent no-op regression for ToolSelector/SkillForm consumers of ToolsConfiguration (CR-002, critical) and an invisible premature deselect when clicking an inactive default tool (CR-001, major). Exclusive-pair matching by label-text suffix is fragile with no safety net (CR-004, major), and the virtual-assistant save mapping for deselected_default_tools has no test coverage (CR-003, major). 5 findings dismissed as noise: the asymmetric filtering-variant resync reads as the spec's explicitly-allowed 'both deselected' state recoverable by one manual click; the watch('context') cast matches an existing pattern used elsewhere in the same file; the non-virtual-assistant AssistantTab branch spreads the existing actor config so any deselected_default_tools already present passes through unmodified; a cross-toolkit tool-name collision is implausible given the specific reserved names; and ExternalToolsSection never renders through Toolkit.tsx so default tools cannot reach that path. No defer findings — nothing here is pre-existing. All lenses and the standards audit ran and parsed cleanly; no decision_needed items remain.",
+  "confidence": "high",
+  "risk_flags": ["breaking-change"],
+  "business_review": [
+    { "kind": "spec", "item": "Codebase Tools lists standard Get Repo Tree and Search Code alongside the with-filtering variants", "status": "pass", "notes": "generic render loop in Toolkit.tsx renders every tool the backend listing returns" },
+    { "kind": "spec", "item": "A Knowledge Base group lists Search Knowledge Base", "status": "pass", "notes": "same generic rendering path, no frontend gating excludes it" },
+    { "kind": "story-ac", "item": "Attaching a code datasource with none auto-selects standard Get Repo Tree and Search Code", "status": "pass", "notes": "isDefaultToolActive derives checked state reactively from context + deselectedDefaultTools" },
+    { "kind": "story-ac", "item": "Attaching a knowledge-base datasource auto-selects Search Knowledge Base", "status": "pass", "notes": "same isDefaultToolActive mechanism keyed to KNOWLEDGE_BASE" },
+    { "kind": "story-ac", "item": "A previously-deselected default tool is not re-selected when another matching datasource is attached", "status": "pass", "notes": "isDefaultToolActive excludes any name in deselectedDefaultTools regardless of context count" },
+    { "kind": "story-ac", "item": "Selecting the with-filtering variant deselects the standard tool and vice versa; deselecting both allowed", "status": "pass", "notes": "toggleToolAndSyncDefaults and toggleDefaultTool cover both directions; covered by useToolkitSelection.test.ts" },
+    { "kind": "story-ac", "item": "A deselected default tool stays deselected after save/reopen; pre-existing assistants default to selected", "status": "pass", "notes": "AssistantForm seeds and persists deselectedDefaultTools; confirmed by integration test" },
+    { "kind": "story-ac", "item": "Virtual assistant form applies the same listing, pre-selection, auto-select and exclusivity rules", "status": "pass", "notes": "wired through VirtualAssistantForm/AssistantTab; schema test covers the schema layer only (see CR-003)" },
+    { "kind": "story-ac", "item": "Backend validation error on save is shown while retaining the author's unsaved changes", "status": "pass", "notes": "deselectedDefaultTools is local state not reset by the save handler; confirmed by integration test" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "all 7 EPMCDME-15114 commit subjects match the documented format" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide exists in this repo and no ArtifactRef was passed" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checklist sinks grepped across all 19 changed files; none implicated" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/Toolkit.tsx",
+      "line": 224,
+      "title": "Default-tool checkbox silently deselects when inactive",
+      "problem": "The default-tool checkbox's onChange unconditionally calls toggleDefaultTool whenever tool.name matches a default tool, with no check that the tool is currently context-active; clicking an unchecked default-tool row when no matching datasource context is attached still records the tool in deselectedDefaultTools.",
+      "impact": "The checkbox stays visually unchecked before and after the click (isDefaultToolActive returns false regardless since context is absent), giving no feedback that anything changed; once a matching datasource is later attached, the tool silently fails to auto-select even though the author never knowingly deselected it, undermining the auto-select-unless-previously-deselected acceptance criterion.",
+      "recommendation": "Guard the onChange to no-op (or disable the checkbox) when the default tool is not currently context-active, so a click only ever toggles an already-active default tool."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/assistants/components/AssistantForm/components/Toolkits/Toolkit.tsx",
+      "line": 225,
+      "title": "Default-tool routing breaks tool selection in other forms",
+      "problem": "The isDefaultToolName(tool.name) branch routes any tool with one of the three reserved names through toggleDefaultTool unconditionally, regardless of whether the hosting ToolsConfiguration consumer wired context/onDeselectedDefaultToolsChange. ToolSelector.tsx and SkillForm.tsx render ToolsConfiguration against the full internal toolkit catalog (now including get_repository_file_tree/search_code_repo in Codebase Tools) without passing context or onDeselectedDefaultToolsChange, so ToolsConfiguration's default onDeselectedDefaultToolsChange = () => {} absorbs the click.",
+      "impact": "Clicking the Get Repo Tree / Search Code checkbox in the script-tool picker or the Skill form's tool selection does nothing - no state change, no selection, no error - a silent regression of previously-working tool selection for any toolkit/tool carrying one of the three reserved default-tool names.",
+      "recommendation": "Scope the isDefaultToolName special-casing to only fire when toggleDefaultTool is backed by a real onDeselectedDefaultToolsChange, falling back to the normal toggleTool path otherwise, or restrict the default-tool branch to the two call sites (AssistantForm, VirtualAssistantForm) that pass context."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/AssistantTab.tsx",
+      "line": 233,
+      "title": "No test for virtual-assistant default-tools save path",
+      "problem": "No test renders VirtualAssistantForm/AssistantTab and exercises handleDeselectedDefaultToolsChange, the getDefaultValues load of config?.deselected_default_tools, or the deselected_default_tools: virtualAssistantValues.deselected_default_tools ?? [] line in finalAssistantConfig; the only existing test calls the Yup schema directly and never touches the component or this save mapping.",
+      "impact": "If this line, or the default-values wiring it depends on, is ever dropped or reverted, workflow-editor virtual assistants would silently lose the deselect-default-tool feature on save/reload while the full existing test suite keeps passing.",
+      "recommendation": "Add a test that renders VirtualAssistantForm/AssistantTab, toggles a default tool off, saves, and asserts the resulting AssistantConfiguration.deselected_default_tools reflects the change, mirroring the existing AssistantForm.defaultTools.integration.test.tsx."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/defaultDatasourceTools.ts",
+      "line": 71,
+      "title": "Exclusive tool pairing matches by fragile label string",
+      "problem": "findExclusivePairTool pairs a default tool with its with-filtering variant purely by string-matching the user-facing label (suffix \" with filtering\"), with no shared constant or id-based relation tying the two tools together.",
+      "impact": "Any backend label wording change, added whitespace, or localization of either label silently breaks the pairing, so both the default tool and its with-filtering variant could end up selected simultaneously - violating the mutual-exclusivity guarantee the surrounding code asserts - with no compile-time or runtime signal that the pairing broke.",
+      "recommendation": "Correlate the pair by a stable identifier (a tool id/relation field from the backend) rather than label text, or at minimum centralize both label strings in one shared constant with a test asserting the pairing resolves for every known default tool."
+    }
+  ]
+}

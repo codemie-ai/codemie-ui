@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "task": "Show datasource default tools under Codebase and Knowledge Base groups, auto-select on attach unless previously deselected, enforce standard vs with-filtering exclusivity, and persist deselection in the assistant and virtual assistant forms.",
+  "generated": "2026-10-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 2, "label": "S" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 19,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Toolkit panel, ContextSelector, AssistantForm, VirtualAssistantForm and the assistants store all change, with shared selection logic between two forms." },
+    { "dimension": "technical_risk", "reason": "No existing auto-select or exclusivity precedent, and no automated coverage near Toolkit.tsx. The first-attach versus re-add (undecided) state and legacy absence-means-all-selected handling are subtle. The enumerated edge cases have no test template, so Technical Risk is bumped." },
+    { "dimension": "file_change_estimate", "reason": "Roughly 8-10 files including new tests, in a few directories (assistants pages, components, store, workflows)." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped: enumerated edge/variant cases (deselection persistence, exclusivity) with no covering test template",
+    "Component Scope: affects multiple forms (assistant and virtual assistant)"
+  ],
+  "split_recommendation": null
+}

@@ -1,0 +1,29 @@
+{
+  "decision": "approve",
+  "rationale": "All four prior blocking findings verified resolved against current source at HEAD f6d1c0e. CR-001/CR-002: Toolkit.tsx now gates default-tool routing on context !== undefined (fixing ToolSelector/SkillForm regression) and on isDefaultToolContextAttached before toggling (fixing the invisible premature-deselect), each confirmed by a new unit test exercising the exact scenario. CR-004: findExclusivePairTool now anchors the default-tool side on a centralized DEFAULT_TOOL_LABEL constant instead of raw backend label text, with tests covering all three pairs plus a label-drift case. CR-003: a new AssistantTab.defaultTools.test.tsx renders the real AssistantTab/VirtualAssistantForm save path and asserts deselected_default_tools reaches the saved actor config, matching the live code at AssistantTab.tsx:233 (not itself modified, since only test coverage was missing). No new findings introduced; no findings remain unresolved.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "Codebase Tools lists standard Get Repo Tree and Search Code alongside the with-filtering variants", "status": "pass", "notes": "generic render loop in Toolkit.tsx renders every tool the backend listing returns" },
+    { "kind": "spec", "item": "A Knowledge Base group lists Search Knowledge Base", "status": "pass", "notes": "same generic rendering path, no frontend gating excludes it" },
+    { "kind": "story-ac", "item": "Attaching a code datasource with none auto-selects standard Get Repo Tree and Search Code", "status": "pass", "notes": "isDefaultToolActive derives checked state reactively from context + deselectedDefaultTools" },
+    { "kind": "story-ac", "item": "Attaching a knowledge-base datasource auto-selects Search Knowledge Base", "status": "pass", "notes": "same isDefaultToolActive mechanism keyed to KNOWLEDGE_BASE" },
+    { "kind": "story-ac", "item": "A previously-deselected default tool is not re-selected when another matching datasource is attached", "status": "pass", "notes": "isDefaultToolActive excludes any name in deselectedDefaultTools regardless of context count" },
+    { "kind": "story-ac", "item": "Selecting the with-filtering variant deselects the standard tool and vice versa; deselecting both allowed", "status": "pass", "notes": "toggleToolAndSyncDefaults and toggleDefaultTool cover both directions; covered by useToolkitSelection.test.ts" },
+    { "kind": "story-ac", "item": "A deselected default tool stays deselected after save/reopen; pre-existing assistants default to selected", "status": "pass", "notes": "AssistantForm seeds and persists deselectedDefaultTools; confirmed by integration test" },
+    { "kind": "story-ac", "item": "Virtual assistant form applies the same listing, pre-selection, auto-select and exclusivity rules", "status": "pass", "notes": "wired through VirtualAssistantForm/AssistantTab; now covered end-to-end by AssistantTab.defaultTools.test.tsx (CR-003 fix)" },
+    { "kind": "story-ac", "item": "Backend validation error on save is shown while retaining the author's unsaved changes", "status": "pass", "notes": "deselectedDefaultTools is local state not reset by the save handler; confirmed by integration test" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "all 7 EPMCDME-15114 commit subjects match the documented format" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide exists in this repo and no ArtifactRef was passed" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checklist sinks grepped across all 19 changed files; none implicated" }
+  ],
+  "findings": [],
+  "finding_status": [
+    { "id": "CR-001", "status": "resolved", "notes": "Toolkit.tsx onChange now calls toggleDefaultTool only when isDefaultToolContextAttached(tool.name, context) is true, confirmed by a new test asserting no toggle call and unchanged unchecked state when context is empty." },
+    { "id": "CR-002", "status": "resolved", "notes": "isDefaultToolRoutable requires context !== undefined; ToolSelector.tsx and SkillForm.tsx render ToolsConfiguration without a context prop, so the reserved-name tools now fall through to the ordinary toggleTool path there, confirmed by a new test mirroring that exact call shape." },
+    { "id": "CR-003", "status": "resolved", "notes": "New AssistantTab.defaultTools.test.tsx renders the real AssistantTab component (assistants: [] forces the virtual-assistant branch) and asserts the saved actor's deselected_default_tools matches VirtualAssistantForm.getValues() output, exercising AssistantTab.tsx:233 directly." },
+    { "id": "CR-004", "status": "resolved", "notes": "findExclusivePairTool now resolves the default-tool side's label from a single DEFAULT_TOOL_LABEL constant instead of raw tool.label, with new tests covering all three default-tool pairs and a label-drift regression case." }
+  ]
+}

@@ -17,8 +17,9 @@ import { useRef } from 'react'
 
 import { TOOLKITS } from '@/constants/assistants'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
-import { AssistantToolkit } from '@/types/entity/assistant'
+import { AssistantContext, AssistantToolkit } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
+import { isDefaultToolContextAttached, isDefaultToolName } from '@/utils/defaultDatasourceTools'
 import { cn } from '@/utils/utils'
 
 import ToolkitIcon from '../../../ToolkitIcon'
@@ -28,6 +29,8 @@ interface ToolkitHeaderProps {
   selectedToolkits?: AssistantToolkit[]
   mcpServers?: MCPServerDetails[]
   singleToolSelection?: boolean
+  context?: AssistantContext[]
+  disabledContextTools?: string[]
 }
 
 const ToolkitHeader = ({
@@ -35,10 +38,24 @@ const ToolkitHeader = ({
   selectedToolkits,
   mcpServers,
   singleToolSelection = false,
+  context,
+  disabledContextTools,
 }: ToolkitHeaderProps) => {
-  const selectedTools = selectedToolkits?.find(
+  const storedTools = selectedToolkits?.find(
     (selectedTk) => selectedTk.toolkit === tk.toolkit
   )?.tools
+
+  // Default tools with a matching datasource attached are tracked by `disabledContextTools`
+  // (selected unless deselected), not by the toolkit list — count them from there.
+  const usesDeselectedList = (toolName: string) =>
+    isDefaultToolName(toolName) && isDefaultToolContextAttached(toolName, context)
+
+  const selectedTools = [
+    ...(storedTools ?? []).filter((tool) => !usesDeselectedList(tool.name)),
+    ...tk.tools.filter(
+      (tool) => usesDeselectedList(tool.name) && !(disabledContextTools ?? []).includes(tool.name)
+    ),
+  ]
 
   const hasEnabledTools = !!selectedTools?.length
   const isPluginToolkit = tk.toolkit === TOOLKITS.Plugin

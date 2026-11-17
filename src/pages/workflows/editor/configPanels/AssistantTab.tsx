@@ -31,6 +31,7 @@ import {
   AssistantStateConfiguration,
   WorkflowConfiguration,
 } from '@/types/workflowEditor/configuration'
+import { withoutDefaultTools } from '@/utils/defaultDatasourceTools'
 import { ConfigurationUpdate } from '@/utils/workflowEditor'
 import { generateActorID, shouldReuseActorId } from '@/utils/workflowEditor/helpers/states'
 import { getToolsFromToolkits } from '@/utils/workflows'
@@ -228,9 +229,10 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
             settings: null,
             integration_alias: server.settings?.alias,
           })),
-          tools: getToolsFromToolkits(virtualAssistantValues.toolkits),
+          tools: getToolsFromToolkits(withoutDefaultTools(virtualAssistantValues.toolkits)),
           datasource_ids: virtualAssistantValues.context.map((c) => c.id),
           skill_ids: virtualAssistantValues.skill_ids ?? [],
+          disabled_context_tools: virtualAssistantValues.disabled_context_tools ?? [],
         }
       } else {
         finalAssistantConfig = {

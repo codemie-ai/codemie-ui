@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "generated": "2026-10-19T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 20,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 20,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "New useToolkitSelection.toggleDefaultTool/toggleToolAndSyncDefaults logic plus a new defaultDatasourceTools.ts abstraction are consumed by Toolkit.tsx, AvailableToolsSection.tsx and ToolsConfiguration.tsx in the standalone AssistantForm, and separately wired into the workflow editor's AssistantTab.tsx/VirtualAssistantForm.tsx — two distinct product surfaces updated in parallel, plus the shared assistants.ts DTO mapper and assistant/configuration type contracts." },
+    { "dimension": "file_change_estimate", "reason": "diffstat reports 20 files changed (1042 insertions) spanning src/hooks, src/pages/assistants/**, src/pages/workflows/editor/configPanels/**, src/store/utils, src/types/entity, src/types/workflowEditor and src/utils — well past the 16+ threshold for XXL, though roughly half of the files are new/updated test suites (useToolkitSelection.test.ts, Toolkit.defaultTools.test.tsx, AssistantForm.defaultTools.integration.test.tsx, AssistantTab.defaultTools.test.tsx, defaultDatasourceTools.test.ts, etc.) rather than production logic." },
+    { "dimension": "technical_risk", "reason": "The exclusive-pair logic (toggleDefaultTool / toggleToolAndSyncDefaults / findExclusivePairTool) is new combinatorial state-sync behaviour layered on the existing toolkit-selection pattern — a follow-up commit ('Fix review findings CR-001..CR-004') indicates the first pass needed correction, but the final implementation reuses the established useToolkitSelection/AssistantToolkit pattern with no security or persistence-layer exposure." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: wiring extends across both the standalone AssistantForm and the workflow editor's AssistantTab/VirtualAssistantForm config surfaces (affects multiple workflows/agents)."
+  ],
+  "split_recommendation": null
+}

@@ -631,3 +631,232 @@ describe('pinning an integration records the auto-lookup decision', () => {
     expect('auto_credentials_lookup' in updatedTool).toBe(false)
   })
 })
+
+describe('toggleDefaultTool', () => {
+  let onToolkitsChange: Mock
+
+  beforeEach(() => {
+    onToolkitsChange = vi.fn()
+  })
+
+  it('adds the tool name to disabledContextTools when it is not already there', () => {
+    const toolkit = makeToolkit('codebase', [makeTool('get_repository_file_tree')])
+    const onDisabledContextToolsChange = vi.fn()
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [],
+        onToolkitsChange,
+        disabledContextTools: [],
+        onDisabledContextToolsChange,
+      })
+    )
+
+    act(() => result.current.toggleDefaultTool(toolkit, toolkit.tools[0]))
+
+    expect(onDisabledContextToolsChange).toHaveBeenCalledWith(['get_repository_file_tree'])
+  })
+
+  it('removes the tool name and deselects its selected "with filtering" pair', () => {
+    const standard = makeTool('get_repository_file_tree')
+    standard.label = 'Get Repo Tree'
+    const filtering = makeTool('get_repository_file_tree_v2')
+    filtering.label = 'Get Repo Tree with filtering (Experimental)'
+    const toolkit = makeToolkit('codebase', [standard, filtering])
+    const selected = { ...toolkit, tools: [filtering] }
+    const onDisabledContextToolsChange = vi.fn()
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [selected],
+        onToolkitsChange,
+        disabledContextTools: ['get_repository_file_tree'],
+        onDisabledContextToolsChange,
+      })
+    )
+
+    act(() => result.current.toggleDefaultTool(toolkit, standard))
+
+    expect(onDisabledContextToolsChange).toHaveBeenCalledWith([])
+    expect(onToolkitsChange).toHaveBeenCalledWith([])
+  })
+
+  it('drops a copy stored in the toolkit list when unticking with a datasource attached', () => {
+    const tree = makeTool('get_repository_file_tree')
+    const other = makeTool('other_tool')
+    const toolkit = makeToolkit('codebase', [tree, other])
+    const onDisabledContextToolsChange = vi.fn()
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [{ ...toolkit, tools: [tree, other] }],
+        onToolkitsChange,
+        disabledContextTools: [],
+        onDisabledContextToolsChange,
+      })
+    )
+
+    act(() => result.current.toggleDefaultTool(toolkit, tree))
+
+    expect(onDisabledContextToolsChange).toHaveBeenCalledWith(['get_repository_file_tree'])
+    expect(onToolkitsChange).toHaveBeenCalledTimes(1)
+    expect(onToolkitsChange).toHaveBeenCalledWith([{ ...toolkit, tools: [other] }])
+  })
+
+  it('does not touch the toolkit list when no copy of the tool is stored there', () => {
+    const tree = makeTool('get_repository_file_tree')
+    const other = makeTool('other_tool')
+    const toolkit = makeToolkit('codebase', [tree, other])
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [{ ...toolkit, tools: [other] }],
+        onToolkitsChange,
+        disabledContextTools: [],
+        onDisabledContextToolsChange: vi.fn(),
+      })
+    )
+
+    act(() => result.current.toggleDefaultTool(toolkit, tree))
+
+    expect(onToolkitsChange).not.toHaveBeenCalled()
+  })
+
+  it('drops the stored copy and the selected pair in a single update when re-enabling', () => {
+    const standard = makeTool('get_repository_file_tree')
+    const filtering = makeTool('get_repository_file_tree_v2')
+    const toolkit = makeToolkit('codebase', [standard, filtering])
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [{ ...toolkit, tools: [standard, filtering] }],
+        onToolkitsChange,
+        disabledContextTools: ['get_repository_file_tree'],
+        onDisabledContextToolsChange: vi.fn(),
+      })
+    )
+
+    act(() => result.current.toggleDefaultTool(toolkit, standard))
+
+    expect(onToolkitsChange).toHaveBeenCalledTimes(1)
+    expect(onToolkitsChange).toHaveBeenCalledWith([])
+  })
+})
+
+describe('toggleAllTools with default tools tracked in the deselected list', () => {
+  it('select-all drops stored copies of tools tracked in the deselected list', () => {
+    const tree = makeTool('get_repository_file_tree')
+    const other = makeTool('other_tool')
+    const toolkit = makeToolkit('codebase', [tree, other])
+    const onToolkitsChange = vi.fn()
+    const onDisabledContextToolsChange = vi.fn()
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [{ ...toolkit, tools: [tree] }],
+        onToolkitsChange,
+        disabledContextTools: ['get_repository_file_tree'],
+        onDisabledContextToolsChange,
+      })
+    )
+
+    act(() =>
+      result.current.toggleAllTools(toolkit, false, [tree, other], ['get_repository_file_tree'])
+    )
+
+    expect(onToolkitsChange).toHaveBeenCalledWith([{ ...toolkit, tools: [other] }])
+    expect(onDisabledContextToolsChange).toHaveBeenCalledWith([])
+  })
+})
+
+describe('toggleToolAndSyncDefaults', () => {
+  let onToolkitsChange: Mock
+
+  beforeEach(() => {
+    onToolkitsChange = vi.fn()
+  })
+
+  it('selecting the "with filtering" variant deselects its default-tool pair', () => {
+    const standard = makeTool('search_code_repo')
+    standard.label = 'Search Code'
+    const filtering = makeTool('search_code_repo_v2')
+    filtering.label = 'Search Code with filtering (Experimental)'
+    const toolkit = makeToolkit('codebase', [standard, filtering])
+    const onDisabledContextToolsChange = vi.fn()
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [],
+        onToolkitsChange,
+        disabledContextTools: [],
+        onDisabledContextToolsChange,
+      })
+    )
+
+    act(() => result.current.toggleToolAndSyncDefaults(toolkit, filtering, false))
+
+    expect(onDisabledContextToolsChange).toHaveBeenCalledWith(['search_code_repo'])
+  })
+
+  it('does not touch disabledContextTools for a tool with no default pair', () => {
+    const tool = makeTool('search_jira')
+    const toolkit = makeToolkit('jira', [tool])
+    const onDisabledContextToolsChange = vi.fn()
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [],
+        onToolkitsChange,
+        disabledContextTools: [],
+        onDisabledContextToolsChange,
+      })
+    )
+
+    act(() => result.current.toggleToolAndSyncDefaults(toolkit, tool, false))
+
+    expect(onDisabledContextToolsChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('toggleAllTools with default datasource tools', () => {
+  const tree = makeTool('get_repository_file_tree')
+  const treeV2 = makeTool('get_repository_file_tree_v2')
+  const search = makeTool('search_code_repo')
+  const readFiles = makeTool('read_files')
+  const toolkit = makeToolkit('codebase', [tree, treeV2, search, readFiles])
+  const attachedDefaults = ['get_repository_file_tree', 'search_code_repo']
+
+  it('select all stores only regular tools and re-enables the attached defaults', () => {
+    const onToolkitsChange = vi.fn()
+    const onDisabledContextToolsChange = vi.fn()
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [{ ...toolkit, tools: [treeV2] }],
+        onToolkitsChange,
+        disabledContextTools: attachedDefaults,
+        onDisabledContextToolsChange,
+      })
+    )
+
+    act(() =>
+      result.current.toggleAllTools(toolkit, false, [tree, search, readFiles], attachedDefaults)
+    )
+
+    expect(onToolkitsChange).toHaveBeenCalledWith([
+      { ...toolkit, tools: [readFiles], settings: undefined },
+    ])
+    expect(onDisabledContextToolsChange).toHaveBeenCalledWith([])
+  })
+
+  it('unselect all clears regular tools and deselects the attached defaults', () => {
+    const onToolkitsChange = vi.fn()
+    const onDisabledContextToolsChange = vi.fn()
+    const { result } = renderHook(() =>
+      useToolkitSelection({
+        selectedToolkits: [{ ...toolkit, tools: [readFiles] }],
+        onToolkitsChange,
+        disabledContextTools: [],
+        onDisabledContextToolsChange,
+      })
+    )
+
+    act(() =>
+      result.current.toggleAllTools(toolkit, true, [tree, search, readFiles], attachedDefaults)
+    )
+
+    expect(onToolkitsChange).toHaveBeenCalledWith([])
+    expect(onDisabledContextToolsChange).toHaveBeenCalledWith(attachedDefaults)
+  })
+})

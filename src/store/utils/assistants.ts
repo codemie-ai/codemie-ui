@@ -15,6 +15,7 @@
 
 import { AssistantType } from '@/constants/assistants'
 import { Assistant, CreateAssistantDto } from '@/types/entity/assistant'
+import { withoutDefaultTools } from '@/utils/defaultDatasourceTools'
 
 /**
  * Reads the interactive switch with backwards compatibility.
@@ -40,6 +41,7 @@ export function transformAssistantToCreateDTO(
 ): CreateAssistantDto {
   // Handle skill_ids: prefer explicit skill_ids from form, fallback to extracting from skills array
   const skillIds = (assistant as any).skill_ids ?? assistant.skills?.map((s) => s.id) ?? []
+  const toolkitsToSave = assistant.toolkits && withoutDefaultTools(assistant.toolkits)
 
   return {
     name: assistant.name,
@@ -55,7 +57,7 @@ export function transformAssistantToCreateDTO(
       : null,
     file_attachment_enabled: assistant.file_attachment_enabled ?? true,
     // Filter out MCP toolkit as it's handled separately
-    toolkits: assistant.toolkits
+    toolkits: toolkitsToSave
       ?.filter((tk) => tk.toolkit !== 'MCP')
       .map((toolkit) => ({
         toolkit: toolkit.toolkit,
@@ -83,6 +85,7 @@ export function transformAssistantToCreateDTO(
     // agent_mode: assistant.agent_mode,
     // plan_prompt: assistant.plan_prompt,
     slug: assistant.slug,
+    disabled_context_tools: assistant.disabled_context_tools ?? [],
     temperature: assistant.temperature,
     effort: assistant.effort,
     top_p: assistant.top_p,

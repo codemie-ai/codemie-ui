@@ -23,7 +23,7 @@ import { AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
 
 import PluginToolkit from './PluginToolkit'
-import Toolkit from './Toolkit'
+import Toolkit, { DefaultToolsState } from './Toolkit'
 import ToolkitDetailModal from './ToolkitDetailModal'
 import ToolkitHeader from './ToolkitHeader'
 import ToolkitsPanelLayout from './ToolkitsPanelLayout'
@@ -35,7 +35,12 @@ export interface ToolkitRenderProps {
   settings: Record<string, Setting[]>
   selectedToolkits: AssistantToolkit[]
   toggleTool: (toolkit: AssistantToolkit, tool: Tool) => void
-  toggleAllTools: (toolkit: AssistantToolkit, allToolsSelected: boolean) => void
+  toggleAllTools: (
+    toolkit: AssistantToolkit,
+    allToolsSelected: boolean,
+    bulkTools?: Tool[],
+    deselectListNames?: string[]
+  ) => void
   updateToolSetting: (toolkit: AssistantToolkit, tool: Tool, setting?: Setting) => void
   updateToolkitSetting: (toolkit: AssistantToolkit, setting?: Setting) => void
   updateToolkitAutoLookup: (toolkit: AssistantToolkit, enabled: boolean) => void
@@ -44,6 +49,7 @@ export interface ToolkitRenderProps {
   onAddSettingClick: (credentialType: string) => void
   isChatConfig?: boolean
   onToolkitsChange: (toolkits: AssistantToolkit[]) => void
+  defaultTools?: DefaultToolsState
 }
 
 interface AvailableToolsSectionProps {
@@ -86,9 +92,11 @@ const AvailableToolsSection = ({
         toolkit={tk}
         selectedToolkits={toolkitRenderProps.selectedToolkits}
         singleToolSelection={singleToolSelection}
+        context={toolkitRenderProps.defaultTools?.context}
+        disabledContextTools={toolkitRenderProps.defaultTools?.disabledContextTools}
       />
     ),
-    [toolkitRenderProps.selectedToolkits, singleToolSelection]
+    [toolkitRenderProps.selectedToolkits, toolkitRenderProps.defaultTools, singleToolSelection]
   )
 
   const renderContent = useCallback(

@@ -410,7 +410,7 @@ describe('WorkflowFormFields — Mermaid availability gating', () => {
     })
   })
 })
-  
+
 describe('WorkflowFormFields — icon_url upload', () => {
   beforeEach(() => {
     vi.clearAllMocks()

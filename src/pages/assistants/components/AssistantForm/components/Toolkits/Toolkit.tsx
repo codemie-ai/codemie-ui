@@ -19,8 +19,13 @@ import { Checkbox } from '@/components/form/Checkbox'
 import TooltipButton from '@/components/TooltipButton'
 import type { SettingUpdateOptions } from '@/hooks/useToolkitSelection'
 import { WorkflowContext } from '@/pages/workflows/editor/hooks/useWorkflowContext'
-import { AssistantToolkit, Tool } from '@/types/entity/assistant'
+import { AssistantContext, AssistantToolkit, Tool } from '@/types/entity/assistant'
 import { Setting } from '@/types/entity/setting'
+import {
+  isDefaultToolContextAttached,
+  getBulkSelectableTools,
+  isDefaultToolName,
+} from '@/utils/defaultDatasourceTools'
 import { getCredentialType } from '@/utils/settings'
 import { highlightText } from '@/utils/textUtils'
 import { isAutoLookupEnabled } from '@/utils/toolkit'
@@ -31,12 +36,23 @@ import { IntegrationSelectDropdown } from './IntegrationSelectDropdown'
 import IntegrationSelector from './IntegrationSelector'
 import ToolkitIcon from '../../../ToolkitIcon'
 
+export interface DefaultToolsState {
+  context: AssistantContext[]
+  disabledContextTools: string[]
+  toggleDefaultTool: (toolkit: AssistantToolkit, tool: Tool) => void
+}
+
 interface ToolkitProps {
   toolkit: AssistantToolkit
   selectedToolkits: AssistantToolkit[]
   settings: Record<string, Setting[]>
   toggleTool: (toolkit: AssistantToolkit, tool: Tool) => void
-  toggleAllTools: (toolkit: AssistantToolkit, allToolsSelected: boolean) => void
+  toggleAllTools: (
+    toolkit: AssistantToolkit,
+    allToolsSelected: boolean,
+    bulkTools?: Tool[],
+    deselectListNames?: string[]
+  ) => void
   updateToolSetting: (
     toolkit: AssistantToolkit,
     tool: Tool,
@@ -54,6 +70,7 @@ interface ToolkitProps {
   onAddSettingClick: (credentialType: string) => void
   searchQuery?: string
   isChatConfig?: boolean
+  defaultTools?: DefaultToolsState
 }
 
 const Toolkit = ({
@@ -70,19 +87,39 @@ const Toolkit = ({
   onAddSettingClick,
   searchQuery = '',
   isChatConfig: _isChatConfig,
+  defaultTools,
 }: ToolkitProps) => {
   const workflowContext = useContext(WorkflowContext)
 
   const selectedToolkit = selectedToolkits.find(
     (selectedToolkit) => selectedToolkit.toolkit === toolkit.toolkit
   )
-  const isToolSelected = (tool: Tool) =>
-    !!selectedToolkit?.tools.find((selectedTool) => tool.name === selectedTool.name)
+  // Without defaultTools (ToolSelector, SkillForm) default tools behave like any other tool.
+  // Attached datasource: default tool state is in disabledContextTools; otherwise in toolkits.
+  const usesDeselectedList = (toolName: string) =>
+    isDefaultToolName(toolName) &&
+    !!defaultTools &&
+    isDefaultToolContextAttached(toolName, defaultTools.context)
+
+  const isToolSelected = (tool: Tool) => {
+    if (usesDeselectedList(tool.name)) {
+      return !(defaultTools?.disabledContextTools ?? []).includes(tool.name)
+    }
+
+    return !!selectedToolkit?.tools.find((selectedTool) => tool.name === selectedTool.name)
+  }
 
   const toolkitSettingsOptions = settings[getCredentialType(toolkit.toolkit)]
 
-  const allToolsSelected = toolkit.tools.every((tool) => isToolSelected(tool))
-  const someToolsSelected = !allToolsSelected && toolkit.tools.some((tool) => isToolSelected(tool))
+  // Only forms that model default datasource tools restrict what "Select all" acts on; everywhere
+  // else the bulk set is the whole toolkit.
+  const bulkTools = defaultTools !== undefined ? getBulkSelectableTools(toolkit) : undefined
+  const deselectListNames = (bulkTools ?? [])
+    .filter((tool) => usesDeselectedList(tool.name))
+    .map((tool) => tool.name)
+  const bulkScope = bulkTools ?? toolkit.tools
+  const allToolsSelected = bulkScope.length > 0 && bulkScope.every((tool) => isToolSelected(tool))
+  const someToolsSelected = !allToolsSelected && bulkScope.some((tool) => isToolSelected(tool))
 
   const getToolFieldData = (toolName: string): { error?: string; onChange: () => void } | null => {
     if (!workflowContext || !selectedToolkit) return null
@@ -165,7 +202,7 @@ const Toolkit = ({
                 mixed={someToolsSelected}
                 id={toolkit.toolkit}
                 onChange={() => {
-                  toggleAllTools(toolkit, allToolsSelected)
+                  toggleAllTools(toolkit, allToolsSelected, bulkTools, deselectListNames)
                   markAllToolIssuesDirty()
                 }}
               />
@@ -213,7 +250,11 @@ const Toolkit = ({
                       label={toolLabel}
                       checked={isToolSelected(tool)}
                       onChange={() => {
-                        toggleTool(toolkit, tool)
+                        if (defaultTools && usesDeselectedList(tool.name)) {
+                          defaultTools.toggleDefaultTool(toolkit, tool)
+                        } else {
+                          toggleTool(toolkit, tool)
+                        }
                         integrationField?.onChange()
                       }}
                     />

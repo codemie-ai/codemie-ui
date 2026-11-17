@@ -70,6 +70,21 @@ describe('VirtualAssistantForm validation schema — temperature', () => {
       })
     ).resolves.toBeDefined()
   })
+
+  it('defaults disabled_context_tools to [] when omitted', async () => {
+    const result = await virtualAssistantValidationSchema.validate({
+      ...baseValues,
+    })
+    expect(result.disabled_context_tools).toEqual([])
+  })
+
+  it('accepts an explicit disabled_context_tools list', async () => {
+    const result = await virtualAssistantValidationSchema.validate({
+      ...baseValues,
+      disabled_context_tools: ['search_kb'],
+    })
+    expect(result.disabled_context_tools).toEqual(['search_kb'])
+  })
 })
 
 describe('VirtualAssistantForm validation schema — effort', () => {

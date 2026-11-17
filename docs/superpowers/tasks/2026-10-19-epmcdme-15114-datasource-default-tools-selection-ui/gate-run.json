@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15114-show-deselect-default-datasource-tools",
+  "head": "44c74b5af011eb44e932f687ef0097d649ea9f89",
+  "runner": "npm",
+  "started_at": "2026-10-19T15:35:00Z",
+  "completed_at": "2026-10-19T15:43:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17302,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 11868,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip-if condition met: no dependency added, removed, or moved (package.json/package-lock.json unchanged in diff)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12972,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Output confirmed 'no leaks found' (working tree scan only, not git history, per guide caveat)."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 125187,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 713 passed (713); Tests 7213 passed | 1 skipped (7214)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 67761,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 51 passed (51); Tests 566 passed | 1 skipped (567)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Requires a running CodeMie stack and ~/.codemie/test-harness.json, neither present in this environment. MR compliance gate owed; still owed and unverified, not passed."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 468,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2370 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 124,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: script printed '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN env var to run locally; CI's compliance-report/Sonar check is still owed."
+    }
+  ],
+  "failures": {}
+}

@@ -40,6 +40,7 @@ import {
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { Skill } from '@/types/entity/skill'
 import { sortToolkitsByOrder } from '@/utils/assistants'
+import { getActiveDefaultToolkits } from '@/utils/defaultDatasourceTools'
 import { isOwner, isProjectMember } from '@/utils/entity'
 import { isNumberValue } from '@/utils/helpers'
 import { getSharedValue, getToolkitFromMcpServers, getRootPath } from '@/utils/utils'
@@ -80,7 +81,12 @@ const AssistantDetailsSidebarSections = ({
   onSubassistantClick,
 }: AssistantDetailsSidebarSectionsProps) => {
   const snapshot = useSnapshot(mcpStore)
+  const { availableToolkits } = useSnapshot(assistantsStore)
   const [isRequestHedgingEnabled] = useRequestHedgingEnabled()
+
+  useEffect(() => {
+    if (!assistantsStore.availableToolkits.length) assistantsStore.getAssistantToolkits()
+  }, [])
 
   useEffect(() => {
     const idsToFetch = assistant.mcp_servers
@@ -129,8 +135,24 @@ const AssistantDetailsSidebarSections = ({
   }, [assistant.mcp_servers, snapshot.configs])
 
   const toolkits = useMemo(() => {
-    const baseToolkits: (AssistantToolkit | ReturnType<typeof getToolkitFromMcpServers>)[] =
-      assistant.toolkits || []
+    // Default tools (e.g. search_kb) are implied by the attached datasources and are not
+    // persisted in `assistant.toolkits`, so add the active ones from the catalog.
+    const defaultToolkits = getActiveDefaultToolkits(
+      (availableToolkits ?? []) as AssistantToolkit[],
+      assistant.context,
+      assistant.disabled_context_tools
+    )
+    const stored = assistant.toolkits || []
+    const merged = stored.map((tk) => {
+      const extra = defaultToolkits.find((d) => d.toolkit === tk.toolkit)
+      if (!extra) return tk
+      const names = new Set(tk.tools.map((t) => t.name))
+      return { ...tk, tools: [...tk.tools, ...extra.tools.filter((t) => !names.has(t.name))] }
+    })
+    const baseToolkits: (AssistantToolkit | ReturnType<typeof getToolkitFromMcpServers>)[] = [
+      ...merged,
+      ...defaultToolkits.filter((d) => !stored.some((tk) => tk.toolkit === d.toolkit)),
+    ]
 
     if (assistant.mcp_servers.length) {
       const mcpToolkit = getToolkitFromMcpServers(assistant.mcp_servers, true)
@@ -144,7 +166,14 @@ const AssistantDetailsSidebarSections = ({
     }
 
     return baseToolkits
-  }, [assistant.toolkits, assistant.mcp_servers, unavailableConfigIds])
+  }, [
+    assistant.toolkits,
+    assistant.mcp_servers,
+    assistant.context,
+    assistant.disabled_context_tools,
+    availableToolkits,
+    unavailableConfigIds,
+  ])
 
   const contextItems = useMemo(() => {
     return (

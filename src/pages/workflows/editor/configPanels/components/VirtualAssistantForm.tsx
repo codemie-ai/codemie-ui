@@ -85,6 +85,7 @@ export interface VirtualAssistantFormValues {
   mcp_servers: MCPServerDetails[]
   context: Array<AssistantContext>
   skill_ids: string[]
+  disabled_context_tools: string[]
 }
 
 interface VirtualAssistantFormProps {
@@ -129,6 +130,7 @@ export const virtualAssistantValidationSchema = Yup.object().shape({
     .of(Yup.string())
     .max(MAX_SKILLS_PER_ASSISTANT, `Maximum ${MAX_SKILLS_PER_ASSISTANT} skills allowed`)
     .default([]),
+  disabled_context_tools: Yup.array().of(Yup.string()).default([]),
 })
 
 const getDefaultValues = (config?: AssistantConfiguration): VirtualAssistantFormValues => ({
@@ -141,6 +143,7 @@ const getDefaultValues = (config?: AssistantConfiguration): VirtualAssistantForm
   mcp_servers: [],
   context: [],
   skill_ids: config?.skill_ids ?? [],
+  disabled_context_tools: config?.disabled_context_tools ?? [],
 })
 
 const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistantFormProps>(
@@ -282,6 +285,13 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
     const handleToolkitsChange = useCallback(
       (newToolkits: AssistantToolkit[]) => {
         setValue('toolkits', newToolkits, { shouldValidate: true })
+      },
+      [setValue]
+    )
+
+    const handleDisabledContextToolsChange = useCallback(
+      (next: string[]) => {
+        setValue('disabled_context_tools', next, { shouldValidate: true })
       },
       [setValue]
     )
@@ -480,6 +490,9 @@ const VirtualAssistantForm = forwardRef<VirtualAssistantFormRef, VirtualAssistan
               onMcpServersChange={handleMcpServersChange}
               showNewIntegrationPopup={showNewIntegrationPopup}
               defaultOpenSection={defaultOpenToolkitSection}
+              context={watch('context')}
+              disabledContextTools={watch('disabled_context_tools') ?? []}
+              onDisabledContextToolsChange={handleDisabledContextToolsChange}
             />
           </AssistantFormContext.Provider>
         </div>

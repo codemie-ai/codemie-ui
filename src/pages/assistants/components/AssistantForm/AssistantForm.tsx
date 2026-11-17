@@ -240,6 +240,9 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     const { builtinSubagentsCatalog, getBuiltinSubagentsCatalog } = useSnapshot(assistantsStore)
     const toolPermissionsEnabled = isFeatureEnabled(FEATURE_FLAGS.TOOL_PERMISSIONS)
     const [toolkits, setToolkits] = useState<AssistantToolkit[]>(assistant?.toolkits ?? [])
+    const [disabledContextTools, setDisabledContextTools] = useState<string[]>(
+      assistant?.disabled_context_tools ?? []
+    )
     const [mcpServers, setMcpServers] = useState<MCPServerDetails[]>(assistant?.mcp_servers ?? [])
     const [hedgeableToolkits, setHedgeableToolkits] = useState<AssistantToolkit[]>([])
     const [providers, setProviders] = useState<Provider[]>([])
@@ -329,6 +332,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
       const preparedValues = {
         ...values,
         toolkits,
+        disabled_context_tools: disabledContextTools,
         mcp_servers: mcpServers,
         conversation_starters: values.conversation_starters?.filter(Boolean) ?? [],
       }
@@ -404,6 +408,11 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         blockTransition()
       },
     })
+
+    const handleDisabledContextToolsChange = useCallback(
+      (next: string[]) => setDisabledContextTools(next),
+      [] // stable: only wraps the setState setter, which never changes
+    )
 
     const handleMcpServersChange = useCallback(
       (newMcpServers: MCPServerDetails[] | ((prev: MCPServerDetails[]) => MCPServerDetails[])) => {
@@ -925,6 +934,9 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
                 ? GitDatasourceHint
                 : undefined
             }
+            context={watch('context') as AssistantContext[]}
+            disabledContextTools={disabledContextTools}
+            onDisabledContextToolsChange={handleDisabledContextToolsChange}
           />
 
           {isRequestHedgingEnabled && (

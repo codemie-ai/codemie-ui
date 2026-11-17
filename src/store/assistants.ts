@@ -496,7 +496,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
   async getAssistantToolkits() {
     const toolkits = await api.get('v1/assistants/tools').then((response) => response.json())
 
-    assistantsStore.availableToolkits = toolkits
+    assistantsStore.availableToolkits = toolkits ?? []
     return toolkits
   },
 
