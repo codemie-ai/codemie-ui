@@ -17,10 +17,30 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { filesStore } from '@/store/files'
 import api from '@/utils/api'
+import toaster from '@/utils/toaster'
 
 // setupTests.unit.ts already mocks @/utils/api globally — api.get/post/etc are
 // vi.fn(), but downloadFileStream is bound to the real implementation. We spy
 // on the shared mock object so both the test and filesStore.ts see the same spy.
+// postMultipart isn't part of that global mock, so uploadWorkflowIcon's own
+// describe block below adds it locally for this file only.
+vi.mock('@/utils/api', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/utils/api')>()
+  return {
+    ...mod,
+    default: {
+      ...mod.default,
+      get: vi.fn().mockResolvedValue({ status: 200, json: () => Promise.resolve([]) }),
+      post: vi.fn().mockResolvedValue({ status: 200, json: () => Promise.resolve(null) }),
+      put: vi.fn().mockResolvedValue({ status: 200, json: () => Promise.resolve(null) }),
+      delete: vi.fn().mockResolvedValue({ status: 200, json: () => Promise.resolve(null) }),
+      patch: vi.fn().mockResolvedValue({ status: 200, json: () => Promise.resolve(null) }),
+      postMultipart: vi.fn(),
+      handleError: mod.default.handleError,
+      downloadFileStream: mod.default.downloadFileStream.bind(mod.default),
+    },
+  }
+})
 
 describe('filesStore.downloadFile', () => {
   beforeEach(() => {
@@ -145,5 +165,73 @@ describe('filesStore.getMermaidFile', () => {
     expect(second).toBe('<svg>diagram</svg>')
     expect(api.post).toHaveBeenCalledTimes(1)
     expect(api.get).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('filesStore.uploadWorkflowIcon', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('posts a single-file FormData under the "file" key and resolves to the bare file token', async () => {
+    vi.mocked(api.postMultipart).mockResolvedValue({
+      json: () => Promise.resolve({ file_url: 'MTB+aW1h' }),
+    } as any)
+    const file = new File(['data'], 'icon.png', { type: 'image/png' })
+
+    const result = await filesStore.uploadWorkflowIcon(file)
+
+    expect(api.postMultipart).toHaveBeenCalledWith('v1/workflows/icon', expect.any(FormData))
+    const [, body] = vi.mocked(api.postMultipart).mock.calls[0]
+    expect((body as FormData).get('file')).toBe(file)
+    expect((body as FormData).get('files')).toBeNull()
+    expect(result).toBe('MTB+aW1h')
+  })
+
+  it('shows the backend details alone when the error has no message', async () => {
+    vi.mocked(api.postMultipart).mockRejectedValue({
+      message: 'HTTP error 400',
+      parsedError: { details: 'Allowed types: image/png' },
+    })
+    const file = new File(['data'], 'icon.gif', { type: 'image/gif' })
+
+    await expect(filesStore.uploadWorkflowIcon(file)).rejects.toThrow('Allowed types: image/png')
+    await expect(filesStore.uploadWorkflowIcon(file)).rejects.not.toThrow('undefined')
+  })
+
+  it('falls back to the transport message when the error carries no backend body', async () => {
+    vi.mocked(api.postMultipart).mockRejectedValue({ message: 'Request failed' })
+    const file = new File(['data'], 'icon.png', { type: 'image/png' })
+
+    await expect(filesStore.uploadWorkflowIcon(file)).rejects.toThrow('Request failed')
+    expect(toaster.error).toHaveBeenCalled()
+  })
+
+  it('surfaces an error and does not resolve when file_url is missing from the response', async () => {
+    vi.mocked(api.postMultipart).mockResolvedValue({
+      json: () => Promise.resolve({}),
+    } as any)
+    const file = new File(['data'], 'icon.png', { type: 'image/png' })
+
+    await expect(filesStore.uploadWorkflowIcon(file)).rejects.toThrow('uploading file')
+    expect(toaster.error).toHaveBeenCalled()
+  })
+
+  it('surfaces the backend detail via toaster.error and rethrows on failure', async () => {
+    const error = {
+      message: 'HTTP error 400',
+      parsedError: { message: 'Unsupported icon file type', details: 'Allowed types: image/png' },
+    }
+    vi.mocked(api.postMultipart).mockRejectedValue(error)
+    const file = new File(['data'], 'icon.exe', { type: 'application/octet-stream' })
+
+    await expect(filesStore.uploadWorkflowIcon(file)).rejects.toThrow('Unsupported icon file type')
+    expect(toaster.error).toHaveBeenCalledWith(
+      expect.stringContaining('Unsupported icon file type')
+    )
   })
 })

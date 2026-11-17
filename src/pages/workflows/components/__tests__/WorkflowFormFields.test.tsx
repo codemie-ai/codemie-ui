@@ -28,6 +28,47 @@ const { mockSettingsStore } = vi.hoisted(() => ({
   },
 }))
 
+const { mockFilesStore } = vi.hoisted(() => ({
+  mockFilesStore: {
+    uploadWorkflowIcon: vi.fn(),
+    uploadFiles: vi.fn(),
+    getFileURL: vi.fn(),
+  },
+}))
+
+vi.mock('@/store/files', () => ({
+  filesStore: mockFilesStore,
+}))
+
+// Tests 1-2 below use this shallow stand-in (set/read via onChange and value props
+// only); the "uploads a real file" test unmocks it to exercise the real
+// LogoUploadPanel -> ImageUploadField -> ImageUpload chain.
+const { logoUploadPanelMode } = vi.hoisted(() => ({ logoUploadPanelMode: { real: false } }))
+
+vi.mock(
+  '@/pages/assistants/components/AssistantForm/components/AssistantSetup/LogoUploadPanel',
+  async (importOriginal) => {
+    const actual = await importOriginal<any>()
+    const RealLogoUploadPanel = actual.default
+    const MockLogoUploadPanel = (props: any) => (
+      <div data-testid="logo-upload-panel" data-compact={String(!!props.isCompactView)}>
+        <span data-testid="logo-upload-panel-value">{props.value}</span>
+        <button type="button" onClick={() => props.onChange('')}>
+          Remove
+        </button>
+      </div>
+    )
+    return {
+      default: (props: any) =>
+        logoUploadPanelMode.real ? (
+          <RealLogoUploadPanel {...props} />
+        ) : (
+          <MockLogoUploadPanel {...props} />
+        ),
+    }
+  }
+)
+
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal<typeof import('valtio')>()
   return {
@@ -367,5 +408,63 @@ describe('WorkflowFormFields — Mermaid availability gating', () => {
       expect(screen.queryByAltText('Workflow Diagram')).not.toBeInTheDocument()
       expect(screen.getByText(/not configured/i)).toBeInTheDocument()
     })
+  })
+})
+  
+describe('WorkflowFormFields — icon_url upload', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockSettingsStore.settings = {}
+    mockHasUserIntegrationInYamlConfig.mockReturnValue(false)
+    logoUploadPanelMode.real = false
+  })
+
+  it('initializes the field from workflow.icon_url', () => {
+    renderWorkflowFormFields({ workflow: { icon_url: 'https://example.com/icon.png' } })
+
+    expect(screen.getByTestId('logo-upload-panel-value')).toHaveTextContent(
+      'https://example.com/icon.png'
+    )
+  })
+
+  it('renders the logo upload in the compact layout used by the workflow editor panel', () => {
+    renderWorkflowFormFields({ workflow: {} })
+
+    expect(screen.getByTestId('logo-upload-panel')).toHaveAttribute('data-compact', 'true')
+  })
+
+  it('clears icon_url when the remove affordance is clicked', async () => {
+    const ref = createRef<WorkflowFormFieldsRef>()
+    render(<WorkflowFormFields ref={ref} workflow={{ icon_url: 'https://example.com/icon.png' }} />)
+
+    fireEvent.click(screen.getByText('Remove'))
+
+    await waitFor(() => {
+      expect(ref.current?.getValues().icon_url).toBe('')
+    })
+  })
+
+  it('uploads a file via filesStore.uploadWorkflowIcon, never through filesStore.uploadFiles', async () => {
+    logoUploadPanelMode.real = true
+    mockFilesStore.uploadWorkflowIcon.mockResolvedValue('MTB+aW1h')
+
+    const ref = createRef<WorkflowFormFieldsRef>()
+    render(<WorkflowFormFields ref={ref} workflow={{}} />)
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['data'], 'icon.png', { type: 'image/png' })
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } })
+    })
+
+    await waitFor(
+      () => {
+        expect(ref.current?.getValues().icon_url).toBe('MTB+aW1h')
+      },
+      { timeout: 3000 }
+    )
+    expect(mockFilesStore.uploadWorkflowIcon).toHaveBeenCalledWith(file)
+    expect(mockFilesStore.uploadFiles).not.toHaveBeenCalled()
   })
 })

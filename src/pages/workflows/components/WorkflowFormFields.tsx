@@ -31,11 +31,14 @@ import ZoomableImage from '@/components/ZoomableImage'
 import { ButtonType } from '@/constants/index'
 import { YAML_PLACEHOLDER } from '@/constants/workflows'
 import { useMermaidEnabled } from '@/hooks/useFeatureFlags'
+import LogoUploadPanel from '@/pages/assistants/components/AssistantForm/components/AssistantSetup/LogoUploadPanel'
 import MarketplaceCategories from '@/pages/assistants/components/AssistantForm/components/MarketplaceCategories'
+import { filesStore } from '@/store/files'
 import { settingsStore } from '@/store/settings'
 import { workflowsStore } from '@/store/workflows'
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { Setting } from '@/types/entity/setting'
+import { WORKFLOW_ICON_ACCEPT, WORKFLOW_ICON_HINT } from '@/utils/iconUrl'
 import { hasUserIntegrationInYamlConfig } from '@/utils/workflows'
 
 import WorkflowConfigField from './WorkflowConfigField'
@@ -298,12 +301,19 @@ const WorkflowFormFields = forwardRef<WorkflowFormFieldsRef, WorkflowFormFieldsP
                 name="icon_url"
                 control={control}
                 render={({ field, fieldState }) => (
-                  <Input
-                    id="icon_url"
-                    placeholder="Icon URL"
-                    label="Icon URL"
+                  <LogoUploadPanel
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
                     error={fieldState.error?.message}
-                    {...field}
+                    name={field.name}
+                    isCompactView
+                    uploadFile={filesStore.uploadWorkflowIcon}
+                    accept={WORKFLOW_ICON_ACCEPT}
+                    hint={WORKFLOW_ICON_HINT}
+                    inputRef={field.ref}
+                    urlLabel="Icon URL"
+                    inputId="icon_url"
                   />
                 )}
               />

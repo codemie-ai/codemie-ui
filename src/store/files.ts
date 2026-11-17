@@ -49,9 +49,11 @@ const mermaidCache = {
 }
 
 interface FilesStoreType {
+  pendingIconUploads: number
   uploadFiles: (
     files: File[]
   ) => Promise<{ files: { file_url: string }[]; failed_files: Record<string, string> | null }>
+  uploadWorkflowIcon: (file: File) => Promise<string>
   downloadFile: (fileId: string) => Promise<void>
   getFileURL: (fileId: string) => string
   getMermaidFile: (code: string) => Promise<string>
@@ -59,6 +61,8 @@ interface FilesStoreType {
 }
 
 export const filesStore = proxy<FilesStoreType>({
+  pendingIconUploads: 0,
+
   async uploadFiles(files) {
     const body = new FormData()
 
@@ -82,6 +86,32 @@ export const filesStore = proxy<FilesStoreType>({
 
         throw new Error(errorMsg)
       }
+    }
+  },
+
+  async uploadWorkflowIcon(file) {
+    const body = new FormData()
+    body.append('file', file)
+
+    try {
+      const response = await api.postMultipart('v1/workflows/icon', body)
+      const { file_url } = await response.json()
+      if (!file_url) {
+        throw new Error('upload response is missing file_url')
+      }
+      return file_url
+    } catch (error: any) {
+      const { parsedError } = error
+      const backendReason = [
+        parsedError?.message,
+        typeof parsedError?.details === 'string' ? parsedError.details : undefined,
+      ]
+        .filter(Boolean)
+        .join(': ')
+      const errorMsg = `${UPLOAD_ERROR} ${backendReason || error.message || 'Unknown error'}`
+      toaster.error(errorMsg)
+
+      throw new Error(errorMsg)
     }
   },
 

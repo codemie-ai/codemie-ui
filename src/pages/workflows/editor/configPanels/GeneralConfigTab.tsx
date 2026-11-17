@@ -24,11 +24,15 @@ import Switch from '@/components/form/Switch'
 import Textarea from '@/components/form/Textarea'
 import GuardrailAssignmentPanel from '@/components/guardrails/GuardrailAssignmentPanel/GuardrailAssignmentPanel'
 import ProjectSelector from '@/components/ProjectSelector'
+import LogoUploadPanel from '@/pages/assistants/components/AssistantForm/components/AssistantSetup/LogoUploadPanel'
 import MarketplaceCategories from '@/pages/assistants/components/AssistantForm/components/MarketplaceCategories'
 import { baseWorkflowSchema, WorkflowFormValues } from '@/pages/workflows/components/workflowSchema'
+import { filesStore } from '@/store/files'
 import { settingsStore } from '@/store/settings'
 import { GuardrailEntity } from '@/types/entity/guardrail'
 import { Setting } from '@/types/entity/setting'
+import { WORKFLOW_ICON_ACCEPT, WORKFLOW_ICON_HINT } from '@/utils/iconUrl'
+import toaster from '@/utils/toaster'
 import { hasUserIntegrationInYamlConfig } from '@/utils/workflows'
 
 import TabFooter from './components/TabFooter'
@@ -85,6 +89,10 @@ const GeneralConfigTab = forwardRef(
     }, [values, onChange])
 
     const saveData = async (): Promise<boolean> => {
+      if (filesStore.pendingIconUploads > 0) {
+        toaster.error('Wait for the icon upload to finish before saving.')
+        return false
+      }
       const isValid = await trigger()
       if (isValid) {
         const values = getValues()
@@ -207,12 +215,19 @@ const GeneralConfigTab = forwardRef(
               name="icon_url"
               control={control}
               render={({ field, fieldState }) => (
-                <Input
-                  id="icon_url"
-                  placeholder="Icon URL"
-                  label="Icon URL"
+                <LogoUploadPanel
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
                   error={fieldState.error?.message}
-                  {...field}
+                  name={field.name}
+                  isCompactView
+                  uploadFile={filesStore.uploadWorkflowIcon}
+                  accept={WORKFLOW_ICON_ACCEPT}
+                  hint={WORKFLOW_ICON_HINT}
+                  inputRef={field.ref}
+                  urlLabel="Icon URL"
+                  inputId="icon_url"
                 />
               )}
             />

@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import { decodeIconName, WORKFLOW_ICON_NAME_PREFIX } from '@/utils/iconUrl'
 import { decodeFileName } from '@/utils/utils'
 
 const FILE_URL_SEGMENT = '/v1/files/'
@@ -43,5 +44,6 @@ export const getFileNameFromUrl = (url: string): string => {
   if (fileId !== null) {
     return tryDecodeFileName(fileId) || fileId
   }
-  return url
+  const iconName = decodeIconName(url)
+  return iconName ? iconName.slice(WORKFLOW_ICON_NAME_PREFIX.length) : url
 }

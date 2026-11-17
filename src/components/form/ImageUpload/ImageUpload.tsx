@@ -16,6 +16,7 @@
 import React from 'react'
 
 import { useDragAndDrop } from '@/hooks/useDragAndDrop'
+import { resolveIconUrl } from '@/utils/iconUrl'
 import { cn } from '@/utils/utils'
 
 import ImageDropZone from './components/ImageDropZone'
@@ -31,6 +32,8 @@ interface ImageUploadProps {
   onChange?: (value: string) => void
   maxSizeMB?: number
   isCompactView?: boolean
+  uploadFile?: (file: File) => Promise<string>
+  accept?: string
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -41,6 +44,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   onChange,
   maxSizeMB = 0.5,
   isCompactView = false,
+  uploadFile,
+  accept = 'image/*',
 }) => {
   const {
     isUploading,
@@ -50,7 +55,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     handleFileUpload,
     handleFileSelect,
     openFilePicker,
-  } = useFileUpload({ maxSizeMB, onChange })
+  } = useFileUpload({ maxSizeMB, onChange, uploadFile, accept })
 
   const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } =
     useDragAndDrop({ onFilesDrop: (files) => handleFileUpload(files[0]) })
@@ -76,7 +81,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         {isUploading && <ImageLoader />}
         {!isUploading && hasImage && (
           <ImagePreview
-            imageUrl={value}
+            imageUrl={resolveIconUrl(value) ?? ''}
             disabled={disabled}
             onUploadClick={openFilePicker}
             onRemoveClick={handleRemoveImage}
@@ -98,7 +103,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept={accept}
           onChange={handleFileSelect}
           className="hidden"
           disabled={disabled || isUploading}

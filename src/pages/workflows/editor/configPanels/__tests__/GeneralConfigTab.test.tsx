@@ -17,6 +17,9 @@ import { act, render, screen } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, it, expect, vi } from 'vitest'
 
+import { filesStore } from '@/store/files'
+import { WORKFLOW_ICON_HINT } from '@/utils/iconUrl'
+
 import GeneralConfigTab from '../GeneralConfigTab'
 
 vi.mock('valtio', () => ({
@@ -40,6 +43,41 @@ vi.mock('@/pages/assistants/components/AssistantForm/components/MarketplaceCateg
   default: () => <div data-testid="marketplace-categories" />,
 }))
 vi.mock('./components/TabFooter', () => ({ default: () => null }))
+
+describe('GeneralConfigTab — icon', () => {
+  it('renders the icon upload panel instead of a plain icon URL input', () => {
+    render(<GeneralConfigTab onClose={vi.fn()} />)
+
+    expect(screen.getByRole('textbox', { name: 'Icon URL' })).toBeInTheDocument()
+    expect(screen.getByText(WORKFLOW_ICON_HINT)).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Icon URL')).not.toBeInTheDocument()
+  })
+})
+
+describe('GeneralConfigTab — pending icon upload', () => {
+  it('does not save while a workflow icon upload is in flight', async () => {
+    const ref = createRef<any>()
+    const onUpdate = vi.fn()
+    render(
+      <GeneralConfigTab
+        ref={ref}
+        defaultValues={{ name: 'w' }}
+        onUpdate={onUpdate}
+        onClose={vi.fn()}
+      />
+    )
+
+    filesStore.pendingIconUploads = 1
+    let saved: boolean | undefined
+    await act(async () => {
+      saved = await ref.current?.save()
+    })
+    filesStore.pendingIconUploads = 0
+
+    expect(saved).toBe(false)
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+})
 
 describe('GeneralConfigTab — categories', () => {
   it('renders MarketplaceCategories', () => {

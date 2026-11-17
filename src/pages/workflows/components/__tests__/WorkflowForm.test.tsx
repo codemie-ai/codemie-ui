@@ -16,6 +16,8 @@ import { act, render } from '@testing-library/react'
 import { createRef } from 'react'
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 
+import { filesStore } from '@/store/files'
+
 import WorkflowForm, { WorkflowFormRef } from '../WorkflowForm'
 
 vi.mock('@/store/appInfo', () => ({
@@ -92,6 +94,31 @@ const workflow = {
 }
 
 describe('WorkflowForm — replaceYamlConfig', () => {
+  it('blocks saving while a workflow icon upload is in flight', async () => {
+    const onSubmit = vi.fn()
+    const ref = createRef<WorkflowFormRef>()
+    render(
+      <WorkflowForm
+        ref={ref}
+        onSubmit={onSubmit}
+        workflow={{ name: 'w', yaml_config: 'states: []' } as any}
+        isEditing
+      />
+    )
+
+    filesStore.pendingIconUploads = 1
+    await act(async () => {
+      await ref.current?.save(false)
+    })
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    filesStore.pendingIconUploads = 0
+    await act(async () => {
+      await ref.current?.save(false)
+    })
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+  })
+
   it('exposes replaceYamlConfig on ref', () => {
     const ref = createRef<WorkflowFormRef>()
     render(<WorkflowForm ref={ref} onSubmit={vi.fn()} workflow={workflow} isEditing />)

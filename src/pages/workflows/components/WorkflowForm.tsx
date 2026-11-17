@@ -30,11 +30,13 @@ import { YAML_PLACEHOLDER } from '@/constants/workflows'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import WorkflowNodeEditor, { WorkflowEditorRef } from '@/pages/workflows/editor/WorkflowEditor'
 import { appInfoStore } from '@/store/appInfo'
+import { filesStore } from '@/store/files'
 import { settingsStore } from '@/store/settings'
 import { userStore } from '@/store/user'
 import { WorkflowIssue } from '@/types/entity'
 import { ConfigItem } from '@/types/entity/configuration'
 import { Setting } from '@/types/entity/setting'
+import toaster from '@/utils/toaster'
 import { hasUserIntegrationInYamlConfig, isVisualEditorEnabled } from '@/utils/workflows'
 
 import WorkflowFormFields, { WorkflowFormFieldsRef } from './WorkflowFormFields'
@@ -218,6 +220,10 @@ const WorkflowForm = forwardRef<WorkflowFormRef, WorkflowFormProps>(
 
     const save = useCallback(
       async (shouldOpenExecution = false) => {
+        if (filesStore.pendingIconUploads > 0) {
+          toaster.error('Wait for the icon upload to finish before saving.')
+          return
+        }
         let newYamlConfig = yamlConfig
         let newWorkflowFields = workflowFields
 

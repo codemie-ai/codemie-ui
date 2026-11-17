@@ -19,6 +19,8 @@ import {
   GuardrailAssignmentsSchema,
   guardrailAssignmentsSchema,
 } from '@/components/guardrails/GuardrailAssignmentPanel/schemas/guardrailAssignmentSchema'
+import { isBackendFileUrl } from '@/pages/assistants/components/AssistantForm/components/AssistantSetup/utils/getFileNameFromUrl'
+import { decodeIconName } from '@/utils/iconUrl'
 
 // Base schema for workflow fields (without yaml_config)
 export const baseWorkflowSchema = Yup.object()
@@ -30,9 +32,12 @@ export const baseWorkflowSchema = Yup.object()
       .nullable()
       .transform((value) => (value === '' ? null : value)),
     icon_url: Yup.string()
-      .url('Icon URL must be a valid URL')
       .nullable()
-      .transform((value) => (value === '' ? null : value)),
+      .transform((value) => (value === '' ? null : value))
+      .test('url', 'Icon URL must be a valid URL', (value) => {
+        if (!value || isBackendFileUrl(value) || decodeIconName(value)) return true
+        return Yup.string().url().isValidSync(value)
+      }),
     shared: Yup.boolean(),
     categories: Yup.array()
       .of(Yup.string().required())

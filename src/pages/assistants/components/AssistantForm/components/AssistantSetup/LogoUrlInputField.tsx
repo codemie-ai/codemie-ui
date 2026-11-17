@@ -13,6 +13,8 @@
 // limitations under the License.
 //
 
+import { Ref } from 'react'
+
 import InfoBox from '@/components/form/InfoBox'
 import Input from '@/components/form/Input'
 
@@ -22,12 +24,28 @@ interface LogoUrlInputFieldProps {
   onBlur: () => void
   error?: string
   name?: string
+  hint?: string
+  inputRef?: Ref<HTMLInputElement>
+  label?: string
+  id?: string
 }
 
-const LogoUrlInputField = ({ value, onChange, onBlur, error, name }: LogoUrlInputFieldProps) => (
+const LogoUrlInputField = ({
+  value,
+  onChange,
+  onBlur,
+  error,
+  name,
+  hint = 'Must be JPEG, PNG, SVG and max size 500kb',
+  inputRef,
+  label = 'Or enter image URL directly',
+  id,
+}: LogoUrlInputFieldProps) => (
   <div className="flex flex-col gap-1">
     <Input
-      label="Or enter image URL directly"
+      ref={inputRef}
+      id={id}
+      label={label}
       placeholder="https://example.com/logo.jpg"
       name={name}
       rootClass="gap-y-1.5"
@@ -37,7 +55,7 @@ const LogoUrlInputField = ({ value, onChange, onBlur, error, name }: LogoUrlInpu
       onBlur={onBlur}
     />
     <InfoBox className="opacity-60" iconClassName="mt-0.5">
-      Must be JPEG, PNG, SVG and max size 500kb
+      {hint}
     </InfoBox>
   </div>
 )

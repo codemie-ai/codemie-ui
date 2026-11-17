@@ -13,8 +13,9 @@
 // limitations under the License.
 //
 
-import { useCallback, useState } from 'react'
+import { Ref, useCallback, useState } from 'react'
 
+import { decodeIconName } from '@/utils/iconUrl'
 import { cn } from '@/utils/utils'
 
 import ImageUploadField from './ImageUploadField'
@@ -29,6 +30,12 @@ interface LogoUploadPanelProps {
   className?: string
   isCompactView?: boolean
   name?: string
+  uploadFile?: (file: File) => Promise<string>
+  accept?: string
+  hint?: string
+  inputRef?: Ref<HTMLInputElement>
+  urlLabel?: string
+  inputId?: string
 }
 
 const LogoUploadPanel = ({
@@ -39,6 +46,12 @@ const LogoUploadPanel = ({
   className,
   isCompactView,
   name,
+  uploadFile,
+  accept,
+  hint,
+  inputRef,
+  urlLabel,
+  inputId,
 }: LogoUploadPanelProps) => {
   const [isUploadedFile, setIsUploadedFile] = useState(false)
 
@@ -48,14 +61,20 @@ const LogoUploadPanel = ({
 
   const handleInputChange = useCallback(
     (inputValue: string) => {
+      // A stored workflow icon is shown by file name; editing that text must not overwrite the token.
+      if (decodeIconName(value) && inputValue !== '' && !/^https?:\/\//i.test(inputValue)) {
+        return
+      }
       setIsUploadedFile(false)
       onChange(inputValue)
     },
-    [onChange]
+    [onChange, value]
   )
 
   const displayValue =
-    (isUploadedFile || isBackendFileUrl(value)) && value ? getFileNameFromUrl(value) : value || ''
+    (isUploadedFile || isBackendFileUrl(value) || decodeIconName(value)) && value
+      ? getFileNameFromUrl(value)
+      : value || ''
 
   return (
     <div className={cn('flex flex-col pt-5 gap-4', className)}>
@@ -67,6 +86,8 @@ const LogoUploadPanel = ({
         }}
         error={error}
         isCompactView={isCompactView}
+        uploadFile={uploadFile}
+        accept={accept}
       />
       <LogoUrlInputField
         value={displayValue}
@@ -74,6 +95,10 @@ const LogoUploadPanel = ({
         onBlur={onBlur}
         error={error}
         name={name}
+        hint={hint}
+        inputRef={inputRef}
+        label={urlLabel}
+        id={inputId}
       />
     </div>
   )

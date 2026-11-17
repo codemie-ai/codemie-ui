@@ -18,6 +18,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { AvatarType } from '@/constants/avatar'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
+import api from '@/utils/api'
 import { generateAssistantAvatarDataUrl } from '@/utils/assistantAvatar'
 
 import Avatar from '../Avatar'
@@ -45,6 +46,22 @@ describe('Avatar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useFeatureFlag).mockReturnValue([false] as any)
+  })
+
+  it('resolves a bare workflow icon token to the file URL', () => {
+    const { container } = render(
+      <Avatar iconUrl="OX5pbWFnZS9wbmczfnUtMTUxfndvcmtmbG93LWljb25zLzAxMjM0NTY3ODlhYmNkZWYwMTIzNDU2Nzg5YWJjZGVmLnBuZw==" />
+    )
+
+    expect(getImg(container).getAttribute('src')).toBe(
+      `${api.BASE_URL}/v1/files/OX5pbWFnZS9wbmczfnUtMTUxfndvcmtmbG93LWljb25zLzAxMjM0NTY3ODlhYmNkZWYwMTIzNDU2Nzg5YWJjZGVmLnBuZw==`
+    )
+  })
+
+  it('keeps a full icon URL unchanged', () => {
+    const { container } = render(<Avatar iconUrl="https://example.com/icon.png" />)
+
+    expect(getImg(container).getAttribute('src')).toBe('https://example.com/icon.png')
   })
 
   it('renders an img element when no onClick is provided', () => {

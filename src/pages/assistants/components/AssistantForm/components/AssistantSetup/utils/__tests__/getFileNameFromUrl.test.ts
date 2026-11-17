@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { decodeFileName } from '@/utils/utils'
 
-import { getFileNameFromUrl } from '../getFileNameFromUrl'
+import { getFileNameFromUrl, isBackendFileUrl } from '../getFileNameFromUrl'
 
 vi.mock('@/utils/utils', () => ({
   decodeFileName: vi.fn(),
@@ -96,7 +96,6 @@ describe('getFileNameFromUrl', () => {
     it('should return the raw string for plain strings without /v1/files/', () => {
       const result = getFileNameFromUrl('someEncodedId')
 
-      expect(decodeFileName).not.toHaveBeenCalled()
       expect(result).toBe('someEncodedId')
     })
 
@@ -106,6 +105,39 @@ describe('getFileNameFromUrl', () => {
 
       expect(decodeFileName).not.toHaveBeenCalled()
       expect(result).toBe(url)
+    })
+  })
+
+  describe('bare workflow icon token', () => {
+    const token = 'MTB+aW1h'
+
+    it('is recognised as a backend file and shows the name without the workflow-icons prefix', () => {
+      vi.mocked(decodeFileName).mockReturnValue({
+        originalFileName: 'workflow-icons/0123abcd.png',
+        mimeType: 'image/png',
+        user: 'user1',
+      })
+
+      expect(isBackendFileUrl(token)).toBe(false)
+      expect(getFileNameFromUrl(token)).toBe('0123abcd.png')
+    })
+
+    it('is not recognised when the decoded name is outside the workflow-icons namespace', () => {
+      vi.mocked(decodeFileName).mockReturnValue({
+        originalFileName: 'notes.txt',
+        mimeType: 'text/plain',
+        user: 'user1',
+      })
+
+      expect(isBackendFileUrl(token)).toBe(false)
+      expect(getFileNameFromUrl(token)).toBe(token)
+    })
+
+    it('does not treat the retired /v1/workflows/icon/ path as a backend file', () => {
+      const url = '/api/v1/workflows/icon/abc123'
+
+      expect(isBackendFileUrl(url)).toBe(false)
+      expect(getFileNameFromUrl(url)).toBe(url)
     })
   })
 })

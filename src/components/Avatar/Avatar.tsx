@@ -20,6 +20,7 @@ import Tooltip from '@/components/Tooltip'
 import { AvatarType } from '@/constants/avatar'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { generateAssistantAvatarDataUrl } from '@/utils/assistantAvatar'
+import { resolveIconUrl } from '@/utils/iconUrl'
 import { cn } from '@/utils/utils'
 
 export interface AvatarProps {
@@ -73,7 +74,7 @@ const Avatar: React.FC<AvatarProps> = ({
     ? generateAssistantAvatarDataUrl(name ?? '')
     : aiAvatarImage
 
-  const icon = iconUrl || fallbackIcon
+  const icon = resolveIconUrl(iconUrl) || fallbackIcon
   const tooltip = withTooltip ? name || 'Avatar' : ''
 
   return (

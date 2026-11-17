@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15605-workflow-allow-uploading-icon-file",
+  "head": "5534803e82b6edaf34ebf098b992ba6c02c4d3ad",
+  "runner": "npm",
+  "started_at": "2026-10-19T15:59:32Z",
+  "completed_at": "2026-10-19T16:27:01Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 155022,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 102242,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "build",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run build",
+      "exit_code": null,
+      "notes": "Not re-run at this head; passed at b1c981875. Typecheck passed at this head."
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9518,
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 45451,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Working tree only, not git history (per guide). Output: \"no leaks found\"."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 659989,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 709 passed (709); Tests 7155 passed | 1 skipped (7156)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 375690,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 50 passed (50); Tests 564 passed | 1 skipped (565)."
+    },
+    {
+      "id": "test-harness",
+      "source": "user-local",
+      "status": "PASS",
+      "duration_ms": 0,
+      "command": "npm run test-harness (run locally by the user)",
+      "exit_code": null,
+      "notes": "Run locally by the user: 93 passed, 6 rerun in 773.97s (0:12:53). No failures reported. Predates the commits 7eabb0c16 and 5534803e8 (LogoUploadPanel edit guard and compact logo layout)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "(no UI script configured)",
+      "exit_code": null,
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 852,
+      "command": "npx lint-staged",
+      "exit_code": 0,
+      "notes": "Self-skip: output \"No staged files found.\" Nothing staged, so nothing checked. Enable by staging files and re-running; staging was not done per instructions."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1075,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2365 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 507,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: \"[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.\" Enable by exporting SONAR_TOKEN. Remains owed to CI."
+    },
+    {
+      "id": "wait-ci-init",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "(.gitlab-ci.yml job; not runnable locally)",
+      "exit_code": null,
+      "notes": "Pipeline job from remote include (epm-cdme/codemie-gitlab-templates pre-ci-guard); not runnable locally. The secrets gate above is the local counterpart to the pre-ci-guard secret scan."
+    }
+  ]
+}

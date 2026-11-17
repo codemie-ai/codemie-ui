@@ -20,9 +20,18 @@ interface ImageUploadFieldProps {
   onChange: (value: string) => void
   error?: string
   isCompactView?: boolean
+  uploadFile?: (file: File) => Promise<string>
+  accept?: string
 }
 
-const ImageUploadField = ({ value, onChange, error, isCompactView }: ImageUploadFieldProps) => (
+const ImageUploadField = ({
+  value,
+  onChange,
+  error,
+  isCompactView,
+  uploadFile,
+  accept,
+}: ImageUploadFieldProps) => (
   <ImageUpload
     value={value}
     onChange={onChange}
@@ -30,6 +39,8 @@ const ImageUploadField = ({ value, onChange, error, isCompactView }: ImageUpload
     maxSizeMB={0.5}
     rootClass={isCompactView ? 'items-center' : 'items-start'}
     isCompactView={isCompactView}
+    uploadFile={uploadFile}
+    accept={accept}
   />
 )
 
