@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-17240_manager-sharing-hosted-ui",
+  "head": "d71f968cffab88f3f01666503e3db1104a67d42e",
+  "runner": "npm",
+  "started_at": "2026-11-14T22:51:05Z",
+  "completed_at": "2026-11-14T23:29:10Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 969858,
+      "command": "npm run lint",
+      "exit_code": 0,
+      "notes": "Guide Auto-fix not triggered (gate passed)"
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17442,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 1144686,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "Test Files 909 passed (909), Tests 9498 passed | 1 skipped; exit 1 from 1 unhandled error: vitest-pool failed to start forks worker for src/utils/__tests__/postLoginRedirect.test.ts (Timeout waiting for worker to respond)"
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 97239,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 84 passed (84), Tests 920 passed | 1 skipped"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 5145,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: 'no leaks found' (working tree only)"
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2011,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "summary printed, no 'Found error' or 'not permitted' on stderr"
+    },
+    {
+      "id": "sonar",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 152,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN (and reach the Sonar host) to run locally; still owed to CI. Also runs in .husky/pre-commit."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 352,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2795 files, 0 missing license headers (.husky/pre-commit)"
+    },
+    {
+      "id": "prettier",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 525,
+      "command": "npx prettier --check $(git diff --name-only --diff-filter=d 7d6f4c0ea871b6fd636d86c99febe114944ca81f...HEAD)",
+      "exit_code": 0,
+      "notes": "Covers lint-staged prettier step over branch-changed files; lint-staged eslint --fix and tsc --noEmit steps covered by lint and typecheck gates"
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "command": "",
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    },
+    {
+      "id": "wait-ci-init",
+      "source": "ci",
+      "status": "N/A",
+      "command": ".gitlab-ci.yml::wait-ci-init (extends external .wait-ci-init-template)",
+      "notes": "Needs GitLab MR pipeline and external ci-pipeline/compliance-report contexts; cannot run locally, only CI can settle it"
+    }
+  ],
+  "failures": {
+    "unit-tests": "\n> ai-assistant@0.0.0 test:unit:slnt\n> vitest run --project unit --silent\n\n\n RUN  v5.0.2 /Users/yanaasadchaya/Projects/epam/airun/codemie-ui/.claude/worktrees/laughing-cartwright-343e32\n      Running tests with seed \"1794697661046\"\n\n\nwarn - As of Tailwind CSS v3.3, the `@tailwindcss/line-clamp` plugin is now included by default.\nwarn - Remove it from the `plugins` array in your configuration to eliminate this warning.\n\u23af\u23af\u23af\u23af\u23af\u23af Unhandled Errors \u23af\u23af\u23af\u23af\u23af\u23af\n\nVitest caught 1 unhandled error during the test run.\nThis might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.\n\n\u23af\u23af\u23af\u23af\u23af\u23af Unhandled Error \u23af\u23af\u23af\u23af\u23af\u23af\u23af\nError: [vitest-pool]: Failed to start forks worker for test files /Users/yanaasadchaya/Projects/epam/airun/codemie-ui/.claude/worktrees/laughing-cartwright-343e32/src/utils/__tests__/postLoginRedirect.test.ts.\n \u276f node_modules/vitest/dist/chunks/index.C-uw7tH9.js:11466:94\n \u276f runNextTicks node:internal/process/task_queues:65:5\n \u276f processTimers node:internal/timers:540:9\n \u276f Pool.schedule node_modules/vitest/dist/chunks/index.C-uw7tH9.js:11466:5\n\nCaused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond\n \u276f Timeout.<anonymous> node_modules/vitest/dist/chunks/index.C-uw7tH9.js:10965:58\n \u276f listOnTimeout node:internal/timers:608:17\n \u276f processTimers node:internal/timers:543:7\n\n\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\u23af\n\n\n Test Files  909 passed (909)\n      Tests  9498 passed | 1 skipped (9499)\n     Errors  1 error\n   Start at  02:07:42\n   Duration  1142.68s (import 42%, setup 41%, environment 9%, tests 6%, transform 1%)\n\n     Import  |unit| 3348 modules were evaluated 76859 times \u00b7 1036.75s total, 42% of tracked time\n             ~312.37s faster with isolate: false \u2014 shared modules are evaluated once per worker instead of once per file\n             learn more: https://vitest.dev/guide/improving-performance#test-isolation\n\n"
+  }
+}

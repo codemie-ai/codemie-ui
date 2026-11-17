@@ -1,0 +1,111 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "deterministic",
+    "rationale": "Targeted check: CR-001 and CR-002 resolved, each backed by a new integration test; confidence high"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "deterministic",
+      "rationale": "code-review-orchestrator compact: 2 major findings (CR-001 Shared-with hides viewer's own grant from managers; CR-002 access hint ignores grants for sharers without write), reachability unconfirmed; confidence low — acceptance criteria not audited (plan ACs not passed as criteria)"
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User chose at Escalation trigger 4: run the fix-up for CR-001/CR-002 then the targeted check round; acceptance stays unaudited by the reviewer"
+    },
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "deterministic",
+      "rationale": "Targeted check: CR-001 and CR-002 resolved, each backed by a new integration test; confidence high"
+    }
+  ],
+  "reviewed_head": "d71f968cffab88f3f01666503e3db1104a67d42e",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "Targeted check of the 2 prior blocking findings against current source: CR-001 and CR-002 are both resolved, each backed by a new integration test. business_review and standards_review are carried forward unchanged from the final round, which ran a compact profile with no spec and no standards audit.",
+  "confidence": "low",
+  "check_confidence": "high",
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 2,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedApplicationDetails.tsx",
+      "line": 196,
+      "title": "Shared with hides viewer's own grant from managers",
+      "problem": "useSharedWith is called with currentUserId for every sharer, and bindSharing (components/sharing/sharingClient.ts:104) filters the current user out of the list. That filter was harmless when only the creator saw the list; now a non-creator manager who also holds a by-name grant is dropped from the list, so users and hasGrants (line 196: users.length > 0) under-report access.",
+      "impact": "When the manager's own grant is the only one, the panel says 'Not shared with anyone yet.' and the access hint says 'until it is shared', although the app is shared; contradicts AC2 ('shows everyone the app is shared with'). Reachability unconfirmed: depends on whether a manager can also hold a by-name grant.",
+      "recommendation": "In HostedApplicationDetails pass currentUserId to useSharedWith only for the creator (e.g. currentUserId: creator ? currentUserId : undefined), keeping the shared bindSharing component unchanged (NG3); add an integration test where a non-creator manager is in the shared-with response.",
+      "status": "resolved",
+      "check_notes": "useSharedWith now gets currentUserId only when creator; bindSharing unchanged (NG3); integration test covers a non-creator manager holding a grant.",
+      "fix": {
+        "change": "HostedApplicationDetails passes currentUserId to useSharedWith only for the creator, so a non-creator manager's own grant stays in Shared with and counts toward hasGrants; bindSharing unchanged",
+        "test": "HostedApplicationDetails.integration.test.tsx: keeps a manager who is not the creator in Shared with when they hold a grant"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/applications/hosted/HostedApplicationOverview.tsx",
+      "line": 60,
+      "title": "Access hint ignores grants for sharers without write",
+      "problem": "The Shared with list is now gated on can_share, but accessHint still returns 'Only signed-in members of your organization can open it.' whenever isManager (write ability) is false, before any grant check.",
+      "impact": "A user with can_share but no write ability sees a Shared with list next to an access hint that ignores those grants, giving a wrong statement of who can open the link. Reachability unconfirmed: depends on whether the backend ever sends can_share without write.",
+      "recommendation": "Treat can_share like manager in accessHint, e.g. if (!isManager(app) && !canShare(app)) return 'Only signed-in members of your organization can open it.'",
+      "status": "resolved",
+      "check_notes": "accessHint early return now requires !isManager && !canShare; integration test covers can_share with read-only abilities.",
+      "fix": {
+        "change": "accessHint returns the organization-members line only when the viewer neither manages nor can share",
+        "test": "HostedApplicationDetails.integration.test.tsx: derives the access hint from the grants for a sharer without write"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "Compact profile: only the edge-case lens ran; acceptance did not run (no spec), so business_review is empty and confidence is low; standards audit not expected for this profile. Two blocking findings kept with reachability unconfirmed (whether a non-creator manager can hold a by-name grant, and whether can_share can occur without write); 0 deferred; 2 dismissed (creator-without-can_share matches the intended can_share gating; user-not-loaded is unreachable because App renders routes only once the user is loaded).",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

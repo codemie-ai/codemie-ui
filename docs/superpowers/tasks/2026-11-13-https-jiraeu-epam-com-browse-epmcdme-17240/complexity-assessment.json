@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "task": "In codemie-ui, show Share, the hosted share dialog and the \"Shared with\" panel to every hosted-app manager via can_share, drop the moderator-only \"Revoke share link\" menu item, keep assistant sharing unchanged, and update tests pinning owner-only visibility.",
+  "generated": "2026-11-13T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 14,
+  "size": "S",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Production edits are small (hostedAccess menu items, HostedApplicationDetails Shared-with gating, possibly HostedSharePopup), but roughly 6-8 existing test files pin owner-only visibility or the moderator revoke_link item (hostedAccess, HostedSharePopup, HostedApplicationCard, HostedApplicationViewer, admin-link-revoke integration, HostedApplicationDetails integration) plus a new non-creator-manager sidebar test — about 8-10 files across the hosted pages and tests directories." },
+    { "dimension": "component_scope", "reason": "Three hosted-only UI components (hostedAccess, HostedApplicationDetails, HostedSharePopup) in a single layer; shared SharePopup and sharingClient are explicitly left untouched for assistants." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is the existing can_share gating in hostedAccess, which the change reuses directly; bumped from S to M because it changes authorization-driven visibility, though real enforcement (creator exclusion, grant refusal) is in the backend. Edge/negative ACs are covered by existing Vitest + Testing Library templates. Borderline 14/15: kept lower because risk is M and existing patterns cover most of the work. Nearest example (S, add-validation-to-form-field, total 11) agrees on band." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from S to M: affects authorization (who sees Share, the share dialog and the Shared-with panel)"
+  ],
+  "split_recommendation": null
+}

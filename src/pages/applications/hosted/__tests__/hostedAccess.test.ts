@@ -107,19 +107,9 @@ describe('hostedActions', () => {
     expect(k).not.toContain('suspend')
   })
 
-  it('offers Revoke share link to a moderator who is not the owner', () => {
-    expect(keys(make({ can_moderate: true }))).toEqual([
-      'open',
-      'details',
-      'suspend',
-      'revoke_link',
-    ])
-    expect(find(make({ can_moderate: true }), 'revoke_link')?.label).toBe('Revoke share link')
-    // Suspended apps keep it: revoking is allowed while suspended.
-    expect(keys(make({ can_moderate: true, suspended: true }))).toContain('revoke_link')
-    // The owner revokes from the Share popup instead.
+  it('never offers a separate Revoke share link item to a moderator', () => {
+    expect(keys(make({ can_moderate: true, can_share: false }))).not.toContain('revoke_link')
     expect(keys(make({ can_moderate: true, can_share: true }))).not.toContain('revoke_link')
-    expect(keys(make({ user_abilities: ['write', 'delete'] }))).not.toContain('revoke_link')
   })
 
   it('disables publish while suspended but keeps Remove from Marketplace enabled', () => {

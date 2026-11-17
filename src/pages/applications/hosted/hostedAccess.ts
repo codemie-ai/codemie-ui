@@ -43,7 +43,6 @@ export type HostedActionKey =
   | 'delete'
   | 'suspend'
   | 'reinstate'
-  | 'revoke_link'
 
 export interface HostedAction {
   key: HostedActionKey
@@ -79,9 +78,6 @@ export const hostedActions = (app: HostedApplication): HostedAction[] => {
         ? { key: 'reinstate', label: 'Reinstate' }
         : { key: 'suspend', label: 'Suspend' }
     )
-    // A moderator who is not the owner stops a leaked link without reading it; the owner
-    // revokes it from the Share popup.
-    if (!canShare(app)) actions.push({ key: 'revoke_link', label: 'Revoke share link' })
   }
   return actions
 }

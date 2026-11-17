@@ -25,7 +25,7 @@ import type { HostedApplication } from '@/types/entity/hostedApplication'
 import { formatDateTime } from '@/utils/helpers'
 
 import ApplicationsSidebar from '../ApplicationsSidebar'
-import { hostedActions, isCreator, isManager, isSuspended } from './hostedAccess'
+import { canShare, hostedActions, isCreator, isManager, isSuspended } from './hostedAccess'
 import HostedApplicationOverview from './HostedApplicationOverview'
 import HostedDetailsActions from './HostedDetailsActions'
 import HostedDetailsDialogs from './HostedDetailsDialogs'
@@ -55,10 +55,12 @@ const HostedApplicationDetails = () => {
   const { notAvailable } = details
   const currentUserId = userStore.user?.userId
   const creator = !!application && isCreator(application, currentUserId)
-  // Only the creator reads who the application is shared with.
+  const sharer = !!application && canShare(application)
+  // Anyone who can share reads who the application is shared with. Only the creator is left out
+  // of the list; a manager's own grant is real access and must count.
   const sharedWith = useSharedWith(store.sharing, application?.id, {
-    enabled: creator,
-    currentUserId,
+    enabled: sharer,
+    currentUserId: creator ? currentUserId : undefined,
   })
   const actions = useHostedCardActions({
     isCurrent,
@@ -189,7 +191,7 @@ const HostedApplicationDetails = () => {
               <HostedApplicationOverview
                 application={application}
                 versions={versions}
-                sharedWith={creator ? sharedWith.users : undefined}
+                sharedWith={sharer ? sharedWith.users : undefined}
                 sharedWithFailed={sharedWith.failed}
                 onRetrySharedWith={sharedWith.reload}
                 hasGrants={sharedWith.loaded ? sharedWith.users.length > 0 : undefined}

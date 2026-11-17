@@ -72,7 +72,7 @@ export interface HostedApplication extends Entity {
   project?: string | null
   /**
    * "Shared with project": members of `project` can open it. Grants by name or by link are
-   * separate and only listed for the creator (`GET /{id}/shared-with`).
+   * separate and only listed for people who can share (`can_share`, `GET /{id}/shared-with`).
    */
   shared?: boolean
   /** Published to the marketplace. */

@@ -263,11 +263,56 @@ describe('details access model', () => {
     expect(screen.queryByText('Myself Me')).not.toBeInTheDocument()
   })
 
-  it('hides Shared with from a manager who is not the creator', async () => {
-    show(make({ created_by: { id: 'u-2' } }))
-    await screen.findByRole('heading', { name: 'Versions' })
+  it('lists Shared with for a manager who is not the creator but can share', async () => {
+    const load = vi
+      .spyOn(store.sharing, 'loadSharedWith')
+      .mockResolvedValue([{ id: 'x', name: 'Sam Doe', email: 'sam@example.com' } as never])
+    show(make({ created_by: { id: 'u-2' }, can_share: true }))
+    expect(await screen.findByText('Sam Doe')).toBeInTheDocument()
+    expect(screen.getByText('Shared with')).toBeInTheDocument()
+    expect(load).toHaveBeenCalled()
+  })
+
+  it('keeps a manager who is not the creator in Shared with when they hold a grant', async () => {
+    vi.spyOn(store.sharing, 'loadSharedWith').mockResolvedValue([
+      { id: 'u-1', name: 'Myself Me', email: 'me@example.com' } as never,
+    ])
+    show(make({ shared: false, is_global: false, created_by: { id: 'u-2' }, can_share: true }))
+    expect(await screen.findByText('Myself Me')).toBeInTheDocument()
+    expect(screen.queryByText('Not shared with anyone yet.')).not.toBeInTheDocument()
+    expect(
+      await screen.findByText('People it is shared with can open this link.')
+    ).toBeInTheDocument()
+  })
+
+  it('derives the access hint from the grants for a sharer without write', async () => {
+    vi.spyOn(store.sharing, 'loadSharedWith').mockResolvedValue([
+      { id: 'x', name: 'Sam Doe', email: 'sam@example.com' } as never,
+    ])
+    show(
+      make({
+        shared: false,
+        is_global: false,
+        created_by: { id: 'u-2' },
+        user_abilities: ['read'],
+        can_share: true,
+      })
+    )
+    expect(await screen.findByText('Sam Doe')).toBeInTheDocument()
+    expect(
+      await screen.findByText('People it is shared with can open this link.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Only signed-in members of your organization can open it.')
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides Shared with from a reader who cannot share', async () => {
+    const load = vi.spyOn(store.sharing, 'loadSharedWith').mockResolvedValue([])
+    show(make({ created_by: { id: 'u-2' }, user_abilities: ['read'], can_share: false }))
+    expect(await screen.findByText('About text')).toBeInTheDocument()
     expect(screen.queryByText('Shared with')).not.toBeInTheDocument()
-    expect(store.sharing.loadSharedWith).not.toHaveBeenCalled()
+    expect(load).not.toHaveBeenCalled()
   })
 
   it('offers Activate version only for a version with can_activate', async () => {
@@ -437,7 +482,10 @@ describe('details access model', () => {
       'Members of the demo project and people it is shared with can open this link.',
     ],
     [{}, 'Only you can open this link until you share it.'],
-    [{ user_abilities: ['read'] }, 'Only signed-in members of your organization can open it.'],
+    [
+      { user_abilities: ['read'], can_share: false },
+      'Only signed-in members of your organization can open it.',
+    ],
   ] as [Partial<HostedApplication>, string][])(
     'shows the access hint for %o',
     async (over, hint) => {
@@ -466,6 +514,18 @@ describe('details access model', () => {
     expect(
       await screen.findByText('Only you can open this link until you share it.')
     ).toBeInTheDocument()
+  })
+
+  it('tells a manager who is not the creator that only managers can open an unshared app', async () => {
+    vi.spyOn(store.sharing, 'loadSharedWith').mockResolvedValue([])
+    show(make({ shared: false, is_global: false, created_by: { id: 'u-2' }, can_share: true }))
+    expect(await screen.findByText('Not shared with anyone yet.')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Only people who manage it can open this link until it is shared.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Only you can open this link until you share it.')
+    ).not.toBeInTheDocument()
   })
 
   it('tells the creator that project members can open a project-shared app with no named grants', async () => {

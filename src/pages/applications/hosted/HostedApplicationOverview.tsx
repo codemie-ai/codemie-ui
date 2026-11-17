@@ -26,7 +26,7 @@ import { isProjectMember } from '@/utils/entity'
 import { formatDateTime } from '@/utils/helpers'
 import { getSharedValue } from '@/utils/utils'
 
-import { canOpen, isCreator, isManager, isSuspended } from './hostedAccess'
+import { canOpen, canShare, isCreator, isManager, isSuspended } from './hostedAccess'
 import HostedApplicationCover from './HostedApplicationCover'
 import { hostedRoutes } from './hostedRoutes'
 
@@ -34,14 +34,14 @@ interface Props {
   application: HostedApplication
   versions: HostedVersion[]
   className?: string
-  /** The creator's list of people with access; omitted for everyone else. */
+  /** The list of people with access, for people who can share (`can_share`); omitted otherwise. */
   sharedWith?: SharedWithUser[]
-  /** The creator's list could not be loaded; shown instead of an empty list. */
+  /** The list could not be loaded; shown instead of an empty list. */
   sharedWithFailed?: boolean
   onRetrySharedWith?(): void
   /**
-   * Whether anyone was granted access by name or by link. Only the creator can read the grants,
-   * so it is undefined (unknown) for everyone else.
+   * Whether anyone was granted access by name or by link. Only people who can share (`can_share`)
+   * read the grants, so it is undefined (unknown) for everyone else.
    */
   hasGrants?: boolean
 }
@@ -55,9 +55,10 @@ const versionLabel = (versions: HostedVersion[], id?: string | null) => {
 }
 
 // `app.shared` is the "Shared with project" switch; grants by name or link are separate.
-const accessHint = (app: HostedApplication, hasGrants: boolean | undefined) => {
+const accessHint = (app: HostedApplication, hasGrants: boolean | undefined, creator: boolean) => {
   if (isSuspended(app)) return 'Access is suspended by a moderator.'
-  if (!isManager(app)) return 'Only signed-in members of your organization can open it.'
+  if (!isManager(app) && !canShare(app))
+    return 'Only signed-in members of your organization can open it.'
   if (app.is_global) return 'Anyone in your organization can open it from the Marketplace.'
   if (app.shared) {
     const members = app.project ? `Members of the ${app.project} project` : 'Project members'
@@ -65,7 +66,10 @@ const accessHint = (app: HostedApplication, hasGrants: boolean | undefined) => {
       ? `${members} can open this link.`
       : `${members} and people it is shared with can open this link.`
   }
-  if (hasGrants === false) return 'Only you can open this link until you share it.'
+  if (hasGrants === false)
+    return creator
+      ? 'Only you can open this link until you share it.'
+      : 'Only people who manage it can open this link until it is shared.'
   return 'People it is shared with can open this link.'
 }
 
@@ -132,7 +136,9 @@ const HostedApplicationOverview = ({
           value={window.location.origin + link}
           notification="Application link copied to clipboard"
         />
-        <p className="-mt-2 text-xs text-text-quaternary">{accessHint(app, hasGrants)}</p>
+        <p className="-mt-2 text-xs text-text-quaternary">
+          {accessHint(app, hasGrants, isCreator(app, userStore.user?.userId))}
+        </p>
       </DetailsSidebarSection>
     </DetailsSidebar>
   )

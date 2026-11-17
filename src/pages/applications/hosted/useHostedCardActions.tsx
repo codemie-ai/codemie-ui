@@ -15,7 +15,6 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
-import CopyLinkSvg from '@/assets/icons/copy-link.svg?react'
 import DeleteSvg from '@/assets/icons/delete.svg?react'
 import EditSvg from '@/assets/icons/edit.svg?react'
 import InfoSvg from '@/assets/icons/info.svg?react'
@@ -31,7 +30,6 @@ import type { NavigationMenuItem } from '@/components/NavigationMore/NavigationM
 import { ButtonType } from '@/constants'
 import { hostedApplicationsStore as store, hostedErrorMessage } from '@/store/hostedApplications'
 import type { HostedApplication } from '@/types/entity/hostedApplication'
-import toaster from '@/utils/toaster'
 
 import { hostedActions, type HostedActionKey } from './hostedAccess'
 import { hostedRoutes } from './hostedRoutes'
@@ -39,7 +37,7 @@ import HostedSecurityDialog, { type HostedSecurityAction } from './HostedSecurit
 import HostedSharePopup from './HostedSharePopup'
 import HostedUploadDialog from './HostedUploadDialog'
 
-type Dialog = 'delete' | 'share' | 'upload' | 'revoke_link' | 'publish' | 'unpublish'
+type Dialog = 'delete' | 'share' | 'upload' | 'publish' | 'unpublish'
 type Pending = { kind: Dialog; app: HostedApplication }
 
 interface Options {
@@ -63,7 +61,6 @@ const ICONS: Record<HostedActionKey, ReactNode> = {
   // The bin stays with Delete.
   suspend: <StopSvg />,
   reinstate: <RevertSvg />,
-  revoke_link: <CopyLinkSvg />,
 }
 
 /** Card overflow actions. Every mutation starts from a fresh revision, never a cached card. */
@@ -124,9 +121,6 @@ export const useHostedCardActions = ({ isCurrent, onChanged, onDeleted, onError 
       case 'suspend':
       case 'reinstate':
         return moderate(key, app)
-      // Needs no revision: the link is revoked by application id, and never read here.
-      case 'revoke_link':
-        return setPending({ kind: key, app })
       default:
         return prepare(key, app)
     }
@@ -205,26 +199,6 @@ export const useHostedCardActions = ({ isCurrent, onChanged, onDeleted, onError 
           confirmDisabled={busy}
           onCancel={close}
           onConfirm={() => run(() => store.deleteApplication(pending.app), onDeleted)}
-        />
-      )}
-      {pending?.kind === 'revoke_link' && (
-        <ConfirmationModal
-          visible
-          className="max-sm:!min-w-0"
-          header="Revoke the share link?"
-          message="The link stops working, and people who joined through it lose access. People shared with by name keep theirs. The owner can create a new link later."
-          confirmText="Revoke link"
-          confirmButtonType={ButtonType.DELETE}
-          confirmDisabled={busy}
-          onCancel={close}
-          onConfirm={() =>
-            run(async () => {
-              await store.revokeShareLink(pending.app.id)
-              // DELETE share-link answers { link: null } whether or not a link was live, so the
-              // moderator learns only what is certain: no live link remains.
-              toaster.success('No live share link remains')
-            })
-          }
         />
       )}
       {pending?.kind === 'share' && (
