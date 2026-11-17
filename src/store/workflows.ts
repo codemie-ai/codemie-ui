@@ -37,7 +37,6 @@ import api from '@/utils/api'
 import { cleanObject } from '@/utils/helpers'
 import { makeCleanObject } from '@/utils/utils'
 
-import { preferencesStore } from './preferences'
 import { userStore } from './user'
 
 export const MAX_RECENT_WORKFLOWS = 3
@@ -184,11 +183,7 @@ export const workflowsStore = proxy<WorkflowsStore>({
       const response = await api.get(url).then((res) => res.json())
       const { data, pagination } = response
 
-      const favoriteWorkflowIds = new Set(preferencesStore.preferences?.favorites?.workflows ?? [])
-      this.workflows = data.map((w: Workflow) => ({
-        ...w,
-        is_favorited: favoriteWorkflowIds.has(w.id),
-      }))
+      this.workflows = data
       this.workflowsPagination = {
         page: pagination.page,
         perPage: pagination.per_page,

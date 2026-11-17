@@ -1,0 +1,67 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved the test fix-up: skill implementation-detail test removed, workflow PUT mock kept (matches API contract), existing workflows test now covers preferences arriving after the list."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User asked to minimise tests: drop the skill is_favorited implementation-detail test, keep the workflow PUT mock if it matches the API contract, cover the late-preferences bug by extending an existing test."
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved the test fix-up: skill implementation-detail test removed, workflow PUT mock kept (matches API contract), existing workflows test now covers preferences arriving after the list."
+    }
+  ],
+  "reviewed_head": "92b07d154e643e796f0bb91e79355ad7878a0ae7",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case lens ran; acceptance skipped (no spec, so confidence is low) and standards not part of the compact profile. Both lens claims were dismissed after reading source: the backend sets is_favorited only on favorites payloads (so the OR fallback cannot go stale on list items), and hiding the star on workflow templates is the requested behavior (AC 9). 2 dismissed, 0 deferred.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of this review profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of this review profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of this review profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case lens ran; acceptance skipped (no spec, so confidence is low) and standards not part of the compact profile. Both lens claims were dismissed after reading source: the backend sets is_favorited only on favorites payloads (so the OR fallback cannot go stale on list items), and hiding the star on workflow templates is the requested behavior (AC 9). 2 dismissed, 0 deferred.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

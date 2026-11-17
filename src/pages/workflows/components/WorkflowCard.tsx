@@ -30,6 +30,7 @@ import { AvatarType } from '@/constants/avatar'
 import { CHATS, VIEW_WORKFLOW } from '@/constants/routes'
 import { useFavoritesEnabled } from '@/hooks/useFeatureFlags'
 import { useIsTruncated } from '@/hooks/useIsTruncated'
+import { useIsWorkflowFavorited } from '@/hooks/useSkillWorkflowPreferenceFlags'
 import { useTheme } from '@/hooks/useTheme'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { chatsStore } from '@/store/chats'
@@ -105,6 +106,8 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
   // Hooks must be called before any early returns
   const router = useVueRouter()
   const [isFavoritesEnabled] = useFavoritesEnabled()
+  const isFavorited = useIsWorkflowFavorited(workflow?.id) || workflow?.is_favorited === true
+  const showFavorite = isFavoritesEnabled && !isTemplate
   const { isDark, appearance } = useTheme()
   const isCardGradientEnabled = appearance?.gradients ?? true
   const [showRemoveFavorite, setShowRemoveFavorite] = useState(false)
@@ -182,16 +185,16 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
               dangerouslySetInnerHTML={{ __html: gradientSvg }}
             />
           )}
-          {isFavoritesEnabled && (
+          {showFavorite && (
             <div
               className="absolute top-2 right-2 z-10"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
             >
               <FavoriteButton
-                isFavorited={workflow.is_favorited ?? false}
+                isFavorited={isFavorited}
                 onToggle={() =>
-                  workflow.is_favorited
+                  isFavorited
                     ? setShowRemoveFavorite(true)
                     : favoritesStore.addFavorite('workflow', workflow.id)
                 }
@@ -208,7 +211,7 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
               <h3
                 className={classNames(
                   'text-base font-semibold m-0 truncate',
-                  isFavoritesEnabled && 'pr-14'
+                  showFavorite && 'pr-14'
                 )}
               >
                 <div

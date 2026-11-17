@@ -1092,7 +1092,13 @@ describe('WorkflowsListPage - Integration', () => {
         'v1/workflows',
         createWorkflowsResponse([createWorkflowFixture({ id: 'workflow-1', is_favorited: false })])
       )
-      mockAPI('PUT', 'v1/preferences/test-user-id', {})
+      mockAPI('PUT', 'v1/preferences/test-user-id', {
+        user_id: 'test-user-id',
+        navigation_expanded: true,
+        sidebar_expanded: true,
+        pinned_assistants: [],
+        favorites: { assistants: [], skills: [], workflows: ['workflow-1'] },
+      })
 
       renderPage('/workflows/all')
 
@@ -1281,28 +1287,37 @@ describe('WorkflowsListPage - Integration', () => {
       })
     })
 
-    it('shows filled favorite button when workflow is favorited', async () => {
+    it('fills the favorite button when preferences arrive after the list, without refetching it', async () => {
+      const countWorkflowListCalls = () =>
+        (global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
+          ([url, init]) => String(url).includes('v1/workflows') && (init?.method ?? 'GET') === 'GET'
+        ).length
       mockAPI('GET', 'v1/config', [{ id: 'features:favorites', settings: { enabled: true } }])
-      mockAPI('GET', 'v1/preferences/test-user-id', {
-        user_id: 'test-user-id',
-        navigation_expanded: true,
-        sidebar_expanded: true,
-        pinned_assistants: [],
-        favorites: { assistants: [], skills: [], workflows: ['workflow-1'] },
-      })
       mockAPI(
         'GET',
         'v1/workflows',
-        createWorkflowsResponse([createWorkflowFixture({ is_favorited: true })])
+        createWorkflowsResponse([createWorkflowFixture({ id: 'workflow-1' })])
       )
 
-      await preferencesStore.fetchPreferences('test-user-id')
       renderPage('/workflows/all')
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeInTheDocument()
-        expect(screen.queryByRole('button', { name: 'Add to favorites' })).not.toBeInTheDocument()
+      await waitForWorkflowLoaded('Test Workflow')
+      expect(await screen.findByRole('button', { name: 'Add to favorites' })).toBeInTheDocument()
+      const listCallsBefore = countWorkflowListCalls()
+
+      act(() => {
+        preferencesStore.preferences = {
+          user_id: 'test-user-id',
+          pinned_assistants: [],
+          favorites: { assistants: [], skills: [], workflows: ['workflow-1'] },
+        }
       })
+
+      expect(
+        await screen.findByRole('button', { name: 'Remove from favorites' })
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Add to favorites' })).not.toBeInTheDocument()
+      expect(countWorkflowListCalls()).toBe(listCallsBefore)
     })
 
     it('does NOT show FavoriteButton when favorites disabled', async () => {

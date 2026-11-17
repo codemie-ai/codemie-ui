@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "generated": "2026-11-15T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 14,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 8,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 8 files changed (6 source, 2 tests), which maps to L on the actual-mode file scale (7-10). The diff is small, though: 74 insertions and 49 deletions, mostly removed is_favorited copy blocks and short render-time hook calls, all under src/ (hooks, pages/skills, pages/workflows, store)." },
+    { "dimension": "component_scope", "reason": "The useIsSkillFavorited/useIsWorkflowFavorited hooks, SkillCard and WorkflowCard (star derived at render time, hidden on template cards), and three Valtio stores (skills and workflows lost their load-time copy, favorites lost the setFavoritedInStore skill/workflow branch). That is 3-4 components across 2 client-side layers, following a clear pattern." },
+    { "dimension": "technical_risk", "reason": "The fix copies an existing precedent (MR !2181 render-time derivation from preferencesStore). No security, auth or performance surface is involved. The only subtlety is the order in which preferences and the list arrive, and the rewritten integration test covers it. Rollback is trivial." },
+    { "dimension": "requirements_clarity", "reason": "The bug report and expected behaviour were clear. The minor details to confirm were Favorites page stars before preferences load and template cards. One review round needed only a single test fix-up." },
+    { "dimension": "calibration", "reason": "Total 14 sits on the S/M boundary (14->15). Leaned lower because Technical Risk is S and the existing pattern covers more than half the implementation. This agrees with the bundled S anchor epmcdme-10102-add-validation-to-form-field (11). The upfront estimate was M (16); actual came in 2 points lower, because risk and clarity proved lower once the precedent was applied." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

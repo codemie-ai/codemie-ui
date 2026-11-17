@@ -37,7 +37,6 @@ import api, { DEFAULT_ERROR_MESSAGE, formatErrorMessage } from '@/utils/api'
 import { HttpError } from '@/utils/handleMultipartError'
 import toaster from '@/utils/toaster'
 
-import { preferencesStore } from './preferences'
 import { extractArrayFromResponse } from './utils/parseApiResponse'
 
 const SHOW_NEW_SKILL_AI_POPUP = 'codemie-new-skill-ai-popup'
@@ -154,11 +153,7 @@ export const skillsStore = proxy<SkillsStoreType>({
         resultObj.pagination ?? resultObj.meta ?? resultObj.data?.pagination ?? resultObj
 
       // Update store
-      const favoriteSkillIds = new Set(preferencesStore.preferences?.favorites?.skills ?? [])
-      skillsStore.skills = skills.map((skill) => ({
-        ...skill,
-        is_favorited: favoriteSkillIds.has(skill.id),
-      }))
+      skillsStore.skills = skills
       skillsStore.skillsPagination = {
         page: pagination.page ?? pagination.current_page ?? _page,
         perPage: pagination.per_page ?? pagination.perPage ?? _perPage,

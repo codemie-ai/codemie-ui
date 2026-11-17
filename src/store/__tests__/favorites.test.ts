@@ -43,7 +43,6 @@ describe('favoritesStore.addFavorite', () => {
       favorites: { assistants: ['a-0'], skills: [], workflows: [] },
     }
     mocks.assistantsStore.assistants = [{ id: 'a-1', name: 'One' }]
-    mocks.skillsStore.skills = [{ id: 's-1', name: 'Skill' }]
   })
 
   it('PUTs the updated favorites and leaves stored assistants unchanged for an assistant', async () => {
@@ -54,11 +53,5 @@ describe('favoritesStore.addFavorite', () => {
     })
     expect(mocks.assistantsStore.assistants).toEqual([{ id: 'a-1', name: 'One' }])
     expect(mocks.assistantsStore.assistants[0]).not.toHaveProperty('is_favorited')
-  })
-
-  it('still sets is_favorited on the skill for a skill', async () => {
-    await favoritesStore.addFavorite(ResourceType.SKILL, 's-1')
-
-    expect(mocks.skillsStore.skills[0]).toMatchObject({ id: 's-1', is_favorited: true })
   })
 })

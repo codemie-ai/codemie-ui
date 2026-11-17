@@ -25,6 +25,7 @@ import FavoriteButton from '@/components/FavoriteButton/FavoriteButton'
 import RemoveFavoriteConfirmPopup from '@/components/FavoriteButton/RemoveFavoriteConfirmPopup'
 import Tooltip from '@/components/Tooltip'
 import { useFavoritesEnabled } from '@/hooks/useFeatureFlags'
+import { useIsSkillFavorited } from '@/hooks/useSkillWorkflowPreferenceFlags'
 import { favoritesStore } from '@/store/favorites'
 import { skillsStore } from '@/store/skills'
 import { Skill, SkillVisibility } from '@/types/entity/skill'
@@ -49,6 +50,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
   isMarketplace = false,
 }) => {
   const [isFavoritesEnabled] = useFavoritesEnabled()
+  const isFavorited = useIsSkillFavorited(skill.id) || skill.is_favorited === true
   const titleId = useId()
   // Get author name from created_by field (matches assistant structure)
   const authorName = skill.created_by?.name ?? skill.created_by?.username ?? 'Unknown'
@@ -203,9 +205,9 @@ const SkillCard: React.FC<SkillCardProps> = ({
               onKeyDown={(e) => e.stopPropagation()}
             >
               <FavoriteButton
-                isFavorited={skill.is_favorited ?? false}
+                isFavorited={isFavorited}
                 onToggle={() =>
-                  skill.is_favorited
+                  isFavorited
                     ? setShowRemoveFavorite(true)
                     : favoritesStore.addFavorite('skill', skill.id)
                 }

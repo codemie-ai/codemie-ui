@@ -32,14 +32,6 @@ import { workflowsStore } from './workflows'
 
 type FavoritesListKey = keyof UserPreferences['favorites']
 
-const setFavoritedInStore = (resourceType: ResourceType, resourceId: string, value: boolean) => {
-  const updater = <T extends { id: string; is_favorited?: boolean }>(arr: T[]): T[] =>
-    arr.map((item) => (item.id === resourceId ? { ...item, is_favorited: value } : item))
-
-  if (resourceType === 'skill') skillsStore.skills = updater(skillsStore.skills)
-  else if (resourceType === 'workflow') workflowsStore.workflows = updater(workflowsStore.workflows)
-}
-
 const EMPTY_FAVORITES: UserPreferences['favorites'] = {
   assistants: [],
   workflows: [],
@@ -260,7 +252,6 @@ export const favoritesStore = proxy<FavoritesStoreType>({
       toaster.error('Failed to add to favorites')
       return
     }
-    setFavoritedInStore(resourceType, resourceId, true)
     const lookup = {
       [ResourceType.ASSISTANT]: () => assistantsStore.assistants.find((a) => a.id === resourceId),
       [ResourceType.SKILL]: () => skillsStore.skills.find((s) => s.id === resourceId),
@@ -281,7 +272,6 @@ export const favoritesStore = proxy<FavoritesStoreType>({
       toaster.error('Failed to remove from favorites')
       return
     }
-    setFavoritedInStore(resourceType, resourceId, false)
     favoritesStore[key] = (favoritesStore[key] as FavoriteItem[]).filter(
       (item) => item.id !== resourceId
     )

@@ -13,13 +13,66 @@
 // limitations under the License.
 //
 
-import { screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { act, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { preferencesStore } from '@/store/preferences'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { mockAPI, renderPage } from '@/test-utils/integration'
+import { SkillVisibility } from '@/types/entity/skill'
 
 describe('SkillsListPage - Integration', () => {
+  describe('Favorites', () => {
+    afterEach(() => {
+      preferencesStore.preferences = null
+    })
+
+    it('fills the favorite button when preferences arrive after the list, without refetching it', async () => {
+      const countSkillListCalls = () =>
+        (global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
+          ([url, init]) => String(url).includes('v1/skills') && (init?.method ?? 'GET') === 'GET'
+        ).length
+      mockAPI('GET', 'v1/config', [{ id: 'features:favorites', settings: { enabled: true } }])
+      mockAPI('GET', 'v1/skills', {
+        data: [
+          {
+            id: 'skill-1',
+            name: 'Test Skill',
+            description: 'A test skill',
+            content: 'Skill content',
+            project: 'test-project',
+            visibility: SkillVisibility.PROJECT,
+            categories: [],
+            version: '1.0.0',
+          },
+        ],
+        pagination: { page: 0, per_page: 12, pages: 1, total: 1 },
+      })
+
+      renderPage('/skills')
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Skill')).toBeInTheDocument()
+      })
+      expect(await screen.findByRole('button', { name: 'Add to favorites' })).toBeInTheDocument()
+      const listCallsBefore = countSkillListCalls()
+
+      act(() => {
+        preferencesStore.preferences = {
+          user_id: 'test-user-id',
+          pinned_assistants: [],
+          favorites: { assistants: [], skills: ['skill-1'], workflows: [] },
+        }
+      })
+
+      expect(
+        await screen.findByRole('button', { name: 'Remove from favorites' })
+      ).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Add to favorites' })).not.toBeInTheDocument()
+      expect(countSkillListCalls()).toBe(listCallsBefore)
+    })
+  })
+
   describe('Project filter display name', () => {
     beforeEach(() => {
       projectDisplayNamesStore.cache = {}

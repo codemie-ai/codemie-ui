@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16337_favorite-star-after-refresh",
+  "head": "92b07d154e643e796f0bb91e79355ad7878a0ae7",
+  "runner": "npm",
+  "started_at": "2026-11-14T21:51:02Z",
+  "completed_at": "2026-11-14T21:57:42Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 20298, "command": "npm run lint", "exit_code": 0, "notes": "Run after npm ci (lock-file reinstall, ~15s). No eslint output."},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 15044, "command": "npm run typecheck", "exit_code": 0, "notes": "No tsc output."},
+    {"id": "unit-tests", "source": "guide", "status": "PASS", "duration_ms": 165616, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "Test Files  903 passed (903); Tests  9277 passed | 1 skipped (9278)"},
+    {"id": "integration-tests", "source": "guide", "status": "PASS", "duration_ms": 81206, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "Skip-if not met (diff touches stores and components). Test Files  84 passed (84); Tests  882 passed | 1 skipped (883)"},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 10540, "command": "npm run secrets:check", "exit_code": 0, "notes": "Gitleaks ran: 'no leaks found' (~42.85 MB scanned); working tree only, not git history. Also enforced by .husky/pre-commit."},
+    {"id": "license", "source": "guide", "status": "PASS", "duration_ms": 5481, "command": "npm run license-check", "exit_code": 0, "notes": "Licence summary printed; no 'Found error' or 'not permitted' lines. license-checker@25.0.1 fetched by npx."},
+    {"id": "sonar", "source": "guide", "status": "SKIPPED", "duration_ms": 174, "command": "npm run sonar-local", "exit_code": 0, "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Enable by setting SONAR_TOKEN (e.g. in .env.local, which the pre-commit hook sources; file absent) with the Sonar host reachable. Also enforced by .husky/pre-commit; still owed to CI."},
+    {"id": "generated-types", "source": "guide", "status": "PASS", "duration_ms": 764, "command": "npm run check:generated-types", "exit_code": 0, "notes": "From guide Full runs (check:pre-commit). Regenerated from committed snapshot; no diff under src/types/generated/."},
+    {"id": "build", "source": "guide", "status": "PASS", "duration_ms": 22242, "command": "npm run build", "exit_code": 0, "notes": "From guide Full runs table; vite build completed ('built in 6.79s')."},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 507, "command": "npm run license-headers:check", "exit_code": 0, "notes": ".husky/pre-commit step 2; guide lists it only as automatic. 'Checked 2778 files, 0 missing license headers'"},
+    {"id": "lint-staged-prettier", "source": "hook", "status": "PASS", "duration_ms": 990, "command": "npx prettier --check $(git diff --name-only a92aee1d2b3a6b157ec5675219646b6232412466...HEAD)", "exit_code": 0, "notes": ".husky/pre-commit step 1 (npx lint-staged) writes files and has nothing staged, so it was not run verbatim; read-only prettier --check over the 8 changed files substituted. Its eslint and tsc steps are covered by lint and typecheck. 'All matched files use Prettier code style!'"},
+    {"id": "ui", "source": "guide", "status": "SKIPPED", "command": "", "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision. (Changed .tsx: SkillCard.tsx, WorkflowCard.tsx, a workflows integration test.)"},
+    {"id": "ci-wait-ci-init", "source": "ci", "status": "N/A", "command": ".wait-ci-init-template (external epm-cdme/codemie-gitlab-templates@0.1.2)", "notes": "CI job only waits on external ci-pipeline and compliance-report contexts defined outside this repo; needs GitLab MR pipeline, cannot run locally. Still owed to CI."}
+  ],
+  "failures": {}
+}
