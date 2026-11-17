@@ -20,7 +20,13 @@ import {
   PlatformRole,
   UsersManagementFilters,
 } from '@/pages/settings/administration/usersManagement/constants'
-import { FILTER_ENTITY, FilterKeys, getFilters, setFilters } from '@/utils/filters'
+import {
+  FILTER_ENTITY,
+  FilterKeys,
+  getFilters,
+  getFiltersFromUrl,
+  setFilters,
+} from '@/utils/filters'
 import { cleanObject } from '@/utils/helpers'
 
 export const USERS_FILTER_KEYS: FilterKeys = {
@@ -33,10 +39,14 @@ const VALID_PLATFORM_ROLES: PlatformRole[] = ['user', 'platform_admin', 'admin']
 
 export const useUsersManagementFilters = () => {
   const getSavedFilters = useCallback(() => {
-    const saved = getFilters<UsersManagementFilters>(
-      FILTER_ENTITY.USERS_MANAGEMENT,
-      USERS_FILTER_KEYS
-    )
+    // A URL search seed (e.g. from project member Details) must show exactly that member,
+    // so stored filters from a previous Users page session are not merged in.
+    const urlFilters = getFiltersFromUrl(USERS_FILTER_KEYS)
+    const saved = (
+      urlFilters.search
+        ? urlFilters
+        : getFilters<UsersManagementFilters>(FILTER_ENTITY.USERS_MANAGEMENT, USERS_FILTER_KEYS)
+    ) as UsersManagementFilters
     if (saved.platform_role != null && !VALID_PLATFORM_ROLES.includes(saved.platform_role)) {
       saved.platform_role = null
     }

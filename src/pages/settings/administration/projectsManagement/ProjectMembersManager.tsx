@@ -790,7 +790,12 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             icon: <InfoSvg className="w-[18px] h-[18px]" />,
             onClick: () => {
               if (isUserManagementEnabled()) {
-                router.push({ name: 'administration-users' })
+                router.push({
+                  name: 'administration-users',
+                  query: {
+                    search: user.name || user.email || user.username,
+                  },
+                })
               } else {
                 toaster.info('Users Management is unavailable in this environment')
               }

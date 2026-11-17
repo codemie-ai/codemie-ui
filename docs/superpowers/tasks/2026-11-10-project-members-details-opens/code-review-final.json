@@ -1,0 +1,102 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved after fix-up 16a22c9fc closing CR-001 and CR-002"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User asked to fix CR-001 (nullable name) and CR-002 (stored filters merge with URL seed)"
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved after fix-up 16a22c9fc closing CR-001 and CR-002"
+    }
+  ],
+  "reviewed_head": "16a22c9fc7101f796fba70876c33b613a9c88aef",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Acceptance did not run (no spec) and blind/verification-gap were not in the compact roster, so only the edge-case lens covered this change; confidence is low. Two edge-case findings were confirmed against real code (null member name; stored Users filters merging with the URL seed); 1 dismissed (duplicate-name matching is what the task's AC specifies), 0 deferred.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 2,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 793,
+      "title": "Null member name yields unfiltered Users list",
+      "problem": "Details pushes query { search: user.name }, but UserListItem.name is typed string | null. For a member with an empty or null name, getFiltersFromUrl drops the empty search value, so no seed is applied.",
+      "impact": "Users management opens unfiltered (or with stored filters) for name-less accounts, so the member context is lost, contrary to the requirement that the list is filtered to the selected member.",
+      "recommendation": "Fall back when the name is empty: query: { search: user.name || user.email || user.username }",
+      "status": "fixed",
+      "fix": {
+        "change": "Details seeds search with user.name || user.email || user.username",
+        "test": "ProjectMembersDetails.integration.test.tsx falls back to email for empty/null name"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 793,
+      "title": "Stored Users filters hide the selected member",
+      "problem": "getFilters merges URL filters with per-key localStorage fallbacks (src/utils/filters.ts:123-127), and Details seeds only `search`. Previously saved is_active, projects, platform_role or budgets filters from the Users page still apply alongside the seed.",
+      "impact": "The Users list can open empty or unrelated to the clicked member, so the result depends on a previous Users page session, violating the requirement that selected-user context does not depend on prior Users page state.",
+      "recommendation": "Make the Details entry point open with only the member search applied. Passing undefined query values will not work because getFiltersFromUrl omits them and getFilters falls back to storage; instead have the Users page ignore stored filters when a URL search seed is present, or clear stored Users filters before navigating.",
+      "status": "fixed",
+      "fix": {
+        "change": "useUsersManagementFilters ignores stored filters when the URL carries a search seed",
+        "test": "useUsersManagementFilters.test.ts ignores stored filters when the URL carries a search seed"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of the compact profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Acceptance did not run (no spec) and blind/verification-gap were not in the compact roster, so only the edge-case lens covered this change; confidence is low. Two edge-case findings were confirmed against real code (null member name; stored Users filters merging with the URL seed) and both are fixed in 16a22c9fc, closing CR-001 and CR-002; 1 dismissed (duplicate-name matching is what the task's AC specifies), 0 deferred.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

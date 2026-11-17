@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import UsersManagementFilters from '@/pages/settings/administration/usersManagement/components/UsersManagementFilters'
@@ -92,5 +92,23 @@ describe('UsersManagementFilters — status filter', () => {
     unmount()
     render(<UsersManagementFilters filters={FILTER_INITIAL_STATE} onFilterChange={vi.fn()} />)
     expect(screen.queryByText('Clear All')).not.toBeInTheDocument()
+  })
+})
+
+describe('UsersManagementFilters — URL-seeded search', () => {
+  it('shows a search seeded at mount immediately and does not re-apply it', () => {
+    vi.useFakeTimers()
+    try {
+      const onFilterChange = renderFilters({ ...FILTER_INITIAL_STATE, search: 'Jane Doe' })
+
+      expect(screen.getByLabelText('Search')).toHaveValue('Jane Doe')
+
+      act(() => {
+        vi.advanceTimersByTime(600)
+      })
+      expect(onFilterChange).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

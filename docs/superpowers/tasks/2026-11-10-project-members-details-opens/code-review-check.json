@@ -1,0 +1,26 @@
+{
+  "decision": "approve",
+  "rationale": "Both final-round findings are resolved in commit 16a22c9fc7101f796fba70876c33b613a9c88aef: CR-001 (ProjectMembersManager.tsx:793) now seeds search with user.name || user.email || user.username, covered by ProjectMembersDetails.integration.test.tsx; CR-002 is closed by useUsersManagementFilters ignoring stored filters when the URL carries a search seed, covered by useUsersManagementFilters.test.ts. User reviewed the fix-up directly and approved (decisions.jsonl, code-review.final @ 2026-11-10T09:39:21Z); no separate automated check round ran under the sdlc-light compact profile.",
+  "confidence": "high",
+  "source": "hitl",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of the compact profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of the compact profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of the compact profile." }
+  ],
+  "findings": [],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "ProjectMembersManager.tsx:793 seeds search with user.name || user.email || user.username; nullable name no longer drops the seed."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "useUsersManagementFilters ignores stored Users filters when the URL carries a search seed, so the Details entry point no longer depends on prior Users page state."
+    }
+  ]
+}

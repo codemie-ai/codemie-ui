@@ -86,6 +86,29 @@ describe('useUsersManagementFilters — is_active', () => {
     expect(result.current.filters.is_active).toBeNull()
   })
 
+  it('ignores stored filters when the URL carries a search seed', () => {
+    setFilters(FILTER_ENTITY.USERS_MANAGEMENT, {
+      is_active: false,
+      platform_role: 'admin',
+      projects: ['Other'],
+      budgets: ['b-1'],
+    })
+    window.history.replaceState({}, '', '/?search=Jane%20Doe')
+
+    const { result } = renderHook(() => useUsersManagementFilters())
+
+    expect(result.current.filters).toEqual({ ...FILTER_INITIAL_STATE, search: 'Jane Doe' })
+  })
+
+  it('still merges stored filters when the URL has no search seed', () => {
+    setFilters(FILTER_ENTITY.USERS_MANAGEMENT, { is_active: false })
+    window.history.replaceState({}, '', '/')
+
+    const { result } = renderHook(() => useUsersManagementFilters())
+
+    expect(result.current.filters.is_active).toBe(false)
+  })
+
   it('does not consider is_active=false an empty filter set', () => {
     expect(checkEmptyFilters({ ...FILTER_INITIAL_STATE, is_active: false })).toBe(false)
     expect(checkEmptyFilters({ ...FILTER_INITIAL_STATE, is_active: null })).toBe(true)

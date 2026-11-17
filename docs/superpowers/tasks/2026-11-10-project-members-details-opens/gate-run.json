@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16613-project-members-details-opens",
+  "head": "16a22c9fc7101f796fba70876c33b613a9c88aef",
+  "runner": "npm",
+  "started_at": "2026-11-10T10:24:54Z",
+  "completed_at": "2026-11-10T10:43:03Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 40940,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 24274,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 3583,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "Run with npm_config_script_shell=bash (cmd.exe quoting breaks the allow list; default shell exits 1 on @adobe/css-tools MIT)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 384738,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "Re-run via podman with ghcr.io/gitleaks/gitleaks:v8.30.1 (no docker on PATH). Scanned ~1.69 GB in 6m21s: \"no leaks found\". The earlier SKIPPED result was a 100s timeout on a full working-directory scan, not a finding."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 553523,
+      "command": "npm run test:unit:slnt -- --maxWorkers=2",
+      "exit_code": 0,
+      "notes": "Reduced concurrency via CLI only, vite.config.ts untouched. Test Files  844 passed (844); Tests  8762 passed | 1 skipped (8763)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 262709,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files  59 passed (59); Tests  664 passed | 1 skipped (665)."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1349,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2623 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 2363,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Output: \"[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.\" Set SONAR_TOKEN to run locally; CI Sonar still owed."
+    }
+  ],
+  "failures": {}
+}
