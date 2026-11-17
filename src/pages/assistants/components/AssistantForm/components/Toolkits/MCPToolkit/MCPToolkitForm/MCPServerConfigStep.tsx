@@ -20,7 +20,7 @@ import Button from '@/components/Button'
 import Input from '@/components/form/Input'
 import { ButtonType } from '@/constants'
 import { mcpStore } from '@/store/mcp'
-import { MCPServerConfig, MCPServerDetails } from '@/types/entity/mcp'
+import { MCPServerConfig, MCPServerDetails, MCPServerRequest } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 
 import MCPBasicFields from '../MCPBasicFields'
@@ -44,7 +44,7 @@ interface MCPServerConfigStepProps {
   onSettingsChange: (settings: Setting | undefined) => void
   onManualEnvVarValuesChange: (values: Record<string, string>) => void
   showNewIntegrationPopup: () => void
-  serverConfig: MCPServerDetails & { settings: Setting | undefined }
+  serverConfig: MCPServerRequest
   validateManualEnvVars: () => boolean
   triggerValidation: () => Promise<boolean>
   onCancel: () => void
@@ -173,7 +173,10 @@ const MCPServerConfigStep = ({
         <Button variant={ButtonType.SECONDARY} onClick={onCancel}>
           Cancel
         </Button>
-        <MCPToolkitTest mcpServer={serverConfig} />
+        <MCPToolkitTest
+          mcpServer={serverConfig}
+          beforeTest={envVarMode === 'new' ? validateManualEnvVars : undefined}
+        />
         <Button variant={ButtonType.PRIMARY} onClick={handleNext}>
           Next
         </Button>

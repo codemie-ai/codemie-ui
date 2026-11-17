@@ -14,12 +14,19 @@
 //
 
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
 import { describe, it, expect, vi } from 'vitest'
 
 import MCPServerConfigStep from '../MCPToolkitForm/MCPServerConfigStep'
 
-vi.mock('../MCPToolkitTest', () => ({ default: () => <button>Test Connection</button> }))
+vi.mock('../MCPToolkitTest', () => ({
+  default: ({ beforeTest }: Readonly<{ beforeTest?: () => boolean }>) => (
+    <button data-has-before-test={String(!!beforeTest)} onClick={() => beforeTest?.()}>
+      Test Connection
+    </button>
+  ),
+}))
 vi.mock('../MCPConfigSection', () => ({
   default: (props: any) => (
     <div data-testid="mcp-config-section" data-is-catalog-ref={String(props.isCatalogRef)} />
@@ -32,7 +39,15 @@ vi.mock('../MCPBasicFields', () => ({
 }))
 vi.mock('../MCPEnvVarsSection', () => ({ default: () => <div data-testid="mcp-env-vars" /> }))
 
-function Wrapper({ isCatalogRef }: { isCatalogRef?: boolean }) {
+function Wrapper({
+  isCatalogRef,
+  envVarMode = 'new',
+  validateManualEnvVars = () => true,
+}: Readonly<{
+  isCatalogRef?: boolean
+  envVarMode?: 'new' | 'existing'
+  validateManualEnvVars?: () => boolean
+}>) {
   const { control, setValue, trigger } = useForm()
   return (
     <MCPServerConfigStep
@@ -40,7 +55,7 @@ function Wrapper({ isCatalogRef }: { isCatalogRef?: boolean }) {
       isEditing={false}
       configHasEnv={false}
       setValue={setValue}
-      envVarMode="new"
+      envVarMode={envVarMode}
       settings={undefined}
       manualEnvVarValues={{}}
       envVarErrors={{}}
@@ -51,7 +66,7 @@ function Wrapper({ isCatalogRef }: { isCatalogRef?: boolean }) {
       onManualEnvVarValuesChange={vi.fn()}
       showNewIntegrationPopup={vi.fn()}
       serverConfig={{ name: 'test', description: '', enabled: true, settings: undefined } as any}
-      validateManualEnvVars={() => true}
+      validateManualEnvVars={validateManualEnvVars}
       triggerValidation={trigger as any}
       onCancel={vi.fn()}
       onNext={vi.fn()}
@@ -85,5 +100,22 @@ describe('MCPServerConfigStep', () => {
     render(<Wrapper isCatalogRef />)
     const configSection = screen.getByTestId('mcp-config-section')
     expect(configSection.getAttribute('data-is-catalog-ref')).toBe('true')
+  })
+
+  it('validates typed env vars before Test in new mode', async () => {
+    const validate = vi.fn(() => false)
+    render(<Wrapper validateManualEnvVars={validate} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Test Connection' }))
+
+    expect(validate).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not validate typed env vars before Test in existing mode', () => {
+    render(<Wrapper envVarMode="existing" />)
+
+    expect(
+      screen.getByRole('button', { name: 'Test Connection' }).getAttribute('data-has-before-test')
+    ).toBe('false')
   })
 })

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "In the codemie-ui MCP toolkit wizard, build a transient id-less settings object from manual env-var values plus the selected project and send it for both Test and the Step-2 tools fetch without persisting anything, with unit tests.",
+  "generated": "2026-10-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 3, "label": "M" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 15,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "technical_risk",
+      "reason": "Closest pattern is the credential_values mapping in formHelpers createOrUpdateMcpSetting, but it does not filter empty values, does not cover a transient no-persist object, and sends plaintext secrets in request bodies (no client-side logging allowed). Main design decision: the Setting type requires server fields (id, user_id, ...), so an id-less transient type must be introduced and may ripple through MCPServerDetails.settings consumers (MCPServerConfigStep prop, testMCP, getMcpTools, updateMcpServer, submitHelpers). Gating must use the shouldCreateNewEnvVarSetting-equivalent condition because envVarMode defaults to 'new' even for IntegrationSelector servers. Acceptance criteria enumerate edge cases (empty entries, nothing typed, existing mode, custom config, no userSettingsStore calls) and the directory has no tests for useEnvVarMode, submitHelpers or the container assembly, so the edge-case test bump also applies. Calibration: the nearest examples (S 10102, M 10203) score risk at 2; this task is bumped to 4 for the type ripple and secret-handling divergence. No exact precedent for a transient settings object."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: closest pattern (createOrUpdateMcpSetting credential_values mapping) does not cover empty-value filtering, no-persist transient handling or plaintext-secret logging constraints",
+    "Technical Risk edge-case bump: acceptance criteria enumerate specific edge and variant cases and no existing test template covers wizard payload or no-store-call assertions (folded into the same L score)"
+  ],
+  "split_recommendation": null
+}

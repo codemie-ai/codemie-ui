@@ -17,11 +17,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import Popup from '@/components/Popup'
 import { Tool } from '@/types/entity/assistant'
-import { MCPServerDetails } from '@/types/entity/mcp'
+import { MCPServerDetails, MCPServerRequest } from '@/types/entity/mcp'
 import { Setting } from '@/types/entity/setting'
 import { cn } from '@/utils/utils'
 
-import { buildServerConfig } from './formHelpers'
+import { buildInlineMcpSettings, buildServerConfig } from './formHelpers'
 import MCPServerConfigStep from './MCPServerConfigStep'
 import MCPToolsSelectionStep from './MCPToolsSelectionStep'
 import { handleFormSubmit } from './submitHelpers'
@@ -85,6 +85,41 @@ const MCPToolkitForm = ({
     const values = getValues()
     return buildServerConfig(values, mcpServer?.mcp_config_id, isCatalogRef)
   }, [watch(), isCatalogRef])
+
+  // In the "new" env-var mode nothing is persisted until save, so Test and the tools fetch carry
+  // the typed values themselves. Otherwise the stored setting is used.
+  const requestServer = useMemo((): MCPServerRequest => {
+    const base = {
+      ...serverConfig,
+      ...(mcpServer?.mcp_config_id && { mcp_config_id: mcpServer.mcp_config_id }),
+    }
+    if (!envVarHook.shouldCreateNewEnvVarSetting()) {
+      return { ...base, settings: envVarHook.settings }
+    }
+
+    const inlineSettings = buildInlineMcpSettings(envVarHook.manualEnvVarValues, project)
+    if (!serverConfig.use_custom_config) {
+      return { ...base, settings: inlineSettings }
+    }
+
+    // A custom config is used as is by the backend, so the typed values go into its env for this
+    // request only, overriding config env the same way the saved setting does at runtime.
+    const typedEnv = Object.fromEntries(
+      inlineSettings?.credential_values.map(({ key, value }) => [key, value]) ?? []
+    )
+    return {
+      ...base,
+      config: base.config && { ...base.config, env: { ...base.config.env, ...typedEnv } },
+      settings: undefined,
+    }
+  }, [
+    serverConfig,
+    envVarHook.envVarMode,
+    envVarHook.manualEnvVarValues,
+    envVarHook.settings,
+    mcpServer,
+    project,
+  ])
 
   const onSubmit = handleSubmit(async () => {
     await handleFormSubmit({
@@ -166,11 +201,7 @@ const MCPToolkitForm = ({
             onSettingsChange={envVarHook.setSettings}
             onManualEnvVarValuesChange={envVarHook.setManualEnvVarValues}
             showNewIntegrationPopup={showNewIntegrationPopup}
-            serverConfig={{
-              ...serverConfig,
-              settings: envVarHook.settings,
-              ...(mcpServer?.mcp_config_id && { mcp_config_id: mcpServer.mcp_config_id }),
-            }}
+            serverConfig={requestServer}
             validateManualEnvVars={envVarHook.validateManualEnvVars}
             triggerValidation={trigger}
             onCancel={handleHide}
@@ -180,11 +211,7 @@ const MCPToolkitForm = ({
         ) : (
           <MCPToolsSelectionStep
             isEditing={isEditing}
-            mcpServer={{
-              ...serverConfig,
-              settings: envVarHook.settings,
-              ...(mcpServer?.mcp_config_id && { mcp_config_id: mcpServer.mcp_config_id }),
-            }}
+            mcpServer={requestServer}
             selectedTools={selectedTools}
             onToolsChange={setSelectedTools}
             onBack={handleBack}

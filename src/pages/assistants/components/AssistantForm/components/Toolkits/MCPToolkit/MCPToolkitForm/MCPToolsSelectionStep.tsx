@@ -26,7 +26,7 @@ import { useMCPAuthPrompt } from '@/hooks/useMCPAuthPrompt'
 import AssistantAuthGateRow from '@/pages/chat/components/AssistantAuthGate/AssistantAuthGateRow'
 import { assistantsStore } from '@/store'
 import { Tool } from '@/types/entity/assistant'
-import { MCPServerDetails } from '@/types/entity/mcp'
+import { MCPServerRequest } from '@/types/entity/mcp'
 
 const MCP_TOOLS_STATUS = {
   PENDING: 'pending',
@@ -39,7 +39,7 @@ type ToolsStatus = (typeof MCP_TOOLS_STATUS)[keyof typeof MCP_TOOLS_STATUS]
 
 interface MCPToolsSelectionStepProps {
   isEditing: boolean
-  mcpServer: MCPServerDetails
+  mcpServer: MCPServerRequest
   selectedTools: Tool[]
   onToolsChange: (tools: Tool[]) => void
   onBack: () => void

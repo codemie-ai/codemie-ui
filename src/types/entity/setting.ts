@@ -18,7 +18,7 @@ export interface SettingCredentialValue {
   value: string | boolean | number | string[]
 }
 
-interface BaseSetting {
+export interface BaseSetting {
   user_id: string
   id: string
   date: string
@@ -44,3 +44,9 @@ export interface ProjectSetting extends BaseSetting {
 }
 
 export type Setting = UserSetting | ProjectSetting
+
+/** Transient, id-less settings sent with MCP Test / tools-fetch requests; never persisted. */
+export type InlineMcpSettings = Pick<
+  BaseSetting,
+  'credential_type' | 'project_name' | 'credential_values'
+>

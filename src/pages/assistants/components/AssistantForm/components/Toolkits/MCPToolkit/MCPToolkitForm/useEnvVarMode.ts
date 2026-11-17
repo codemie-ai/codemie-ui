@@ -52,6 +52,14 @@ export const useEnvVarMode = (mcpServer: MCPServerDetails | undefined, project: 
     return isValid
   }
 
+  // Errors are only added by validateManualEnvVars; typing clears the error of a field once it has a value.
+  const updateManualEnvVarValues = (values: Record<string, string>) => {
+    setManualEnvVarValues(values)
+    setEnvVarErrors((errors) =>
+      Object.fromEntries(Object.entries(errors).filter(([name]) => !values[name]?.trim()))
+    )
+  }
+
   const shouldCreateNewEnvVarSetting = (): boolean => {
     return envVarMode === 'new' && hasRequiredEnvVars(mcpServer) && isMarketplaceServer(mcpServer)
   }
@@ -98,7 +106,7 @@ export const useEnvVarMode = (mcpServer: MCPServerDetails | undefined, project: 
     settings,
     setSettings,
     manualEnvVarValues,
-    setManualEnvVarValues,
+    setManualEnvVarValues: updateManualEnvVarValues,
     envVarErrors,
     validateManualEnvVars,
     shouldCreateNewEnvVarSetting,

@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import type { Setting } from './setting'
+import type { InlineMcpSettings, Setting } from './setting'
 
 export interface MCPVariableDefinition {
   name: string
@@ -127,4 +127,9 @@ export interface MCPServerDetails {
   logo_url?: string
   tools?: string[]
   use_custom_config?: boolean
+}
+
+/** MCPServerDetails as sent in Test / tools-fetch requests, where settings may be transient. */
+export type MCPServerRequest = Omit<MCPServerDetails, 'settings'> & {
+  settings?: Setting | InlineMcpSettings
 }

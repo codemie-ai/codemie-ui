@@ -15,6 +15,7 @@
 
 import { userSettingsStore } from '@/store/userSettings'
 import { MCPServerDetails, MCPServerConfig } from '@/types/entity/mcp'
+import { InlineMcpSettings } from '@/types/entity/setting'
 import toaster from '@/utils/toaster'
 
 import { parseConfigJson } from '../validators'
@@ -54,6 +55,24 @@ export const buildServerConfig = (
   if (mcpConfigId) mcpServer.mcp_config_id = mcpConfigId
 
   return mcpServer
+}
+
+/**
+ * Builds transient, id-less settings from values typed in the "new" env-var mode, to be sent with
+ * the MCP Test / tools-fetch requests. Nothing is persisted. Whitespace-only values are dropped;
+ * other values are kept exactly as typed.
+ */
+export const buildInlineMcpSettings = (
+  manualEnvVarValues: Record<string, string>,
+  project: string
+): InlineMcpSettings | undefined => {
+  const credential_values = Object.entries(manualEnvVarValues)
+    .filter(([, value]) => value.trim() !== '')
+    .map(([key, value]) => ({ key, value }))
+
+  return credential_values.length > 0
+    ? { credential_type: 'MCP', project_name: project, credential_values }
+    : undefined
 }
 
 export const createOrUpdateMcpSetting = async (

@@ -1,0 +1,31 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case, acceptance and standards all ran; every candidate was checked against source and no blocking defect survived. 2 deferred (pre-existing: save path persists blank optional env values; step callbacks re-create each render because the prop literals pre-date this change), 2 dismissed (non-string env value cannot occur since inputs emit strings; load-time race is pre-existing and needs no typed values), and the testMCP typing gap is resolved as the implementation is typed via the interface. Deferred backlog written to code-review-deferred.md.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    { "kind": "spec", "item": "B1: buildInlineMcpSettings builder (credential_type MCP, project_name, credential_values, no id, blanks dropped, undefined when empty)", "status": "pass", "notes": "formHelpers.ts:65-76; values kept untrimmed; covered by formHelpers.test.ts" },
+    { "kind": "spec", "item": "B2: one memoized requestSettings feeds both serverConfig and mcpServer; inline mode gated by new-mode and not custom config", "status": "pass", "notes": "index.tsx:91-104 and both props switched" },
+    { "kind": "spec", "item": "B3: mcp_config_id sent as before, no catalog logic in UI", "status": "pass", "notes": "spread unchanged; no catalog filtering added" },
+    { "kind": "spec", "item": "B4: nothing persisted on Test or tools fetch; save path unchanged", "status": "pass", "notes": "onSubmit still reads envVarHook.settings and manualEnvVarValues" },
+    { "kind": "spec", "item": "B5: memo deps correct; runTest/fetchTools identity stability", "status": "pass", "notes": "Memo deps match spec. Identity churn comes from pre-existing prop literals, no behavioral effect; deferred" },
+    { "kind": "spec", "item": "B6: no client-side logging of request, settings or values", "status": "pass", "notes": "No logging added in the diff" },
+    { "kind": "spec", "item": "Typing: InlineMcpSettings exported from setting.ts", "status": "pass", "notes": "Pick of three BaseSetting fields; BaseSetting now exported" },
+    { "kind": "spec", "item": "Typing: MCPServerRequest in mcp.ts, MCPServerDetails.settings not widened, no fake id cast", "status": "pass", "notes": "mcp.ts as specified" },
+    { "kind": "spec", "item": "Typing: MCPServerRequest used for testMCP, getMcpTools and the step components", "status": "pass", "notes": "assistants.ts:127,190,530 typed; testMCP impl at :929 is contextually typed by the interface" },
+    { "kind": "story-ac", "item": "AC1: new mode Test sends id-less settings {credential_type MCP, project_name, credential_values}", "status": "pass", "notes": "Wizard test asserts exact shape and no id" },
+    { "kind": "story-ac", "item": "AC2: Step-2 tools fetch carries the same settings shape", "status": "pass", "notes": "Test asserts getMcpTools settings equal testMCP settings" },
+    { "kind": "story-ac", "item": "AC3: no userSettingsStore calls on Test or tools fetch; submit unchanged", "status": "pass", "notes": "Asserted in new, existing, custom and non-marketplace tests" },
+    { "kind": "story-ac", "item": "AC4: empty or whitespace-only entries omitted; nothing typed means no settings", "status": "pass", "notes": "Builder filter and wizard-level tests" },
+    { "kind": "story-ac", "item": "AC5: existing-integration mode sends stored setting with its id", "status": "pass", "notes": "Falls through to envVarHook.settings; tested" },
+    { "kind": "story-ac", "item": "AC6: custom-config and non-marketplace servers send envVarHook.settings", "status": "pass", "notes": "Gate at index.tsx:93; two wizard tests" },
+    { "kind": "story-ac", "item": "AC7: project_name is the wizard project prop", "status": "pass", "notes": "Rerender test follows the project" },
+    { "kind": "story-ac", "item": "AC8: builder and wizard unit tests present; tsc, lint and test run pass", "status": "pending-stage-7", "notes": "Tests present; tsc, lint and run results owned by Stage 7" }
+  ],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "3 subjects in the review range match the documented 'EPMCDME-XXXX: Capital sentence' format (non-zero ticket, uppercase first word, no trailing period)" },
+    { "kind": "code-quality", "status": "na", "notes": "No code-quality guide exists in the repo (.ai-run/guides/standards/ holds only git-workflow.md) and none was passed as a ref; an absent standard, not a gap" },
+    { "kind": "security", "status": "pass", "notes": "security-patterns.md checked against the 10 changed files: no HTML sinks, redirects, postMessage, config or secrets added; env values are sent only via api.ts POST, not persisted or logged" }
+  ],
+  "findings": []
+}

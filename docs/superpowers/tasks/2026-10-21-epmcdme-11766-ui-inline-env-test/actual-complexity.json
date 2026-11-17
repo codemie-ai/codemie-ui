@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-21T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 16,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 10,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches MCPServerConfigStep, MCPToolsSelectionStep, MCPToolkitForm index, MCPToolkitTest, the assistants store (testMCP / tools fetch), a new buildInlineMcpSettings helper in formHelpers.ts, and the mcp/setting types (new InlineMcpSettings and MCPServerRequest). 6-7 components, but all within the single MCP toolkit wizard and following an existing pattern (handleNewEnvVarMode / createOrUpdateMcpSetting), so L rather than XL." },
+    { "dimension": "file_change_estimate", "reason": "diffstat reports 10 files (372 insertions, 17 deletions): 8 source files plus 2 test files (MCPToolkitFormInlineEnv.test.tsx, formHelpers.test.ts), spread over the MCPToolkit component dirs, store and types. This maps to L (7-10 files)." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

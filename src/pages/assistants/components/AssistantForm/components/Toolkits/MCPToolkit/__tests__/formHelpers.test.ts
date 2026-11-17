@@ -15,7 +15,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { buildServerConfig } from '../MCPToolkitForm/formHelpers'
+import { buildInlineMcpSettings, buildServerConfig } from '../MCPToolkitForm/formHelpers'
 
 describe('buildServerConfig', () => {
   const baseValues = {
@@ -81,5 +81,38 @@ describe('buildServerConfig', () => {
       expect(result.use_custom_config).toBe(true)
       expect(result.config).toEqual({ command: 'custom-command' })
     })
+  })
+})
+
+describe('buildInlineMcpSettings', () => {
+  it('builds id-less transient settings from typed values', () => {
+    const result = buildInlineMcpSettings({ A: '1', B: '2' }, 'proj')
+
+    expect(result).toEqual({
+      credential_type: 'MCP',
+      project_name: 'proj',
+      credential_values: [
+        { key: 'A', value: '1' },
+        { key: 'B', value: '2' },
+      ],
+    })
+    expect(result).not.toHaveProperty('id')
+  })
+
+  it('drops blank and whitespace-only values', () => {
+    const result = buildInlineMcpSettings({ A: '  ', B: '', C: 'x' }, 'proj')
+
+    expect(result?.credential_values).toEqual([{ key: 'C', value: 'x' }])
+  })
+
+  it('keeps surrounding spaces of a non-blank value as typed', () => {
+    const result = buildInlineMcpSettings({ A: '  abc ' }, 'proj')
+
+    expect(result?.credential_values).toEqual([{ key: 'A', value: '  abc ' }])
+  })
+
+  it('returns undefined when nothing usable was typed', () => {
+    expect(buildInlineMcpSettings({}, 'proj')).toBeUndefined()
+    expect(buildInlineMcpSettings({ A: ' ', B: '' }, 'proj')).toBeUndefined()
   })
 })

@@ -41,7 +41,7 @@ import {
   AssistantCreateResponse,
 } from '@/types/entity/assistant'
 import { FavoriteItem } from '@/types/entity/favorites'
-import { MCPServerDetails } from '@/types/entity/mcp'
+import { MCPServerRequest } from '@/types/entity/mcp'
 import api, { formatErrorMessage } from '@/utils/api'
 import { FILTER_ENTITY, setFilters } from '@/utils/filters'
 import { cleanObject } from '@/utils/helpers'
@@ -125,7 +125,7 @@ interface AssistantsStoreType {
   getHedgeableToolkits: () => Promise<AssistantToolkit[]>
   getToolSchema: (toolName: string, settingId?: string) => Promise<any>
   getPluginTools: (pluginSettingId?: string) => Promise<AssistantToolkit[]>
-  getMcpTools: (mcpServer: MCPServerDetails) => Promise<AssistantToolkit[]>
+  getMcpTools: (mcpServer: MCPServerRequest) => Promise<AssistantToolkit[]>
   getAssistantContext: (project_name: string, withID?: boolean) => Promise<AssistantContext[]>
   getAssistantOptions: (
     search?: string,
@@ -191,7 +191,7 @@ interface AssistantsStoreType {
   ) => Promise<AssistantAIGeneratedFields>
   refineAssistantWithAI: (values: AssistantAIRefineFields) => Promise<AssistantAIRefineResponse>
   updateAvailableToolkits: (newAvailableToolkit: AssistantToolkit) => void
-  testMCP: (mcpServer: MCPServerDetails) => Promise<{ success: boolean; message: string }>
+  testMCP: (mcpServer: MCPServerRequest) => Promise<{ success: boolean; message: string }>
   getAssistantUserPromptVars: (id: string) => Promise<Array<Record<string, string>>>
   updateAssistantUserPromptVariables: (
     id: string,
@@ -523,7 +523,7 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     return api.get(url, { skipErrorHandling: true }).then((response) => response.json())
   },
 
-  async getMcpTools(mcpServer: MCPServerDetails) {
+  async getMcpTools(mcpServer: MCPServerRequest) {
     return api
       .post('v1/assistants/mcp_tools', mcpServer, { skipErrorHandling: true })
       .then((response) => response.json())

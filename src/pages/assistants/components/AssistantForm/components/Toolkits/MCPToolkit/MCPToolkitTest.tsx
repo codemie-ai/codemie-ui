@@ -23,7 +23,7 @@ import { CHECKER_STATUSES, CheckerStatus, ButtonSize, ButtonType } from '@/const
 import { useMCPAuthPrompt } from '@/hooks/useMCPAuthPrompt'
 import AssistantAuthGateRow from '@/pages/chat/components/AssistantAuthGate/AssistantAuthGateRow'
 import { assistantsStore } from '@/store'
-import { MCPServerDetails } from '@/types/entity/mcp'
+import { MCPServerRequest } from '@/types/entity/mcp'
 import toaster from '@/utils/toaster'
 
 interface MCPToolkitTestContextValue {
@@ -34,11 +34,17 @@ interface MCPToolkitTestContextValue {
 const MCPToolkitTestContext = createContext<MCPToolkitTestContextValue | null>(null)
 
 interface MCPToolkitTestProviderProps {
-  mcpServer: MCPServerDetails
+  mcpServer: MCPServerRequest
+  // Runs before each manual test; returning false cancels it (e.g. client-side form validation).
+  beforeTest?: () => boolean
   children: ReactNode
 }
 
-const MCPToolkitTestProvider = ({ mcpServer, children }: MCPToolkitTestProviderProps) => {
+const MCPToolkitTestProvider = ({
+  mcpServer,
+  beforeTest,
+  children,
+}: MCPToolkitTestProviderProps) => {
   const { testMCP } = useSnapshot(assistantsStore)
   const [status, setStatus] = useState<CheckerStatus>(CHECKER_STATUSES.UNDEFINED)
   const [brokerLoginUrl, setBrokerLoginUrl] = useState<string | null>(null)
@@ -100,9 +106,10 @@ const MCPToolkitTestProvider = ({ mcpServer, children }: MCPToolkitTestProviderP
     async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
       e.stopPropagation()
       if (status === CHECKER_STATUSES.IN_PROGRESS) return
+      if (beforeTest && !beforeTest()) return
       await runTest()
     },
-    [status, runTest]
+    [status, runTest, beforeTest]
   )
 
   const contextValue = useMemo(() => ({ status, onCheck: check }), [status, check])
@@ -179,11 +186,12 @@ const MCPToolkitTestTrigger = ({ inline }: MCPToolkitTestTriggerProps) => {
 
 interface MCPToolkitTestProps {
   inline?: boolean
-  mcpServer: MCPServerDetails
+  mcpServer: MCPServerRequest
+  beforeTest?: () => boolean
 }
 
-const MCPToolkitTest = ({ inline, mcpServer }: MCPToolkitTestProps) => (
-  <MCPToolkitTestProvider mcpServer={mcpServer}>
+const MCPToolkitTest = ({ inline, mcpServer, beforeTest }: MCPToolkitTestProps) => (
+  <MCPToolkitTestProvider mcpServer={mcpServer} beforeTest={beforeTest}>
     <MCPToolkitTestTrigger inline={inline} />
   </MCPToolkitTestProvider>
 )
