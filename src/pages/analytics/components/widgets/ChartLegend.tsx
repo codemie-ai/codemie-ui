@@ -13,13 +13,15 @@
 // limitations under the License.
 //
 
-import { FC } from 'react'
+import { FC, ReactNode } from 'react'
 
 export interface ChartLegendItem {
   label: string
   value: number
   formattedValue: string
   color: string
+  // Next to the value, e.g. a pricing warning of this item.
+  marker?: ReactNode
 }
 
 interface ChartLegendProps {
@@ -51,7 +53,8 @@ const ChartLegend: FC<ChartLegendProps> = ({ items }) => {
                 <div className="truncate text-text-primary">{item.label}</div>
               </div>
               {/* Value - always visible */}
-              <div className="flex-shrink-0 font-medium text-text-primary whitespace-nowrap">
+              <div className="flex flex-shrink-0 items-center gap-1 font-medium text-text-primary whitespace-nowrap">
+                {item.marker}
                 {item.formattedValue}
               </div>
             </div>

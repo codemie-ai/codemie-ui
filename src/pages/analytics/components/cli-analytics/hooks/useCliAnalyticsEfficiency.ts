@@ -23,8 +23,10 @@ import type {
 } from '@/types/cliAnalytics'
 
 import { useCliAnalyticsSlice } from './useCliAnalyticsSlice'
+import { getCostState, type CostState } from '../costCompleteness'
 
 export interface UseCliAnalyticsEfficiencyResult {
+  costState: CostState
   kpis: CliAnalyticsEfficiencyKPIs | null
   deadSessions: CliAnalyticsDeadSessionsKPIs | null
   sessionDepth: CliAnalyticsSessionDepthBucket[]
@@ -43,6 +45,7 @@ export function useCliAnalyticsEfficiency(
     repositories
   )
   return {
+    costState: getCostState(data),
     kpis: data?.kpis ?? null,
     deadSessions: data?.dead_sessions ?? null,
     sessionDepth: data?.session_depth ?? [],

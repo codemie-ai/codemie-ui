@@ -27,6 +27,7 @@ import type { ReactNode } from 'react'
 
 vi.mock('../hooks/useCliAnalyticsCost', () => ({
   useCliAnalyticsCost: vi.fn(() => ({
+    costState: { incomplete: false, unpricedModels: [] },
     kpis: {
       total_cost_usd: 12.5,
       total_tokens: 2420000,
@@ -167,6 +168,7 @@ describe('CostView', () => {
 
   it('renders non-summary widgets when kpis are null', () => {
     vi.mocked(useCliAnalyticsCost).mockReturnValueOnce({
+      costState: { incomplete: false, unpricedModels: [] },
       kpis: null,
       costByUser: [],
       costByModel: [],
@@ -184,6 +186,7 @@ describe('CostView', () => {
 
   it('shows an error from the cost hook in the summary widget', () => {
     vi.mocked(useCliAnalyticsCost).mockReturnValueOnce({
+      costState: { incomplete: false, unpricedModels: [] },
       kpis: {
         total_cost_usd: 12.5,
         total_tokens: 2420000,
@@ -294,9 +297,8 @@ describe('CostView', () => {
       expect(costCell()).toHaveTextContent(/^-/)
       expect(costCell().querySelector('[data-tooltip-content]')).toHaveAttribute(
         'data-tooltip-content',
-        'Cost unknown: no price for mai-code-1.1-flash'
+        'Cost unknown.\nModel with missing pricing for some or all usage: mai-code-1.1-flash\nThe cost could not be estimated because pricing is unavailable for this usage.'
       )
-      expect(screen.getByText('Cost unknown: no price for mai-code-1.1-flash')).toBeInTheDocument()
     })
 
     it('marks a partly priced cost as understated', () => {
@@ -309,7 +311,7 @@ describe('CostView', () => {
       expect(costCell()).toHaveTextContent('$0.02')
       expect(screen.getByTestId('unpriced-cost-marker')).toHaveAttribute(
         'data-tooltip-content',
-        'Understated: no price for mai-code-1.1-flash'
+        'Partial estimate.\nModel with missing pricing for some or all usage: mai-code-1.1-flash\nThe estimate excludes usage that could not be priced.'
       )
     })
 

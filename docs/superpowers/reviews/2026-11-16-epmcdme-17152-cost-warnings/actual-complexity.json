@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "generated": "2026-11-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 3, "label": "M" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 20,
+  "size": "M",
+  "band_range": "15-20",
+  "files_changed": 29,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Read costCompleteness.ts (new getCostState/getRowCostState/hasRowPricing), SessionCostValue.tsx (SessionCostValue, AmountCost, aggregateCostOverride, costLegendDetails), CostIncompleteNotice.tsx (shared CostDetailsIcon tooltip + selection notice), and grep of UsersView/CostView/RepositoriesView: new shared abstractions consumed by about 9 views, 10 hooks and the shared chart widgets. Scored XL for breadth and new abstractions, though everything is presentation in one repo. Not XXL: no cross-service contract changed here. The chart widget files DonutChartWidget/ChartLegend were not located under cli-analytics/widgets (they live under analytics/widgets) and were not read." },
+    { "dimension": "file_change_estimate", "reason": "diffstat 29 files changed (16+ maps to XXL). About half of the 1262 insertions are tests (__tests__ and store tests), so the production footprint is smaller than the file count suggests; the dimension is scored mechanically per the rubric." }
+  ],
+  "limitations": "Read in full: costCompleteness.ts, SessionCostValue.tsx, CostIncompleteNotice.tsx; first 140 lines of CostView.tsx. Only grepped: store/cliAnalytics.ts, types/cliAnalytics.ts, UsersView.tsx, RepositoriesView.tsx. Not read: DonutChartWidget.tsx, ChartLegend.tsx. No git diff --stat run by the assessor; the tests-are-half-the-lines share is from the caller. Assessed against d12c5edbf's 29-file src/ diff.",
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

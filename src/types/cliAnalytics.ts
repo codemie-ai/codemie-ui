@@ -20,12 +20,28 @@ interface DailyActivityBucket {
   session_count: number
 }
 
-export interface ChartUserRow {
+// Pricing of one row's own cost_usd (users, chart users, cost by user/model, project/repository/branch).
+// Absent on an older backend. Model names are available to every authorized viewer.
+// cost_unknown: true = nothing of this amount was priced; false = part or all was (a real $0 included);
+// null = the source cannot tell.
+export interface RowCostPricing {
+  cost_incomplete?: boolean
+  unpriced_models?: string[]
+  cost_unknown?: boolean | null
+}
+
+// Response metadata of an aggregating answer, stored next to the data it describes.
+export interface CostMetadata {
+  cost_incomplete?: boolean
+  unpriced_models?: string[]
+}
+
+export interface ChartUserRow extends RowCostPricing {
   developer_name: string
   cost_usd: number
 }
 
-export interface UserRow {
+export interface UserRow extends RowCostPricing {
   developer_name: string
   session_count: number
   input_tokens: number
@@ -74,7 +90,9 @@ export interface SessionRow {
   delivery_framework?: string
   // false = no model of the session has a catalog price, so cost_usd is unknown, not a real zero.
   cost_available?: boolean
-  // Models the session used that have no usable catalog price; a non-empty list understates cost_usd.
+  // Some of the session's usage could not be priced, so cost_usd is a subtotal. Absent on an older backend.
+  cost_incomplete?: boolean
+  // Names of those models, as supplied by the API.
   unpriced_models?: string[]
 }
 
@@ -115,7 +133,7 @@ export interface SessionDetail extends SessionRow {
   dispatches?: DispatchRow[]
 }
 
-export interface OverviewKPIs {
+export interface OverviewKPIs extends RowCostPricing {
   total_sessions: number
   total_cost_usd: number
   duration_ms: number
@@ -149,7 +167,7 @@ export interface ModelBreakdownItem {
   session_count: number
 }
 
-export interface CliAnalyticsOverviewData {
+export interface CliAnalyticsOverviewData extends CostMetadata {
   kpis: OverviewKPIs
   daily_buckets: DailyBucket[]
   model_breakdown: ModelBreakdownItem[]
@@ -157,7 +175,7 @@ export interface CliAnalyticsOverviewData {
   personal_billed?: { cost_usd: number } | null
 }
 
-export interface RepositoryBranchRow {
+export interface RepositoryBranchRow extends RowCostPricing {
   branch: string | null
   session_count: number
   turns: number
@@ -171,7 +189,7 @@ export interface RepositoryBranchRow {
   tool_success_rate: number
 }
 
-export interface RepositoryRow {
+export interface RepositoryRow extends RowCostPricing {
   repository: string | null
   session_count: number
   turns: number
@@ -201,7 +219,7 @@ export interface CliAnalyticsRepositoriesData {
 
 // One project with its repositories (and their branches) nested. Totals and tool_success_rate come
 // from the backend, which sums the raw counts (never averaged rates).
-export interface ProjectRow {
+export interface ProjectRow extends RowCostPricing {
   project_name: string | null
   repository_count: number
   session_count: number
@@ -217,12 +235,12 @@ export interface ProjectRow {
   repositories: RepositoryRow[]
 }
 
-export interface CliAnalyticsProjectsData {
+export interface CliAnalyticsProjectsData extends CostMetadata {
   rows: ProjectRow[]
   pagination: CliAnalyticsRepositoriesData['pagination']
 }
 
-export interface CliAnalyticsUserTableData {
+export interface CliAnalyticsUserTableData extends CostMetadata {
   rows: UserRow[]
   total_count: number
   avg_session_duration_ms: number | null
@@ -236,7 +254,7 @@ export interface CliAnalyticsUsersData {
   total_count?: number
 }
 
-export interface CliAnalyticsSessionsData {
+export interface CliAnalyticsSessionsData extends CostMetadata {
   sessions: SessionRow[]
   page: number
   per_page: number
@@ -249,24 +267,24 @@ export interface CliAnalyticsActivityData {
   by_weekday: number[] // length 7
 }
 
-export interface CliAnalyticsCostKPIs {
+export interface CliAnalyticsCostKPIs extends RowCostPricing {
   total_sessions: number
   total_cost_usd: number
   total_tokens: number
   avg_cost_per_session: number
 }
 
-export interface CostByUserRow {
+export interface CostByUserRow extends RowCostPricing {
   developer_name: string
   cost_usd: number
 }
 
-export interface CostByModelRow {
+export interface CostByModelRow extends RowCostPricing {
   model_name: string
   cost_usd: number
 }
 
-export interface CliAnalyticsCostData {
+export interface CliAnalyticsCostData extends CostMetadata {
   kpis: CliAnalyticsCostKPIs
   cost_by_user: CostByUserRow[]
   cost_by_model: CostByModelRow[]
@@ -301,7 +319,7 @@ export interface CliAnalyticsCodeChangesKPIs {
   net_lines: number | null
 }
 
-export interface CliAnalyticsEfficiencyData {
+export interface CliAnalyticsEfficiencyData extends CostMetadata {
   kpis: CliAnalyticsEfficiencyKPIs
   dead_sessions: CliAnalyticsDeadSessionsKPIs
   session_depth: CliAnalyticsSessionDepthBucket[]
@@ -336,6 +354,7 @@ export interface CliAnalyticsToolsData {
 export interface ExtendedSessionsTarget {
   title: string
   metrics: Metric[]
+  costPricing?: RowCostPricing
   sessionFilters: AnalyticsQueryParams
   repositories?: string[]
   isUnattributed?: boolean

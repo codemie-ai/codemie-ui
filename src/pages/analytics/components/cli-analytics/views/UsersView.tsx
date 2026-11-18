@@ -29,14 +29,16 @@ import {
   type TabularResponse,
 } from '@/types/analytics'
 import type { ExtendedSessionsTarget, UserRow } from '@/types/cliAnalytics'
-import { formatSpend } from '@/utils/currency'
 import { formatDateTime } from '@/utils/helpers'
 
 import { customColumn } from './columns'
+import CostIncompleteNotice from './CostIncompleteNotice'
 import ExtendedSessionsModal from './ExtendedSessionsModal'
+import { AmountCost, costLegendDetails } from './SessionCostValue'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
 import DonutChartWidget from '../../widgets/DonutChartWidget'
+import { hasRowPricing } from '../costCompleteness'
 import { formatLines, formatToolSuccess, linesTitle } from '../format'
 import { useCliAnalyticsUsers } from '../hooks/useCliAnalyticsUsers'
 
@@ -123,7 +125,9 @@ const TokensCell: FC<{ row: UserRow }> = ({ row }) => (
 )
 
 const CostCell: FC<{ row: UserRow }> = ({ row }) => (
-  <div className="text-right">{formatSpend(row.cost_usd)}</div>
+  <div className="text-right">
+    <AmountCost value={row.cost_usd} pricing={row} />
+  </div>
 )
 
 const LastActiveCell: FC<{ row: UserRow }> = ({ row }) => (
@@ -146,8 +150,21 @@ const USER_CELL_RENDERERS = {
 }
 
 const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
-  const { chartRows, tableRows, totalCount, currentPage, pageSize, loading, error, setPage } =
-    useCliAnalyticsUsers(filters, repositories)
+  const {
+    chartRows,
+    tableRows,
+    costState,
+    totalCount,
+    currentPage,
+    pageSize,
+    loading,
+    error,
+    setPage,
+  } = useCliAnalyticsUsers(filters, repositories)
+
+  // Per-user pricing replaces the selection notice; only an older backend (rows without it) needs it.
+  const rowsHavePricing = hasRowPricing([...tableRows, ...chartRows])
+  const selectionNotice = rowsHavePricing ? null : <CostIncompleteNotice state={costState} />
 
   const [usersTopN, setUsersTopN] = useState<TopN>(TopNFilter.TEN)
   const [selectedTarget, setSelectedTarget] = useState<ExtendedSessionsTarget | null>(null)
@@ -176,9 +193,10 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
             format: MetricFormat.CURRENCY,
           },
         ],
-        rows: rows.map(({ developer_name, cost_usd }) => ({
+        rows: rows.map(({ developer_name, cost_usd, cost_unknown }) => ({
           developer_name,
-          cost_usd: cost_usd ?? 0,
+          // Nothing priced: no slice, and the legend says unknown instead of $0.
+          cost_usd: cost_unknown === true ? 0 : cost_usd ?? 0,
         })),
       },
       metadata: { timestamp: '', data_as_of: '' },
@@ -198,6 +216,7 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
     setSelectedTarget({
       title: row.developer_name,
       metrics: buildUserMetrics(row),
+      costPricing: row,
       sessionFilters: { ...filters, users: [row.user_id] },
       repositories,
     })
@@ -219,6 +238,8 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
     []
   )
 
+  const legendDetails = useMemo(() => costLegendDetails(chartRows), [chartRows])
+
   const customRenderColumns = USER_CELL_RENDERERS
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -233,20 +254,25 @@ const UserView: FC<UserViewProps> = ({ filters, repositories }) => {
           labelField="developer_name"
           valueField="cost_usd"
           dataOverride={costShareOverride}
+          legendDetails={legendDetails}
           emptyStateLabel="No cost data available"
           actions={
-            <Select
-              value={String(usersTopN)}
-              onChange={(e) => setUsersTopN(toTopN(e.value))}
-              options={TOP_N_OPTIONS}
-              className="!h-8"
-            />
+            <div className="flex items-center gap-2">
+              {selectionNotice}
+              <Select
+                value={String(usersTopN)}
+                onChange={(e) => setUsersTopN(toTopN(e.value))}
+                options={TOP_N_OPTIONS}
+                className="!h-8"
+              />
+            </div>
           }
         />
       </div>
 
       <AnalyticsWidget
         title="All Users"
+        actions={selectionNotice}
         description="CLI usage per user. Click a user to see their sessions."
         loading={loading}
         error={errorDetails}

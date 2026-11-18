@@ -89,10 +89,9 @@ describe('SessionBody cost cards (EPMCDME-16522)', () => {
       expect(card(label).textContent).not.toContain('$')
       expect(card(label).querySelector('[data-tooltip-content]')).toHaveAttribute(
         'data-tooltip-content',
-        'Cost unknown: no price for mai-code-1.1-flash'
+        'Cost unknown.\nModel with missing pricing for some or all usage: mai-code-1.1-flash\nThe cost could not be estimated because pricing is unavailable for this usage.'
       )
     }
-    expect(screen.getAllByText('Cost unknown: no price for mai-code-1.1-flash')).toHaveLength(2)
   })
 
   it('marks a partly priced cost and cache-read as understated', () => {
@@ -103,10 +102,19 @@ describe('SessionBody cost cards (EPMCDME-16522)', () => {
     for (const label of ['Est. Cost', 'Cache Re-Read Cost']) {
       expect(card(label).querySelector('[data-testid="unpriced-cost-marker"]')).toHaveAttribute(
         'data-tooltip-content',
-        'Understated: no price for mai-code-1.1-flash'
+        'Partial estimate.\nModel with missing pricing for some or all usage: mai-code-1.1-flash\nThe estimate excludes usage that could not be priced.'
       )
     }
-    expect(screen.getAllByText('Understated: no price for mai-code-1.1-flash')).toHaveLength(2)
+  })
+
+  it('marks a partly priced session from its own flag with a generic status when no names are sent', () => {
+    renderSession({ cost_available: true, cost_incomplete: true, unpriced_models: [] })
+
+    const marker = card('Est. Cost').querySelector('[data-testid="unpriced-cost-marker"]')
+    expect(marker).toHaveAttribute(
+      'data-tooltip-content',
+      'Partial estimate.\nThe estimate excludes usage that could not be priced.'
+    )
   })
 
   it('renders a fully priced session with formatted values and no marker', () => {

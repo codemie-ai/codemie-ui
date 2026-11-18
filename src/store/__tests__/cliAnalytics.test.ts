@@ -68,80 +68,31 @@ describe('cliAnalyticsStore.clearRepositories', () => {
   })
 })
 
-describe('cliAnalyticsStore unpriced models', () => {
+describe('cliAnalyticsStore session pricing', () => {
   beforeEach(() => {
     mockApi.get.mockReset()
   })
 
-  it('fetchSessionDetail keeps metadata.unpriced_models on the detail', async () => {
+  it('fetchSessions keeps each row exactly as the API sent it, whatever the window metadata names', async () => {
+    const rows = [
+      { ...sessionRow('t1', 'mai-code-1.1-flash'), cost_incomplete: true, unpriced_models: [] },
+      { ...sessionRow('t2', 'claude-sonnet-4-6'), cost_incomplete: false, unpriced_models: [] },
+      sessionRow('t3', 'mai-code-1.1-flash'),
+    ]
     respondWith({
-      data: { ...sessionRow('t1', 'mai-code-1.1-flash'), events: [], harness_name: 'claude' },
-      metadata: { unpriced_models: ['mai-code-1.1-flash'] },
+      data: { sessions: rows, page: 0, per_page: 10, total: 3 },
+      metadata: { cost_incomplete: true, unpriced_models: ['mai-code-1.1-flash'] },
     })
 
-    await cliAnalyticsStore.fetchSessionDetail('t1')
+    await cliAnalyticsStore.fetchSessions({} as never)
 
-    expect(cliAnalyticsStore.sessionDetail.t1.unpriced_models).toEqual(['mai-code-1.1-flash'])
-  })
-
-  it('fetchSessionDetail stores an empty list when metadata is absent', async () => {
-    respondWith({
-      data: { ...sessionRow('t2', 'claude-sonnet-4-6'), events: [], harness_name: 'claude' },
-    })
-
-    await cliAnalyticsStore.fetchSessionDetail('t2')
-
-    expect(cliAnalyticsStore.sessionDetail.t2.unpriced_models).toEqual([])
-  })
-
-  it('fetchSessions gives each row the unpriced models it used', async () => {
-    respondWith({
-      data: {
-        sessions: [
-          sessionRow('t1', 'claude-sonnet-4-6, mai-code-1.1-flash'),
-          sessionRow('t2', 'claude-sonnet-4-6'),
-        ],
-        page: 0,
-        per_page: 20,
-        total: 2,
-      },
-      metadata: { unpriced_models: ['mai-code-1.1-flash'] },
-    })
-
-    await cliAnalyticsStore.fetchSessions({})
-
-    expect(cliAnalyticsStore.sessions?.sessions.map((row) => row.unpriced_models)).toEqual([
-      ['mai-code-1.1-flash'],
-      [],
-    ])
-  })
-
-  it('fetchSessions matches a Bedrock-wrapped unpriced name to the normalized row model', async () => {
-    const wrapped = 'bedrock/converse/eu.anthropic.claude-haiku-4-5-20251001-v1:0'
-    respondWith({
-      data: {
-        sessions: [
-          sessionRow('t1', 'claude-sonnet-4-6, claude-haiku-4-5-20251001'),
-          sessionRow('t2', 'claude-sonnet-4-6'),
-        ],
-        page: 0,
-        per_page: 20,
-        total: 2,
-      },
-      metadata: { unpriced_models: [wrapped] },
-    })
-
-    await cliAnalyticsStore.fetchSessions({})
-
-    expect(cliAnalyticsStore.sessions?.sessions.map((row) => row.unpriced_models)).toEqual([
-      [wrapped],
-      [],
-    ])
+    expect(cliAnalyticsStore.sessions?.sessions).toEqual(rows)
+    expect(cliAnalyticsStore.sessions?.sessions[2].unpriced_models).toBeUndefined()
   })
 
   it('fetchSessions keeps the store unchanged when the body has no data key', async () => {
     cliAnalyticsStore.sessions = null
-    respondWith({ metadata: { unpriced_models: ['mai-code-1.1-flash'] } })
+    respondWith({ metadata: { cost_incomplete: true } })
 
     await expect(cliAnalyticsStore.fetchSessions({})).resolves.toBeUndefined()
 
@@ -150,7 +101,7 @@ describe('cliAnalyticsStore unpriced models', () => {
   })
 
   it('fetchSessionDetail records nothing when the body has no data key', async () => {
-    respondWith({ metadata: { unpriced_models: ['mai-code-1.1-flash'] } })
+    respondWith({ metadata: { cost_incomplete: true } })
 
     await cliAnalyticsStore.fetchSessionDetail('t3')
 
@@ -158,41 +109,49 @@ describe('cliAnalyticsStore unpriced models', () => {
     expect(cliAnalyticsStore.loading['session:t3']).toBe(false)
   })
 
-  it.each([
-    ['bedrock/converse/eu.anthropic.claude-haiku-4-5-20251001-v1:0', 'claude-haiku-4-5-20251001'],
-    ['bedrock/invoke/us.anthropic.claude-opus-4-1-20250805-v1:0', 'claude-opus-4-1-20250805'],
-    ['invoke/anthropic.claude-sonnet-4-6', 'claude-sonnet-4-6'],
-    ['claude-sonnet-4-6', 'claude-sonnet-4-6'],
-  ])('matches raw backend model %s to the normalized row model %s', async (raw, normalized) => {
-    respondWith({
-      data: {
-        sessions: [sessionRow('t1', `claude-sonnet-4-6, ${normalized}`)],
-        page: 0,
-        per_page: 20,
-        total: 1,
-      },
-      metadata: { unpriced_models: [raw] },
-    })
+  it('fetchSessionDetail keeps the detail as sent and takes nothing from the window metadata', async () => {
+    const detail = { ...sessionRow('t1', 'mai-code-1.1-flash'), events: [], harness_name: 'claude' }
+    respondWith({ data: detail, metadata: { unpriced_models: ['mai-code-1.1-flash'] } })
 
-    await cliAnalyticsStore.fetchSessions({})
+    await cliAnalyticsStore.fetchSessionDetail('t1')
 
-    expect(cliAnalyticsStore.sessions?.sessions[0].unpriced_models).toEqual([raw])
+    expect(cliAnalyticsStore.sessionDetail.t1).toEqual(detail)
+    expect(cliAnalyticsStore.sessionDetail.t1.unpriced_models).toBeUndefined()
   })
 
-  it('ignores empty segments in a row model list and empty unpriced names', async () => {
-    respondWith({
-      data: {
-        sessions: [sessionRow('t1', 'claude-sonnet-4-6, , mai-code-1.1-flash,')],
-        page: 0,
-        per_page: 20,
-        total: 1,
-      },
-      metadata: { unpriced_models: ['', 'mai-code-1.1-flash'] },
-    })
+  it.each([
+    ['true', true, true],
+    ['false', false, false],
+  ])(
+    'fetchSessionDetail: a legacy detail takes only its own metadata.cost_incomplete=%s, never names',
+    async (_label, flag, expected) => {
+      const detail = {
+        ...sessionRow('t1', 'mai-code-1.1-flash'),
+        events: [],
+        harness_name: 'claude',
+      }
+      respondWith({
+        data: detail,
+        metadata: { cost_incomplete: flag, unpriced_models: ['mai-code-1.1-flash'] },
+      })
 
-    await cliAnalyticsStore.fetchSessions({})
+      await cliAnalyticsStore.fetchSessionDetail('t1')
 
-    expect(cliAnalyticsStore.sessions?.sessions[0].unpriced_models).toEqual(['mai-code-1.1-flash'])
+      expect(cliAnalyticsStore.sessionDetail.t1.cost_incomplete).toBe(expected)
+      expect(cliAnalyticsStore.sessionDetail.t1.unpriced_models).toBeUndefined()
+    }
+  )
+
+  it('fetchSessionDetail: the session’s own flags win over the metadata', async () => {
+    const own = { ...sessionRow('t1', 'm'), events: [], harness_name: 'c', cost_incomplete: false }
+    respondWith({ data: own, metadata: { cost_incomplete: true } })
+    await cliAnalyticsStore.fetchSessionDetail('t1')
+    expect(cliAnalyticsStore.sessionDetail.t1.cost_incomplete).toBe(false)
+
+    const named = { ...sessionRow('t2', 'm'), events: [], harness_name: 'c', unpriced_models: [] }
+    respondWith({ data: named, metadata: { cost_incomplete: true } })
+    await cliAnalyticsStore.fetchSessionDetail('t2')
+    expect(cliAnalyticsStore.sessionDetail.t2.cost_incomplete).toBeUndefined()
   })
 })
 
@@ -305,7 +264,11 @@ describe('cliAnalyticsStore.fetchProjects', () => {
         params: expect.objectContaining({ page: 1, per_page: 10 }),
       })
     )
-    expect(cliAnalyticsStore.projects).toEqual(page)
+    expect(cliAnalyticsStore.projects).toEqual({
+      ...page,
+      cost_incomplete: false,
+      unpriced_models: [],
+    })
     expect(cliAnalyticsStore.repositories).toBeNull()
   })
 })

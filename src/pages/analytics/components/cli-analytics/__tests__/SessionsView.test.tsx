@@ -386,7 +386,7 @@ describe('SessionsView', () => {
       expect(costCell()).toHaveTextContent(/^-/)
       expect(costCell().querySelector('[data-tooltip-content]')).toHaveAttribute(
         'data-tooltip-content',
-        'Cost unknown: no price for mai-code-1.1-flash'
+        'Cost unknown.\nModel with missing pricing for some or all usage: mai-code-1.1-flash\nThe cost could not be estimated because pricing is unavailable for this usage.'
       )
     })
 
@@ -400,8 +400,24 @@ describe('SessionsView', () => {
       expect(costCell()).toHaveTextContent('$0.02')
       expect(screen.getByTestId('unpriced-cost-marker')).toHaveAttribute(
         'data-tooltip-content',
-        'Understated: no price for mai-code-1.1-flash'
+        'Partial estimate.\nModel with missing pricing for some or all usage: mai-code-1.1-flash\nThe estimate excludes usage that could not be priced.'
       )
+    })
+
+    it('marks a row by its own cost_incomplete flag (generic status, no names) with the icon before the amount', () => {
+      renderRow({
+        cost_usd: 0.01617,
+        cost_available: true,
+        cost_incomplete: true,
+        unpriced_models: [],
+      })
+
+      const marker = screen.getByTestId('unpriced-cost-marker')
+      expect(marker).toHaveAttribute(
+        'data-tooltip-content',
+        'Partial estimate.\nThe estimate excludes usage that could not be priced.'
+      )
+      expect(marker.nextSibling?.textContent).toBe('$0.02')
     })
 
     it('renders a fully priced cost without a marker', () => {

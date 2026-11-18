@@ -28,6 +28,7 @@ import OverviewView from '../views/OverviewView'
 
 vi.mock('../hooks/useCliAnalyticsOverview', () => ({
   useCliAnalyticsOverview: vi.fn(() => ({
+    costState: { incomplete: false, unpricedModels: [] },
     kpis: {
       total_sessions: 142,
       total_cost_usd: 12.5,
@@ -203,6 +204,7 @@ function renderWithKpis(overrides: {
   [K in keyof typeof BASE_KPIS]?: (typeof BASE_KPIS)[K] | null
 }) {
   vi.mocked(useCliAnalyticsOverview).mockReturnValue({
+    costState: { incomplete: false, unpricedModels: [] },
     kpis: { ...BASE_KPIS, ...overrides },
     dailyBuckets: [{ day: '2026-07-01', net_lines: 18 }],
     modelBreakdown: [{ model_name: 'claude-sonnet-4-5', session_count: 80 }],
@@ -227,6 +229,7 @@ describe('OverviewView', () => {
   it('splits Est. Cost into API Spend and Subscription Usage with the personal-billed cost', () => {
     vi.mocked(useCliAnalyticsApiSpend).mockReturnValue({ apiSpend: 4, loading: false, error: null })
     vi.mocked(useCliAnalyticsOverview).mockReturnValue({
+      costState: { incomplete: false, unpricedModels: [] },
       kpis: { ...BASE_KPIS },
       dailyBuckets: [],
       modelBreakdown: [],
@@ -312,6 +315,7 @@ describe('OverviewView', () => {
 
   it('renders without crashing when kpis are null', () => {
     vi.mocked(useCliAnalyticsOverview).mockReturnValueOnce({
+      costState: { incomplete: false, unpricedModels: [] },
       kpis: null,
       dailyBuckets: [],
       modelBreakdown: [],

@@ -1,0 +1,40 @@
+{
+  "decision": "approve",
+  "rationale": "Full-profile review of d12c5edbf (src/ vs 1464219f4) found one major test gap, CR-001 (deleted store tests for the missing-`data` guards). It is closed by da437e580, a test-only commit that restores both guard tests exactly; that commit was verified by a targeted store run (16 tests passed, eslint 0) and an independent diff check, not by a further review round. No spec was supplied (acceptance n/a), so confidence stays low. 0 deferred, 17 dismissed (keydown bubbling is already ignored by Table.handleRowKeyDown for non-row targets, donut total is guarded, and the rest are accepted behaviours or speculative).",
+  "confidence": "low",
+  "reviewed_head": "d12c5edbfa51878f37e838b58b2bed1927fc148a",
+  "resolved_at_head": "da437e5801fedc9d6e8559ccfcce0edc19c35ae6",
+  "scope": {
+    "base": "1464219f45d7318d54a26c4a9ba9b35bd6a56118",
+    "paths": "src/",
+    "files": 29,
+    "diffstat": "29 files changed, 1262 insertions(+), 255 deletions(-)",
+    "profile": "full",
+    "lenses": "blind, edge-case, verification-gap, standards; acceptance not run (no spec)",
+    "not_reviewed": "da437e580 (test-only, restores the two guard tests; verified by targeted run and diff check)"
+  },
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "8 subjects in range all match EPMCDME-<n>: <Capitalised summary> with non-zero ticket key" },
+    { "kind": "code-quality", "status": "na", "notes": "no code-quality guide present; absent standard, not a gap" },
+    { "kind": "security", "status": "pass", "notes": "no package/lock/Dockerfile changes; no HTML sinks, redirects, postMessage, storage or secrets added in non-test src" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "status": "resolved",
+      "resolved_by": "da437e5801fedc9d6e8559ccfcce0edc19c35ae6",
+      "file": "src/store/cliAnalytics.ts",
+      "line": 282,
+      "title": "Deleted missing-data guard tests not restored",
+      "problem": "The diff removes the store tests 'fetchSessions keeps the store unchanged when the body has no data key' and 'fetchSessionDetail records nothing when the body has no data key'; the replacements always supply a `data` body, so the guards `if (data?.data) cliAnalyticsStore.sessions = data.data` and `if (!data?.data) return` (line 358) are unasserted.",
+      "impact": "Dropping either guard would assign undefined to sessions or throw on `detail.cost_incomplete` in fetchSessionDetail with no failing test. The guards are live on empty responses.",
+      "recommendation": "Restore both tests in src/store/__tests__/cliAnalytics.test.ts: respond with only metadata; assert sessions stays null and loading.sessions is false; assert sessionDetail has no entry for the trace id and its loading flag is reset."
+    }
+  ],
+  "deferred": []
+}

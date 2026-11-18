@@ -26,13 +26,16 @@ import type {
   ProjectRow,
   RepositoryBranchRow,
   RepositoryRow,
+  RowCostPricing,
 } from '@/types/cliAnalytics'
-import { formatSpend } from '@/utils/currency'
 import { cn } from '@/utils/utils'
 
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { buildRepoMetrics, formatLines, formatToolSuccess, linesTitle } from '../format'
+import CostIncompleteNotice from './CostIncompleteNotice'
 import ExtendedSessionsModal from './ExtendedSessionsModal'
+import { AmountCost } from './SessionCostValue'
+import { hasRowPricing } from '../costCompleteness'
 import { useCliAnalyticsProjects } from '../hooks/useCliAnalyticsProjects'
 
 const CELL = 'text-text-primary px-4 py-2 text-right border-b border-border-structural tabular-nums'
@@ -46,7 +49,8 @@ type CountsRow = Pick<
   | 'tool_success_rate'
   | 'tool_calls'
   | 'cost_usd'
->
+> &
+  RowCostPricing
 
 // The six figures every level shows, in column order.
 const CountCells: FC<{ row: CountsRow; bg: string }> = ({ row, bg }) => (
@@ -58,7 +62,9 @@ const CountCells: FC<{ row: CountsRow; bg: string }> = ({ row, bg }) => (
       {formatLines(row.net_lines)}
     </td>
     <td className={cn(CELL, bg)}>{formatToolSuccess(row.tool_success_rate, row.tool_calls)}</td>
-    <td className={cn(CELL, bg, 'border-r')}>{formatSpend(row.cost_usd)}</td>
+    <td className={cn(CELL, bg, 'border-r')}>
+      <AmountCost value={row.cost_usd} pricing={row} />
+    </td>
   </>
 )
 
@@ -100,6 +106,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
   // The server pages projects; each row carries its repositories and their branches.
   const {
     rows: projects,
+    costState,
     loading,
     error,
     page,
@@ -143,6 +150,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
       setSelectedTarget({
         title: project.project_name ?? NO_PROJECT_LABEL,
         metrics: buildRepoMetrics(project),
+        costPricing: project,
         sessionFilters: filters,
         repositories: matchingRepositories,
         isUnattributed: false,
@@ -158,6 +166,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
       setSelectedTarget({
         title: repo.repository ?? UNATTRIBUTED_LABEL,
         metrics: buildRepoMetrics(repo),
+        costPricing: repo,
         sessionFilters: filters,
         repositories: repo.repository != null ? [repo.repository] : undefined,
         isUnattributed: repo.repository === null,
@@ -174,6 +183,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
         setSelectedTarget({
           title: UNATTRIBUTED_LABEL,
           metrics: buildRepoMetrics(branch),
+          costPricing: branch,
           sessionFilters: filters,
           repositories: undefined,
           isUnattributed: true,
@@ -184,6 +194,7 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
         setSelectedTarget({
           title: branch.branch ?? repo.repository,
           metrics: buildRepoMetrics(branch),
+          costPricing: branch,
           sessionFilters: filters,
           repositories: [repo.repository],
           isUnattributed: false,
@@ -207,6 +218,8 @@ const RepositoriesView: FC<RepositoriesViewProps> = ({ filters, repositories }) 
     <>
       <AnalyticsWidget
         title="Repositories"
+        // Per-amount pricing on every level replaces the selection notice; only an older backend needs it.
+        actions={hasRowPricing(projects) ? null : <CostIncompleteNotice state={costState} />}
         description="Repositories grouped by project. Click a project, repository or branch to view its sessions."
         loading={loading}
         error={error ? { message: error } : null}

@@ -16,9 +16,10 @@
 import Popup from '@/components/Popup'
 import type { ExtendedSessionsTarget } from '@/types/cliAnalytics'
 
+import { AmountCost } from './SessionCostValue'
 import SessionsView from './SessionsView'
 import AnalyticsWidget from '../../AnalyticsWidget'
-import MetricCard from '../../widgets/MetricCard'
+import MetricCard, { METRIC_VALUE_CLASS_NAME } from '../../widgets/MetricCard'
 
 import type { FC } from 'react'
 
@@ -42,7 +43,21 @@ const ExtendedSessionsModal: FC<ExtendedSessionsModalProps> = ({ target, isVisib
         {/* Five summary cards (repository, branch or user) fit one row on a wide screen. */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 max-sm:gap-2">
           {target.metrics.map((metric) => (
-            <MetricCard key={metric.id} metric={metric} />
+            <MetricCard
+              key={metric.id}
+              metric={metric}
+              valueOverride={
+                metric.id === 'cost_usd' && target.costPricing ? (
+                  <p className={METRIC_VALUE_CLASS_NAME}>
+                    <AmountCost
+                      value={metric.value as number | null}
+                      pricing={target.costPricing}
+                      iconFirst={false}
+                    />
+                  </p>
+                ) : undefined
+              }
+            />
           ))}
         </div>
       </AnalyticsWidget>

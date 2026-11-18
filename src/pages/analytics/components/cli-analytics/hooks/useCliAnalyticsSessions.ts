@@ -21,8 +21,10 @@ import type { AnalyticsQueryParams } from '@/types/analytics'
 import type { SessionRow } from '@/types/cliAnalytics'
 
 import { buildCliAnalyticsParams } from './params'
+import { getCostState, hasRowPricing, type CostState } from '../costCompleteness'
 
 export interface UseCliAnalyticsSessionsResult {
+  legacyCostState?: CostState
   displayRows: SessionRow[]
   loading: boolean
   error: string | null
@@ -150,6 +152,7 @@ export function useCliAnalyticsSessions(
   const error = snap.error.sessions?.message ?? null
 
   return {
+    legacyCostState: hasRowPricing(displayRows) ? undefined : getCostState(snap.sessions),
     displayRows,
     loading,
     error,

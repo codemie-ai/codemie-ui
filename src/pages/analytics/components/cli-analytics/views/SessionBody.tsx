@@ -140,7 +140,8 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
   ]
 
   // Unknown or understated money replaces the plain value; a fully priced session renders it as is.
-  const costIsUnderstated = (session.unpriced_models?.length ?? 0) > 0
+  const costIsUnderstated =
+    session.cost_incomplete === true || (session.unpriced_models?.length ?? 0) > 0
   const costIsQualified = session.cost_available === false || costIsUnderstated
   const costOverrides: Record<string, number | null | undefined> = {
     cost_usd: session.cost_usd,
@@ -152,6 +153,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
         <SessionCostValue
           value={costOverrides[id]}
           costAvailable={session.cost_available}
+          costIncomplete={session.cost_incomplete}
           unpricedModels={session.unpriced_models}
         />
       </p>

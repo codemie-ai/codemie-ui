@@ -225,6 +225,7 @@ describe('EfficiencyView', () => {
 
   it('falls back to 0% of total cost when total_cost_usd is missing (NaN guard)', () => {
     vi.mocked(useCliAnalyticsEfficiency).mockReturnValueOnce({
+      costState: { incomplete: false, unpricedModels: [] },
       kpis: {
         avg_context_per_call: 15000,
         worst_session_ctx_per_call: 28000,
@@ -271,6 +272,7 @@ describe('EfficiencyView', () => {
 
   it('renders fallback metric values when kpis are null', () => {
     vi.mocked(useCliAnalyticsEfficiency).mockReturnValueOnce({
+      costState: { incomplete: false, unpricedModels: [] },
       kpis: null,
       deadSessions: null,
       sessionDepth: [],
@@ -291,6 +293,7 @@ describe('EfficiencyView', () => {
 
   it('renders when session depth is empty', () => {
     vi.mocked(useCliAnalyticsEfficiency).mockReturnValueOnce({
+      costState: { incomplete: false, unpricedModels: [] },
       kpis: {
         avg_context_per_call: 15000,
         worst_session_ctx_per_call: 28000,
@@ -324,6 +327,7 @@ describe('EfficiencyView', () => {
 
   it('passes errors to applicable analytics widgets', () => {
     vi.mocked(useCliAnalyticsEfficiency).mockReturnValueOnce({
+      costState: { incomplete: false, unpricedModels: [] },
       kpis: null,
       deadSessions: null,
       sessionDepth: [],
@@ -391,6 +395,7 @@ describe('EfficiencyView', () => {
     [1200, '1200'],
   ])('passes net_lines %s through as the metric value', (net, expected) => {
     vi.mocked(useCliAnalyticsEfficiency).mockReturnValueOnce({
+      costState: { incomplete: false, unpricedModels: [] },
       kpis: null,
       deadSessions: null,
       sessionDepth: [],
@@ -450,7 +455,7 @@ describe('EfficiencyView', () => {
       expect(costCell()).toHaveTextContent(/^-/)
       expect(costCell().querySelector('[data-tooltip-content]')).toHaveAttribute(
         'data-tooltip-content',
-        'Cost unknown: no price for mai-code-1.1-flash'
+        'Cost unknown.\nModel with missing pricing for some or all usage: mai-code-1.1-flash\nThe cost could not be estimated because pricing is unavailable for this usage.'
       )
     })
 
@@ -460,8 +465,19 @@ describe('EfficiencyView', () => {
       expect(costCell()).toHaveTextContent('$0.02')
       expect(screen.getByTestId('unpriced-cost-marker')).toHaveAttribute(
         'data-tooltip-content',
-        'Understated: no price for mai-code-1.1-flash'
+        'Partial estimate.\nModel with missing pricing for some or all usage: mai-code-1.1-flash\nThe estimate excludes usage that could not be priced.'
       )
+    })
+
+    it('marks a row by its own cost_incomplete flag (generic status, no names) with the icon before the amount', () => {
+      renderSessionRow({ cost_available: true, cost_incomplete: true, unpriced_models: [] })
+
+      const marker = screen.getByTestId('unpriced-cost-marker')
+      expect(marker).toHaveAttribute(
+        'data-tooltip-content',
+        'Partial estimate.\nThe estimate excludes usage that could not be priced.'
+      )
+      expect(marker.nextSibling?.textContent).toBe('$0.02')
     })
 
     it('renders a legacy null cost as a dash, not $0.00', () => {

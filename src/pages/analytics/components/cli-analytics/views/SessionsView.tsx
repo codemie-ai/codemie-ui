@@ -26,6 +26,7 @@ import type { SessionRow } from '@/types/cliAnalytics'
 import { formatDateTime } from '@/utils/helpers'
 
 import { customColumn } from './columns'
+import CostIncompleteNotice from './CostIncompleteNotice'
 import SessionCostValue from './SessionCostValue'
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
@@ -104,7 +105,9 @@ const CostCell: FC<{ row: SessionRow }> = ({ row }) => (
     <SessionCostValue
       value={row.cost_usd}
       costAvailable={row.cost_available}
+      costIncomplete={row.cost_incomplete}
       unpricedModels={row.unpriced_models}
+      iconFirst
     />
   </div>
 )
@@ -155,6 +158,7 @@ const SessionsView: FC<SessionsViewProps> = ({
 
   const {
     displayRows,
+    legacyCostState,
     loading,
     error,
     page,
@@ -208,7 +212,12 @@ const SessionsView: FC<SessionsViewProps> = ({
   )
 
   return (
-    <AnalyticsWidget title="Sessions" loading={false} error={error ? { message: error } : null}>
+    <AnalyticsWidget
+      title="Sessions"
+      loading={false}
+      error={error ? { message: error } : null}
+      actions={legacyCostState && <CostIncompleteNotice state={legacyCostState} />}
+    >
       <div className="flex flex-col gap-3">
         {showGapWarning && (
           <InfoWarning type={InfoWarningType.WARNING} message={gapMessage(total)} />

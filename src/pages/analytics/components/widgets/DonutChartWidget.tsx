@@ -47,6 +47,8 @@ interface DonutChartWidgetProps {
   actions?: ReactNode
   colorByLabel?: (label: string, index: number) => string
   dataOverride?: TabularResponse | null
+  // Per label: a replacement for the formatted value and/or a marker beside it.
+  legendDetails?: (label: string) => { value?: string; marker?: ReactNode } | undefined
   emptyStateLabel?: string
   className?: string
 }
@@ -68,6 +70,7 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
   actions,
   colorByLabel,
   dataOverride,
+  legendDetails,
   emptyStateLabel = 'No data available',
   className,
 }) => {
@@ -131,14 +134,18 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
   const legendItems = useMemo(
     () =>
       labels
-        .map((label, i) => ({
-          label: String(label),
-          value: values[i],
-          formattedValue: formatMetricValue(values[i], valueFormat),
-          color: backgroundColors[i],
-        }))
+        .map((label, i) => {
+          const details = legendDetails?.(label)
+          return {
+            label: String(label),
+            value: values[i],
+            formattedValue: details?.value ?? formatMetricValue(values[i], valueFormat),
+            color: backgroundColors[i],
+            marker: details?.marker,
+          }
+        })
         .sort((a, b) => b.value - a.value),
-    [labels, values, valueFormat, backgroundColors]
+    [labels, values, valueFormat, backgroundColors, legendDetails]
   )
 
   const chartOptions: ChartOptions<'doughnut'> = useMemo(
@@ -188,7 +195,10 @@ const DonutChartWidget: FC<DonutChartWidgetProps> = ({
     [valueFormat, total]
   )
 
-  const hasData = values.length > 0 && values.some((v) => v > 0)
+  // All-zero rows still show when a row carries a marker (an incomplete amount is not "no data").
+  const hasData =
+    values.length > 0 &&
+    (values.some((v) => v > 0) || legendItems.some((item) => Boolean(item.marker)))
 
   const renderChartContent = () => {
     if (!hasData) {

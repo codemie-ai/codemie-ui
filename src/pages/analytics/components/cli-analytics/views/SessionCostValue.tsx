@@ -13,53 +13,119 @@
 // limitations under the License.
 //
 
-import { FC } from 'react'
+import { FC, ReactNode } from 'react'
 
-import AlertIcon from '@/assets/icons/alert.svg?react'
 import { ABSENT_VALUE_MARKER } from '@/constants'
+import type { RowCostPricing } from '@/types/cliAnalytics'
 import { formatSpend } from '@/utils/currency'
+
+import { CostDetailsIcon } from './CostIncompleteNotice'
+import { METRIC_VALUE_CLASS_NAME } from '../../widgets/MetricCard'
+import { getRowCostState, type CostState } from '../costCompleteness'
 
 interface SessionCostValueProps {
   value: number | null | undefined
   // undefined (an older backend) keeps the plain rendering.
   costAvailable?: boolean
+  // The session's own flag and model names from the API.
+  costIncomplete?: boolean
   unpricedModels?: string[]
+  // Right-aligned tables put the icon before the amount so the amounts stay aligned.
+  iconFirst?: boolean
 }
 
-/** A session money value: unknown when nothing was priced, marked as understated when some models were not. */
+/** A session money value: unknown when nothing was priced, a marked subtotal when part of it was not. */
 const SessionCostValue: FC<SessionCostValueProps> = ({
   value,
   costAvailable,
+  costIncomplete,
   unpricedModels = [],
+  iconFirst,
 }) => {
-  const names = unpricedModels.join(', ')
-  if (costAvailable === false) {
-    const unknownLabel = names
-      ? `Cost unknown: no price for ${names}`
-      : 'Cost unknown: no price for this model'
-    return (
-      <span data-tooltip-id="react-tooltip" data-tooltip-content={unknownLabel}>
-        {ABSENT_VALUE_MARKER}
-        <span className="sr-only">{unknownLabel}</span>
-      </span>
-    )
-  }
-  const text = value != null ? formatSpend(value) : ABSENT_VALUE_MARKER
-  if (!unpricedModels.length) return <>{text}</>
-  const understatedLabel = `Understated: no price for ${names}`
+  const unknown = costAvailable === false
+  const partial = costIncomplete === true || unpricedModels.length > 0
+  if (!unknown && !partial) return <>{value != null ? formatSpend(value) : ABSENT_VALUE_MARKER}</>
+  const amount = unknown || value == null ? ABSENT_VALUE_MARKER : formatSpend(value)
+  const icon = (
+    <CostDetailsIcon
+      status={unknown ? 'Cost unknown' : 'Partial estimate'}
+      models={unpricedModels}
+      testId="unpriced-cost-marker"
+    />
+  )
   return (
     <span className="inline-flex items-center gap-1">
-      {text}
-      <span
-        data-testid="unpriced-cost-marker"
-        data-tooltip-id="react-tooltip"
-        data-tooltip-content={understatedLabel}
-      >
-        <AlertIcon className="w-3 h-3" aria-hidden="true" />
-        <span className="sr-only">{understatedLabel}</span>
-      </span>
+      {iconFirst && icon}
+      {amount}
+      {!iconFirst && icon}
     </span>
   )
+}
+
+/** A KPI value with explicit pricing evidence, falling back to metadata for older responses. */
+export const aggregateCostOverride = (
+  value: number | null | undefined,
+  state: CostState,
+  details?: string
+): ReactNode => {
+  if (!state.incomplete) return null
+  return (
+    <p className={METRIC_VALUE_CLASS_NAME}>
+      <span className="inline-flex items-center gap-1">
+        {state.unknown ? ABSENT_VALUE_MARKER : formatSpend(value)}
+        <CostDetailsIcon
+          status={state.unknown ? 'Cost unknown' : 'Partial estimate'}
+          models={state.unpricedModels}
+          details={details}
+          testId="unpriced-cost-marker"
+        />
+      </span>
+    </p>
+  )
+}
+
+/** A money value with its own pricing: the priced subtotal (a real $0 included) stays, and only an
+ * incomplete amount is marked; "unknown" shows only when the API says nothing of it was priced. */
+export const AmountCost: FC<{
+  value: number | null | undefined
+  pricing?: RowCostPricing | null
+  iconFirst?: boolean
+}> = ({ value, pricing, iconFirst = true }) => {
+  const { incomplete, unknown, unpricedModels } = getRowCostState(pricing)
+  if (!incomplete) return <>{formatSpend(value)}</>
+  const icon = (
+    <CostDetailsIcon
+      status={unknown ? 'Cost unknown' : 'Partial estimate'}
+      models={unpricedModels}
+      testId="unpriced-cost-marker"
+    />
+  )
+  return (
+    <span className="inline-flex items-center gap-1">
+      {iconFirst && icon}
+      {unknown ? ABSENT_VALUE_MARKER : formatSpend(value)}
+      {!iconFirst && icon}
+    </span>
+  )
+}
+
+/** Legend details of a cost chart, found by label (a user's name): the same marking as the table. */
+export const costLegendDetails = (rows: (RowCostPricing & { developer_name: string })[]) => {
+  const byName = new Map(rows.map((r) => [r.developer_name, r]))
+  return (label: string) => {
+    const { incomplete, unknown, unpricedModels } = getRowCostState(byName.get(label))
+    if (!incomplete) return {}
+    return {
+      value: unknown ? ABSENT_VALUE_MARKER : undefined,
+      marker: (
+        <CostDetailsIcon
+          status={unknown ? 'Cost unknown' : 'Partial estimate'}
+          models={unpricedModels}
+          testId="unpriced-cost-marker"
+        />
+      ),
+    }
+  }
 }
 
 export default SessionCostValue

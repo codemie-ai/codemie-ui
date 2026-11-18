@@ -32,6 +32,7 @@ import type {
 import { DefinitionTypes } from '@/types/table'
 import { formatMetricValue } from '@/utils/analyticsFormatters'
 
+import CostIncompleteNotice, { CostDetailsIcon } from './CostIncompleteNotice'
 import SessionCostValue from './SessionCostValue'
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
@@ -216,7 +217,9 @@ const SESSION_CUSTOM_COLS = {
       <SessionCostValue
         value={row.cost_usd}
         costAvailable={row.cost_available}
+        costIncomplete={row.cost_incomplete}
         unpricedModels={row.unpriced_models}
+        iconFirst
       />
     </div>
   ),
@@ -233,10 +236,14 @@ interface EfficiencyViewProps {
 }
 
 const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
-  const { kpis, deadSessions, sessionDepth, codeChanges, loading, error } =
+  const { kpis, deadSessions, sessionDepth, codeChanges, costState, loading, error } =
     useCliAnalyticsEfficiency(filters, repositories)
 
-  const { displayRows, loading: sessionsLoading } = useCliAnalyticsSessions(filters, repositories, {
+  const {
+    displayRows,
+    loading: sessionsLoading,
+    legacyCostState,
+  } = useCliAnalyticsSessions(filters, repositories, {
     sort_by: 'ctx_per_call',
     per_page: 10,
   })
@@ -251,6 +258,14 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
     [kpis, deadSessions]
   )
   const codeChangesMetrics = useMemo(() => buildCodeChangesMetrics(codeChanges), [codeChanges])
+  const pricingBadge = costState?.incomplete ? (
+    <CostDetailsIcon
+      status="Pricing incomplete in the selected period"
+      models={costState.unpricedModels}
+      details="This metric may be affected by missing prices in the selected period."
+      testId="unpriced-cost-marker"
+    />
+  ) : undefined
 
   const depthTabularData: TabularResponse = useMemo(
     () => ({
@@ -283,13 +298,20 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
       >
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 max-sm:gap-2">
           {cachedContextMetrics.map((metric) => (
-            <MetricCard key={metric.id} metric={metric} />
+            <MetricCard
+              key={metric.id}
+              metric={metric}
+              badge={
+                ['cache_read_cost_usd', 'bloat_pct'].includes(metric.id) ? pricingBadge : undefined
+              }
+            />
           ))}
         </div>
       </AnalyticsWidget>
 
       <AnalyticsWidget
         title="Most Bloated Sessions"
+        actions={legacyCostState && <CostIncompleteNotice state={legacyCostState} />}
         description="Sessions with the most context re-read per call."
         loading={sessionsLoading}
         error={null}
@@ -324,7 +346,11 @@ const EfficiencyView: FC<EfficiencyViewProps> = ({ filters, repositories }) => {
           >
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {deadSessionsMetrics.map((metric) => (
-                <MetricCard key={metric.id} metric={metric} />
+                <MetricCard
+                  key={metric.id}
+                  metric={metric}
+                  badge={metric.format === MetricFormat.CURRENCY ? pricingBadge : undefined}
+                />
               ))}
             </div>
           </AnalyticsWidget>

@@ -27,17 +27,23 @@ import {
 } from '@/types/analytics'
 import type { SessionRow } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
+import { generateChartColors } from '@/utils/chartColors'
+import { formatSpend } from '@/utils/currency'
 
-import SessionCostValue from './SessionCostValue'
+import CostIncompleteNotice from './CostIncompleteNotice'
+import SessionCostValue, { aggregateCostOverride, costLegendDetails } from './SessionCostValue'
 import SessionModal from './SessionModal'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
 import BarChartWidget from '../../widgets/BarChartWidget'
+import ChartLegend from '../../widgets/ChartLegend'
 import DonutChartWidget from '../../widgets/DonutChartWidget'
 import MetricCard from '../../widgets/MetricCard'
 import { useCliAnalyticsCost } from '../hooks/useCliAnalyticsCost'
 import { useCliAnalyticsSessions } from '../hooks/useCliAnalyticsSessions'
 import { useSessionModal } from '../hooks/useSessionModal'
+
+import type { CostState } from '../costCompleteness'
 
 interface CostViewProps {
   filters: AnalyticsQueryParams
@@ -101,7 +107,9 @@ const CostCell: FC<{ row: SessionRow }> = ({ row }) => (
     <SessionCostValue
       value={row.cost_usd}
       costAvailable={row.cost_available}
+      costIncomplete={row.cost_incomplete}
       unpricedModels={row.unpriced_models}
+      iconFirst
     />
   </div>
 )
@@ -118,11 +126,12 @@ const SESSION_CELL_RENDERERS = {
   cost_usd_display: (r: SessionRow) => <CostCell row={r} />,
 }
 
-function buildKpiMetrics(kpis: {
-  total_cost_usd: number
-  total_tokens: number
-  avg_cost_per_session: number
-}): Metric[] {
+function buildKpiMetrics(
+  kpis: { total_cost_usd: number; total_tokens: number; avg_cost_per_session: number },
+  costState: CostState
+): Metric[] {
+  const costStatus = costState.unknown ? 'Cost unknown' : 'Partial estimate'
+  // Avg Cost / Session has no icon of its own (Est. Cost carries the one): a plain status line.
   // Token cards show the full figure: a compact "2.9B" reads as "2.98" in the mono font.
   return [
     {
@@ -145,19 +154,20 @@ function buildKpiMetrics(kpis: {
       label: 'Avg Cost / Session',
       type: ColumnType.NUMBER,
       format: MetricFormat.CURRENCY,
-      value: kpis.avg_cost_per_session,
-      description: 'per session with cost',
+      value: costState.unknown ? null : kpis.avg_cost_per_session,
+      description: costState.incomplete ? costStatus : 'per session with cost',
     },
   ]
 }
 
 const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
-  const { kpis, costByUser, costByModel, loading, error } = useCliAnalyticsCost(
+  const { kpis, costByUser, costByModel, costState, loading, error } = useCliAnalyticsCost(
     filters,
     repositories
   )
   const {
     displayRows,
+    legacyCostState,
     loading: sessLoading,
     error: sessError,
   } = useCliAnalyticsSessions(filters, repositories, { sort_by: 'cost_usd', per_page: 10 })
@@ -166,8 +176,8 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
 
   const kpiMetrics = useMemo((): Metric[] => {
     if (!kpis) return []
-    return buildKpiMetrics(kpis)
-  }, [kpis])
+    return buildKpiMetrics(kpis, costState)
+  }, [kpis, costState])
 
   const selectedRows = useMemo(
     () => displayRows.filter((r) => r.trace_id === selectedTraceId),
@@ -191,9 +201,10 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
             format: MetricFormat.CURRENCY,
           },
         ],
-        rows: rows.map(({ developer_name, cost_usd }) => ({
+        rows: rows.map(({ developer_name, cost_usd, cost_unknown }) => ({
           developer_name,
-          cost_usd,
+          // Nothing priced: no slice, and the legend says unknown instead of $0.
+          cost_usd: cost_unknown === true ? 0 : cost_usd,
         })),
       },
       metadata: { timestamp: '', data_as_of: '' },
@@ -205,6 +216,21 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
       },
     }
   }, [costByUser, costUsersTopN])
+
+  const legendDetails = useMemo(() => costLegendDetails(costByUser), [costByUser])
+  const modelLegend = useMemo(() => {
+    const colors = generateChartColors(costByModel.length)
+    const details = costLegendDetails(
+      costByModel.map((row) => ({ ...row, developer_name: row.model_name }))
+    )
+    return costByModel.map((row, index) => ({
+      label: row.model_name,
+      value: row.cost_usd ?? 0,
+      formattedValue: formatSpend(row.cost_unknown === true ? null : row.cost_usd),
+      color: colors[index],
+      marker: details(row.model_name).marker,
+    }))
+  }, [costByModel])
 
   const costByModelTabularData: TabularResponse = useMemo(
     () => ({
@@ -218,7 +244,10 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
             format: MetricFormat.CURRENCY,
           },
         ],
-        rows: costByModel as unknown as Record<string, unknown>[],
+        // Nothing priced: no bar (unknown, not $0); a model priced in part keeps its bar and subtotal.
+        rows: costByModel.map((row) =>
+          row.cost_unknown === true ? { ...row, cost_usd: null } : row
+        ) as unknown as Record<string, unknown>[],
       },
       metadata: { timestamp: '', data_as_of: '' },
       pagination: {
@@ -230,6 +259,10 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
     }),
     [costByModel]
   )
+
+  // Every model unknown: the shared chart would drop the null bars and say "No data available".
+  const modelCostUnknown =
+    costByModel.length > 0 && costByModel.every((r) => r.cost_unknown === true)
 
   const errorDetails = error ? { message: error } : null
   const sessErrorDetails = sessError ? { message: sessError } : null
@@ -311,7 +344,15 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
         <AnalyticsWidget title="Summary" expandable={false} loading={loading} error={errorDetails}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {kpiMetrics.map((metric) => (
-              <MetricCard key={metric.id} metric={metric} />
+              <MetricCard
+                key={metric.id}
+                metric={metric}
+                valueOverride={
+                  metric.id === 'total_cost_usd'
+                    ? aggregateCostOverride(metric.value as number, costState)
+                    : undefined
+                }
+              />
             ))}
           </div>
         </AnalyticsWidget>
@@ -325,6 +366,7 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
           labelField="developer_name"
           valueField="cost_usd"
           dataOverride={costByUserOverride}
+          legendDetails={legendDetails}
           emptyStateLabel="No cost data available"
           actions={
             <Select
@@ -336,19 +378,37 @@ const CostView: FC<CostViewProps> = ({ filters, repositories }) => {
           }
         />
 
-        <BarChartWidget
-          title="Cost by Model"
-          description="Estimated CLI cost per model."
-          labelField="model_name"
-          valueField="cost_usd"
-          yAxisLabel="cost_usd"
-          horizontal
-          dataOverride={costByModelTabularData}
-        />
+        {modelCostUnknown ? (
+          <AnalyticsWidget
+            title="Cost by Model"
+            description="Estimated CLI cost per model."
+            expandable={false}
+          >
+            <div
+              data-testid="cost-by-model-unknown"
+              className="flex justify-center items-center w-full h-[400px] px-4 text-center text-text-quaternary"
+            >
+              Cost unknown: none of these models has a price
+            </div>
+            <ChartLegend items={modelLegend} />
+          </AnalyticsWidget>
+        ) : (
+          <BarChartWidget
+            title="Cost by Model"
+            description="Estimated CLI cost per model."
+            labelField="model_name"
+            valueField="cost_usd"
+            yAxisLabel="cost_usd"
+            horizontal
+            dataOverride={costByModelTabularData}
+            legendItems={modelLegend}
+          />
+        )}
       </div>
 
       <AnalyticsWidget
         title="Most Expensive Sessions"
+        actions={legacyCostState && <CostIncompleteNotice state={legacyCostState} />}
         description="Sessions with the highest estimated cost."
         loading={sessLoading}
         error={sessErrorDetails}

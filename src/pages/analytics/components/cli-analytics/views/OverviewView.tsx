@@ -27,6 +27,7 @@ import type { ExtendedSessionsTarget, RepositoryRow } from '@/types/cliAnalytics
 
 import ExtendedSessionsModal from './ExtendedSessionsModal'
 import RepositoriesTable from './RepositoriesTable'
+import { aggregateCostOverride } from './SessionCostValue'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, type TopN } from '../../utils/topNFilter'
 import BarChartWidget from '../../widgets/BarChartWidget'
@@ -54,6 +55,7 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
       setSelectedTarget({
         title: row.repository ?? UNATTRIBUTED_LABEL,
         metrics: buildRepoMetrics(row),
+        costPricing: row,
         sessionFilters: {
           ...filters,
           ...(row.repository != null ? { repository: row.repository } : {}),
@@ -70,7 +72,7 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
     clearSelectionRef.current?.()
   }, [])
 
-  const { kpis, dailyBuckets, modelBreakdown, personalBilledCost, loading, error } =
+  const { kpis, dailyBuckets, modelBreakdown, personalBilledCost, costState, loading, error } =
     useCliAnalyticsOverview(filters, repositories)
 
   const {
@@ -155,7 +157,19 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
                 className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 max-sm:gap-2"
               >
                 {group.metrics.map((metric) => (
-                  <MetricCard key={metric.id} metric={metric} />
+                  <MetricCard
+                    key={metric.id}
+                    metric={metric}
+                    valueOverride={
+                      metric.id === 'total_cost_usd'
+                        ? aggregateCostOverride(
+                            kpis?.total_cost_usd,
+                            costState,
+                            'Missing prices can also affect Subscription Usage and Bloat %.'
+                          )
+                        : undefined
+                    }
+                  />
                 ))}
               </div>
             ))}

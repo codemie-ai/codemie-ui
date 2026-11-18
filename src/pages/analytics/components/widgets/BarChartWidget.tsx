@@ -40,6 +40,7 @@ import { generateChartColors } from '@/utils/chartColors'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
 import AnalyticsWidget from '../AnalyticsWidget'
+import ChartLegend, { type ChartLegendItem } from './ChartLegend'
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels)
@@ -57,6 +58,7 @@ interface BarChartWidgetProps {
   expandable?: boolean
   horizontal?: boolean
   actions?: ReactNode
+  legendItems?: ChartLegendItem[]
   colorByLabel?: (label: string, index: number) => string
   /** Row field used as the color key passed to colorByLabel (defaults to labelField) */
   colorIdField?: string
@@ -82,6 +84,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
   expandable,
   horizontal = false,
   actions,
+  legendItems,
   colorByLabel,
   colorIdField,
   dataOverride,
@@ -295,7 +298,9 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
     ]
   )
 
-  const hasData = values.length > 0 && values.some((v) => v !== null && v !== 0)
+  const hasData =
+    values.length > 0 &&
+    (values.some((v) => v !== null && v !== 0) || legendItems?.some((item) => Boolean(item.marker)))
 
   const renderChartContent = () => {
     if (!hasData) {
@@ -323,6 +328,7 @@ const BarChartWidget: FC<BarChartWidgetProps> = ({
       actions={actions}
     >
       {renderChartContent()}
+      {legendItems && <ChartLegend items={legendItems} />}
     </AnalyticsWidget>
   )
 }

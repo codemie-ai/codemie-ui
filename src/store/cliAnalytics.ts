@@ -26,39 +26,27 @@ import type {
   CliAnalyticsSessionsData,
   CliAnalyticsToolsData,
   CliAnalyticsUserTableData,
+  CostMetadata,
   SessionDetail,
-  SessionRow,
 } from '@/types/cliAnalytics'
 import type { ErrorDetails, ErrorResponse } from '@/types/common'
 import api from '@/utils/api'
 import { getBrowserTimezone } from '@/utils/timezone'
 
 interface UnpricedMetadata {
-  metadata?: { unpriced_models?: string[] }
+  metadata?: CostMetadata
 }
 
-// Mirrors the backend normalize_model (coding_agent_pricing.py): metadata names the raw model ids,
-// while row.model_name holds the normalized ones (Bedrock wrapper, provider prefix, '-v1:0' tag).
-const normalizeModelName = (model: string): string =>
-  model
-    .replace(/^(bedrock\/)?(converse|invoke)\//i, '')
-    .replace(/^([a-z0-9-]+\.)?anthropic\./i, '')
-    .replace(/(\d{8})-v\d+:\d+$/, '$1')
-
-// The list metadata names unpriced models for the whole page; keep on each row the ones it used.
-const withRowUnpricedModels = (row: SessionRow, unpriced: string[]): SessionRow => {
-  const models = new Set(
-    (row.model_name ?? '')
-      .split(',')
-      .map((name) => name.trim())
-      .filter(Boolean)
-      .map(normalizeModelName)
-  )
-  return {
-    ...row,
-    unpriced_models: unpriced.filter((name) => models.has(normalizeModelName(name))),
-  }
-}
+// An aggregating answer is stored as one object with its metadata: a newer answer replaces both,
+// so a total never shows next to the unpriced models of another selection.
+const withCostMetadata = <T extends object>(
+  data: T,
+  metadata?: CostMetadata
+): T & CostMetadata => ({
+  ...data,
+  cost_incomplete: metadata?.cost_incomplete ?? false,
+  unpriced_models: metadata?.unpriced_models ?? [],
+})
 
 interface CliAnalyticsState {
   abortControllers: Map<string, AbortController>
@@ -227,7 +215,7 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
   },
 
   async fetchUsersTable(params) {
-    const data = await fetchWithState<{ data: CliAnalyticsUserTableData }>(
+    const data = await fetchWithState<{ data: CliAnalyticsUserTableData } & UnpricedMetadata>(
       cliAnalyticsStore,
       'usersTable',
       'v1/analytics/cli-analytics/users',
@@ -235,9 +223,9 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       'Failed to fetch user table'
     )
     if (data && cliAnalyticsStore.users) {
-      cliAnalyticsStore.users.table = data.data
+      cliAnalyticsStore.users.table = withCostMetadata(data.data, data.metadata)
     } else if (data) {
-      cliAnalyticsStore.users = { table: data.data }
+      cliAnalyticsStore.users = { table: withCostMetadata(data.data, data.metadata) }
     }
   },
 
@@ -290,17 +278,12 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       params,
       'Failed to fetch local analytics sessions'
     )
-    if (data?.data) {
-      const unpriced = data.metadata?.unpriced_models ?? []
-      cliAnalyticsStore.sessions = {
-        ...data.data,
-        sessions: (data.data.sessions ?? []).map((row) => withRowUnpricedModels(row, unpriced)),
-      }
-    }
+    // Keep window metadata for a legacy selection notice; never derive a row's pricing from it.
+    if (data?.data) cliAnalyticsStore.sessions = withCostMetadata(data.data, data.metadata)
   },
 
   async fetchOverview(params) {
-    const data = await fetchWithState<{ data: CliAnalyticsOverviewData }>(
+    const data = await fetchWithState<{ data: CliAnalyticsOverviewData } & UnpricedMetadata>(
       cliAnalyticsStore,
       'overview',
       'v1/analytics/cli-analytics/overview',
@@ -308,7 +291,7 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       { ...params, include_class_lists: false, include_buckets: false },
       'Failed to fetch local analytics overview'
     )
-    if (data) cliAnalyticsStore.overview = data.data
+    if (data) cliAnalyticsStore.overview = withCostMetadata(data.data, data.metadata)
   },
 
   async fetchRepositories(params) {
@@ -327,18 +310,18 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
   },
 
   async fetchProjects(params) {
-    const data = await fetchWithState<{ data: CliAnalyticsProjectsData }>(
+    const data = await fetchWithState<{ data: CliAnalyticsProjectsData } & UnpricedMetadata>(
       cliAnalyticsStore,
       'projects',
       'v1/analytics/cli-analytics/projects',
       params,
       'Failed to fetch local analytics projects'
     )
-    if (data) cliAnalyticsStore.projects = data.data
+    if (data) cliAnalyticsStore.projects = withCostMetadata(data.data, data.metadata)
   },
 
   async fetchCost(params) {
-    const data = await fetchWithState<{ data: CliAnalyticsCostData }>(
+    const data = await fetchWithState<{ data: CliAnalyticsCostData } & UnpricedMetadata>(
       cliAnalyticsStore,
       'cost',
       'v1/analytics/cli-analytics/cost',
@@ -346,35 +329,44 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       { ...params, include_class_lists: false, include_buckets: false },
       'Failed to fetch local analytics cost'
     )
-    if (data) cliAnalyticsStore.cost = data.data
+    if (data) cliAnalyticsStore.cost = withCostMetadata(data.data, data.metadata)
   },
 
   async fetchEfficiency(params) {
-    const data = await fetchWithState<{ data: CliAnalyticsEfficiencyData }>(
+    const data = await fetchWithState<{ data: CliAnalyticsEfficiencyData } & UnpricedMetadata>(
       cliAnalyticsStore,
       'efficiency',
       'v1/analytics/cli-analytics/efficiency',
       params,
       'Failed to fetch local analytics efficiency'
     )
-    if (data) cliAnalyticsStore.efficiency = data.data
+    if (data) cliAnalyticsStore.efficiency = withCostMetadata(data.data, data.metadata)
   },
 
   async fetchSessionDetail(traceId) {
     const key = `session:${traceId}`
-    const data = await fetchWithState<{ data: SessionDetail } & UnpricedMetadata>(
+    const data = await fetchWithState<{
+      data: SessionDetail
+      metadata?: { cost_incomplete?: boolean }
+    }>(
       cliAnalyticsStore,
       key,
       `v1/analytics/cli-analytics/sessions/${traceId}`,
       undefined,
       'Failed to fetch session detail'
     )
-    if (data?.data) {
-      cliAnalyticsStore.sessionDetail[traceId] = {
-        ...data.data,
-        unpriced_models: data.metadata?.unpriced_models ?? [],
-      }
-    }
+    if (!data?.data) return
+    const detail = data.data
+    const flag = data.metadata?.cost_incomplete
+    // This metadata is computed from this one session, so it can stand in for a missing per-session
+    // flag (an older backend): a generic warning, never names. The session's own fields always win.
+    const legacy =
+      detail.cost_incomplete === undefined &&
+      detail.unpriced_models === undefined &&
+      typeof flag === 'boolean'
+    cliAnalyticsStore.sessionDetail[traceId] = legacy
+      ? { ...detail, cost_incomplete: flag }
+      : detail
   },
 
   async fetchFrameworks(params) {
