@@ -99,7 +99,9 @@ const renderProjectCountColumn =
 const CostCentersManagementPage = () => {
   const router = useVueRouter()
   const { user: currentUser } = useSnapshot(userStore)
-  const canLinkToFilteredProjects = !!(currentUser?.isAdmin || currentUser?.isMaintainer)
+  // Auditors get read-only access: the backend refuses create/edit/delete for them (403)
+  const canManageCostCenters = !!(currentUser?.isAdmin || currentUser?.isMaintainer)
+  const canLinkToFilteredProjects = canManageCostCenters
   const [response, setResponse] = useState(initialResponse)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
@@ -206,21 +208,25 @@ const CostCentersManagementPage = () => {
             icon: <ViewSvg className="w-[18px] h-[18px]" />,
             onClick: () => handleCostCenterOpen(costCenter.id),
           },
-          {
-            title: 'Edit',
-            icon: <EditSvg className="w-[18px] h-[18px]" />,
-            onClick: () => setEditingCostCenter(costCenter),
-          },
-          {
-            title: 'Delete',
-            icon: <DeleteSvg className="w-[18px] h-[18px]" />,
-            onClick: () => setDeletingCostCenter(costCenter),
-            disabled: costCenter.project_count > 0,
-            tooltip:
-              costCenter.project_count > 0
-                ? 'Linked projects must be removed before deletion'
-                : undefined,
-          },
+          ...(canManageCostCenters
+            ? [
+                {
+                  title: 'Edit',
+                  icon: <EditSvg className="w-[18px] h-[18px]" />,
+                  onClick: () => setEditingCostCenter(costCenter),
+                },
+                {
+                  title: 'Delete',
+                  icon: <DeleteSvg className="w-[18px] h-[18px]" />,
+                  onClick: () => setDeletingCostCenter(costCenter),
+                  disabled: costCenter.project_count > 0,
+                  tooltip:
+                    costCenter.project_count > 0
+                      ? 'Linked projects must be removed before deletion'
+                      : undefined,
+                },
+              ]
+            : []),
         ]
 
         return (
@@ -234,17 +240,18 @@ const CostCentersManagementPage = () => {
         )
       },
     }),
-    [handleCostCenterOpen, buildProjectsLink]
+    [handleCostCenterOpen, buildProjectsLink, canManageCostCenters]
   )
 
   const headerActions = useMemo(
-    () => (
-      <Button onClick={() => setIsCreatePopupVisible(true)} size={ButtonSize.MEDIUM}>
-        <PlusFilledSvg />
-        Create
-      </Button>
-    ),
-    []
+    () =>
+      canManageCostCenters ? (
+        <Button onClick={() => setIsCreatePopupVisible(true)} size={ButtonSize.MEDIUM}>
+          <PlusFilledSvg />
+          Create
+        </Button>
+      ) : undefined,
+    [canManageCostCenters]
   )
 
   return (

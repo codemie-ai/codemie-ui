@@ -18,6 +18,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import CostCenterDetailsPage from '@/pages/settings/administration/CostCenterDetailsPage'
 import { costCentersStore } from '@/store/costCenters'
+import { userStore } from '@/store/user'
 import { CostCenterDetail } from '@/types/entity/costCenter'
 
 const { budgetManagementFlag } = vi.hoisted(() => ({
@@ -36,6 +37,16 @@ vi.mock('@/hooks/useVueRouter', () => ({
 }))
 
 vi.mock('@/store/costCenters')
+
+vi.mock('@/pages/settings/components/SettingsLayout', () => ({
+  default: ({ contentTitle, content, rightContent }: any) => (
+    <div>
+      <h1>{contentTitle}</h1>
+      <div data-testid="header-actions">{rightContent}</div>
+      {content}
+    </div>
+  ),
+}))
 
 const rollupCardMock = vi.fn()
 vi.mock('@/pages/settings/administration/projectsManagement/CostCenterBudgetRollupCard', () => ({
@@ -72,6 +83,7 @@ describe('CostCenterDetailsPage', () => {
     vi.clearAllMocks()
     budgetManagementFlag.mockReturnValue([true, true])
     vi.mocked(costCentersStore.getCostCenter).mockResolvedValue(mockCostCenter)
+    userStore.user = { userId: 'admin-1', isAdmin: true } as never
   })
 
   it('does not render the budget rollup card when budgetManagement is disabled', async () => {
@@ -113,5 +125,36 @@ describe('CostCenterDetailsPage', () => {
     })
     // the reload re-fetched the cost center too, not just bumped a local counter
     expect(costCentersStore.getCostCenter).toHaveBeenCalledTimes(2)
+  })
+
+  describe('write controls by role (EPMCDME-17380)', () => {
+    it('shows Edit and Delete to an admin', async () => {
+      render(<CostCenterDetailsPage />)
+
+      expect(await screen.findByRole('button', { name: 'Edit Cost Center' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    })
+
+    it('shows Edit and Delete to a maintainer', async () => {
+      userStore.user = { userId: 'm-1', isAdmin: false, isMaintainer: true } as never
+
+      render(<CostCenterDetailsPage />)
+
+      expect(await screen.findByRole('button', { name: 'Edit Cost Center' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    })
+
+    it('shows the details read-only to an auditor: no Edit or Delete', async () => {
+      userStore.user = { userId: 'a-1', isAdmin: false, isAuditor: true } as never
+
+      render(<CostCenterDetailsPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Engineering')).toBeInTheDocument()
+      })
+      expect(screen.getByTestId('cost-center-budget-rollup-card')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Edit Cost Center' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+    })
   })
 })

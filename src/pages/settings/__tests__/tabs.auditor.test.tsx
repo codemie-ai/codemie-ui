@@ -44,13 +44,12 @@ describe('getNavigationTabs — auditor role', () => {
     expect(childIds).toContain('budgets_management')
   })
 
-  it('auditor does not see Activity Events or Cost Centers', async () => {
+  it('auditor does not see Activity Events', async () => {
     const { getNavigationTabs } = await import('@/pages/settings/tabs')
     const tabs = getNavigationTabs(false, false, false, false, true)
     const adminTab = tabs.find((t) => t.id === 'administration')
     const childIds = adminTab?.children?.map((c) => c.id) ?? []
     expect(childIds).not.toContain('activity_events')
-    expect(childIds).not.toContain('cost_centers_management')
   })
 
   it('regular user without any role does not see Users or Budgets tabs', async () => {
@@ -105,5 +104,56 @@ describe('getNavigationTabs — auditor role', () => {
         ?.children?.map((c) => c.id) ?? []
     expect(adminChildIds).not.toContain('users_management')
     expect(auditorChildIds).not.toContain('users_management')
+  })
+
+  describe('Cost centers tab (EPMCDME-17380)', () => {
+    const loadChildIds = async (flags: { costCenters: boolean }, args: boolean[]) => {
+      vi.resetModules()
+      vi.doMock('@/utils/featureFlags', () => ({
+        isBudgetManagementEnabled: () => true,
+        isUserManagementEnabled: () => true,
+        isMcpEnabled: () => false,
+        isCostCentersEnabled: () => flags.costCenters,
+        isTeamsEnabled: () => false,
+        isMarketplaceManagementEnabled: () => true,
+      }))
+      const { getNavigationTabs } = await import('@/pages/settings/tabs')
+      const [isAdmin, isMaintainer, isAuditor] = args
+      // SettingsLayout ORs isMaintainer into the isAdmin param
+      const tabs = getNavigationTabs(isAdmin || isMaintainer, false, isMaintainer, false, isAuditor)
+      return tabs.find((t) => t.id === 'administration')?.children?.map((c) => c.id) ?? []
+    }
+
+    it('auditor sees Cost centers management when the feature flag is on', async () => {
+      const childIds = await loadChildIds({ costCenters: true }, [false, false, true])
+      expect(childIds).toContain('cost_centers_management')
+    })
+
+    it('auditor sees Cost centers management in the same order as admin', async () => {
+      const auditorIds = await loadChildIds({ costCenters: true }, [false, false, true])
+      const adminIds = await loadChildIds({ costCenters: true }, [true, false, false])
+      const auditorOrder = auditorIds.filter((id) =>
+        ['cost_centers_management', 'projects_management', 'users_management'].includes(id)
+      )
+      const adminOrder = adminIds.filter((id) =>
+        ['cost_centers_management', 'projects_management', 'users_management'].includes(id)
+      )
+      expect(auditorOrder).toEqual(adminOrder)
+    })
+
+    it('auditor does not see Cost centers management when the feature flag is off', async () => {
+      const childIds = await loadChildIds({ costCenters: false }, [false, false, true])
+      expect(childIds).not.toContain('cost_centers_management')
+    })
+
+    it('admin still sees Cost centers management', async () => {
+      const childIds = await loadChildIds({ costCenters: true }, [true, false, false])
+      expect(childIds).toContain('cost_centers_management')
+    })
+
+    it('user with no admin, maintainer or auditor role does not see Cost centers management', async () => {
+      const childIds = await loadChildIds({ costCenters: true }, [false, false, false])
+      expect(childIds).not.toContain('cost_centers_management')
+    })
   })
 })

@@ -14,6 +14,7 @@
 //
 
 import { useCallback, useEffect, useState } from 'react'
+import { useSnapshot } from 'valtio'
 
 import Cross18Svg from '@/assets/icons/cross.svg?react'
 import Button from '@/components/Button'
@@ -26,6 +27,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import CostCenterFormPopup from '@/pages/settings/administration/components/CostCenterFormPopup'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
 import { costCentersStore } from '@/store/costCenters'
+import { userStore } from '@/store/user'
 import { CostCenterDetail } from '@/types/entity/costCenter'
 import { formatDateTime } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
@@ -36,6 +38,9 @@ import CostCenterProjectsManager from './projectsManagement/CostCenterProjectsMa
 
 const CostCenterDetailsPage = () => {
   const router = useVueRouter()
+  const { user: currentUser } = useSnapshot(userStore)
+  // Auditors get read-only access: the backend refuses edit/delete for them (403)
+  const canManageCostCenter = !!(currentUser?.isAdmin || currentUser?.isMaintainer)
   const costCenterId = router.params.costCenterId as string
   const [costCenter, setCostCenter] = useState<CostCenterDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -114,19 +119,21 @@ const CostCenterDetailsPage = () => {
         contentTitle={costCenter.name}
         onBack={handleBack}
         rightContent={
-          <div className="flex gap-3">
-            <Button size={ButtonSize.MEDIUM} onClick={() => setIsEditPopupVisible(true)}>
-              Edit Cost Center
-            </Button>
-            <Button
-              size={ButtonSize.MEDIUM}
-              type={ButtonType.DELETE}
-              onClick={() => setIsDeletePopupVisible(true)}
-              disabled={costCenter.project_count > 0}
-            >
-              Delete
-            </Button>
-          </div>
+          canManageCostCenter ? (
+            <div className="flex gap-3">
+              <Button size={ButtonSize.MEDIUM} onClick={() => setIsEditPopupVisible(true)}>
+                Edit Cost Center
+              </Button>
+              <Button
+                size={ButtonSize.MEDIUM}
+                type={ButtonType.DELETE}
+                onClick={() => setIsDeletePopupVisible(true)}
+                disabled={costCenter.project_count > 0}
+              >
+                Delete
+              </Button>
+            </div>
+          ) : undefined
         }
         content={
           <div className="flex flex-col gap-6 pt-6 pb-8">

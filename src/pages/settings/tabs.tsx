@@ -81,20 +81,21 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
     title: 'Customer Configuration',
     url: '/settings/administration/customer-configuration',
   }
+  const costCentersTab: LayoutTab[] = ctx.isCostCentersFeatureEnabled
+    ? [
+        {
+          id: SettingsTab.COST_CENTERS_MANAGEMENT,
+          name: 'Cost centers management',
+          title: 'Cost centers management',
+          url: '/settings/administration/cost-centers',
+        },
+      ]
+    : []
   if (ctx.isAdmin) {
     return [
       ...ctx.activityEventsTab,
       customerConfigurationTab,
-      ...(ctx.isCostCentersFeatureEnabled
-        ? [
-            {
-              id: SettingsTab.COST_CENTERS_MANAGEMENT,
-              name: 'Cost centers management',
-              title: 'Cost centers management',
-              url: '/settings/administration/cost-centers',
-            },
-          ]
-        : []),
+      ...costCentersTab,
       ctx.projectsTab,
       ...ctx.usersManagementTab,
       ...ctx.budgetsManagementTab,
@@ -123,9 +124,12 @@ const buildAdministrationChildren = (ctx: AdminChildrenContext): LayoutTab[] => 
     ].sort((a, b) => a.name.localeCompare(b.name))
   }
   if (ctx.isAuditor) {
-    return [ctx.projectsTab, ...ctx.usersManagementTab, ...ctx.budgetsManagementTab].sort((a, b) =>
-      a.name.localeCompare(b.name)
-    )
+    return [
+      ...costCentersTab,
+      ctx.projectsTab,
+      ...ctx.usersManagementTab,
+      ...ctx.budgetsManagementTab,
+    ].sort((a, b) => a.name.localeCompare(b.name))
   }
   return [
     ...ctx.activityEventsTab,
