@@ -52,6 +52,7 @@ export const ROUTE_ID_TO_TITLE: Record<string, string> = {
 
   // Integrations
   integrations: 'Integrations',
+  'new-integration': 'New Integration',
   'new-user-integration': 'New Integration',
   'edit-user-integration': 'Edit Integration',
   'new-project-integration': 'New Integration',

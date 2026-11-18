@@ -205,3 +205,35 @@ describe('Autocomplete', () => {
     expect(dropdownButton).toHaveAttribute('tabindex', '-1')
   })
 })
+
+describe('Autocomplete disabled options and tags', () => {
+  const taggedOptions: FilterOption[] = [
+    { label: 'Basic', value: 'basic', badge: 'Project only' },
+    { label: 'Token', value: 'token', disabled: true, hint: 'Not available at User scope' },
+  ]
+
+  it('shows the badge and the hint next to the label', async () => {
+    const u = userEvent.setup()
+    render(<Autocomplete options={taggedOptions} onChange={vi.fn()} />)
+    await u.click(screen.getByRole('combobox'))
+
+    expect(await screen.findByText('Project only')).toBeInTheDocument()
+    expect(screen.getByText('Not available at User scope')).toBeInTheDocument()
+  })
+
+  it('marks a disabled option aria-disabled and does not call onChange when it is chosen', async () => {
+    const u = userEvent.setup()
+    const onChange = vi.fn()
+    render(<Autocomplete options={taggedOptions} onChange={onChange} />)
+    await u.click(screen.getByRole('combobox'))
+
+    const disabledItem = (await screen.findByText('Token')).closest('[aria-disabled="true"]')
+    expect(disabledItem).not.toBeNull()
+
+    await u.click(screen.getByText('Token'))
+    expect(onChange).not.toHaveBeenCalledWith('token')
+
+    await u.click(await screen.findByText('Basic'))
+    expect(onChange).toHaveBeenCalledWith('basic')
+  })
+})

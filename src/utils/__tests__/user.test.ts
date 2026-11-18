@@ -15,7 +15,9 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { formatUserOptions } from '../user'
+import { User } from '@/types/entity/user'
+
+import { canUseProjectScope, formatUserOptions } from '../user'
 
 describe('formatUserOptions', () => {
   it('preserves email when present on user object', () => {
@@ -53,5 +55,25 @@ describe('formatUserOptions', () => {
     const result = formatUserOptions(users)
     expect(result[0].label).toBe('Alice')
     expect(result[0].value).toBe('u1')
+  })
+})
+
+const make = (over: Partial<User>) => ({ isAdmin: false, applicationsAdmin: [], ...over } as User)
+
+describe('canUseProjectScope', () => {
+  it('is true for a platform admin', () => {
+    expect(canUseProjectScope(make({ isAdmin: true }))).toBe(true)
+  })
+
+  it('is true for a project admin of at least one project', () => {
+    expect(canUseProjectScope(make({ applicationsAdmin: ['p1'] }))).toBe(true)
+  })
+
+  it('is false when applicationsAdmin is empty', () => {
+    expect(canUseProjectScope(make({ applicationsAdmin: [] }))).toBe(false)
+  })
+
+  it('is false for no user', () => {
+    expect(canUseProjectScope(null)).toBe(false)
   })
 })

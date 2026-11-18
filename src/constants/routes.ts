@@ -61,6 +61,7 @@ export const HOSTED_APPLICATION_MANAGE = 'hosted-application-manage'
 export const HOSTED_APPLICATION_EDIT = 'hosted-application-edit'
 export const HOSTED_APPLICATION_PREVIEW = 'hosted-application-preview'
 export const INTEGRATIONS = 'integrations'
+export const NEW_INTEGRATION = 'new-integration'
 
 export const SCHEDULERS = 'schedulers'
 

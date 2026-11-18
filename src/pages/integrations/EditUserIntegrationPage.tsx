@@ -35,6 +35,7 @@ const EditUserIntegrationPage = () => (
     sidebarDescription="Manage your integrations"
     backRoute={INTEGRATIONS}
     successMessage="Integration updated successfully"
+    showScope
     fetchSetting={fetchSetting}
     updateSetting={updateSetting}
   />

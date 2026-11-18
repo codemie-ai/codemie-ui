@@ -14,7 +14,7 @@
 //
 
 import { screen, waitFor } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
 
 import { mockAPI, renderPage } from '@/test-utils/integration'
 
@@ -39,8 +39,13 @@ const createSettingFixture = (overrides = {}) => ({
 })
 
 describe('IntegrationsPage — State column (EPMCDME-8260)', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    window.history.replaceState({}, '', '/integrations')
+  })
+
   it('shows Enabled badge for a Scheduler row with is_enabled: true', async () => {
-    mockAPI('GET', 'v1/settings/user', {
+    mockAPI('GET', 'v1/settings', {
       data: [createSettingFixture({ credential_values: [{ key: 'is_enabled', value: true }] })],
       pagination: paginationStub,
     })
@@ -53,7 +58,7 @@ describe('IntegrationsPage — State column (EPMCDME-8260)', () => {
   })
 
   it('shows Disabled badge for a Scheduler row with is_enabled: false', async () => {
-    mockAPI('GET', 'v1/settings/user', {
+    mockAPI('GET', 'v1/settings', {
       data: [createSettingFixture({ credential_values: [{ key: 'is_enabled', value: false }] })],
       pagination: paginationStub,
     })
@@ -66,7 +71,7 @@ describe('IntegrationsPage — State column (EPMCDME-8260)', () => {
   })
 
   it('shows Disabled badge for a Scheduler row without is_enabled in credential_values', async () => {
-    mockAPI('GET', 'v1/settings/user', {
+    mockAPI('GET', 'v1/settings', {
       data: [
         createSettingFixture({
           credential_values: [{ key: 'url', value: 'https://scheduler.example.com' }],
@@ -85,7 +90,7 @@ describe('IntegrationsPage — State column (EPMCDME-8260)', () => {
   })
 
   it('shows no badge for a non-scheduler row without is_enabled', async () => {
-    mockAPI('GET', 'v1/settings/user', {
+    mockAPI('GET', 'v1/settings', {
       data: [
         createSettingFixture({
           alias: 'my-github',
@@ -106,7 +111,7 @@ describe('IntegrationsPage — State column (EPMCDME-8260)', () => {
   })
 
   it('shows Enabled badge for a non-scheduler row with is_enabled explicitly set to true', async () => {
-    mockAPI('GET', 'v1/settings/user', {
+    mockAPI('GET', 'v1/settings', {
       data: [
         createSettingFixture({
           alias: 'my-github',
@@ -129,7 +134,7 @@ describe('IntegrationsPage — State column (EPMCDME-8260)', () => {
   })
 
   it('shows Disabled badge for a non-scheduler row with is_enabled explicitly set to false', async () => {
-    mockAPI('GET', 'v1/settings/user', {
+    mockAPI('GET', 'v1/settings', {
       data: [
         createSettingFixture({
           alias: 'my-github',

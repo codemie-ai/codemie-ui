@@ -27,6 +27,7 @@ const fixCloseButton = () => {
 
 interface ToastOptions {
   text?: string
+  node?: HTMLElement
   className?: string
   newWindow?: boolean
   close?: boolean
@@ -90,9 +91,18 @@ const prepareText = (text: string): string => {
   )}</h2><p class="codemie-toast-content">${DOMPurify.sanitize(content, allowedTags)}</p>`
 }
 
+export interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
+interface SuccessOptions {
+  action?: ToastAction
+}
+
 interface Toaster {
   info: (text: string, options?: { duration?: number }) => void
-  success: (text: string) => void
+  success: (text: string, options?: SuccessOptions) => void
   warning: (text: string, options?: { duration?: number }) => void
   error: (text: string) => void
 }
@@ -150,6 +160,26 @@ const toAnnouncement = (text: string): string => {
   return collapseWhitespace(doc.body.textContent ?? '')
 }
 
+// Toast content with an action button is built as a DOM node: the header and content come from the
+// already-sanitized prepareText markup, while the label only ever reaches the DOM through
+// textContent, so it is never parsed as HTML.
+const buildActionNode = (text: string, action: ToastAction, hide: () => void): HTMLElement => {
+  const node = document.createElement('div')
+  node.innerHTML = prepareText(text) // sanitized by prepareText (DOMPurify allow-list)
+
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'codemie-toast-action mt-2 underline font-semibold cursor-pointer'
+  button.textContent = action.label
+  button.addEventListener('click', (event) => {
+    event.stopPropagation()
+    action.onClick()
+    hide()
+  })
+  node.appendChild(button)
+  return node
+}
+
 const toaster: Toaster = {
   info: (text: string, options?: { duration?: number }) => {
     if (!text) return
@@ -157,11 +187,25 @@ const toaster: Toaster = {
     fixCloseButton()
     announcer?.(toAnnouncement(text))
   },
-  success: (text: string) => {
+  success: (text: string, options?: SuccessOptions) => {
     if (!text) return
-    Toastify({ ...defaultOpts, ...successOpts, text: prepareText(text) }).showToast()
+    const action = options?.action
+    if (!action) {
+      Toastify({ ...defaultOpts, ...successOpts, text: prepareText(text) }).showToast()
+      fixCloseButton()
+      announcer?.(toAnnouncement(text))
+      return
+    }
+
+    let toast: ReturnType<typeof Toastify> | undefined
+    const node = buildActionNode(text, action, () => toast?.hideToast())
+    // A toast with an action is the only way to recover from a hidden-by-filter row; the default
+    // 3s duration leaves no time for a keyboard or screen reader user to reach it (WCAG 2.2.1), so
+    // it stays open until the person dismisses it.
+    toast = Toastify({ ...defaultOpts, ...successOpts, duration: -1, node })
+    toast.showToast()
     fixCloseButton()
-    announcer?.(toAnnouncement(text))
+    announcer?.(collapseWhitespace(`${toAnnouncement(text)} ${action.label}`))
   },
   warning: (text: string, options?: { duration?: number }) => {
     if (!text) return

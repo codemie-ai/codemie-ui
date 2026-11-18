@@ -18,6 +18,7 @@ import React, { useState, useEffect, useRef, useImperativeHandle, ReactNode } fr
 
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
 import CrossSvg from '@/assets/icons/cross.svg?react'
+import FieldAnnouncer from '@/components/form/FieldAnnouncer'
 import { useInputWidth } from '@/hooks/useInputWidth'
 import { FilterOption } from '@/types/filters'
 import { cn } from '@/utils/utils'
@@ -61,6 +62,17 @@ export interface AutocompleteProps {
   onSearch?: (query: string) => void
   itemTemplate?: (item: FilterOption) => ReactNode
 }
+
+const defaultItemTemplate = (item: FilterOption) => (
+  <div
+    className={cn('flex items-center gap-2 min-w-0', item.disabled && 'opacity-60 cursor-default')}
+    aria-disabled={item.disabled ? 'true' : undefined}
+  >
+    <span className="truncate">{item.label}</span>
+    {item.badge && <span className="shrink-0 text-xs text-text-quaternary">{item.badge}</span>}
+    {item.hint && <span className="truncate text-xs text-text-quaternary">{item.hint}</span>}
+  </div>
+)
 
 const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompleteProps>(
   (
@@ -241,81 +253,96 @@ const Autocomplete = React.forwardRef<AutoComplete<FilterOption>, AutocompletePr
     const autocompleteValue =
       selectedOption && selectedOption.label === textValue ? selectedOption : textValue
 
-    const autocompleteElement = (
-      <AutoComplete
-        ref={autocompleteEl}
-        inputRef={inputRef}
-        id={id}
-        name={name}
-        value={autocompleteValue}
-        suggestions={filteredOptions}
-        completeMethod={search}
-        onChange={(e) => {
-          if (e.value && typeof e.value === 'object' && e.value.disabled) {
-            resetText(true)
-            return
-          }
-          setTextValue(e.value as unknown as string)
-        }}
-        onSelect={(e) => updateValue(e.value)}
-        onClick={handleClick}
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        onShow={() => {
-          isPanelOpen.current = true
-        }}
-        onHide={() => {
-          isPanelOpen.current = false
-        }}
-        onDropdownClick={handleDropdownClick}
-        field="label"
-        dropdown
-        panelFooterTemplate={panelFooterTemplate}
-        panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}
-        forceSelection={!allowNew}
-        disabled={disabled}
-        placeholder={placeholder}
-        minLength={0}
-        invalid={!!error}
-        pt={{
-          ...ptPreset,
-          loadingIcon: { className: isLoadingIconVisible ? '' : 'hidden' },
-        }}
-        emptyMessage="No results found"
-        dropdownIcon={<ChevronDownSvg />}
-        showEmptyMessage
-        itemTemplate={itemTemplate}
-      />
-    )
-
     return (
       <div className={cn('flex flex-col gap-1.5 text-text-tertiary w-full', className)}>
-        {label && (
-          <label htmlFor={id} className="flex gap-1.5 text-xs text-text-quaternary ">
-            {label}
-            {hint && <TooltipButton content={hint} />}
-          </label>
-        )}
+        <FieldAnnouncer id={id} error={error} errorClassName="text-text-error text-sm">
+          {({ ariaInvalid, ariaDescribedBy }) => {
+            const autocompleteElement = (
+              <AutoComplete
+                ref={autocompleteEl}
+                inputRef={inputRef}
+                id={id}
+                name={name}
+                value={autocompleteValue}
+                suggestions={filteredOptions}
+                completeMethod={search}
+                onChange={(e) => {
+                  if (e.value && typeof e.value === 'object' && e.value.disabled) {
+                    resetText(true)
+                    return
+                  }
+                  setTextValue(e.value as unknown as string)
+                }}
+                onSelect={(e) => updateValue(e.value)}
+                onClick={handleClick}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                onShow={() => {
+                  isPanelOpen.current = true
+                }}
+                onHide={() => {
+                  isPanelOpen.current = false
+                }}
+                onDropdownClick={handleDropdownClick}
+                field="label"
+                dropdown
+                panelFooterTemplate={panelFooterTemplate}
+                panelStyle={inputWidth ? { width: `${inputWidth}px` } : {}}
+                forceSelection={!allowNew}
+                disabled={disabled}
+                placeholder={placeholder}
+                minLength={0}
+                invalid={!!error}
+                pt={{
+                  ...ptPreset,
+                  loadingIcon: { className: isLoadingIconVisible ? '' : 'hidden' },
+                  input: {
+                    root: (options) => ({
+                      ...(typeof ptPreset?.input?.root === 'function'
+                        ? ptPreset.input.root(options)
+                        : ptPreset?.input?.root),
+                      'aria-invalid': ariaInvalid,
+                      'aria-describedby': ariaDescribedBy,
+                    }),
+                  },
+                }}
+                emptyMessage="No results found"
+                dropdownIcon={<ChevronDownSvg />}
+                showEmptyMessage
+                itemTemplate={itemTemplate ?? defaultItemTemplate}
+              />
+            )
 
-        {showClear ? (
-          <div className="relative flex flex-col">
-            {autocompleteElement}
-            {value && !disabled && (
-              <button
-                type="button"
-                aria-label="Clear"
-                onClick={() => onChange?.('')}
-                className="absolute right-9 top-1/2 flex -translate-y-1/2 text-text-tertiary transition hover:text-text-primary"
-              >
-                <CrossSvg className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-        ) : (
-          autocompleteElement
-        )}
+            return (
+              <>
+                {label && (
+                  <label htmlFor={id} className="flex gap-1.5 text-xs text-text-quaternary ">
+                    {label}
+                    {hint && <TooltipButton content={hint} />}
+                  </label>
+                )}
 
-        {error && <div className="text-text-error text-sm">{error}</div>}
+                {showClear ? (
+                  <div className="relative flex flex-col">
+                    {autocompleteElement}
+                    {value && !disabled && (
+                      <button
+                        type="button"
+                        aria-label="Clear"
+                        onClick={() => onChange?.('')}
+                        className="absolute right-9 top-1/2 flex -translate-y-1/2 text-text-tertiary transition hover:text-text-primary"
+                      >
+                        <CrossSvg className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  autocompleteElement
+                )}
+              </>
+            )
+          }}
+        </FieldAnnouncer>
       </div>
     )
   }

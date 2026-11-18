@@ -17,8 +17,11 @@ import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { SortState } from '@/types/table'
+import { FILTER_ENTITY } from '@/utils/filters'
 
 import { useTableFilters } from '../useTableFilters'
+
+vi.mock('@/store/user', () => ({ userStore: { user: { userId: 'u1' } } }))
 
 afterEach(cleanup)
 
@@ -131,5 +134,28 @@ describe('useTableFilters — controlled sort', () => {
 
     act(() => result.current.onSort('users'))
     expect(onSortCallback).toHaveBeenCalledWith({ sortKey: 'users', sortOrder: 'desc' })
+  })
+})
+
+describe('useTableFilters — integrations filter keys', () => {
+  afterEach(() => {
+    window.history.replaceState({}, '', '/')
+    localStorage.clear()
+  })
+
+  it('reads ?scope for the integrations entity', () => {
+    window.history.replaceState({}, '', '/?scope=project&type=DIAL')
+    const { result } = renderHook(() => useTableFilters({ filterKey: FILTER_ENTITY.INTEGRATIONS }))
+    expect(result.current.filters).toEqual({
+      scope: 'project',
+      type: ['DIAL'],
+      is_global: null,
+    })
+  })
+
+  it('ignores ?scope for entities that use the default keys', () => {
+    window.history.replaceState({}, '', '/?scope=project')
+    const { result } = renderHook(() => useTableFilters({ filterKey: FILTER_ENTITY.DATASOURCES }))
+    expect(result.current.filters).not.toHaveProperty('scope')
   })
 })

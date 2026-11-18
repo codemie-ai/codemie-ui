@@ -361,7 +361,7 @@ export const userStore = proxy<UserStoreType>({
       await userLoadPromise.catch(() => {})
     }
 
-    if (userStore.user?.isAdmin || userStore.user?.isAuditor) {
+    if (userStore.user?.isAdmin || (userStore.user?.isAuditor && !adminOnly)) {
       return userStore.getAdminProjects(query)
     }
 
@@ -398,7 +398,9 @@ export const userStore = proxy<UserStoreType>({
 
   getUserProjects(adminOnly = false, query = '') {
     const projects = userStore.user?.projects ?? []
-    const filtered = adminOnly ? projects.filter((p) => p.is_project_admin) : projects
+    const filtered = adminOnly
+      ? projects.filter((p) => userStore.user?.applicationsAdmin?.includes(p.name))
+      : projects
     const searched = query ? filtered.filter((p) => matchesProjectSearch(p, query)) : filtered
     return searched
       .map((p) => ({ name: p.name, display_name: p.display_name }))

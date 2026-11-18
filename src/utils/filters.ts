@@ -35,14 +35,13 @@ export enum FILTER_ENTITY {
   WORKFLOWS = 'workflows',
   DATASOURCES = 'datasources',
   KATAS = 'katas',
-  USER_SETTINGS = 'user_settings',
-  PROJECT_SETTINGS = 'project_settings',
   ANALYTICS = 'analytics',
   ANALYTICS_LEADERBOARD = 'analytics_leaderboard',
   CLI_ANALYTICS = 'local_analytics',
   USERS_MANAGEMENT = 'users_management',
   FAVORITES = 'favorites',
   PROJECTS = 'projects',
+  INTEGRATIONS = 'integrations',
 }
 
 export type FilterKeys = {
@@ -80,15 +79,27 @@ const knownFilterKeys: FilterKeys = {
   ],
 }
 /**
+ * URL parameter schema per entity, for entities whose params differ from `knownFilterKeys`.
+ * `getFilters` picks the entry for the entity it is given.
+ */
+const ENTITY_FILTER_KEYS: Record<string, FilterKeys> = {
+  [FILTER_ENTITY.INTEGRATIONS]: {
+    simple: ['search', 'created_by', 'scope'],
+    boolean: ['is_global'],
+    multiple: ['project', 'type'],
+  },
+}
+
+/**
  * Get filters for a specific entity, prioritizing URL filters over storage filters
  * @param entityKey - Entity key (e.g. 'assistants')
- * @param filterKeys - URL parameter schema for this entity. Each hook passes its own keys so
- *   the global `knownFilterKeys` list is not polluted. Defaults to `knownFilterKeys`.
+ * @param filterKeys - URL parameter schema for this entity. Defaults to the entity's entry in
+ *   `ENTITY_FILTER_KEYS`, else `knownFilterKeys`, so the global list is not polluted.
  * @returns Combined filters from URL and localStorage
  */
 export const getFilters = <T extends object>(
   entityKey: string,
-  filterKeys: FilterKeys = knownFilterKeys
+  filterKeys: FilterKeys = ENTITY_FILTER_KEYS[entityKey] ?? knownFilterKeys
 ): T => {
   if (!entityKey) {
     throw new Error('Entity key is required for filter operations')

@@ -14,6 +14,7 @@
 //
 
 import { HelpPageId } from '@/constants/helpLinks'
+import { NEW_INTEGRATION } from '@/constants/routes'
 import { MCP_SETTINGS_TYPE } from '@/constants/settings'
 import { OnboardingFlow } from '@/types/onboarding'
 import { findOnboardingElement, setCredentialType as setType } from '@/utils/onboarding'
@@ -50,31 +51,28 @@ In this guide, you'll:
 Let's open the form and get started!`,
     },
 
-    // Tech: Navigate to the Create User Integration form
+    // Tech: Navigate to the unified New Integration form, preset to User scope
     {
       id: 'nav-create',
       actionType: 'Navigation',
-      route: { name: 'new-user-integration' },
+      route: { name: NEW_INTEGRATION, query: { scope: 'user' } },
       delay: 300,
     },
 
-    // Step 2: Project selector + Global toggle
+    // Step 2: Scope selector
     {
-      id: 'project-scope-fields',
+      id: 'scope-field',
       actionType: 'Highlight',
-      title: 'Choose Project and Scope',
-      target: () => findOnboardingElement('integration-project-scope-fields'),
-      description: `Every integration starts with these two fields:
+      title: 'Choose the Scope',
+      target: () => findOnboardingElement('integration-scope-field'),
+      description: `Scope is the first choice on the form. It decides who can use the integration:
 
-- Project: assigns the integration to a specific project so its assistants and data sources can use it. Cannot be changed after saving.
-- Global Integration: when enabled, this integration is available across all your projects. Ideal for credentials you reuse everywhere.
+- User: only you can use it. Turn on Global Integration to use it in every project you work in.
+- Project: every member of the selected project can use it. Only project admins can create Project integrations.
 
-There are three integration scopes in total:
-1. User — personal, scoped to one project
-2. User Global — personal, usable across all your projects (this toggle)
-3. Project — shared with all project members; requires admin role
+When a tool needs an integration, CodeMie auto-selects the most specific one: User, then User Global, then Project.
 
-When a tool needs an integration, CodeMie auto-selects the most specific one: User → User Global → Project.`,
+Below Scope you pick the Project the integration belongs to. It cannot be changed after saving.`,
     },
 
     // Step 3: Alias

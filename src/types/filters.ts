@@ -29,8 +29,11 @@ export interface FilterOption {
   value: string | number | boolean | null
   id?: string
   badge?: string
-  isPremium?: boolean
+  /** Small secondary text shown next to the label, e.g. why an option is disabled. */
+  hint?: string
+  /** A disabled option is shown but cannot be chosen. */
   disabled?: boolean
+  isPremium?: boolean
 }
 
 export interface SelectOption<

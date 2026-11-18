@@ -27,6 +27,7 @@ import {
 } from '@/types/settingsUI'
 import { isEnterpriseEdition } from '@/utils/enterpriseEdition'
 import { capitalize, formatDate } from '@/utils/helpers'
+import { IntegrationScope } from '@/utils/integrationScope'
 import { CREDENTIAL_UI_MAPPING } from '@/utils/settingsUIConfig'
 import { isUserProjectAdmin } from '@/utils/user'
 
@@ -98,6 +99,21 @@ export const getCredentialUIMapping = ({
   })
 
   return filteredCredentials
+}
+
+/**
+ * Scope a credential type is bound to, from its config accessType. Accepts what the Type filter
+ * carries (the serverEnum, e.g. 'DIAL', 'GoogleOAuth'); a config key ('dial') works too.
+ * USER_ONLY -> 'user', PROJECT_ONLY -> 'project', anything else (incl. unknown) -> null.
+ */
+export const getTypeScopeBinding = (typeKey: string): IntegrationScope | null => {
+  const entries = Object.entries(CREDENTIAL_UI_MAPPING)
+  const config =
+    CREDENTIAL_UI_MAPPING[typeKey] ??
+    entries.find(([key, c]) => c.serverEnum === typeKey && !getBaseTypeForOAuthVariant(key))?.[1]
+  if (config?.accessType === CredentialAccessType.USER_ONLY) return IntegrationScope.USER
+  if (config?.accessType === CredentialAccessType.PROJECT_ONLY) return IntegrationScope.PROJECT
+  return null
 }
 
 export const getAvailableCredentialsTypes = ({

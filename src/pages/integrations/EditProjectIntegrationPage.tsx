@@ -36,6 +36,7 @@ const EditProjectIntegrationPage = () => (
     backRoute={INTEGRATIONS}
     successMessage="Integration updated successfully"
     settingType="project"
+    showScope
     fetchSetting={fetchSetting}
     updateSetting={updateSetting}
   />

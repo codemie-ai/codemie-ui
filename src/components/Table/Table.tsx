@@ -60,6 +60,7 @@ interface TableBodyRowProps<T> {
   expandedRowIds?: ReadonlyArray<string>
   rowTestIdPrefix?: string
   onRowClick?: (item: T) => void
+  isRowHighlighted?: (item: T) => boolean
   onSelectRow?: (value: T[]) => void
   rowClassName?: (item: T, index: number) => string | undefined
   isRowSelectable?: (item: T) => boolean
@@ -74,6 +75,24 @@ interface TableBodyRowProps<T> {
   renderExpandedRow?: (item: T) => React.ReactNode
 }
 
+const getRowStateClasses = ({
+  isSelected,
+  isHighlighted,
+  isClickable,
+  isSelectable,
+}: {
+  isSelected: boolean
+  isHighlighted: boolean
+  isClickable: boolean
+  isSelectable: boolean
+}) =>
+  cn(
+    isClickable && !isSelected && '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
+    isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer',
+    isHighlighted && !isSelected && '[&_td]:bg-surface-specific-input-prefix',
+    isSelectable && 'focus-visible:outline-none focus-visible:[&_td]:bg-surface-base-tertiary'
+  )
+
 const TableBodyRow = <T,>({
   value,
   rowIndex,
@@ -84,6 +103,7 @@ const TableBodyRow = <T,>({
   expandedRowIds,
   rowTestIdPrefix,
   onRowClick,
+  isRowHighlighted,
   onSelectRow,
   rowClassName,
   isRowSelectable,
@@ -104,6 +124,8 @@ const TableBodyRow = <T,>({
     ?.customRender
   if (customRender) return customRender(value)
 
+  const isHighlighted = !!isRowHighlighted?.(value)
+  const isClickable = !!onRowClick || (!!onSelectRow && (isRowSelectable?.(value) ?? true))
   const isExpanded = isExpandable && !!expandedRowIds?.includes(String(idValue))
   const isLastRow = totalRows - 1 === rowIndex
   const isExpansionLast = isLastRow && isExpanded && !hasFooter
@@ -114,6 +136,7 @@ const TableBodyRow = <T,>({
         data-testid={
           rowTestIdPrefix && idValue ? `${rowTestIdPrefix}-${String(idValue)}` : undefined
         }
+        data-highlighted={isHighlighted ? 'true' : undefined}
         onClick={(e) => handleRowClick(value, e)}
         onKeyDown={onSelectRow ? (e) => handleRowKeyDown(value, e) : undefined}
         tabIndex={onSelectRow ? 0 : undefined}
@@ -128,11 +151,12 @@ const TableBodyRow = <T,>({
         aria-selected={onSelectRow ? isSelected : undefined}
         className={cn(
           rowClassName?.(value, rowIndex),
-          (onRowClick || (onSelectRow && (isRowSelectable?.(value) ?? true))) &&
-            !isSelected &&
-            '[&_td]:hover:bg-surface-base-tertiary cursor-pointer',
-          isSelected && '[&_td]:bg-surface-specific-input-prefix cursor-pointer',
-          onSelectRow && 'focus-visible:outline-none focus-visible:[&_td]:bg-surface-base-tertiary'
+          getRowStateClasses({
+            isSelected,
+            isHighlighted,
+            isClickable,
+            isSelectable: !!onSelectRow,
+          })
         )}
       >
         {renderedColumns.map((definition, colIndex) => (
@@ -209,6 +233,8 @@ export interface TableProps<T = TableItem> {
   renderExpandedRow?: (item: T) => React.ReactNode
 
   onRowClick?: (item: T) => void
+  /** Rows for which this returns true get `data-highlighted="true"` and a highlight background. */
+  isRowHighlighted?: (item: T) => boolean
 
   ariaLabel?: string
   emptyState?: React.ReactNode
@@ -247,6 +273,7 @@ const Table = <T,>({
   renderExpandedRow,
 
   onRowClick,
+  isRowHighlighted,
 
   ariaLabel,
   emptyState,
@@ -448,6 +475,7 @@ const Table = <T,>({
                       expandedRowIds={expandedRowIds}
                       rowTestIdPrefix={rowTestIdPrefix}
                       onRowClick={onRowClick}
+                      isRowHighlighted={isRowHighlighted}
                       onSelectRow={onSelectRow}
                       rowClassName={rowClassName}
                       isRowSelectable={isRowSelectable}

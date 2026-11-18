@@ -113,3 +113,66 @@ describe('toaster announcer', () => {
     expect(fn).not.toHaveBeenCalled()
   })
 })
+
+describe('toaster success action', () => {
+  const announcer = vi.fn()
+  const hideToast = vi.fn()
+
+  const lastOpts = () =>
+    (Toastify as unknown as ReturnType<typeof vi.fn>).mock.calls.at(-1)![0] as {
+      node?: HTMLElement
+      text?: string
+    }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    ;(Toastify as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      showToast: vi.fn(),
+      hideToast,
+    })
+    setToasterAnnouncer(announcer)
+  })
+
+  afterEach(() => {
+    setToasterAnnouncer(null)
+  })
+
+  it('renders a real button that runs onClick and hides the toast', () => {
+    const onClick = vi.fn()
+    toaster.success('Saved<br>Your filters hide it', {
+      action: { label: 'Show all', onClick },
+    })
+
+    const { node } = lastOpts()
+    const button = node!.querySelector('button')!
+    expect(button.textContent).toBe('Show all')
+    expect(button.type).toBe('button')
+
+    button.click()
+    expect(onClick).toHaveBeenCalledTimes(1)
+    expect(hideToast).toHaveBeenCalledTimes(1)
+  })
+
+  it('never parses the action label as HTML', () => {
+    toaster.success('Saved', {
+      action: { label: '<img src=x onerror=alert(1)>', onClick: vi.fn() },
+    })
+
+    const { node } = lastOpts()
+    expect(node!.querySelector('img')).toBeNull()
+    expect(node!.querySelector('button')!.textContent).toBe('<img src=x onerror=alert(1)>')
+  })
+
+  it('includes the action label in the announcement', () => {
+    toaster.success('Saved<br>Your filters hide it', {
+      action: { label: 'Show all', onClick: vi.fn() },
+    })
+    expect(announcer).toHaveBeenCalledWith('Saved Your filters hide it Show all')
+  })
+
+  it('keeps the text path when no action is given', () => {
+    toaster.success('Plain')
+    expect(lastOpts().text).toContain('Plain')
+    expect(lastOpts().node).toBeUndefined()
+  })
+})

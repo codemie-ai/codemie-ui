@@ -145,6 +145,67 @@ describe('ProjectSelector', () => {
     })
   })
 
+  it('reloads with the new adminOnly when it changes', async () => {
+    mockGetProjects.mockResolvedValue([{ name: 'a', display_name: null }])
+
+    const { default: ProjectSelector } = await import('../ProjectSelector')
+    const { rerender } = render(
+      <ProjectSelector value="a" adminOnly={false} onChange={mockOnChange} />
+    )
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalledWith('', false))
+
+    rerender(<ProjectSelector value="a" adminOnly onChange={mockOnChange} />)
+
+    await waitFor(() => expect(mockGetProjects).toHaveBeenLastCalledWith('', true))
+  })
+
+  it('never auto-selects with selectDefault false, also on the reload an adminOnly change triggers (AC-15)', async () => {
+    mockGetProjects.mockResolvedValue([{ name: 'first', display_name: null }])
+
+    const { default: ProjectSelector } = await import('../ProjectSelector')
+    const { rerender, getByTestId } = render(
+      <ProjectSelector adminOnly={false} selectDefault={false} onChange={mockOnChange} />
+    )
+    await waitFor(() => expect(getByTestId('option-first')).toBeTruthy())
+
+    rerender(<ProjectSelector adminOnly selectDefault={false} onChange={mockOnChange} />)
+    await waitFor(() => expect(mockGetProjects).toHaveBeenLastCalledWith('', true))
+    await new Promise<void>((r) => {
+      setTimeout(r, 0)
+    })
+
+    expect(mockOnChange).not.toHaveBeenCalled()
+  })
+
+  it('ignores a superseded response and never auto-selects from it', async () => {
+    let resolveFirst: (v: unknown) => void = () => {}
+    mockGetProjects
+      .mockReturnValueOnce(
+        new Promise((r) => {
+          resolveFirst = r
+        })
+      )
+      .mockResolvedValueOnce([{ name: 'second', display_name: null }])
+
+    const { default: ProjectSelector } = await import('../ProjectSelector')
+    const { rerender, getByTestId, queryByTestId } = render(
+      <ProjectSelector adminOnly={false} onChange={mockOnChange} />
+    )
+    rerender(<ProjectSelector adminOnly onChange={mockOnChange} />)
+    await waitFor(() => expect(mockGetProjects).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(getByTestId('option-second')).toBeTruthy())
+    mockOnChange.mockClear()
+
+    resolveFirst([{ name: 'first', display_name: null }])
+    await new Promise<void>((r) => {
+      setTimeout(r, 0)
+    })
+
+    expect(getByTestId('option-second')).toBeTruthy()
+    expect(queryByTestId('option-first')).toBeNull()
+    expect(mockOnChange).not.toHaveBeenCalledWith('first')
+  })
+
   it('does not auto-select when value is already set', async () => {
     mockGetProjects.mockResolvedValue([{ name: 'proj-a', display_name: null }])
 

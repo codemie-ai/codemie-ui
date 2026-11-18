@@ -13,6 +13,5 @@
 // limitations under the License.
 //
 
-import UserSettings from './UserSettings'
-
-export default UserSettings
+export { default } from './Badge'
+export type { BadgeVariant } from './Badge'

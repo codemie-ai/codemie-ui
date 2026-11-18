@@ -15,7 +15,6 @@
 
 import { proxy } from 'valtio'
 
-import { Pagination } from '@/types/common'
 import {
   ConfluenceConnectionStatusResponse,
   ConfluenceOAuthConnectResponse,
@@ -35,20 +34,11 @@ import {
 import { UserSetting } from '@/types/entity/setting'
 import api from '@/utils/api'
 
-const DEFAULT_PER_PAGE = 10
-
 interface UserSettingsStoreType {
-  userSettings: UserSetting[]
-  userSettingsPagination: Pagination
   settings: Record<string, UserSetting[]>
   isSettingsIndexed: boolean
   indexedMarketplace: boolean
   indexSettings: (marketplace?: boolean) => Promise<void>
-  fetchUserSettings: (
-    page?: number | null,
-    perPage?: number | null,
-    filters?: Record<string, unknown>
-  ) => Promise<void>
   findUserSetting: (
     projectName: string,
     credentialType: string,
@@ -91,33 +81,9 @@ interface UserSettingsStoreType {
 }
 
 export const userSettingsStore = proxy<UserSettingsStoreType>({
-  userSettings: [],
-  userSettingsPagination: {
-    page: 0,
-    perPage: DEFAULT_PER_PAGE,
-    totalPages: 0,
-    totalCount: 0,
-  },
   settings: {},
   isSettingsIndexed: false,
   indexedMarketplace: false,
-
-  async fetchUserSettings(page = 0, perPage = DEFAULT_PER_PAGE, filters = {}) {
-    const url = `v1/settings/user?page=${page}&per_page=${perPage}&filters=${encodeURIComponent(
-      JSON.stringify(filters)
-    )}&`
-    const response = await api.get(url)
-    const result = await response.json()
-    const { data, pagination } = result
-
-    userSettingsStore.userSettings = data
-    userSettingsStore.userSettingsPagination = {
-      page: pagination.page,
-      perPage: pagination.per_page,
-      totalPages: pagination.pages,
-      totalCount: pagination.total,
-    }
-  },
 
   async findUserSetting(projectName, credentialType, alias) {
     const response = await api.get('v1/settings/user?per_page=10000')
@@ -174,6 +140,8 @@ export const userSettingsStore = proxy<UserSettingsStoreType>({
 
   async deleteUserSetting(id) {
     const response = await api.delete(`v1/settings/user/${id}`)
+    // A deleted integration must vanish from the scope-aware pickers without a reload.
+    userSettingsStore.resetIsSettingsIndexed()
     return response.json()
   },
 

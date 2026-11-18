@@ -13,76 +13,38 @@
 // limitations under the License.
 //
 
-import { useRef, useMemo, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import PlusIcon from '@/assets/icons/plus.svg?react'
-import DropdownButton from '@/components/DropdownButton/DropdownButton'
+import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
-import SelectButton from '@/components/SelectButton/SelectButton'
 import Sidebar from '@/components/Sidebar'
-import { IntegrationOption } from '@/constants/integration'
+import { NEW_INTEGRATION } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
-import { userStore } from '@/store'
-import { clearUrlFilters } from '@/utils/filters'
+import { IntegrationScope, ScopeFilterValue } from '@/utils/integrationScope'
 
-import IntegrationsTabComponent from './IntegrationsTab'
+import IntegrationsList from './components/IntegrationsList/IntegrationsList'
 
 const IntegrationsPage = () => {
   const router = useVueRouter()
-  const currentUser = userStore.user
   const portalSidebarRef = useRef<HTMLDivElement>(null)
-  const integrationOptions = useMemo(() => {
-    const projectPermission = currentUser?.applicationsAdmin?.length || currentUser?.isAdmin
+  const [scope, setScope] = useState<ScopeFilterValue>(IntegrationScope.USER)
 
-    return [IntegrationOption.USER, IntegrationOption.PROJECT].filter(
-      (option) => option !== IntegrationOption.PROJECT || projectPermission
-    )
-  }, [currentUser])
-  const [integrationType, setIntegrationType] = useState(IntegrationOption.USER)
+  const createIntegration = () =>
+    router.push({
+      name: NEW_INTEGRATION,
+      query: {
+        scope:
+          scope === IntegrationScope.PROJECT ? IntegrationScope.PROJECT : IntegrationScope.USER,
+      },
+    })
 
-  const showProjectSettings = currentUser?.applicationsAdmin?.length || currentUser?.isAdmin
-
-  const headerActionOptions = [
-    {
-      label: 'Create User Integration',
-      onClick: () => router.push({ name: 'new-user-integration' }),
-    },
-    ...(showProjectSettings
-      ? [
-          {
-            label: 'Create Project Integration',
-            onClick: () => router.push({ name: 'new-project-integration' }),
-          },
-        ]
-      : []),
-  ]
-
-  const handleChangeIntegrationType = (type) => {
-    clearUrlFilters()
-    setIntegrationType(type)
-  }
-
-  const renderHeaderActions = useMemo(
-    () => (
-      <div className="flex items-center justify-end text-white">
-        <SelectButton
-          caption="Integration Type:"
-          value={integrationType}
-          options={integrationOptions}
-          onChange={handleChangeIntegrationType}
-        />
-        <div className="border-l border-border-primary h-[21px] mx-5" />
-        <div className="flex gap-2">
-          <DropdownButton
-            label="Create"
-            size="medium"
-            iconLeft={<PlusIcon />}
-            items={headerActionOptions}
-          />
-        </div>
-      </div>
-    ),
-    [integrationType, integrationOptions, headerActionOptions]
+  const headerActions = (
+    <div className="flex items-center justify-end text-white">
+      <Button size="medium" onClick={createIntegration}>
+        <PlusIcon /> New Integration
+      </Button>
+    </div>
   )
 
   return (
@@ -90,11 +52,8 @@ const IntegrationsPage = () => {
       <Sidebar title="Integrations" description="Manage your integrations">
         <div className="mt-6" ref={portalSidebarRef} />
       </Sidebar>
-      <PageLayout rightContent={renderHeaderActions}>
-        <IntegrationsTabComponent
-          portalSidebarRef={portalSidebarRef}
-          integrationType={integrationType}
-        />
+      <PageLayout rightContent={headerActions}>
+        <IntegrationsList portalSidebarRef={portalSidebarRef} onScopeChange={setScope} />
       </PageLayout>
     </div>
   )

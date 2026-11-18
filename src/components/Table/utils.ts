@@ -60,6 +60,7 @@ const referenceKeys = [
   'onToggleExpand',
   'renderExpandedRow',
   'onRowClick',
+  'isRowHighlighted',
   'variant',
   'rowTestIdPrefix',
   'emptyState',

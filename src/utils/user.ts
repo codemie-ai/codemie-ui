@@ -33,6 +33,13 @@ export const isUserProjectAdmin = (
 }
 
 /**
+ * Project scope (integrations, and later schedulers) is available to platform
+ * admins and to anyone who administers at least one project.
+ */
+export const canUseProjectScope = (user: User | null): boolean =>
+  isUserProjectAdmin(user, undefined, true)
+
+/**
  * Detects if a string is a UUID
  */
 export const isUUID = (str: string): boolean => {

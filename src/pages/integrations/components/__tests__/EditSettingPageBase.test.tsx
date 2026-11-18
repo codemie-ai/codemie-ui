@@ -21,10 +21,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import EditSettingPageBase, { EditableSetting } from '../EditSettingPageBase'
 
 let capturedOnSubmit: ((values: Record<string, unknown>) => void) | null = null
+let capturedFormProps: any = null
 
 vi.mock('../SettingsForm/SettingsForm', () => ({
   default: forwardRef((props: any, ref: any) => {
     capturedOnSubmit = props.onSubmit
+    capturedFormProps = props
     useImperativeHandle(ref, () => ({ submit: vi.fn(), validate: vi.fn() }))
     return null
   }),
@@ -64,7 +66,11 @@ const SETTING: EditableSetting = {
   credential_values: [],
 }
 
-const renderPage = ({ updateSetting = vi.fn().mockResolvedValue({}) } = {}) => {
+const renderPage = ({
+  updateSetting = vi.fn().mockResolvedValue({}),
+  settingType = undefined as 'user' | 'project' | undefined,
+  showScope = undefined as boolean | undefined,
+} = {}) => {
   const fetchSetting = vi.fn().mockResolvedValue(SETTING)
   render(
     <EditSettingPageBase
@@ -73,6 +79,8 @@ const renderPage = ({ updateSetting = vi.fn().mockResolvedValue({}) } = {}) => {
       sidebarDescription="Manage your integrations"
       backRoute="/integrations"
       successMessage="Integration updated successfully"
+      settingType={settingType}
+      showScope={showScope}
       fetchSetting={fetchSetting}
       updateSetting={updateSetting}
     />
@@ -86,6 +94,22 @@ describe('EditSettingPageBase — confirm before changing an integration project
   beforeEach(() => {
     vi.clearAllMocks()
     user = userEvent.setup()
+  })
+
+  it('renders the Scope field for the setting type it edits when the page opts in', async () => {
+    renderPage({ settingType: 'project', showScope: true })
+    await waitFor(() => expect(capturedFormProps).not.toBeNull())
+
+    expect(capturedFormProps.showScope).toBe(true)
+    expect(capturedFormProps.scope).toBe('project')
+  })
+
+  it('renders no Scope field without the opt-in, as on the Scheduler edit pages (AC-20)', async () => {
+    capturedFormProps = null
+    renderPage({ settingType: 'project' })
+    await waitFor(() => expect(capturedFormProps).not.toBeNull())
+
+    expect(capturedFormProps.showScope).toBeFalsy()
   })
 
   it('saves immediately, without showing the modal, when the project is unchanged', async () => {

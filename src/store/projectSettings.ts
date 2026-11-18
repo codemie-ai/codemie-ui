@@ -15,21 +15,12 @@
 
 import { proxy } from 'valtio'
 
-import { Pagination } from '@/types/common'
 import { ProjectSetting } from '@/types/entity/setting'
 import api from '@/utils/api'
 
-const DEFAULT_PER_PAGE = 10
 const ALL_SETTINGS_PAGE_SIZE = 100
 
 interface ProjectSettingsStoreType {
-  projectSettings: ProjectSetting[]
-  projectSettingsPagination: Pagination
-  fetchProjectSettings: (
-    page?: number,
-    perPage?: number,
-    filters?: Record<string, unknown>
-  ) => Promise<void>
   /** Every integration of one project; leaves the paginated list state untouched. */
   listAllProjectSettings: (projectName: string) => Promise<ProjectSetting[]>
   findProjectSetting: (
@@ -47,31 +38,6 @@ interface ProjectSettingsStoreType {
 }
 
 export const projectSettingsStore = proxy<ProjectSettingsStoreType>({
-  projectSettings: [],
-  projectSettingsPagination: {
-    page: 0,
-    perPage: DEFAULT_PER_PAGE,
-    totalPages: 0,
-    totalCount: 0,
-  },
-
-  async fetchProjectSettings(page = 0, perPage = DEFAULT_PER_PAGE, filters = {}) {
-    const url = `v1/settings/project?page=${page}&per_page=${perPage}&filters=${encodeURIComponent(
-      JSON.stringify(filters)
-    )}`
-    const response = await api.get(url)
-    const result = await response.json()
-    const { data, pagination } = result
-
-    projectSettingsStore.projectSettings = data
-    projectSettingsStore.projectSettingsPagination = {
-      page: pagination.page,
-      perPage: pagination.per_page,
-      totalPages: pagination.pages,
-      totalCount: pagination.total,
-    }
-  },
-
   async listAllProjectSettings(projectName) {
     const filters = encodeURIComponent(JSON.stringify({ project: [projectName] }))
     const fetchPage = async (page: number) => {

@@ -66,8 +66,14 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
       Array<{ name: string; display_name?: string | null }>
     >([])
 
+    const requestCounter = useRef(0)
+
     const loadProjects = async (search = '') => {
+      requestCounter.current += 1
+      const requestId = requestCounter.current
       const projects = await userStore.getProjects(search, adminOnly)
+      // A newer load superseded this one: drop its result and its auto-select
+      if (requestId !== requestCounter.current) return
       setRawProjects(projects)
 
       // Auto-select first project only for single select when no value
@@ -131,7 +137,7 @@ const ProjectSelector = forwardRef<PrimeMultiselect, ProjectSelectorProps>(
     useEffect(() => {
       loadProjects()
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user])
+    }, [user, adminOnly])
 
     const handleChange = (e: MultiSelectChangeEvent) => {
       onChange(multiple ? e.value : e.target.value)

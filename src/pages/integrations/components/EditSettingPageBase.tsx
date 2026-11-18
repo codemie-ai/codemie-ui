@@ -24,6 +24,7 @@ import { ButtonType } from '@/constants'
 import { PROJECTS_MANAGEMENT_INTEGRATIONS } from '@/constants/routes'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import { navigateBack } from '@/utils/helpers'
+import { IntegrationScopeValue } from '@/utils/integrationScope'
 import toaster from '@/utils/toaster'
 
 import EditIntegrationActions from './EditIntegrationActions'
@@ -46,7 +47,9 @@ interface Props {
   sidebarDescription: string
   backRoute: string
   successMessage: string
-  settingType?: 'user' | 'project'
+  settingType?: IntegrationScopeValue
+  /** Shows the read-only Scope field. Integration edit pages opt in; Scheduler edit pages do not. */
+  showScope?: boolean
   fetchSetting: (
     projectName: string,
     credentialType: string,
@@ -62,6 +65,7 @@ const EditSettingPageBase = ({
   backRoute,
   successMessage,
   settingType,
+  showScope = false,
   fetchSetting,
   updateSetting,
 }: Props) => {
@@ -208,6 +212,8 @@ const EditSettingPageBase = ({
               credentialKey={setting.credential_key}
               credentialValues={credentialValues}
               settingType={settingType}
+              showScope={showScope}
+              scope={settingType}
               isGlobal={setting.is_global}
               hideActions={true}
             />

@@ -16,7 +16,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import UserSettings from '../UserSettings'
+import IntegrationRowActionsCell from '../../IntegrationRowActionsCell'
+import IntegrationsList from '../IntegrationsList'
 
 // Real NavigationMore is intentionally NOT mocked — this test verifies production
 // table-column wiring produces correct ARIA accessible names.
@@ -30,49 +31,59 @@ vi.mock('valtio', async (importOriginal) => {
   return { ...actual, useSnapshot: vi.fn((store) => store) }
 })
 
-vi.mock('@/store/userSettings', () => ({
-  userSettingsStore: {
-    userSettings: [
+const makeSetting = (overrides: Record<string, unknown>) => ({
+  credential_values: [],
+  user_id: 'u1',
+  date: '2026-01-01',
+  update_date: '2026-01-01',
+  project_name: 'proj',
+  default: false,
+  setting_hash: null,
+  is_global: false,
+  setting_type: 'user',
+  display_name: null,
+  ...overrides,
+})
+
+vi.mock('@/store/integrations', () => ({
+  integrationsStore: {
+    settings: [
       {
         id: 'setting-1',
         alias: 'GitHub Token',
         credential_type: 'github',
         credential_values: [],
-        user_id: 'u1',
-        date: '2026-01-01',
-        update_date: '2026-01-01',
         project_name: 'proj',
-        default: false,
-        setting_hash: null,
         is_global: false,
         setting_type: 'user',
-        display_name: null,
       },
       {
         id: 'setting-2',
         alias: '',
         credential_type: 'jira',
         credential_values: [],
-        user_id: 'u1',
-        date: '2026-01-01',
-        update_date: '2026-01-01',
         project_name: 'proj',
-        default: false,
-        setting_hash: null,
         is_global: false,
-        setting_type: 'user',
-        display_name: null,
+        setting_type: 'project',
       },
     ],
-    userSettingsPagination: { page: 0, perPage: 10, totalPages: 1 },
-    deleteUserSetting: vi.fn().mockResolvedValue({}),
-    fetchUserSettings: vi.fn().mockResolvedValue(undefined),
-    resetIsSettingsIndexed: vi.fn(),
+    pagination: { page: 0, perPage: 10, totalPages: 1, totalCount: 2 },
+    loading: false,
+    fetchSettings: vi.fn().mockResolvedValue(undefined),
+    deleteSetting: vi.fn().mockResolvedValue({}),
+    takeSavedRow: vi.fn().mockReturnValue(null),
   },
+  matchesSavedRow: () => false,
+  editRouteName: (scope: string) => `edit-${scope}-integration`,
 }))
 
-vi.mock('@/store', () => ({
-  userStore: { user: { id: 'u1', name: 'Test User' } },
+vi.mock('@/store/user', () => ({
+  userStore: { user: { id: 'u1' }, loadProjectSettingsUsers: vi.fn().mockResolvedValue([]) },
+}))
+
+vi.mock('@/utils/user', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utils/user')>()),
+  canUseProjectScope: () => true,
 }))
 
 vi.mock('@/hooks/useTableFilters', () => ({
@@ -93,7 +104,7 @@ vi.mock('@/hooks/useResolvedProjectOptions', () => ({
 }))
 
 vi.mock('@/hooks/useIntegrationTypeOptions', () => ({
-  useIntegrationTypeOptions: () => [],
+  useIntegrationTypeOptions: () => ({ options: [], boundTypes: {} }),
 }))
 
 // Table mock: calls alias + actions renderers so the alias id is in DOM for aria-labelledby,
@@ -121,47 +132,37 @@ vi.mock('@/components/Table', () => ({
 }))
 
 vi.mock('@/components/Filters', () => ({ default: () => null }))
+vi.mock('@/components/UserFilter', () => ({ default: () => null }))
 vi.mock('@/components/ConfirmationModal', () => ({ default: () => null }))
 vi.mock('@/components/ProjectNameCell', () => ({ renderProjectNameCell: () => null }))
-vi.mock('../IntegrationDeleteWarning', () => ({ default: () => null }))
-vi.mock('../IntegrationStateBadge/renderIntegrationStateCell', () => ({
+vi.mock('../../IntegrationDeleteWarning', () => ({ default: () => null }))
+vi.mock('../../IntegrationStateBadge/renderIntegrationStateCell', () => ({
   renderIntegrationStateCell: () => null,
 }))
-vi.mock('../TestIntegration', () => ({ default: () => null }))
+vi.mock('../../TestIntegration', () => ({ default: () => null }))
 
-vi.mock('@/pages/integrations/IntegrationsTab', () => ({ INITIAL_FILTERS: {} }))
-vi.mock('@/utils/filters', () => ({
-  checkEmptyFilters: vi.fn(() => true),
-  FILTER_ENTITY: { USER_SETTINGS: 'user_settings' },
-}))
 vi.mock('@/utils/settings', () => ({
   getSettingCredsURL: vi.fn(() => ''),
   getTestableCredentialTypes: vi.fn(() => []),
-  SETTING_TYPE_USER: 'user',
   isOAuthProviderSetting: vi.fn(() => false),
   credentialValuesToRecord: vi.fn(() => ({})),
 }))
-vi.mock('@/utils/helpers', () => ({ humanize: (s: string) => s }))
-vi.mock('@/utils/toaster', () => ({ default: { info: vi.fn(), error: vi.fn() } }))
-vi.mock('@/constants', () => ({
-  ButtonType: { DELETE: 'delete' },
-  DECIMAL_PAGINATION_OPTIONS: [10, 25],
-  // Consumed transitively via OAuthTestAction -> OAuthTestButton for OAuth integration rows.
-  CHECKER_STATUSES: {
-    UNDEFINED: 'undefined',
-    IN_PROGRESS: 'in-progress',
-    FAILED: 'failed',
-    SUCCESS: 'success',
-  },
+vi.mock('@/utils/helpers', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utils/helpers')>()),
+  humanize: (s: string) => s,
+  createdBy: () => '',
 }))
+vi.mock('@/utils/toaster', () => ({ default: { info: vi.fn(), error: vi.fn() } }))
 
 vi.mock('@/assets/icons/navigation-more.svg?react', () => ({ default: () => <svg /> }))
 vi.mock('@/assets/icons/delete.svg?react', () => ({ default: () => <svg /> }))
 vi.mock('@/assets/icons/edit.svg?react', () => ({ default: () => <svg /> }))
 
-describe('UserSettings accessibility — action button aria-labelledby wiring', () => {
+const renderList = () => render(<IntegrationsList portalSidebarRef={{ current: null }} />)
+
+describe('IntegrationsList accessibility — action button aria-labelledby wiring', () => {
   it('each row trigger is discoverable by its computed accessible name', () => {
-    render(<UserSettings tableColumns={[]} portalSidebarRef={{ current: null }} />)
+    renderList()
 
     // Row 1: alias "GitHub Token" → accessible name "More options GitHub Token"
     expect(screen.getByRole('button', { name: 'More options GitHub Token' })).toBeInTheDocument()
@@ -171,27 +172,28 @@ describe('UserSettings accessibility — action button aria-labelledby wiring', 
   })
 
   it('each contextual trigger uses aria-labelledby referencing the alias cell id', () => {
-    render(<UserSettings tableColumns={[]} portalSidebarRef={{ current: null }} />)
+    renderList()
 
     const trigger1 = screen.getByRole('button', { name: 'More options GitHub Token' })
     const trigger2 = screen.getByRole('button', { name: 'More options jira' })
 
-    expect(trigger1.getAttribute('aria-labelledby')).toContain('user-setting-name-setting-1')
-    expect(trigger2.getAttribute('aria-labelledby')).toContain('user-setting-name-setting-2')
+    expect(trigger1.getAttribute('aria-labelledby')).toContain('integration-name-setting-1')
+    expect(trigger2.getAttribute('aria-labelledby')).toContain('integration-name-setting-2')
   })
 
   it('triggers do not use aria-label when aria-labelledby is set', () => {
-    render(<UserSettings tableColumns={[]} portalSidebarRef={{ current: null }} />)
+    renderList()
 
-    const trigger1 = screen.getByRole('button', { name: 'More options GitHub Token' })
-    const trigger2 = screen.getByRole('button', { name: 'More options jira' })
-
-    expect(trigger1).not.toHaveAttribute('aria-label')
-    expect(trigger2).not.toHaveAttribute('aria-label')
+    expect(screen.getByRole('button', { name: 'More options GitHub Token' })).not.toHaveAttribute(
+      'aria-label'
+    )
+    expect(screen.getByRole('button', { name: 'More options jira' })).not.toHaveAttribute(
+      'aria-label'
+    )
   })
 
   it('the two triggers reference different alias cell ids', () => {
-    render(<UserSettings tableColumns={[]} portalSidebarRef={{ current: null }} />)
+    renderList()
 
     const trigger1 = screen.getByRole('button', { name: 'More options GitHub Token' })
     const trigger2 = screen.getByRole('button', { name: 'More options jira' })
@@ -202,14 +204,35 @@ describe('UserSettings accessibility — action button aria-labelledby wiring', 
   })
 
   it('each alias cell carries the expected id in the DOM', () => {
-    render(<UserSettings tableColumns={[]} portalSidebarRef={{ current: null }} />)
+    renderList()
 
-    expect(document.getElementById('user-setting-name-setting-1')).not.toBeNull()
-    expect(document.getElementById('user-setting-name-setting-2')).not.toBeNull()
+    expect(document.getElementById('integration-name-setting-1')).not.toBeNull()
+    expect(document.getElementById('integration-name-setting-2')).not.toBeNull()
   })
 
-  it('names the table "User integrations"', () => {
-    render(<UserSettings tableColumns={[]} portalSidebarRef={{ current: null }} />)
-    expect(screen.getByRole('table', { name: 'User integrations' })).toBeInTheDocument()
+  it('names the table "Integrations"', () => {
+    renderList()
+    expect(screen.getByRole('table', { name: 'Integrations' })).toBeInTheDocument()
+  })
+})
+
+describe('IntegrationRowActionsCell accessibility (contextId pattern)', () => {
+  it('More Options button references the alias cell span via aria-labelledby', () => {
+    const item = makeSetting({ id: 'ps-1', alias: 'my-github', credential_type: 'github' })
+    render(
+      <div>
+        <span id="integration-name-ps-1">my-github</span>
+        <IntegrationRowActionsCell
+          item={item as any}
+          contextIdPrefix="integration-name"
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      </div>
+    )
+    const btn = screen.getByRole('button', { name: 'More options my-github' })
+    expect(btn).not.toHaveAttribute('aria-label')
+    const parts = btn.getAttribute('aria-labelledby')!.split(/\s+/)
+    expect(document.getElementById(parts[1])).toHaveTextContent('my-github')
   })
 })

@@ -15,6 +15,8 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import orderBy from 'lodash/orderBy'
+import { AutoComplete } from 'primereact/autocomplete'
+import { MultiSelect as PrimeMultiselect } from 'primereact/multiselect'
 import { forwardRef, useImperativeHandle, useState, useEffect, useMemo, useRef } from 'react'
 import { useForm, Controller, useWatch } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
@@ -45,14 +47,24 @@ import { useActiveHelpSegment } from '@/hooks/useActiveHelpSegment'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
+import { ConfigItem } from '@/types/entity/configuration'
+import { User } from '@/types/entity/user'
+import { FilterOption } from '@/types/filters'
 import { CredentialComponentPosition, CredentialComponentType } from '@/types/settingsUI'
 import api from '@/utils/api'
+import {
+  IntegrationScope,
+  IntegrationScopeValue,
+  SCOPE_LABEL,
+  toIntegrationScope,
+} from '@/utils/integrationScope'
 import { ASSISTANT_IDS_KEY } from '@/utils/msTeamsSettings'
 import { registerCredentialTypeCallback } from '@/utils/onboarding'
 import {
   getConfigItem,
   getAvailableCredentialsTypes,
   getCredentialUIMapping,
+  getTypeScopeBinding,
   getOriginalCredentialType,
   convertCredsToKeyValue,
   SETTING_TYPE_USER,
@@ -64,21 +76,23 @@ import {
   slugifyType,
 } from '@/utils/settings'
 import toaster from '@/utils/toaster'
+import { canUseProjectScope, isUserProjectAdmin } from '@/utils/user'
 
 import OAuthTestAction from '../OAuthTestAction'
 import CredentialFields from './CredentialFields'
 import GoogleOAuthField from './GoogleOAuthField'
+import ScopeField from './ScopeField'
 import SettingFormMessage from '../SettingFormMessage/SettingFormMessage'
 import TestIntegration from '../TestIntegration'
 import SharePointOAuthField from './SharePointOAuthField'
 
 export interface SettingsFormRef {
-  submit: () => void
+  submit: () => Promise<void>
   validate: () => Promise<boolean>
 }
 
 interface SettingsFormProps {
-  onSubmit: (values: Record<string, unknown>) => void | Promise<void>
+  onSubmit: (values: Record<string, unknown>, scope: IntegrationScope) => void | Promise<void>
   onClose?: () => void
   submitText?: string
   editing?: boolean
@@ -91,9 +105,15 @@ interface SettingsFormProps {
   isGlobal?: boolean
   hideActions?: boolean
   hideType?: boolean
-  settingType?: 'user' | 'project'
+  settingType?: IntegrationScopeValue
   disableProject?: boolean
   disableType?: boolean
+  /** Renders the Scope field (User | Project) as the first field. Off for Schedulers and the quick-create popup. */
+  showScope?: boolean
+  /** Initial scope when `showScope` is on; falls back to `settingType`. */
+  scope?: IntegrationScopeValue
+  /** Locks the Scope field (e.g. opened from a project page). */
+  scopeLocked?: boolean
   /**
    * Suppresses the provider OAuth 2.0 sign-in toggle. Set by contexts that cannot consume a
    * delegated OAuth integration (e.g. the data source form), so the user cannot create one there
@@ -106,6 +126,120 @@ interface SettingsFormProps {
 }
 
 const ALIAS_REQUIRED_ERR = 'Alias is required'
+
+interface TypeOptionsParams {
+  types: string[]
+  mapping: Record<string, { displayName?: string }>
+  showScope: boolean
+  otherScope: IntegrationScope
+  otherScopeMapping: Record<string, { displayName?: string }>
+  formScope: IntegrationScope
+  needsAdmin: boolean
+  locked: boolean
+}
+
+const getOtherScopeTypeHint = ({
+  needsAdmin,
+  locked,
+  formScope,
+  otherScope,
+}: Pick<TypeOptionsParams, 'needsAdmin' | 'locked' | 'formScope' | 'otherScope'>): string => {
+  if (needsAdmin) return 'Project only · needs project admin rights'
+  if (locked) return `Not available at ${SCOPE_LABEL[formScope]} scope`
+  return `Switches Scope to ${SCOPE_LABEL[otherScope]}`
+}
+
+// The current scope's types plus, with the Scope field, the other scope's bound types
+// (selectable when the scope can still change, listed disabled otherwise).
+const buildCredentialTypeOptions = (params: TypeOptionsParams): FilterOption[] => {
+  const { types, mapping, showScope, otherScope, otherScopeMapping, needsAdmin, locked } = params
+  const options: FilterOption[] = types
+    .filter((type) => !OAUTH_VARIANT_CREDENTIAL_TYPES.has(type))
+    .map((type) => {
+      const binding = showScope ? getTypeScopeBinding(type) : null
+      return {
+        label: mapping[type]?.displayName || getOriginalCredentialType(type),
+        value: type,
+        ...(binding && { badge: `${SCOPE_LABEL[binding]} only` }),
+      }
+    })
+
+  if (showScope) {
+    Object.entries(otherScopeMapping).forEach(([type, config]) => {
+      options.push({
+        label: config.displayName || getOriginalCredentialType(type),
+        value: type,
+        badge: `${SCOPE_LABEL[otherScope]} only`,
+        disabled: locked || needsAdmin,
+        hint: getOtherScopeTypeHint(params),
+      })
+    })
+  }
+
+  return orderBy(options, ['label'], 'asc')
+}
+
+// Types bound to the other scope. A member cannot use Project, but its Project-only types are
+// still listed (disabled), so they are looked up as if by an admin.
+const getOtherScopeBoundTypes = ({
+  otherScope,
+  user,
+  canProject,
+  project,
+  customerConfig,
+}: {
+  otherScope: IntegrationScope
+  user: User | null
+  canProject: boolean
+  project: string
+  customerConfig: readonly ConfigItem[] | undefined
+}) => {
+  const lister = (
+    otherScope === IntegrationScope.PROJECT && !canProject ? { ...user, isAdmin: true } : user
+  ) as User | null
+  const mapping = getCredentialUIMapping({
+    settingType: otherScope,
+    user: lister,
+    project,
+    checkIfAdminOfAnyProject: !project,
+    customerConfig,
+  })
+  return Object.fromEntries(
+    Object.entries(mapping).filter(
+      ([key]) => !OAUTH_VARIANT_CREDENTIAL_TYPES.has(key) && getTypeScopeBinding(key) === otherScope
+    )
+  )
+}
+
+const scopeLockedByTypeMessage = (label: string, binding: IntegrationScope, other: string) =>
+  `${label} is available only at ${SCOPE_LABEL[binding]} scope, so ${other} is unavailable. Pick another type to change it.`
+
+// Project scope offers only projects the person can create in (AC-11), so a project handed in at
+// Project scope (the ?project= address) that the person cannot use there is not applied. A locked
+// project, as the admin project page hands in with project_name, is kept as given.
+const isHandedProjectUnusable = ({
+  showScope,
+  scope,
+  locked,
+  project,
+  user,
+}: {
+  showScope: boolean
+  scope: IntegrationScope
+  locked: boolean
+  project?: string
+  user: User | null
+}): boolean =>
+  showScope &&
+  scope === IntegrationScope.PROJECT &&
+  !locked &&
+  !!project &&
+  !isUserProjectAdmin(user, project)
+
+const projectScopeTooltip = (canProject: boolean, bound: boolean, boundTooltip?: string) => {
+  if (!canProject) return 'Project integrations can be created by project admins only.'
+  return bound ? boundTooltip : undefined
+}
 
 const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref) => {
   const {
@@ -121,9 +255,12 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     isGlobal: initialIsGlobal,
     hideActions = false,
     hideType = false,
-    settingType = SETTING_TYPE_USER,
+    settingType: formSettingTypeProp = SETTING_TYPE_USER,
     disableProject = false,
     disableType = false,
+    showScope = false,
+    scope: initialScope,
+    scopeLocked = false,
     hideOAuthToggle = false,
     onCredentialValuesChange,
     onCredentialTypeChange,
@@ -133,31 +270,61 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
   const { user } = useSnapshot(userStore)
   const { toolFieldDefaults } = useSnapshot(appInfoStore)
 
-  const [projectName, setProjectName] = useState(initialProjectName || '')
+  const [formScope, setFormScope] = useState<IntegrationScope>(() =>
+    toIntegrationScope(showScope ? initialScope ?? formSettingTypeProp : formSettingTypeProp)
+  )
+  // A dropped project leaves the field empty and required, with the note a scope change shows (AC-15).
+  const [handedProjectDropped] = useState(() =>
+    isHandedProjectUnusable({
+      showScope,
+      scope: formScope,
+      locked: scopeLocked || disableProject || editing,
+      project: initialProjectName,
+      user,
+    })
+  )
+  const [projectName, setProjectName] = useState(() =>
+    handedProjectDropped ? '' : initialProjectName || ''
+  )
   const [isGlobal, setIsGlobal] = useState(initialIsGlobal || false)
+  // Once the person changes scope, or a handed-in project was dropped, the project list must not
+  // pick a project for them.
+  const [projectAutoPickOff, setProjectAutoPickOff] = useState(handedProjectDropped)
+  const [projectClearedNote, setProjectClearedNote] = useState(handedProjectDropped)
+  const [projectError, setProjectError] = useState('')
+  const [typeSwitchNote, setTypeSwitchNote] = useState('')
+  const [typeError, setTypeError] = useState('')
+  const projectSelectorRef = useRef<PrimeMultiselect>(null)
+  const credentialTypeRef = useRef<AutoComplete<FilterOption>>(null)
+  // The form scope drives adminOnly, the Global switch and the credential-type lookups.
+  const settingType = formScope
+  const canProject = canUseProjectScope(user)
   const [customerConfig, setCustomerConfig] = useState<any>(null)
   const aliasManuallyEdited = useRef(false)
   const webhookIdManuallyEdited = useRef(false)
   const prevResourceType = useRef<string | undefined>(undefined)
-  const prevProjectName = useRef<string>(initialProjectName || '')
+  const prevProjectName = useRef<string>(projectName)
 
   const CREDENTIAL_TYPES = useMemo(() => {
     return getAvailableCredentialsTypes({
       settingType,
       user,
       project: projectName,
+      // With the Scope field the project may still be empty: judge admin rights over any project.
+      checkIfAdminOfAnyProject: showScope && !projectName,
       customerConfig,
     })
-  }, [settingType, user, projectName, customerConfig])
+  }, [settingType, user, projectName, customerConfig, showScope])
 
   const CREDENTIAL_VALUES_MAPPING = useMemo(() => {
     return getCredentialUIMapping({
       settingType,
       user,
       project: projectName,
+      checkIfAdminOfAnyProject: showScope && !projectName,
       customerConfig,
     })
-  }, [settingType, user, projectName, customerConfig])
+  }, [settingType, user, projectName, customerConfig, showScope])
 
   // EPMCDME-14586/14587: OAuth is an authentication method within the base integration type, not a
   // separate credential type. credentialType stays the base type ('jira'/'confluence'/'git') throughout
@@ -195,8 +362,8 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       : []
   })
 
-  const getCredentialDefaults = (type: string) => {
-    const config = CREDENTIAL_VALUES_MAPPING[type]
+  const getCredentialDefaults = (type: string, mapping = CREDENTIAL_VALUES_MAPPING) => {
+    const config = mapping[type]
     const defaults: Record<string, any> = {}
 
     if (config?.fields) {
@@ -364,17 +531,6 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     setResetCount((count) => count + 1)
   }
 
-  const credentialTypeOptions = useMemo(() => {
-    const options = CREDENTIAL_TYPES.filter(
-      (type) => !OAUTH_VARIANT_CREDENTIAL_TYPES.has(type)
-    ).map((type) => ({
-      label: CREDENTIAL_VALUES_MAPPING[type]?.displayName || getOriginalCredentialType(type),
-      value: type,
-    }))
-
-    return orderBy(options, ['label'], 'asc')
-  }, [CREDENTIAL_TYPES, CREDENTIAL_VALUES_MAPPING])
-
   useEffect(() => {
     const loadConfig = async () => {
       const config = await appInfoStore.fetchCustomerConfig()
@@ -452,24 +608,163 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     }
   }, [projectName])
 
-  const handleCredentialTypeChange = (newType: string) => {
+  // One place for every scope switch (the Scope field today; type-driven switches later).
+  // `typeAfter` is the type the caller sets in the same step (a type-driven switch); a type the
+  // new scope does not offer is cleared, never replaced by another one.
+  const changeScope = (next: IntegrationScope, typeAfter: string = credentialType) => {
+    if (next === formScope) return
+    setFormScope(next)
+    setProjectAutoPickOff(true)
+    setProjectError('')
+    setProjectClearedNote(false)
+    setTypeSwitchNote('')
+    let nextProject = projectName
+    if (next === IntegrationScope.PROJECT) {
+      setIsGlobal(false)
+      if (projectName && !isUserProjectAdmin(user, projectName)) {
+        setProjectName('')
+        setProjectClearedNote(true)
+        nextProject = ''
+      }
+    }
+    if (typeAfter) {
+      const nextTypes = getAvailableCredentialsTypes({
+        settingType: next,
+        user,
+        project: nextProject,
+        checkIfAdminOfAnyProject: !nextProject,
+        customerConfig,
+      })
+      if (!nextTypes.includes(typeAfter)) {
+        setCredentialType('')
+        setIsOAuth(false)
+        reset({ alias: getValues('alias') })
+        setResetCount((count) => count + 1)
+      }
+    }
+  }
+
+  const isScopeLocked = scopeLocked || editing
+  const otherScope: IntegrationScope =
+    formScope === IntegrationScope.USER ? IntegrationScope.PROJECT : IntegrationScope.USER
+
+  // Types bound to the other scope, offered (or listed disabled) next to the current scope's types.
+  const otherScopeMapping = useMemo(
+    () =>
+      showScope
+        ? getOtherScopeBoundTypes({
+            otherScope,
+            user,
+            canProject,
+            project: projectName,
+            customerConfig,
+          })
+        : {},
+    [showScope, otherScope, canProject, user, projectName, customerConfig]
+  )
+
+  const typeLabel = (type: string) =>
+    (CREDENTIAL_VALUES_MAPPING[type] ?? otherScopeMapping[type])?.displayName ||
+    getOriginalCredentialType(type)
+
+  const selectedBinding = showScope ? getTypeScopeBinding(credentialType) : null
+  const lockedScopeTooltip = selectedBinding
+    ? scopeLockedByTypeMessage(typeLabel(credentialType), selectedBinding, SCOPE_LABEL[otherScope])
+    : undefined
+
+  const scopeInfo = (() => {
+    if (!canProject) {
+      return 'Only you can use it. Project integrations can be created by project admins only.'
+    }
+    if (formScope === IntegrationScope.PROJECT) {
+      return `Every member of the selected project can use it.${
+        user?.isAdmin ? '' : ' Only projects you administer are listed.'
+      }`
+    }
+    return 'Only you can use it. Turn on Global Integration to use it in every project you work in.'
+  })()
+
+  const credentialTypeOptions = useMemo(
+    () =>
+      buildCredentialTypeOptions({
+        types: CREDENTIAL_TYPES,
+        mapping: CREDENTIAL_VALUES_MAPPING,
+        showScope,
+        otherScope,
+        otherScopeMapping,
+        formScope,
+        needsAdmin: otherScope === IntegrationScope.PROJECT && !canProject,
+        locked: isScopeLocked,
+      }),
+    [
+      CREDENTIAL_TYPES,
+      CREDENTIAL_VALUES_MAPPING,
+      showScope,
+      otherScopeMapping,
+      otherScope,
+      formScope,
+      canProject,
+      isScopeLocked,
+    ]
+  )
+
+  const handleCredentialTypeChange = (
+    newType: string,
+    mapping: typeof CREDENTIAL_VALUES_MAPPING = CREDENTIAL_VALUES_MAPPING
+  ) => {
     setCredentialType(newType)
+    setTypeError('')
     // Switching the base type resets the auth method to PAT; the toggle re-derives from the new type's
     // variant availability.
     setIsOAuth(false)
     webhookIdManuallyEdited.current = false
 
-    const hasManualConfig = CREDENTIAL_VALUES_MAPPING[newType]?.fieldsManualConfiguration
+    const hasManualConfig = mapping[newType]?.fieldsManualConfiguration
     if (hasManualConfig) {
       setManualCredentialValues([])
     }
 
-    if (CREDENTIAL_VALUES_MAPPING[newType]?.hideGlobalToggle) {
+    if (mapping[newType]?.hideGlobalToggle) {
       setIsGlobal(false)
     }
 
-    reset({ alias: getValues('alias'), ...getCredentialDefaults(newType) })
+    reset({ alias: getValues('alias'), ...getCredentialDefaults(newType, mapping) })
     setResetCount((count) => count + 1)
+  }
+
+  // The form can move to a scope unless its scope is fixed, or it is Project for a member.
+  const canSwitchTo = (next: IntegrationScope) =>
+    !isScopeLocked && (next !== IntegrationScope.PROJECT || canProject)
+
+  // Picking a type bound to the other scope switches the scope through changeScope; a type bound
+  // to a scope the form cannot move to is not taken.
+  const pickCredentialType = (newType: string) => {
+    const binding = showScope ? getTypeScopeBinding(newType) : null
+    if (binding && binding !== formScope) {
+      setTypeSwitchNote('')
+      if (!canSwitchTo(binding)) return
+      const nextMapping = getCredentialUIMapping({
+        settingType: binding,
+        user,
+        project: projectName,
+        checkIfAdminOfAnyProject: !projectName,
+        customerConfig,
+      })
+      handleCredentialTypeChange(newType, nextMapping)
+      changeScope(binding, newType)
+      setTypeSwitchNote(
+        `${typeLabel(newType)} is available only at ${
+          SCOPE_LABEL[binding]
+        } scope, so Scope switched to ${SCOPE_LABEL[binding]}.`
+      )
+      return
+    }
+    // The type field re-selects its current option when it loses focus, e.g. on the mousedown that
+    // opens it. That is no change: dropping the scope-switch note or resetting the fields here moves
+    // the field up under the pointer, so the click that should open it never lands (AC-13).
+    if (newType === credentialType) return
+    setTypeSwitchNote('')
+    handleCredentialTypeChange(newType)
   }
 
   useEffect(() => {
@@ -478,18 +773,33 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     // CREDENTIAL_TYPES (admin-only types filtered by the newly selected project), and
     // Credential Type is already locked during edit — auto-switching it here would
     // silently reset() and discard the loaded credential values (EPMCDME-12586).
-    if (editing) return
+    // With the Scope field nothing is auto-picked: a scope change leaves the type empty.
+    if (editing || showScope) return
     if (!CREDENTIAL_TYPES.includes(credentialType) && CREDENTIAL_TYPES.length > 0) {
       handleCredentialTypeChange(CREDENTIAL_TYPES[0])
     }
     // handleCredentialTypeChange intentionally uses current form state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [CREDENTIAL_TYPES, credentialType, customerConfig, editing])
+  }, [CREDENTIAL_TYPES, credentialType, customerConfig, editing, showScope])
 
+  // A type handed in from outside (?credentialType= on the New Integration route) is reconciled
+  // with the scope once, like a pick; one bound to a scope the form cannot reach is dropped.
   useEffect(() => {
-    return registerCredentialTypeCallback(handleCredentialTypeChange)
-    // handleCredentialTypeChange closes over stable React state setters and form methods
+    if (!showScope || editing || !initialCredentialType) return
+    const type = initialCredentialType.toLowerCase()
+    const binding = getTypeScopeBinding(type)
+    if (!binding || binding === formScope) return
+    if (canSwitchTo(binding)) pickCredentialType(type)
+    else setCredentialType('')
+    // Runs on mount only: later types arrive through pickCredentialType.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // The tour picks a type as the person would, against the form's current state.
+  const pickCredentialTypeRef = useRef(pickCredentialType)
+  pickCredentialTypeRef.current = pickCredentialType
+  useEffect(() => {
+    return registerCredentialTypeCallback((type: string) => pickCredentialTypeRef.current(type))
   }, [])
 
   const isToolDefaultsLoaded = Object.keys(toolFieldDefaults).length > 0
@@ -522,9 +832,29 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
     return config?.settings?.enabled !== false
   }
 
+  // Press Save with required fields empty: move focus to the first invalid one, in field order,
+  // so a screen reader announces the error instead of focus staying on Save.
+  const focusFirstInvalidField = (projectMissing: boolean, typeMissing: boolean) => {
+    if (projectMissing) {
+      projectSelectorRef.current?.getInput()?.focus()
+      return
+    }
+    if (typeMissing) {
+      // getInput()'s PrimeReact typing claims the InputText component itself; at runtime it is
+      // the underlying <input> DOM node (see autocomplete.esm.js), which is what actually needs focus.
+      ;(credentialTypeRef.current?.getInput() as unknown as HTMLInputElement | null)?.focus()
+    }
+  }
+
   const submit = async () => {
     const isValid = await trigger()
-    if (!isValid) {
+    // Any non-Global integration needs a project; a scope round trip can leave it empty at User.
+    const projectMissing = showScope && !isGlobal && !projectName
+    setProjectError(projectMissing ? 'Project is required' : '')
+    const typeMissing = showScope && !hideType && !credentialType
+    setTypeError(typeMissing ? 'Credential Type is required' : '')
+    if (!isValid || projectMissing || typeMissing) {
+      focusFirstInvalidField(projectMissing, typeMissing)
       return
     }
 
@@ -567,20 +897,23 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
       credential_values.push({ key: 'auth_type', value: 'oauth' })
     }
 
-    onSubmit({
-      project_name: projectName,
-      alias: getValues('alias'),
-      credential_type: getOriginalCredentialType(credentialType),
-      credential_values,
-      is_global: isGlobal,
-      ...(isGoogleOAuth && {
-        oauth_state: getValues('oauth_state') || undefined,
-      }),
-      // Only sent when the user chose "Sign in with Microsoft"; the backend then
-      // replaces the auth fields with the delegated tokens.
-      ...(isSharePointOAuth &&
-        getValues('oauth_state') && { oauth_state: getValues('oauth_state') }),
-    })
+    onSubmit(
+      {
+        project_name: projectName,
+        alias: getValues('alias'),
+        credential_type: getOriginalCredentialType(credentialType),
+        credential_values,
+        is_global: isGlobal,
+        ...(isGoogleOAuth && {
+          oauth_state: getValues('oauth_state') || undefined,
+        }),
+        // Only sent when the user chose "Sign in with Microsoft"; the backend then
+        // replaces the auth fields with the delegated tokens.
+        ...(isSharePointOAuth &&
+          getValues('oauth_state') && { oauth_state: getValues('oauth_state') }),
+      },
+      formScope
+    )
   }
 
   useImperativeHandle(ref, () => ({
@@ -603,16 +936,51 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
           submit()
         }}
       >
+        {showScope && (
+          <ScopeField
+            value={formScope}
+            disabled={scopeLocked || editing}
+            options={[
+              {
+                label: 'User',
+                value: IntegrationScope.USER,
+                disabled: selectedBinding === IntegrationScope.PROJECT,
+                tooltip:
+                  selectedBinding === IntegrationScope.PROJECT ? lockedScopeTooltip : undefined,
+              },
+              {
+                label: 'Project',
+                value: IntegrationScope.PROJECT,
+                disabled: !canProject || selectedBinding === IntegrationScope.USER,
+                tooltip: projectScopeTooltip(
+                  canProject,
+                  selectedBinding === IntegrationScope.USER,
+                  lockedScopeTooltip
+                ),
+              },
+            ]}
+            onChange={changeScope}
+            info={scopeInfo}
+            lockedTooltip={lockedScopeTooltip}
+            typeSwitchNote={typeSwitchNote}
+            projectClearedNote={projectClearedNote}
+          />
+        )}
         <div data-onboarding="integration-project-scope-fields" className="flex flex-col gap-y-6">
           <ProjectSelector
+            ref={projectSelectorRef}
             value={projectName}
             onChange={(e: any) => {
               const val = typeof e === 'string' ? e : e.value
               setProjectName(val)
+              setProjectError('')
+              setProjectClearedNote(false)
             }}
             label="Project"
             disabled={disableProject || isGlobal}
             adminOnly={settingType === SETTING_TYPE_PROJECT}
+            selectDefault={!(showScope && projectAutoPickOff)}
+            error={projectError || undefined}
           />
 
           {CREDENTIAL_VALUES_MAPPING[effectiveCredentialType] && (
@@ -653,15 +1021,17 @@ const SettingsForm = forwardRef<SettingsFormRef, SettingsFormProps>((props, ref)
         {!hideType && (
           <div data-onboarding="integration-credential-type-field">
             <Autocomplete
+              ref={credentialTypeRef}
               id="credentialType"
               value={credentialType}
               name="credentialType"
               placeholder="Credential Type"
               label="Credential Type"
-              allowEmpty={false}
+              allowEmpty={showScope}
               options={credentialTypeOptions}
               disabled={editing || disableType}
-              onChange={handleCredentialTypeChange}
+              error={typeError || undefined}
+              onChange={pickCredentialType}
             />
           </div>
         )}

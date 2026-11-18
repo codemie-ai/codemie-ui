@@ -47,11 +47,19 @@ import type { VirtualScrollerProps } from 'primereact/virtualscroller'
 
 FilterService.register('custom', () => true)
 
-const DefaultOption = ({ label }: { label: string }) => {
+const DefaultOption = ({
+  label,
+  badge,
+  hint,
+}: {
+  label: string
+  badge?: string
+  hint?: string
+}) => {
   const optionEl = useRef<HTMLParagraphElement>(null)
   const isTruncated = useIsTruncated(optionEl)
 
-  return (
+  const labelEl = (
     <p
       ref={optionEl}
       className="text-sm font-medium truncate"
@@ -61,9 +69,21 @@ const DefaultOption = ({ label }: { label: string }) => {
       {label}
     </p>
   )
+
+  if (!badge && !hint) return labelEl
+
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      {labelEl}
+      {badge && <span className="shrink-0 text-xs text-text-quaternary">{badge}</span>}
+      {hint && <span className="truncate text-xs text-text-quaternary">{hint}</span>}
+    </div>
+  )
 }
 
-const defaultRenderOption = (option: { label: string }) => <DefaultOption label={option.label} />
+const defaultRenderOption = (option: { label: string; badge?: string; hint?: string }) => (
+  <DefaultOption label={option.label} badge={option.badge} hint={option.hint} />
+)
 
 // Builds the panelHeaderTemplate prop: default search header, default empty header,
 // or (when panelHeaderExtra is set) the default search header plus the extra content below it.
@@ -513,6 +533,7 @@ const MultiSelect = forwardRef<PrimeMultiselect | null, MultiSelectProps>(
                 itemTemplate={renderOption ?? defaultRenderOption}
                 optionLabel={optionLabel}
                 optionValue={optionValue}
+                optionDisabled="disabled"
                 loading={loading}
                 scrollHeight={scrollHeight}
                 virtualScrollerOptions={resolvedVirtualScrollerOptions}

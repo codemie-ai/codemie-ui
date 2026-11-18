@@ -75,8 +75,6 @@ import ReadOnlyModelsCatalogPage from '@/pages/help/ModelsCatalog/ReadOnlyModels
 import EditProjectIntegrationPage from '@/pages/integrations/EditProjectIntegrationPage'
 import EditUserIntegrationPage from '@/pages/integrations/EditUserIntegrationPage'
 import IntegrationsPage from '@/pages/integrations/IntegrationsPage'
-import NewProjectIntegrationPage from '@/pages/integrations/NewProjectIntegrationPage'
-import NewUserIntegrationPage from '@/pages/integrations/NewUserIntegrationPage'
 import KataDetailView from '@/pages/katas/components/KataDetailView'
 import EditKataPage from '@/pages/katas/EditKataPage'
 import KatasPage, { KatasCategory } from '@/pages/katas/KatasPage'
@@ -139,6 +137,7 @@ import App from './App'
 import { CoreGuard } from './components/CoreGuard'
 import { FeatureGuard } from './components/FeatureGuard'
 import { useCoreAvailable } from './hooks/useFeatureFlags'
+import NewIntegrationPage from './pages/integrations/NewIntegrationPage'
 
 const chatRoutes: RouteObject[] = [
   {
@@ -294,9 +293,14 @@ const integrationRoutes: RouteObject[] = [
     Component: IntegrationsPage,
   },
   {
+    id: 'new-integration',
+    path: '/integrations/new',
+    Component: NewIntegrationPage,
+  },
+  {
     id: 'new-user-integration',
     path: '/integrations/user/new',
-    Component: NewUserIntegrationPage,
+    Component: NewIntegrationPage,
   },
   {
     id: 'edit-user-integration',
@@ -306,7 +310,7 @@ const integrationRoutes: RouteObject[] = [
   {
     id: 'new-project-integration',
     path: '/integrations/project/new',
-    Component: NewProjectIntegrationPage,
+    Component: NewIntegrationPage,
   },
   {
     id: 'edit-project-integration',

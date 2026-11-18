@@ -91,7 +91,7 @@ describe('userStore', () => {
         isAuthenticated: true,
         user_type: 'regular',
         applications: [],
-        applicationsAdmin: [],
+        applicationsAdmin: ['admin-proj'],
         projects: [
           { name: 'admin-proj', display_name: 'Admin Project', is_project_admin: true },
           { name: 'regular-proj', display_name: null, is_project_admin: false },
@@ -425,6 +425,64 @@ describe('userStore', () => {
 
       expect(mockGet).toHaveBeenCalled()
       expect(Array.isArray(result)).toBe(true)
+    })
+
+    it('auditor adminOnly list keeps only applicationsAdmin projects and skips the admin API', async () => {
+      const { userStore } = await import('@/store/user')
+      userStore.user = {
+        userId: 'u1',
+        isAdmin: false,
+        isAuditor: true,
+        applications: [],
+        applicationsAdmin: ['p1'],
+        projects: [
+          { name: 'p1', display_name: 'P One', is_project_admin: false },
+          { name: 'p2', display_name: 'P Two', is_project_admin: true },
+        ],
+      } as any
+
+      const result = await userStore.getProjects('', true)
+
+      expect(result).toEqual([{ name: 'p1', display_name: 'P One' }])
+      expect(mockGet).not.toHaveBeenCalledWith(expect.stringContaining('v1/admin/applications'))
+    })
+
+    it('auditor without adminOnly still gets the admin projects list', async () => {
+      const { userStore } = await import('@/store/user')
+      userStore.user = {
+        userId: 'u1',
+        isAdmin: false,
+        isAuditor: true,
+        applications: [],
+        applicationsAdmin: ['p1'],
+        projects: [{ name: 'p1', display_name: 'P One', is_project_admin: false }],
+      } as any
+      mockGet.mockResolvedValue({
+        json: async () => ({ applications: [{ name: 'other', displayName: null }] }),
+      })
+
+      await userStore.getProjects('admin', false)
+
+      expect(mockGet).toHaveBeenCalled()
+    })
+
+    it('platform admin gets the admin projects list even with adminOnly', async () => {
+      const { userStore } = await import('@/store/user')
+      userStore.user = {
+        userId: 'u1',
+        isAdmin: true,
+        applications: [],
+        applicationsAdmin: [],
+        projects: [],
+      } as any
+      mockGet.mockResolvedValue({
+        json: async () => ({ applications: [{ name: 'any', displayName: null }] }),
+      })
+
+      const result = await userStore.getProjects('admin', true)
+
+      expect(mockGet).toHaveBeenCalled()
+      expect(result.map((p) => p.name)).toContain('any')
     })
 
     it('delegates to getUserProjects when user is not admin', async () => {

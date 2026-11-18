@@ -47,6 +47,7 @@ export const ROUTE_ID_TO_PAGE_ID: Record<string, HelpPageId> = {
   'clone-workflow': HelpPageId.WORKFLOWS,
 
   // Integrations forms
+  'new-integration': HelpPageId.INTEGRATIONS,
   'new-user-integration': HelpPageId.INTEGRATIONS,
   'edit-user-integration': HelpPageId.INTEGRATIONS,
   'new-project-integration': HelpPageId.INTEGRATIONS,

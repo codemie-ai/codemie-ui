@@ -209,3 +209,26 @@ describe.each([false, true])('Table row eligibility (mobile=%s)', (mobile) => {
     expect(onSelectRow).toHaveBeenCalledWith(selectionItems)
   })
 })
+
+describe('Table row highlight', () => {
+  const columns: ColumnDefinition[] = [{ key: 'name', label: 'Name', type: DefinitionTypes.String }]
+  const rows = [
+    { id: 'a', name: 'Alpha' },
+    { id: 'b', name: 'Beta' },
+  ]
+
+  it('marks only the rows the predicate selects with data-highlighted', () => {
+    render(
+      <Table
+        items={rows}
+        columnDefinitions={columns}
+        idPath="id"
+        rowTestIdPrefix="row"
+        isRowHighlighted={(item) => item.id === 'b'}
+      />
+    )
+
+    expect(screen.getByTestId('row-b')).toHaveAttribute('data-highlighted', 'true')
+    expect(screen.getByTestId('row-a')).not.toHaveAttribute('data-highlighted')
+  })
+})

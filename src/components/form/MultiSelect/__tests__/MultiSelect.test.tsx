@@ -152,3 +152,28 @@ describe('MultiSelect', () => {
     expect(rootEl).toHaveClass('focus-within:border-border-secondary')
   })
 })
+
+describe('MultiSelect disabled options and tags', () => {
+  const options = [
+    { label: 'Basic', value: 'basic', badge: 'Project only' },
+    { label: 'Token', value: 'token', disabled: true, hint: 'Not available at User scope' },
+  ]
+
+  it('shows badge and hint and ignores a click on a disabled option', async () => {
+    const u = userEvent.setup({ pointerEventsCheck: 0 })
+    const onChange = vi.fn()
+    const { container } = render(
+      <MultiSelect value={[]} options={options} onChange={onChange} showCheckbox />
+    )
+    await u.click(container.querySelector('.p-multiselect-trigger')!)
+
+    expect(await screen.findByText('Project only')).toBeInTheDocument()
+    expect(screen.getByText('Not available at User scope')).toBeInTheDocument()
+
+    await u.click(screen.getByText('Token'))
+    expect(onChange).not.toHaveBeenCalled()
+
+    await u.click(screen.getByText('Basic'))
+    expect(onChange).toHaveBeenCalled()
+  })
+})
