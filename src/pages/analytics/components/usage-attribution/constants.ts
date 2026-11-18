@@ -15,13 +15,15 @@
 
 import type { UaCategory, UaPayer } from '@/types/usageAttribution'
 
+export const UA_UNCLASSIFIED = 'unclassified' satisfies UaCategory
+
 export const UA_CATEGORIES: UaCategory[] = [
   'production',
   'learning',
   'testing',
   'experimental',
   'pet_project',
-  'unclassified',
+  UA_UNCLASSIFIED,
 ]
 
 export const UA_EXPERIMENTS: UaCategory[] = ['learning', 'testing', 'experimental', 'pet_project']

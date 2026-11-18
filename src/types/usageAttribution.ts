@@ -114,9 +114,10 @@ export interface UaDisplay {
 // Totals and the CLI summary
 // ---------------------------------------------------------------------------------------------------------------------
 export interface UaWhoPays {
-  charged: number
-  shared: number
-  personal: number
+  charged: number | null
+  shared: number | null
+  personal: number | null
+  unclassified?: number | null
 }
 
 export interface UaTotals {

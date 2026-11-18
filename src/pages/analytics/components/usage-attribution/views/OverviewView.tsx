@@ -20,6 +20,7 @@ import { usageAttributionStore } from '@/store/usageAttribution'
 import type { UaCliSummary, UaResponse, UaTotals } from '@/types/usageAttribution'
 
 import AnalyticsWidget from '../../AnalyticsWidget'
+import { UA_UNCLASSIFIED } from '../constants'
 import { useUaQuery } from '../hooks/useUaQuery'
 import RepositoryGroupModal from '../modals/RepositoryGroupModal'
 import SharedProjectModal from '../modals/SharedProjectModal'
@@ -65,13 +66,13 @@ const OverviewView: FC<Props> = ({ params, periodQuery }) => {
       production: colors.category('production'),
       likely_production: colors.likely(),
       experiments: colors.category('experiments'),
-      unclassified: colors.category('unclassified'),
+      unclassified: colors.category(UA_UNCLASSIFIED),
     }
     return s.pie.map((p) => ({
       id: p.id,
       label: p.id === 'platform' ? p.label : p.label.replace('CLI ', ''),
       value: p.value,
-      color: colorOf[p.id] ?? colors.category('unclassified'),
+      color: colorOf[p.id] ?? colors.category(UA_UNCLASSIFIED),
       group: p.id === 'platform' ? undefined : 'CLI',
     }))
   }, [s, colors])

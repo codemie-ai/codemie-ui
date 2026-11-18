@@ -19,7 +19,7 @@ import Select from '@/components/form/Select'
 import type { UaBreakdown, UaCategory, UaResponse } from '@/types/usageAttribution'
 
 import AnalyticsWidget from '../../AnalyticsWidget'
-import { UA_CATEGORIES, UA_CATEGORY_LABELS } from '../constants'
+import { UA_CATEGORIES, UA_CATEGORY_LABELS, UA_UNCLASSIFIED } from '../constants'
 import { HBars } from './Charts'
 import { useUaQuery } from '../hooks/useUaQuery'
 import { errorText, useUaColors } from '../utils'
@@ -69,7 +69,7 @@ const BreakdownWidget: FC<Props> = ({ dimension, params }) => {
       <HBars
         rows={query.data?.data.rows ?? []}
         color={colors.category(category)}
-        otherColor={colors.category('unclassified')}
+        otherColor={colors.category(UA_UNCLASSIFIED)}
       />
     </AnalyticsWidget>
   )

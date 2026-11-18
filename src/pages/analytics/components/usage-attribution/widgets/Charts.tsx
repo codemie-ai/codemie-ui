@@ -33,7 +33,7 @@ import { generateChartColors } from '@/utils/chartColors'
 import { getTailwindColor } from '@/utils/tailwindColors'
 
 import { Swatch } from './Badges'
-import { UA_PAYER_LABELS } from '../constants'
+import { UA_CATEGORY_LABELS, UA_PAYER_LABELS, UA_UNCLASSIFIED } from '../constants'
 import { formatMoney, formatMoneyShort, formatPct, useUaColors } from '../utils'
 
 ChartJS.register(
@@ -164,19 +164,31 @@ export const MoneyPie: FC<{ slices: PieSlice[]; ariaLabel: string }> = ({ slices
   )
 }
 
-const PAYERS: UaPayer[] = ['charged', 'shared', 'personal']
+type WhoPaysBucket = UaPayer | typeof UA_UNCLASSIFIED
 
-/** Who Pays: Web Platform and CLI spend in three states, as horizontal stacked bars. */
+const WHO_PAYS_BUCKETS: WhoPaysBucket[] = ['charged', 'shared', 'personal', UA_UNCLASSIFIED]
+
+const bucketLabel = (b: WhoPaysBucket) =>
+  b === UA_UNCLASSIFIED ? UA_CATEGORY_LABELS[UA_UNCLASSIFIED] : UA_PAYER_LABELS[b]
+
+const amount = (w: UaWhoPays, b: WhoPaysBucket) => w[b] ?? 0
+
+/** Who Pays: Web Platform and CLI spend by who paid, plus what is unclassified, as horizontal stacked bars. */
 export const WhoPaysBars: FC<{ web: UaWhoPays; cli: UaWhoPays }> = ({ web, cli }) => {
   const t = useChartTheme()
   const colors = useUaColors()
+  const colorOf = useMemo(
+    () => (b: WhoPaysBucket) =>
+      b === UA_UNCLASSIFIED ? colors.category(UA_UNCLASSIFIED) : colors.payer(b),
+    [colors]
+  )
   const data = useMemo(
     () => ({
       labels: ['Web Platform', 'CLI'],
-      datasets: PAYERS.map((p) => ({
-        label: UA_PAYER_LABELS[p],
-        data: [web[p], cli[p]],
-        backgroundColor: colors.payer(p),
+      datasets: WHO_PAYS_BUCKETS.map((p) => ({
+        label: bucketLabel(p),
+        data: [amount(web, p), amount(cli, p)],
+        backgroundColor: colorOf(p),
         borderColor: t.surface,
         borderWidth: { right: 2 },
         borderSkipped: false,
@@ -184,7 +196,7 @@ export const WhoPaysBars: FC<{ web: UaWhoPays; cli: UaWhoPays }> = ({ web, cli }
         maxBarThickness: 40,
       })),
     }),
-    [web, cli, colors, t.surface]
+    [web, cli, colorOf, t.surface]
   )
   const options: ChartOptions<'bar'> = useMemo(
     () => ({
@@ -217,7 +229,7 @@ export const WhoPaysBars: FC<{ web: UaWhoPays; cli: UaWhoPays }> = ({ web, cli }
     }),
     [t]
   )
-  const totals = PAYERS.map((p) => ({ payer: p, value: web[p] + cli[p] }))
+  const totals = WHO_PAYS_BUCKETS.map((p) => ({ payer: p, value: amount(web, p) + amount(cli, p) }))
   return (
     <div className="flex flex-col gap-4">
       <span className="sr-only">Who pays for Web Platform and CLI spend</span>
@@ -227,8 +239,8 @@ export const WhoPaysBars: FC<{ web: UaWhoPays; cli: UaWhoPays }> = ({ web, cli }
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
         {totals.map(({ payer, value }) => (
           <div key={payer} className="flex items-center gap-2">
-            <Swatch color={colors.payer(payer)} />
-            <span className="text-text-secondary">{UA_PAYER_LABELS[payer]}</span>
+            <Swatch color={colorOf(payer)} />
+            <span className="text-text-secondary">{bucketLabel(payer)}</span>
             <span className="font-semibold text-text-primary">{formatMoneyShort(value)}</span>
           </div>
         ))}
