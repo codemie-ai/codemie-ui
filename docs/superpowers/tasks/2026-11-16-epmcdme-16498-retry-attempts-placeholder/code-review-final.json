@@ -1,0 +1,61 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; 0 findings, compact profile, low confidence (no spec). MR limitation note from user: pre-existing bug reproduced on lab, not caused by this change — once an Attempts value is set, the field cannot be cleared with Backspace, so the user cannot return to 'unset' from the UI. Out of scope; user will file a separate ticket or ask DM."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; 0 findings, compact profile, low confidence (no spec). MR limitation note from user: pre-existing bug reproduced on lab, not caused by this change — once an Attempts value is set, the field cannot be cleared with Backspace, so the user cannot return to 'unset' from the UI. Out of scope; user will file a separate ticket or ask DM."
+    }
+  ],
+  "reviewed_head": "ea3ccecb02be67c100c73418801dbb8d5f8491ca",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case lens ran (compact profile) and returned no findings; 0 deferred, 0 dismissed. Confidence is low because no spec/story artifact existed, so acceptance criteria were not audited by a lens and standards were not expected for this profile.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not expected for this review profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not expected for this review profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not expected for this review profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case lens ran (compact profile) and returned no findings; 0 deferred, 0 dismissed. Confidence is low because no spec/story artifact existed, so acceptance criteria were not audited by a lens and standards were not expected for this profile.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

@@ -18,6 +18,8 @@ import React, { createRef } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { DEFAULT_RETRY_MAX_ATTEMPTS } from '@/utils/workflowEditor/constants'
+
 import CommonStateFields, { ResetKeysInput } from '../CommonStateFields'
 
 import type { CommonStateFieldsRef } from '../CommonStateFields'
@@ -131,7 +133,7 @@ describe('CommonStateFields — Task/Output Schema visibility', () => {
     expect(screen.getByPlaceholderText('1')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('2')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('60')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('3')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('10')).toBeInTheDocument()
   })
 
   it('showAllFields={false} still hides Task/Output Schema regardless of new props defaults', () => {
@@ -193,5 +195,24 @@ describe('ResetKeysInput — external field.value sync', () => {
 
     await user.click(screen.getByRole('button', { name: 'external-reset' }))
     expect(input).toHaveValue('b, c')
+  })
+})
+
+const STATE_ATTEMPTS_HINT =
+  'Total number of attempts, including the first execution (not the number of retries). 1 means run once with no retries. Leave empty to inherit the workflow retry policy, or the server default (10) if none is set.'
+
+describe('CommonStateFields — Retry Policy Attempts default', () => {
+  it('keeps the retry attempts default equal to the backend default (10)', () => {
+    expect(DEFAULT_RETRY_MAX_ATTEMPTS).toBe(10)
+  })
+
+  it('shows the backend default as the Attempts placeholder', () => {
+    render(<CommonStateFields state={{ id: 's' }} />)
+    expect(screen.getByLabelText('Attempts')).toHaveAttribute('placeholder', '10')
+  })
+
+  it('explains total attempts and inheritance in the Attempts hint', () => {
+    render(<CommonStateFields state={{ id: 's' }} />)
+    expect(screen.getByText(STATE_ATTEMPTS_HINT)).toBeInTheDocument()
   })
 })

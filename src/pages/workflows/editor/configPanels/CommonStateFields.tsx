@@ -33,7 +33,11 @@ import Switch from '@/components/form/Switch'
 import TooltipButton from '@/components/TooltipButton'
 import { NodeTypes } from '@/types/workflowEditor'
 import { CommonStateConfiguration, RetryPolicy } from '@/types/workflowEditor/configuration'
-import { START_NODE_ID, END_NODE_ID } from '@/utils/workflowEditor/constants'
+import {
+  DEFAULT_RETRY_MAX_ATTEMPTS,
+  START_NODE_ID,
+  END_NODE_ID,
+} from '@/utils/workflowEditor/constants'
 
 import ConfigAccordion from './components/ConfigAccordion'
 import FieldController from './components/FieldController'
@@ -621,7 +625,8 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                   render={({ field, fieldState }) => (
                     <Input
                       {...field}
-                      placeholder="3"
+                      placeholder={String(DEFAULT_RETRY_MAX_ATTEMPTS)}
+                      hint={`Total number of attempts, including the first execution (not the number of retries). 1 means run once with no retries. Leave empty to inherit the workflow retry policy, or the server default (${DEFAULT_RETRY_MAX_ATTEMPTS}) if none is set.`}
                       type="number"
                       label="Attempts"
                       orientation="horizontal"

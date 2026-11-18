@@ -131,3 +131,27 @@ describe('AdvancedConfigTab — Sub-workflow section', () => {
     })
   })
 })
+
+const WORKFLOW_MAX_ATTEMPTS_HINT =
+  'Total number of attempts, including the first execution (not the number of retries). 1 means run once with no retries. Leave empty to use the server default (10). Must be a positive integer. Maximum: 100.'
+
+describe('AdvancedConfigTab — Retry Policy Max Attempts default', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockWorkflowContextValue.activeIssue = null
+    mockUseSubWorkflowEnabled.mockReturnValue([false, true])
+  })
+
+  it('shows the backend default as the Max Attempts placeholder when unset', () => {
+    render(<AdvancedConfigTab {...defaultProps} />)
+    expect(screen.getByRole('spinbutton', { name: /^max attempts/i })).toHaveAttribute(
+      'placeholder',
+      '10'
+    )
+  })
+
+  it('explains total attempts and the server default in the Max Attempts hint', () => {
+    render(<AdvancedConfigTab {...defaultProps} />)
+    expect(screen.getByText(WORKFLOW_MAX_ATTEMPTS_HINT)).toBeDefined()
+  })
+})

@@ -28,6 +28,7 @@ import { useSubWorkflowEnabled } from '@/hooks/useFeatureFlags'
 import { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 import { cleanObject } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
+import { DEFAULT_RETRY_MAX_ATTEMPTS } from '@/utils/workflowEditor/constants'
 
 import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import ConfigAccordion from './components/ConfigAccordion'
@@ -438,8 +439,8 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                     type="number"
                     label="Max Attempts"
                     orientation="horizontal"
-                    hint="Upper limit of retry attempts after a failure. Must be a positive integer. Maximum: 100."
-                    placeholder="3"
+                    hint={`Total number of attempts, including the first execution (not the number of retries). 1 means run once with no retries. Leave empty to use the server default (${DEFAULT_RETRY_MAX_ATTEMPTS}). Must be a positive integer. Maximum: 100.`}
+                    placeholder={String(DEFAULT_RETRY_MAX_ATTEMPTS)}
                     inputClass="w-12"
                     error={fieldState.error?.message}
                     {...field}

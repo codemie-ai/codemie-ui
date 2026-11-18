@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16498-retry-policy-placeholder",
+  "head": "ea3ccecb02be67c100c73418801dbb8d5f8491ca",
+  "runner": "npm",
+  "started_at": "2026-11-16T19:45:09Z",
+  "completed_at": "2026-11-16T20:03:04Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 56479, "command": "npm run lint", "exit_code": 0},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 32948, "command": "npm run typecheck", "exit_code": 0},
+    {"id": "unit-tests", "source": "guide", "status": "PASS", "duration_ms": 563801, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "Test Files  915 passed (915); Tests  9619 passed | 1 skipped (9620)"},
+    {"id": "integration-tests", "source": "guide", "status": "PASS", "duration_ms": 344664, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "Test Files  84 passed (84); Tests  905 passed | 1 skipped (906)"},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 21697, "command": "npm run secrets:check", "exit_code": 0, "notes": "gitleaks: scanned ~36.05 MB, no leaks found"},
+    {"id": "license", "source": "guide", "status": "PASS", "duration_ms": 3475, "command": "npx license-checker --summary --onlyAllow 'MIT;Apache-2.0;ISC;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;Python-2.0;CC-BY-4.0;Apache*;(MIT OR CC0-1.0);MulanPSL-2.0;MPL-2.0;LGPL-3.0-only;UNLICENSED'", "exit_code": 0, "notes": "Run directly via bash (allow list copied verbatim from package.json scripts.license-check) because npm run license-check under Windows cmd passes single quotes literally, producing a false negative (@adobe/css-tools@4.5.0 'MIT' not permitted). Exit 0, empty stderr; summary: MIT: 1014, ISC: 50, Apache-2.0: 35, BSD-2-Clause: 19, BSD-3-Clause: 12, MPL-2.0: 3, ... 0BSD: 1."},
+    {"id": "sonar", "source": "guide", "status": "SKIPPED", "duration_ms": 1033, "command": "npm run sonar-local", "exit_code": 0, "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN (and reach the Sonar host) to run locally; CI will still run it."},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 1547, "command": "npm run license-headers:check", "exit_code": 0, "notes": "Checked 2815 files, 0 missing license headers. Husky pre-commit also runs lint-staged (not run: needs staged files; lint and typecheck gates cover it), secrets:check and sonar-local (covered above)."}
+  ],
+  "failures": {}
+}

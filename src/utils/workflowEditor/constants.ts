@@ -123,3 +123,8 @@ export const ISSUE_FIELD_MAP = {
   transform: 'custom_node_id',
   sub_workflow: 'workflow_id',
 } as const
+
+/* Retry policy */
+// Must match the backend default: RETRY_POLICY_DEFAULT_MAX_ATTEMPTS in
+// codemie/src/codemie/core/workflow_models/constants.py. Total attempts, including the first run.
+export const DEFAULT_RETRY_MAX_ATTEMPTS = 10
