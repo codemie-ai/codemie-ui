@@ -18,7 +18,9 @@ import { describe, expect, it, vi } from 'vitest'
 import WorkflowStartExecutionPopup from '../WorkflowStartExecutionPopup'
 
 vi.mock('@/components/Editor/Editor', () => ({
-  default: ({ ariaLabelledBy }: any) => <textarea readOnly aria-labelledby={ariaLabelledBy} />,
+  default: ({ ariaLabelledBy, autoFocus }: any) => (
+    <textarea readOnly aria-labelledby={ariaLabelledBy} data-autofocus={String(autoFocus)} />
+  ),
 }))
 
 vi.mock('@/components/Popup', () => ({
@@ -71,5 +73,18 @@ describe('WorkflowStartExecutionPopup accessibility — prompt field label', () 
     const textbox = screen.getByRole('textbox', { name: /enter a starting prompt/i })
     expect(labelEl).toHaveAttribute('id')
     expect(textbox).toHaveAttribute('aria-labelledby', labelEl.getAttribute('id'))
+  })
+})
+
+describe('WorkflowStartExecutionPopup accessibility — initial focus and file picker', () => {
+  it('does not let the prompt editor take focus on open', () => {
+    render(<WorkflowStartExecutionPopup {...defaultProps} />)
+    const textbox = screen.getByRole('textbox', { name: /enter a starting prompt/i })
+    expect(textbox).toHaveAttribute('data-autofocus', 'false')
+  })
+
+  it('gives the attach-files button an accessible name', () => {
+    render(<WorkflowStartExecutionPopup {...defaultProps} />)
+    expect(screen.getByRole('button', { name: 'Attach files' })).toBeInTheDocument()
   })
 })

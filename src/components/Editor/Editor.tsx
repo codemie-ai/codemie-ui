@@ -43,6 +43,11 @@ export interface EditorRef {
   getContent: () => ChatEditorDelta
 }
 
+const focusAtEnd = (quill: any) => {
+  quill.setSelection(quill.getLength(), 0)
+  quill.focus()
+}
+
 const processText = (e: any): EditorValue => {
   const text = e.textValue ?? ''
   const lines = text.split('\n')
@@ -81,6 +86,7 @@ interface EditorProps {
   onEditorLoad?: (quill: any) => void
   ariaLabelledBy?: string
   rootId?: string
+  autoFocus?: boolean
 }
 
 const Editor = forwardRef<EditorRef, EditorProps>(
@@ -99,6 +105,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(
       onEditorLoad,
       ariaLabelledBy,
       rootId,
+      autoFocus = true,
     },
     ref
   ) => {
@@ -204,9 +211,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(
           const quill = editorRef.current?.getQuill()
           if (quill) {
             quill.root.innerHTML = DOMPurify.sanitize(value.messageRaw)
-            const length = quill.getLength()
-            quill.setSelection(length, 0)
-            quill.focus()
+            if (autoFocus) focusAtEnd(quill)
             if (ariaLabelledBy) quill.root.setAttribute(ARIA_LABELLEDBY, ariaLabelledBy)
             if (rootId) quill.root.setAttribute('id', rootId)
             onEditorLoad?.(quill)

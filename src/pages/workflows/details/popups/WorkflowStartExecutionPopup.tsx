@@ -150,6 +150,7 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
                 className="workflow-execution-editor"
                 ariaLabelledBy={labelId}
                 rootId={editorRootId}
+                autoFocus={false}
                 onChange={setPrompt}
                 onAddFiles={addFiles}
                 onSubmit={handleSubmit}
@@ -158,6 +159,7 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
               <button
                 type="button"
                 onClick={openFilePicker}
+                aria-label="Attach files"
                 data-tooltip-id="react-tooltip"
                 data-tooltip-content={WF_FILE_UPLOAD_MESSAGE}
                 className={cn(
