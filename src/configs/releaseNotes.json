@@ -94,6 +94,17 @@
             ]
           },
           {
+            "title": "Personal project spending and shared-budget visibility",
+            "description": "Show personal project spending alongside the remaining shared project budget.",
+            "issues": [
+              {
+                "key": "EPMCDME-17185",
+                "type": "TASK",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17185"
+              }
+            ]
+          },
+          {
             "title": "Cost Center project navigation",
             "description": "Open the relevant Project Management view from a Cost Center’s project count.",
             "issues": [
