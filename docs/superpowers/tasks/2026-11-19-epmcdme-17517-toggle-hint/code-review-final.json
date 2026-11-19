@@ -1,0 +1,25 @@
+{
+  "decision": "approve",
+  "rationale": "Single-line fix: adds `hint={field.description}` to the `<Switch>` in the `BOOLEAN` branch of `IndexProviderForm.tsx`. Every other field type (LIST→Autocomplete, STRING/SECRET/URL→Input, TEXT→Textarea) already passes this prop; the BOOLEAN branch was the only one omitting it. `Switch` renders `{hint && <TooltipButton .../>}`, so the icon was simply never mounted. No logic change, no new state, no API change — the `description` field is already present in `DataProviderField` and already returned by `GET /v1/providers/datasource_schemas`. Verified locally: browser screenshot confirms the info icon appears next to the toggle after the fix and is absent without it.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "Commit subject follows 'EPMCDME-17517: Capital sentence' per .ai-run/guides/standards/git-workflow.md."
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "Diff adds one prop to a Switch component. No HTML sinks, no navigation from untrusted input, no secrets, no config changes per .ai-run/guides/development/security-patterns.md."
+    },
+    {
+      "kind": "quality-gates",
+      "status": "pass",
+      "notes": "UI harness sanity-ui run."
+    }
+  ],
+  "findings": []
+}

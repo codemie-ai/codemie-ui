@@ -227,6 +227,7 @@ const IndexProviderForm: React.FC<Props> = ({
                     id={field.name}
                     {...controllerField}
                     label={field.title ?? humanize(field.name)}
+                    hint={field.description}
                   />
                 )}
               />
