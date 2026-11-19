@@ -26,6 +26,11 @@ type MarkdownProps = {
   withBlinker?: boolean
   children?: React.ReactNode
   className?: string
+  /**
+   * The bare file ids the back end listed for this conversation. When given, a link to a turn
+   * artifact that is not in it renders as text rather than a chip whose download would fail.
+   */
+  listedArtifactIds?: ReadonlySet<string>
 }
 
 const Markdown: React.FC<MarkdownProps> = ({
@@ -33,6 +38,7 @@ const Markdown: React.FC<MarkdownProps> = ({
   withBlinker = false,
   children,
   className,
+  listedArtifactIds,
 }) => {
   const tokens = useMemo(() => {
     if (!content) return []
@@ -47,7 +53,9 @@ const Markdown: React.FC<MarkdownProps> = ({
         className
       )}
     >
-      {tokens.length > 0 && <MarkdownTokens tokens={tokens} />}
+      {tokens.length > 0 && (
+        <MarkdownTokens tokens={tokens} listedArtifactIds={listedArtifactIds} />
+      )}
       {children}
     </div>
   )

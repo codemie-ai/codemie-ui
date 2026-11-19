@@ -1,0 +1,53 @@
+{
+  "decision": "request-changes",
+  "rationale": "All four lenses and the standards audit ran; one blocking finding remains: spec § Testing is partially met because files.test.ts has no `name (2).ext` download-name fixture. 8 candidates dismissed as spec-intended behaviour or noise (last-segment split for all names per B1, backslash not a separator per B2, cross-turn same basename, Browse files full-path listing per AC7, store test state reset by afterEach, no-code-change tests per B6/B7); 0 deferred; AC5 is pending-stage-7.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "spec", "item": "B1: decoded name reduced to last '/' segment, stripUuidPrefix, sanitizeFileName via one shared helper", "status": "pass", "notes": "artifactFileName in src/utils/api.ts; covered by api.test.ts"},
+    {"kind": "spec", "item": "B1: chip label site (artifactLink.ts) calls the shared helper", "status": "pass", "notes": "fileName = artifactFileName(originalFileName); comment replaced"},
+    {"kind": "spec", "item": "B1: encoded-link download name (files.ts a.download) calls the shared helper", "status": "pass", "notes": "a.download = artifactFileName(originalFileName) ?? 'download'"},
+    {"kind": "spec", "item": "B2: backslashes are not separators; sanitise to '_'", "status": "pass", "notes": "only '/' split; api.test covers backslash case"},
+    {"kind": "spec", "item": "B3: empty, '.' or '..' last segment gives no chip", "status": "pass", "notes": "api.test and artifactLink.test cover empty segment cases"},
+    {"kind": "spec", "item": "B4: token guards unchanged; fileId stays raw incl. grant query", "status": "pass", "notes": "guards not in diff; chip test asserts grantedId"},
+    {"kind": "spec", "item": "B5: share grants — no code change; covered by a test", "status": "pass", "notes": "sharedFileGrants.test path-shaped token case"},
+    {"kind": "spec", "item": "B6: failure / not-delivered texts — no chip and no anchor", "status": "pass", "notes": "artifactChip test it.each over failure sentences"},
+    {"kind": "spec", "item": "B7: Browse files — no code change; test confirms full-path listing and last-segment download", "status": "pass", "notes": "AgentWorkspaceBrowserPopup.test and agentWorkspace.test"},
+    {"kind": "spec", "item": "AC1: path-shaped chip labelled and saved as last segment", "status": "pass", "notes": "artifactLink.test and files.test D1 case"},
+    {"kind": "spec", "item": "AC2: 'report.csv' and 'report (2).csv' each show their own name and fileId", "status": "pass", "notes": "artifactLink.test and chip test"},
+    {"kind": "spec", "item": "AC3: shared conversation workspace chip downloads with ?share_token=", "status": "pass", "notes": "chip test and sharedFileGrants.test"},
+    {"kind": "spec", "item": "AC4: legacy '<uuid>_<name>' token still shows and downloads as '<name>'", "status": "pass", "notes": "api.test UUID case; legacy files.test retained"},
+    {"kind": "spec", "item": "AC5: traversal/control/backslash names sanitised; bad ids refused; guard tests pass", "status": "pending-stage-7", "notes": "implemented and tested; remaining proof is the suite run"},
+    {"kind": "spec", "item": "AC6: failure texts render as text with no chip and no link", "status": "pass", "notes": "artifactChip test failure-text it.each"},
+    {"kind": "spec", "item": "AC7: Browse files lists full path; downloads with full file_path and last-segment name", "status": "pass", "notes": "popup test and agentWorkspace.test"},
+    {"kind": "spec", "item": "Testing: extend four test files with path-shaped AND 'name (2).ext' fixtures", "status": "partial", "notes": "files.test.ts has no 'name (2).ext' fixture; other three files have both"},
+    {"kind": "spec", "item": "Testing: add a test for AgentWorkspaceBrowserPopup", "status": "pass", "notes": "new AgentWorkspaceBrowserPopup.test.tsx"},
+    {"kind": "spec", "item": "Testing: existing tests pinning a whole '/'-containing name flipped on purpose", "status": "pass", "notes": "artifactLink.test and files.test expectations flipped"},
+    {"kind": "spec", "item": "Non-goal: no file size in chip", "status": "pass", "notes": "none in diff"},
+    {"kind": "spec", "item": "Non-goal: no upload/edit/delete UI for artifacts", "status": "pass", "notes": "none in diff"},
+    {"kind": "spec", "item": "Non-goal: no workflow output rendering change", "status": "pass", "notes": "no workflow files in diff"},
+    {"kind": "spec", "item": "Non-goal: no folder tree or visual change to Browse files", "status": "pass", "notes": "popup source untouched"},
+    {"kind": "spec", "item": "Non-goal: no change to token guard or share-grant regexes", "status": "pass", "notes": "neither regex in diff"},
+    {"kind": "spec", "item": "Non-goal: do not switch encoded-link download to Content-Disposition", "status": "pass", "notes": "files.ts still names via decoded name"},
+    {"kind": "spec", "item": "Non-goal: do not touch the second decodeFileName in src/utils/utils.ts", "status": "pass", "notes": "utils.ts not in diff"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "all 4 subjects in a32c53de..HEAD match git-workflow.md pattern EPMCDME-XXXX: Capital sentence (non-zero ticket 14735, capitalised first word, no trailing period)"},
+    {"kind": "code-quality", "status": "na", "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard, not adjudicated"},
+    {"kind": "security", "status": "pass", "notes": "security-patterns.md checked against src/components/markdown/artifactLink.ts, src/store/files.ts, src/utils/api.ts: no new HTML sink, navigation, postMessage, config or secret; fileId trust-boundary guards (SAFE_FILE_ID_PATTERN, PATH_ESCAPE_PATTERN, SHARE_TOKEN_QUERY) still run on the encoded id; new artifactFileName takes last path segment then sanitizeFileName strips control chars, slashes, backslashes and leading dots before display and the a.download sink; regression tests added alongside"}
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/store/__tests__/files.test.ts",
+      "line": 144,
+      "title": "files.test.ts lacks renamed-duplicate fixture",
+      "problem": "Spec § Testing requires files.test.ts to be extended with both path-shaped and `name (2).ext` fixtures. The diff adds only 'artifacts/t1/closed_positions_analysis.xlsx' and 'artifacts/t1/'; there is no `report (2).csv`-style download-name case for the encoded-link anchor path.",
+      "impact": "A required spec testing item is only partially met: the saved-file name for a renamed duplicate (AC2) is not pinned on the files.ts download site, so a regression where chip label and saved name diverge for `name (n).ext` would go uncaught there.",
+      "recommendation": "Add a files.test.ts case using the existing downloadAnchorFor helper, e.g. downloadAnchorFor('artifacts/t1/report (2).csv') expecting anchor.download === 'report (2).csv', so the encoded-link download path is pinned for the `name (2).ext` shape as spec § Testing requires."
+    }
+  ]
+}

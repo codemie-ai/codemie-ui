@@ -342,4 +342,28 @@ describe('agentWorkspaceStore', () => {
     resolveDownload(true)
     expect(await first).toBe(true)
   })
+
+  it('downloads a workspace artifact under its own file name', async () => {
+    mockDownloadFileStream.mockResolvedValue(true)
+
+    const { agentWorkspaceStore } = await import('@/store/agentWorkspace')
+    agentWorkspaceStore.workspace = {
+      id: 'workspace-1',
+      conversation_id: 'chat-123',
+      user_id: 'user-1',
+      name: null,
+      status: 'active',
+      date: '2026-04-23T10:00:00',
+      update_date: '2026-04-23T10:00:00',
+    }
+    agentWorkspaceStore.selectedFilePath = 'artifacts/t1/report (2).csv'
+
+    await agentWorkspaceStore.downloadSelectedFile()
+
+    expect(mockDownloadFileStream).toHaveBeenCalledWith(
+      'v1/workspaces/workspace-1/files/download?file_path=artifacts%2Ft1%2Freport%20(2).csv',
+      undefined,
+      'report (2).csv'
+    )
+  })
 })

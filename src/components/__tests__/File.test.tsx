@@ -329,4 +329,31 @@ describe('File', () => {
       expect(image).not.toHaveClass('hidden')
     })
   })
+  describe('File type indicator', () => {
+    it('shows the uppercased extension beside the name', () => {
+      render(<File file={{ fileId: 'id', fileName: 'report.csv' }} withDownload />)
+
+      expect(screen.getByText('CSV')).toBeInTheDocument()
+      expect(screen.getByText('report.csv')).toBeInTheDocument()
+    })
+
+    it('renders no extension badge for an extension-less name', () => {
+      render(<File file={{ fileId: 'id', fileName: 'report' }} withDownload />)
+
+      expect(screen.getByText('report')).toBeInTheDocument()
+      expect(screen.queryByText('REPORT')).not.toBeInTheDocument()
+    })
+
+    it('renders no extension badge for a dotfile', () => {
+      render(<File file={{ fileId: 'id', fileName: '.gitignore' }} withDownload />)
+
+      expect(screen.queryByText('GITIGNORE')).not.toBeInTheDocument()
+    })
+
+    it('uses only the final extension of a multi-dot name', () => {
+      render(<File file={{ fileId: 'id', fileName: 'archive.tar.gz' }} withDownload />)
+
+      expect(screen.getByText('GZ')).toBeInTheDocument()
+    })
+  })
 })

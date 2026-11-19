@@ -37,6 +37,7 @@ const mockChatsStore = {
   stopChatCompletionPoll: vi.fn(),
   getConversationName: vi.fn(),
   refreshWorkflowExecutionIds: vi.fn(),
+  refreshTurnFiles: vi.fn().mockResolvedValue(undefined),
 }
 
 vi.mock('@/utils/api', () => ({

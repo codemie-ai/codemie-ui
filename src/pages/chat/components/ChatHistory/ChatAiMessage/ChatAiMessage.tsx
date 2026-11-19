@@ -39,6 +39,7 @@ import './ChatAiMessage.scss'
 
 import ChatA2uiBlock from './ChatA2uiBlock'
 import ChatAiAuthPrompt, { ChatAuthPrompt } from './ChatAiAuthPrompt'
+import ChatAiGeneratedFiles from './ChatAiGeneratedFiles'
 import ChatAiMessageActions from './ChatAiMessageActions'
 import ThinkingLoader from './ThinkingLoader'
 import { createThoughtView } from './thoughtView'
@@ -182,6 +183,23 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
     message.executionStatus !== WORKFLOW_STATUSES.RUNNING &&
     !isTerminalExecution
 
+  // Every token the back end listed for this conversation. An inline link to a turn artifact
+  // outside it is one the model wrote itself. Workflow turns have no file_names (EPMCDME-16432),
+  // so they get no check. Keyed on the snapshot, whose identity changes when refreshTurnFiles writes.
+  const conversationHistory = currentChat?.history
+  const isWorkflowChat = !!currentChat?.isWorkflow
+  const listedArtifactIds = useMemo(
+    () =>
+      isWorkflowChat
+        ? undefined
+        : new Set<string>(
+            (conversationHistory ?? []).flatMap((item) =>
+              item.flatMap((entry) => entry.generatedFileNames ?? [])
+            )
+          ),
+    [conversationHistory, isWorkflowChat]
+  )
+
   const processingTime = useMemo(() => {
     return !isInProgress && message.processingTime != null
       ? message.processingTime.toFixed(2)
@@ -307,9 +325,14 @@ const ChatAiMessage: FC<ChatAiMessageProps> = ({
               <>
                 <Markdown
                   className="mt-4"
+                  listedArtifactIds={listedArtifactIds}
                   content={
                     showRestoreFailed ? WORKFLOW_PROGRESS_RESTORE_FAILED_MESSAGE : markdownContent
                   }
+                />
+                <ChatAiGeneratedFiles
+                  fileNames={message.generatedFileNames}
+                  content={markdownContent}
                 />
                 {message.loginUrl && (
                   <Button

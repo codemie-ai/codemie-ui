@@ -14,11 +14,13 @@
 //
 
 import * as fileSaver from 'file-saver'
-import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, MockInstance } from 'vitest'
 
 import api, {
+  artifactFileName,
   parseContentDispositionFilename,
   sanitizeFileName,
+  stripUuidPrefix,
   formatErrorMessage,
 } from '@/utils/api'
 import toaster from '@/utils/toaster'
@@ -224,9 +226,7 @@ describe('sanitizeFileName', () => {
 })
 
 describe('downloadFileStream', () => {
-  const mockBlob = new Blob(['content'], { type: 'application/octet-stream' })
-
-  const mockFetchResponse = (blob: Blob, headers: Record<string, string> = {}) => {
+  const mockFetchResponse = (headers: Record<string, string> = {}) => {
     const stream = new ReadableStream({
       start(controller) {
         controller.enqueue(new Uint8Array([1, 2, 3]))
@@ -238,9 +238,20 @@ describe('downloadFileStream', () => {
       body: stream,
       headers: { get: (key: string) => headers[key] ?? null },
     })
+    // downloadFileStream now constructs the blob itself so it can carry the response
+    // Content-Type, so the stub hands back bytes rather than a pre-made Blob instance.
     vi.spyOn(global, 'Response').mockImplementation(function () {
-      return { blob: () => Promise.resolve(blob) } as any
+      return { arrayBuffer: () => Promise.resolve(new ArrayBuffer(3)) } as any
     })
+  }
+
+  // The identity assertions below became content assertions when the blob stopped being
+  // supplied by the caller; `saveAs` receives an equivalent blob, not the same object.
+  const expectSavedAs = (saveAsSpy: MockInstance<typeof fileSaver.saveAs>, name: string) => {
+    expect(saveAsSpy).toHaveBeenCalledTimes(1)
+    const [blob, fileName] = saveAsSpy.mock.calls[0]
+    expect(blob).toBeInstanceOf(Blob)
+    expect(fileName).toBe(name)
   }
 
   beforeEach(() => {
@@ -248,30 +259,30 @@ describe('downloadFileStream', () => {
   })
 
   it('calls saveAs with the provided fileName', async () => {
-    mockFetchResponse(mockBlob)
+    mockFetchResponse()
     const saveAsSpy = vi.spyOn(fileSaver, 'saveAs')
 
     await api.downloadFileStream('v1/files/123', undefined, 'report.pdf')
 
-    expect(saveAsSpy).toHaveBeenCalledWith(mockBlob, 'report.pdf')
+    expectSavedAs(saveAsSpy, 'report.pdf')
   })
 
   it('calls saveAs with filename from content-disposition when no fileName provided', async () => {
-    mockFetchResponse(mockBlob, { 'content-disposition': 'attachment; filename="export.csv"' })
+    mockFetchResponse({ 'content-disposition': 'attachment; filename="export.csv"' })
     const saveAsSpy = vi.spyOn(fileSaver, 'saveAs')
 
     await api.downloadFileStream('v1/files/123')
 
-    expect(saveAsSpy).toHaveBeenCalledWith(mockBlob, 'export.csv')
+    expectSavedAs(saveAsSpy, 'export.csv')
   })
 
   it('calls saveAs with default name when no fileName and no content-disposition', async () => {
-    mockFetchResponse(mockBlob)
+    mockFetchResponse()
     const saveAsSpy = vi.spyOn(fileSaver, 'saveAs')
 
     await api.downloadFileStream('v1/files/123')
 
-    expect(saveAsSpy).toHaveBeenCalledWith(mockBlob, 'download')
+    expectSavedAs(saveAsSpy, 'download')
   })
 
   it('does not call saveAs when response is not ok', async () => {
@@ -287,7 +298,7 @@ describe('downloadFileStream', () => {
   })
 
   it('never calls document.body.appendChild', async () => {
-    mockFetchResponse(mockBlob)
+    mockFetchResponse()
     const appendChildSpy = vi.spyOn(document.body, 'appendChild')
 
     await api.downloadFileStream('v1/files/123', undefined, 'file.pdf')
@@ -296,7 +307,7 @@ describe('downloadFileStream', () => {
   })
 
   it('calls onSuccessHeaders with the response headers on success', async () => {
-    mockFetchResponse(mockBlob, { 'x-workspace-skipped-count': '2' })
+    mockFetchResponse({ 'x-workspace-skipped-count': '2' })
     const onSuccessHeaders = vi.fn()
 
     await api.downloadFileStream('v1/files/123', undefined, 'report.pdf', onSuccessHeaders)
@@ -434,4 +445,50 @@ describe('stream error handling', () => {
     const thrown = await catchStream('v1/x', {})
     expect(thrown).toBe(expected)
   })
+})
+
+describe('stripUuidPrefix', () => {
+  const UUID = '3f1a2b3c-4d5e-6f70-8192-a3b4c5d6e7f8'
+
+  it('removes a leading storage uuid prefix', () => {
+    expect(stripUuidPrefix(`${UUID}_sample_spreadsheet.xlsx`)).toBe('sample_spreadsheet.xlsx')
+  })
+
+  it('is case-insensitive', () => {
+    expect(stripUuidPrefix(`${UUID.toUpperCase()}_report.csv`)).toBe('report.csv')
+  })
+
+  it('leaves a name without a uuid prefix unchanged', () => {
+    expect(stripUuidPrefix('report.csv')).toBe('report.csv')
+  })
+
+  it('leaves a uuid in the middle of a name unchanged', () => {
+    expect(stripUuidPrefix(`my_${UUID}_x.txt`)).toBe(`my_${UUID}_x.txt`)
+  })
+
+  it('keeps the original when stripping would empty the name', () => {
+    expect(stripUuidPrefix(`${UUID}_`)).toBe(`${UUID}_`)
+  })
+})
+
+describe('artifactFileName', () => {
+  const UUID = '3f1a2b3c-4d5e-6f70-8192-a3b4c5d6e7f8'
+
+  it.each([
+    ['artifacts/t1/closed_positions_analysis.xlsx', 'closed_positions_analysis.xlsx'],
+    ['artifacts/t1/report (2).csv', 'report (2).csv'],
+    [`${UUID}_report.csv`, 'report.csv'],
+    [`artifacts/t1/${UUID}_x.csv`, 'x.csv'],
+    ['artifacts/t1/a\\b.txt', 'a_b.txt'],
+    ['artifacts/t1/f\x00.txt', 'f_.txt'],
+  ])('names %j as %j', (name, expected) => {
+    expect(artifactFileName(name)).toBe(expected)
+  })
+
+  it.each([['artifacts/t1/'], ['a/..'], ['a/.'], [''], [undefined]])(
+    'returns undefined for %j',
+    (name) => {
+      expect(artifactFileName(name)).toBeUndefined()
+    }
+  )
 })

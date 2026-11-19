@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14735_downloadable-artifacts-ui",
+  "head": "e9e0431287cd6c84a656482720f433abd1447957",
+  "runner": "npm",
+  "started_at": "2026-10-22T12:08:02Z",
+  "completed_at": "2026-10-22T12:24:48Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "command": "npm run lint",
+      "status": "PASS",
+      "duration_ms": 39573,
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "command": "npm run typecheck",
+      "status": "PASS",
+      "duration_ms": 23766,
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "command": "npm run license-check",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "notes": "Skip if: no dependency added/removed/moved; package.json and package-lock.json not in diff vs origin/main."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "command": "npm run secrets:check",
+      "status": "PASS",
+      "duration_ms": 7024,
+      "exit_code": 0,
+      "notes": "Output confirms 'no leaks found' (working tree only, not history)."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "command": "npm run test:unit:slnt",
+      "status": "PASS",
+      "duration_ms": 319004,
+      "exit_code": 0,
+      "notes": "Test Files  726 passed (726); Tests 7435 passed | 1 skipped. Ran after npm ci."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "command": "npm run test:integration:slnt",
+      "status": "PASS",
+      "duration_ms": 174171,
+      "exit_code": 0,
+      "notes": "Test Files  52 passed (52); Tests 572 passed | 1 skipped."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "command": "npm run test-harness",
+      "status": "FAIL",
+      "duration_ms": 399596,
+      "exit_code": 1,
+      "notes": "1 failed, 92 passed, 7 rerun. Failing test tests/ui/datasource/test_create_datasource.py::test_open_create_datasource_page_and_elements raised 'ValueError: GOOGLE_DOC_URL is not configured' - harness environment config, not an assertion on changed code; guide says reproduce on main with complete config before calling it unrelated."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "command": "npx lint-staged",
+      "status": "N/A",
+      "duration_ms": 0,
+      "notes": "Operates on staged files only; working tree clean so nothing staged. Its prettier/eslint/tsc/license-header steps are covered by lint, typecheck, license-headers gates."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "command": "npm run license-headers:check",
+      "status": "PASS",
+      "duration_ms": 319,
+      "exit_code": 0,
+      "notes": "Checked 2389 files, 0 missing license headers."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "command": "npm run sonar-local",
+      "status": "SKIPPED",
+      "duration_ms": 187,
+      "exit_code": 0,
+      "notes": "Self-skip, exit 0: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN (e.g. in .env.local) to run locally; until then only CI Sonar settles it. Guide lists it as automatic pre-commit and does not run it."
+    },
+    {
+      "id": "ci-pipeline",
+      "source": "ci",
+      "command": "external MR pipeline",
+      "status": "N/A",
+      "duration_ms": 0,
+      "notes": ".gitlab-ci.yml only runs pre-ci-guard waiting on external ci-pipeline and compliance-report contexts (incl. server-side gitleaks-scan); not runnable locally."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "",
+      "notes": "UI surface changed but no configured UI test script; browser verification is a separate caller decision."
+    }
+  ],
+  "failures": {
+    "test-harness": "        AWS Parameter Store parameter /codemie/autotests/integrations/google_docs,\n        path \"document_url\") instead of a hardcoded constant, so the target test\n        document can change without a code change. RESPONSE_FOR_GOOGLE_DOC still\n        asserts against that document's content, so update it too if you point\n        this at a different document.\n    \n        Raises a clear error instead of silently falling back to a stale\n        hardcoded URL when the value is not configured.\n        \"\"\"\n        url = CredentialsManager.get_parameter(\"GOOGLE_DOC_URL\")\n        if not url:\n>           raise ValueError(\n                \"GOOGLE_DOC_URL is not configured. Set the GOOGLE_DOC_URL \"\n                \"environment variable, or set 'document_url' in the AWS \"\n                \"Parameter Store parameter /codemie/autotests/integrations/google_docs.\"\n            )\nE           ValueError: GOOGLE_DOC_URL is not configured. Set the GOOGLE_DOC_URL environment variable, or set 'document_url' in the AWS Parameter Store parameter /codemie/autotests/integrations/google_docs.\n\ntests/test_data/google_datasource_test_data.py:31: ValueError\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/embeddings_models\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_open_create_datasource_page_and_elements[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_open_create_datasource_page_and_elements[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n------------------------------ Captured log setup ------------------------------\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/user\n---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_open_create_datasource_page_and_elements[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_open_create_datasource_page_and_elements[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n---------------------------- Captured log teardown -----------------------------\nINFO     reportportal_logger:rp_guard.py:50 Test failed - Screenshot captured: test_open_create_datasource_page_and_elements[chromium]\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/assistants\nINFO     codemie_sdk.utils.http:http.py:33 Successfully processed GET request to /v1/conversations\n- generated xml file: /home/aliaksei_chumakou/codemie-dev/codemie-ui/codemie-test-reports/junit.xml -\n=========================== short test summary info ============================\nFAILED tests/ui/datasource/test_create_datasource.py::test_open_create_datasource_page_and_elements[chromium]\n============== 1 failed, 92 passed, 7 rerun in 395.38s (0:06:35) ==============="
+  }
+}

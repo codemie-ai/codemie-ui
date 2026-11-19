@@ -236,6 +236,7 @@ export interface ChatsStoreType {
   ): Promise<any>
   updateChatListItem(newChatListItem: Partial<ChatListItem> & { id: string }): void
   refreshWorkflowExecutionIds(id: string): Promise<void>
+  refreshTurnFiles(id: string, historyIndex: number, messageIndex: number): Promise<void>
   getConversationName(id: string): Promise<string | null>
   getModelsForCurrentChat(): Promise<ModelOption[]>
 
@@ -513,6 +514,23 @@ export const chatsStore = proxy<ChatsStoreType>({
         existingMessage.thoughts = message.thoughts ?? []
       })
     })
+  },
+
+  /**
+   * Picks up the files a just-finished turn published. `file_names` exist only once the turn is
+   * saved, which the back end does before it closes the stream, so the live message has none.
+   * Only that field is copied: the live message keeps owning its stream, thoughts and response.
+   */
+  refreshTurnFiles: async (id, historyIndex, messageIndex) => {
+    const response = await api.get(`v1/conversations/${id}`)
+    const freshChat = transformChatBEtoFE(await response.json())
+
+    const generatedFileNames = freshChat.history[historyIndex]?.[messageIndex]?.generatedFileNames
+    if (!generatedFileNames?.length) return
+
+    const existingChat = chatsStore.openedChatsHistory.find((chat) => chat.id === id)
+    const existingMessage = existingChat?.history[historyIndex]?.[messageIndex]
+    if (existingMessage) existingMessage.generatedFileNames = generatedFileNames
   },
 
   /**

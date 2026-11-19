@@ -86,6 +86,25 @@ describe('sharedFileGrants', () => {
       )
     })
 
+    it('applies the grant to a token encoding a workspace path', () => {
+      const part = (value: string) => `${value.length}~${value}`
+      const token = btoa(part('text/csv') + part('owner') + part('artifacts/t1/report (2).csv'))
+      setSharedFileGrants({ [token]: `${token}?share_token=abc` })
+
+      expect(resolveSandboxFileUrls(`[f](sandbox:/v1/files/${token})`, BASE_URL)).toBe(
+        `[f](${BASE_URL}/v1/files/${token}?share_token=abc)`
+      )
+    })
+
+    // An assistant often quotes the reference in inline code; the backtick ends the token
+    it('applies the grant to a token closed by a backtick', () => {
+      setSharedFileGrants({ a: 'a?share_token=abc' })
+
+      expect(resolveSandboxFileUrls('`sandbox:/v1/files/a`', BASE_URL)).toBe(
+        '`http://api.test/v1/files/a?share_token=abc`'
+      )
+    })
+
     it('leaves a message without file references untouched', () => {
       expect(resolveSandboxFileUrls('no files here', BASE_URL)).toBe('no files here')
     })

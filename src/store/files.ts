@@ -15,7 +15,7 @@
 
 import { proxy } from 'valtio'
 
-import api from '@/utils/api'
+import api, { artifactFileName } from '@/utils/api'
 import { decodeFileName } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { hash, stripFileTokenQuery } from '@/utils/utils'
@@ -134,7 +134,9 @@ export const filesStore = proxy<FilesStoreType>({
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = originalFileName
+      // `artifactFileName` is the helper the chip label uses (artifactLink.ts), so both surfaces
+      // name the artifact identically; `download` is a filesystem-facing sink.
+      a.download = artifactFileName(originalFileName) ?? 'download'
       a.click()
       window.URL.revokeObjectURL(url)
     } else {

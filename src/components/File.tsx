@@ -41,6 +41,12 @@ interface FileProps {
   withPreview?: boolean
   withDownload?: boolean
   onRemove?: () => void
+  /**
+   * Extra classes for the outermost element. The chip is sized by its parent in the attachment
+   * tray; in prose it needs `inline-flex`, or the flex row fills the paragraph and `ml-auto`
+   * strands the action buttons at the far right.
+   */
+  className?: string
 }
 
 const File: FC<FileProps> = ({
@@ -49,6 +55,7 @@ const File: FC<FileProps> = ({
   withPreview = false,
   withDownload = false,
   onRemove,
+  className,
 }) => {
   const { downloadFile, getFileURL } = useSnapshot(filesStore)
   const [imageSrc, setImageSrc] = useState<string | null>(null)
@@ -105,10 +112,20 @@ const File: FC<FileProps> = ({
     </div>
   )
 
+  // Last dot only, and never a leading one — `.gitignore` is a dotfile, not a GITIGNORE
+  const extensionDot = file.fileName.lastIndexOf('.')
+  const extension = extensionDot > 0 ? file.fileName.slice(extensionDot + 1).toUpperCase() : ''
+
   const fileContent = (
     <div className="flex gap-2 min-w-0 items-center">
       {fileIcon}
       <div className="min-w-0 truncate">{file.fileName}</div>
+      {/* Outside the truncating container so the name truncates and the type stays readable */}
+      {extension && (
+        <span className="shrink-0 text-text-quaternary" title={file.mimeType}>
+          {extension}
+        </span>
+      )}
     </div>
   )
 
@@ -150,7 +167,7 @@ const File: FC<FileProps> = ({
   )
 
   return (
-    <div className="flex flex-col">
+    <div className={cn('flex flex-col', className)}>
       <div className={containerBaseClasses}>
         {isImage && !file.isUploading && withPreview ? (
           <button

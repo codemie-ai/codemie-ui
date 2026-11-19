@@ -15,8 +15,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getArtifactLink } from '@/components/markdown/artifactLink'
 import { filesStore } from '@/store/files'
-import api from '@/utils/api'
+import api, { artifactFileName } from '@/utils/api'
 import toaster from '@/utils/toaster'
 
 // setupTests.unit.ts already mocks @/utils/api globally — api.get/post/etc are
@@ -98,6 +99,98 @@ describe('filesStore.downloadFile', () => {
 
     expect(api.get).toHaveBeenCalledWith(`v1/files/${fileUrl}`)
     expect(downloadSpy).not.toHaveBeenCalled()
+  })
+
+  it('strips the storage uuid prefix from the saved file name, not from the request id', async () => {
+    // The id the back end actually emits: base64 of the `<len>~<value>` triple
+    // `[mime_type, owner, name]`. The legacy `_`-joined form would shatter a
+    // `{uuid}_name` on its underscores and never reproduce the bug.
+    const UUID = '3f1a2b3c-4d5e-6f70-8192-a3b4c5d6e7f8'
+    const part = (value: string) => `${value.length}~${value}`
+    const fileId = btoa(part('application/xlsx') + part(UUID) + part(`${UUID}_report.xlsx`))
+    vi.mocked(api.get).mockResolvedValueOnce({
+      blob: async () => new Blob(['data'], { type: 'application/xlsx' }),
+    } as any)
+    const anchor = document.createElement('a')
+    anchor.click = vi.fn()
+    vi.spyOn(document, 'createElement').mockReturnValue(anchor)
+
+    await filesStore.downloadFile(fileId)
+
+    expect(anchor.download).toBe('report.xlsx')
+    expect(api.get).toHaveBeenCalledWith(`v1/files/${fileId}`)
+  })
+
+  it('sanitizes the saved file name the same way the chip label is sanitized', async () => {
+    // Acceptance criterion 8: the chip and the saved file must agree. `artifactLink`
+    // runs artifactFileName(name); the download anchor must match.
+    const UUID = '3f1a2b3c-4d5e-6f70-8192-a3b4c5d6e7f8'
+    const part = (value: string) => `${value.length}~${value}`
+    const decodedName = `${UUID}_../etc/passwd.txt`
+    const fileId = btoa(part('text/plain') + part(UUID) + part(decodedName))
+    vi.mocked(api.get).mockResolvedValueOnce({
+      blob: async () => new Blob(['data'], { type: 'text/plain' }),
+    } as any)
+    const anchor = document.createElement('a')
+    anchor.click = vi.fn()
+    vi.spyOn(document, 'createElement').mockReturnValue(anchor)
+
+    await filesStore.downloadFile(fileId)
+
+    expect(anchor.download).toBe(artifactFileName(decodedName))
+    expect(anchor.download).toBe('pas_swd.txt')
+    expect(api.get).toHaveBeenCalledWith(`v1/files/${fileId}`)
+  })
+
+  const encodedName = (name: string) => {
+    const part = (value: string) => `${value.length}~${value}`
+    return btoa(part('text/csv') + part('owner') + part(name))
+  }
+
+  const downloadAnchorFor = async (name: string) => {
+    const fileId = encodedName(name)
+    vi.mocked(api.get).mockResolvedValueOnce({
+      blob: async () => new Blob(['data'], { type: 'text/csv' }),
+    } as any)
+    const anchor = document.createElement('a')
+    anchor.click = vi.fn()
+    vi.spyOn(document, 'createElement').mockReturnValue(anchor)
+
+    await filesStore.downloadFile(fileId)
+
+    expect(api.get).toHaveBeenCalledWith(`v1/files/${fileId}`)
+    return anchor
+  }
+
+  it('saves a workspace artifact under the last segment of its path (D1)', async () => {
+    const anchor = await downloadAnchorFor('artifacts/t1/closed_positions_analysis.xlsx')
+
+    expect(anchor.download).toBe('closed_positions_analysis.xlsx')
+  })
+
+  it('saves a renamed duplicate workspace artifact under its own name', async () => {
+    const anchor = await downloadAnchorFor('artifacts/t1/report (2).csv')
+
+    expect(anchor.download).toBe('report (2).csv')
+  })
+
+  // The chip label (getArtifactLink) and the saved file (downloadFile) must agree, not just
+  // each match an expected value.
+  it.each(['artifacts/t1/closed_positions_analysis.xlsx', 'artifacts/t1/report (2).csv'])(
+    'labels the chip and saves the file %j under the same name',
+    async (name) => {
+      const href = `${api.BASE_URL}/v1/files/${encodedName(name)}`
+      const chip = getArtifactLink({ type: 'link', raw: href, href } as any)
+      const anchor = await downloadAnchorFor(name)
+
+      expect(chip?.fileName).toBe(anchor.download)
+    }
+  )
+
+  it('falls back to "download" for a workspace path with no file name', async () => {
+    const anchor = await downloadAnchorFor('artifacts/t1/')
+
+    expect(anchor.download).toBe('download')
   })
 })
 

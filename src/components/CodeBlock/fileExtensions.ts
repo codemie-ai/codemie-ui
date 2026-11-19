@@ -122,6 +122,14 @@ export const FILE_EXTENSIONS = {
   log: 'log',
   diff: 'diff',
   mermaid: 'mermaid',
+  // Data formats produced by toolkit artifacts (EPMCDME-14735). Without these
+  // the `?? 'txt'` fallback below renames a csv download to code.txt.
+  csv: 'csv',
+  tsv: 'tsv',
+  md: 'md',
+  xlsx: 'xlsx',
+  pdf: 'pdf',
+  zip: 'zip',
 } as const
 
 export type FileExtension = (typeof FILE_EXTENSIONS)[keyof typeof FILE_EXTENSIONS]

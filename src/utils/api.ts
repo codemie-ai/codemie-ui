@@ -87,6 +87,20 @@ export function sanitizeFileName(name: string | undefined): string | undefined {
   return result || undefined
 }
 
+// Mirrors codemie/src/codemie/rest_api/routers/files.py:91. Uploads and legacy (pre-workspace)
+// artifacts are stored as `{uuid4()}_{basename}` so a flat storage namespace cannot collide; only
+// the leading prefix is removed, so a uuid in the middle of a real name survives untouched.
+const UUID_FILENAME_PREFIX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_/i
+
+export function stripUuidPrefix(name: string): string {
+  return name.replace(UUID_FILENAME_PREFIX, '') || name
+}
+
+// Story D1: the back end names workspace artifacts `artifacts/<turn-id>/<name>`; show the last segment only.
+export function artifactFileName(name: string | undefined): string | undefined {
+  return sanitizeFileName(stripUuidPrefix(name?.slice(name.lastIndexOf('/') + 1) ?? ''))
+}
+
 const DEV_USER_ID = 'dev-codemie-user'
 
 /**
@@ -336,9 +350,13 @@ class API {
     return response.body!.pipeThrough(new TextDecoderStream()).getReader()
   }
 
+  /**
+   * Stream a file to disk. `type` is the MIME type to fall back to when the response carries no
+   * `Content-Type` header — the header wins, so a caller's guess never overrides the server.
+   */
   async downloadFileStream(
     url: string,
-    _type?: string,
+    type?: string,
     fileName?: string,
     onSuccessHeaders?: (headers: Headers) => void
   ): Promise<boolean> {
@@ -379,7 +397,11 @@ class API {
         },
       })
 
-      const blob = await new Response(stream).blob()
+      // `new Response(stream).blob()` yields an empty-type blob, which leaves the saved file
+      // with no MIME and makes the OS pick an opener by extension alone. Construct the blob
+      // with the Content-Type from the same response that supplies Content-Disposition.
+      const contentType = response.headers.get('content-type') ?? type ?? ''
+      const blob = new Blob([await new Response(stream).arrayBuffer()], { type: contentType })
 
       if (!fileName) {
         const contentDisposition = response.headers.get('content-disposition')

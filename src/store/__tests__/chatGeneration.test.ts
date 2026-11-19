@@ -39,6 +39,7 @@ const mockChatsStore = {
   findChat: vi.fn(),
   getConversationName: vi.fn(),
   refreshWorkflowExecutionIds: vi.fn(),
+  refreshTurnFiles: vi.fn().mockResolvedValue(undefined),
   stopChatCompletionPoll: vi.fn(),
 }
 

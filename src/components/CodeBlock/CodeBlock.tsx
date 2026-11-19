@@ -26,7 +26,7 @@ import toaster from '@/utils/toaster'
 import { cn, copyToClipboard } from '../../utils/utils'
 import Button from '../Button'
 import CodeBlockExpandPopup from './CodeBlockExpandPopup'
-import { downloadCodeAsFile, FileExtension } from './fileExtensions'
+import { downloadCodeAsFile, FileExtension, getFileExtension } from './fileExtensions'
 import HtmlPreviewPopup from './HtmlPreviewPopup'
 import { unSanitizeMessage } from '../markdown/Markdown.utils'
 
@@ -78,7 +78,9 @@ const CodeBlock: FC<CodeBlockProps> = ({
 
   const isHTML = useMemo(() => language === 'html' || HTML_REGEX.exec(text), [language, text])
 
-  const displayLanguage = language.toLowerCase()
+  // Advertise the extension the download will actually use, so the tooltip and
+  // the saved file can never disagree (EPMCDME-14735).
+  const displayLanguage = getFileExtension(language)
   const outputText = useMemo(() => unSanitizeMessage(text).trim(), [text])
 
   const downloadCode = () => {

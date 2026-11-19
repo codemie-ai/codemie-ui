@@ -191,6 +191,8 @@ function transformHistoryGroup(
       response: assistantItem.message,
       createdAt: userItem.date,
       fileNames: userItem.fileNames,
+      // The assistant row's `fileNames` are files the turn published, not uploads — keep them apart
+      generatedFileNames: assistantItem.fileNames,
       thoughts: assistantItem.thoughts
         ? assistantItem.thoughts.map((thought) => normaliseThought(thought, isAssistantInProgress))
         : [],

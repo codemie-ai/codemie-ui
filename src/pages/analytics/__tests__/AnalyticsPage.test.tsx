@@ -353,6 +353,7 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
         if (flag === 'features:analyticsInsights') return [true, true]
         if (flag === 'features:analyticsCLIInsights') return [true, true]
         if (flag === 'features:cliAnalytics') return [true, true]
+        // Every built-in tab is flag-gated; a disabled one is rightly redirected
         if (flag === 'features:usageAttribution') return [true, true]
         return [false, true]
       })

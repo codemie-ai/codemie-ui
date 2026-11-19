@@ -182,7 +182,10 @@ export interface ChatMessage {
   status?: string
   processingTime?: number
   thoughts?: Thought[]
+  /** Files the user uploaded with this turn (user side only). */
   fileNames?: string[]
+  /** Encoded tokens of the files the assistant published during this turn (assistant side). */
+  generatedFileNames?: string[]
   userMark?: UserMark | null
   debug?: any
   loginUrl?: string

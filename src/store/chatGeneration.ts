@@ -278,6 +278,7 @@ interface ChatGenerationStoreType {
     chat: Conversation,
     startTime: Date
   ) => Promise<void>
+  _refreshTurnFiles: (chat: Conversation, historyItem: ChatMessage) => void
   _handleStreamResponse: (
     reader: ReadableStreamDefaultReader,
     historyItem: ChatMessage,
@@ -2028,9 +2029,20 @@ export const chatGenerationStore = proxy<ChatGenerationStoreType>({
     const isFailedTurn = Boolean(response?.execution_error || response?.thought?.error)
     if (hasCompletedTurn && !isFailedTurn && !response?.aborted && !historyItem.generationStopped) {
       responseReadyStore.markResponseReady()
+      chatGenerationStore._refreshTurnFiles(chat, historyItem)
     }
 
     return response
+  },
+
+  // The turn's published files are stored on the saved message only; fetch them once the stream is
+  // closed. Best effort: without them the inline chips and the text still work.
+  _refreshTurnFiles(chat, historyItem) {
+    if (chat.isWorkflow) return
+    const historyIndex = chat.history.findIndex((group) => group.includes(historyItem))
+    if (historyIndex === -1) return
+    const messageIndex = chat.history[historyIndex].indexOf(historyItem)
+    chatsStore.refreshTurnFiles(chat.id, historyIndex, messageIndex).catch(console.error)
   },
 
   async _handleGenerationStream(

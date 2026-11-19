@@ -25,7 +25,8 @@
  */
 
 const SANDBOX_FILE_PREFIX = 'sandbox:/v1/files/'
-const SANDBOX_FILE_REGEXP = /sandbox:\/v1\/files\/[^\s)\]>"']+/g
+// Same terminators as the back end's SANDBOX_FILE_RE (file_service/sandbox_links.py)
+const SANDBOX_FILE_REGEXP = /sandbox:\/v1\/files\/[^\s)\]>"'`]+/g
 
 let sharedFileUrls: Record<string, string> = {}
 
