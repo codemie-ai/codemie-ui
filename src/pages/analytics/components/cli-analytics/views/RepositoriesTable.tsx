@@ -17,7 +17,6 @@ import { type FC, useEffect, useMemo, useState } from 'react'
 
 import Pagination from '@/components/Pagination'
 import Table from '@/components/Table'
-import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import { UNATTRIBUTED_LABEL } from '@/constants/cliAnalytics'
 import type { RepositoryRow } from '@/types/cliAnalytics'
 import { DefinitionTypes } from '@/types/table'
@@ -78,6 +77,8 @@ interface RepositoriesTableProps {
   clearSelectionRef?: { current: (() => void) | null }
   search?: string
   onSearchChange?: (s: string) => void
+  title?: string
+  description?: string
 }
 
 const RepositoriesTable: FC<RepositoriesTableProps> = ({
@@ -92,10 +93,16 @@ const RepositoriesTable: FC<RepositoriesTableProps> = ({
   clearSelectionRef,
   search,
   onSearchChange,
+  title = 'Top Repositories',
+  description = 'Repositories with the most CLI sessions.',
 }) => {
   const [selected, setSelected] = useState<RepositoryRow[]>([])
   const showPagination =
-    page !== undefined && totalPages !== undefined && perPage !== undefined && setPage !== undefined
+    page !== undefined &&
+    totalPages !== undefined &&
+    totalPages > 1 &&
+    perPage !== undefined &&
+    setPage !== undefined
 
   useEffect(() => {
     setSelected([])
@@ -161,8 +168,8 @@ const RepositoriesTable: FC<RepositoriesTableProps> = ({
 
   return (
     <AnalyticsWidget
-      title="Top Repositories"
-      description="Repositories with the most CLI sessions."
+      title={title}
+      description={description}
       loading={loading}
       error={error ? { message: error } : null}
     >
@@ -199,9 +206,7 @@ const RepositoriesTable: FC<RepositoriesTableProps> = ({
             <Pagination
               currentPage={page - 1}
               totalPages={totalPages}
-              setPage={(p, pp) => setPage(p + 1, pp)}
-              perPage={perPage}
-              perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+              setPage={(p) => setPage(p + 1)}
             />
           )}
         </>

@@ -133,6 +133,8 @@ interface SessionsViewProps {
   branch?: string
   projectName?: string
   isProjectUnattributed?: boolean
+  isBranchUnattributed?: boolean
+  fillAvailableHeight?: boolean
 }
 
 const gapMessage = (total: number) =>
@@ -147,6 +149,8 @@ const SessionsView: FC<SessionsViewProps> = ({
   branch,
   projectName,
   isProjectUnattributed,
+  isBranchUnattributed,
+  fillAvailableHeight = false,
 }) => {
   const [deliveryFramework, setDeliveryFramework] = useState<string | null>(null)
 
@@ -175,6 +179,7 @@ const SessionsView: FC<SessionsViewProps> = ({
     branch,
     projectName,
     isProjectUnattributed,
+    isBranchUnattributed,
   })
 
   const { selectedTraceId, selectSession, closeSession } = useSessionModal()
@@ -216,9 +221,18 @@ const SessionsView: FC<SessionsViewProps> = ({
       title="Sessions"
       loading={false}
       error={error ? { message: error } : null}
+      className={
+        fillAvailableHeight
+          ? 'flex min-h-0 min-w-0 flex-1 flex-col !p-4 [&>div:first-child]:mb-2 [&_.widget-content]:flex [&_.widget-content]:min-h-0 [&_.widget-content]:min-w-0 [&_.widget-content>.relative]:min-w-0 [&_.widget-content>.relative>div:last-child]:min-w-0 [&_.widget-content]:flex-1 [&_.widget-content>.relative]:flex [&_.widget-content>.relative]:min-h-0 [&_.widget-content>.relative]:flex-1 [&_.widget-content>.relative>div:last-child]:flex [&_.widget-content>.relative>div:last-child]:min-h-0 [&_.widget-content>.relative>div:last-child]:flex-1 [&_.widget-content>.relative>div:last-child]:flex-col'
+          : undefined
+      }
       actions={legacyCostState && <CostIncompleteNotice state={legacyCostState} />}
     >
-      <div className="flex flex-col gap-3">
+      <div
+        className={
+          fillAvailableHeight ? 'flex min-h-0 min-w-0 flex-1 flex-col gap-3' : 'flex flex-col gap-3'
+        }
+      >
         {showGapWarning && (
           <InfoWarning type={InfoWarningType.WARNING} message={gapMessage(total)} />
         )}
@@ -239,7 +253,11 @@ const SessionsView: FC<SessionsViewProps> = ({
             className="w-48"
           />
         </div>
-        <div className="overflow-x-auto show-scroll">
+        <div
+          className={`overflow-x-auto show-scroll${
+            fillAvailableHeight ? ' min-h-0 min-w-0 flex-1' : ''
+          }`}
+        >
           <Table<SessionRow>
             items={displayRows}
             columnDefinitions={columnDefinitions}

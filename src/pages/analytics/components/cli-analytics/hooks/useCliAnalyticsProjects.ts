@@ -42,7 +42,7 @@ export interface UseCliAnalyticsProjectsResult {
   appliedSearch: string
 }
 
-// One server page of projects, each with its repositories and branches nested.
+// One server page of projects; their repositories load on demand.
 export function useCliAnalyticsProjects(
   filters: AnalyticsQueryParams,
   repositories?: string[]

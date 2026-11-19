@@ -217,7 +217,7 @@ export interface CliAnalyticsRepositoriesData {
   }
 }
 
-// One project with its repositories (and their branches) nested. Totals and tool_success_rate come
+// One project row. Repositories and branches load on demand per modal. Totals and tool_success_rate come
 // from the backend, which sums the raw counts (never averaged rates).
 export interface ProjectRow extends RowCostPricing {
   project_name: string | null
@@ -232,8 +232,15 @@ export interface ProjectRow extends RowCostPricing {
   tool_calls: number
   tool_calls_success: number
   tool_success_rate: number
-  repositories: RepositoryRow[]
 }
+
+export interface CliAnalyticsBranchesData {
+  rows: RepositoryBranchRow[]
+  pagination: CliAnalyticsRepositoriesData['pagination']
+}
+
+// Selects one project (by name) or the unattributed bucket; replaces filters.projects in requests.
+export type ProjectScope = { projectName: string } | { isProjectUnattributed: true }
 
 export interface CliAnalyticsProjectsData extends CostMetadata {
   rows: ProjectRow[]
@@ -361,4 +368,5 @@ export interface ExtendedSessionsTarget {
   branch?: string
   projectName?: string
   isProjectUnattributed?: boolean
+  isBranchUnattributed?: boolean
 }

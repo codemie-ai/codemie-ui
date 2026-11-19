@@ -97,8 +97,13 @@ describe('RepositoriesTable', () => {
   })
 
   it('renders pagination control', () => {
-    render(<RepositoriesTable {...DEFAULT_PROPS} />)
+    render(<RepositoriesTable {...DEFAULT_PROPS} totalPages={3} />)
     expect(screen.getByTestId('pagination')).toBeInTheDocument()
+  })
+
+  it('does not render pagination on a single page', () => {
+    render(<RepositoriesTable {...DEFAULT_PROPS} totalPages={1} />)
+    expect(screen.queryByTestId('pagination')).not.toBeInTheDocument()
   })
 
   it('shows empty state when rows is empty and not loading', () => {

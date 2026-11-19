@@ -251,7 +251,7 @@ describe('cliAnalyticsStore.fetchProjects', () => {
 
   it('requests one page of projects and keeps it in its own slot', async () => {
     const page = {
-      rows: [{ project_name: 'P', repositories: [] }],
+      rows: [{ project_name: 'P' }],
       pagination: { page: 1, per_page: 10, total_count: 12, has_more: false },
     }
     respondWith({ data: page })

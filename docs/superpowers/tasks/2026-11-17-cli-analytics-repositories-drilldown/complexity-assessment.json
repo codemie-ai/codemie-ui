@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Rework the CLI Analytics Repositories tab into a drill-down of projects, repositories and branches, each in its own paginated list or modal that loads only its own data.",
+  "generated": "2026-11-17T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 22,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "RepositoriesView is replaced by a flat project table, two new list-in-modal views are added, new per-level hooks are needed, and the shared ExtendedSessionsModal and the cliAnalytics store and types change. Bumped from L to XL because the shared modal has other callers." },
+    { "dimension": "requirements_clarity", "reason": "Search semantics (projects or repositories) are undefined once repositories leave the tab. The task claim that repositories are not loaded per project conflicts with the nested ProjectRow.repositories contract. Branch paging is unspecified. Each of these is an open design decision." },
+    { "dimension": "technical_risk", "reason": "The closest pattern is SessionsView and RepositoriesTable (paged Table in a modal). It does not cover paging of branches, whose backend contract is unverified. The single repositories store slot would clash with Overview. Page indexing is mixed (0-based projects, 1-based repositories). Unattributed project and repository handling must carry through every level." },
+    { "dimension": "file_change_estimate", "reason": "About 6-8 modified files (store, types, RepositoriesView, ExtendedSessionsModal, hooks, constants) and 4-6 new files (two modals, a repositories list, a branches list, hooks). About 620 lines of existing accordion tests need rewriting. All files are in one feature directory plus store and types." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L to XL: touches the shared ExtendedSessionsModal used by several views",
+    "Technical Risk held at L: backend branch paging unverified, shared store slot clash"
+  ],
+  "split_recommendation": null
+}

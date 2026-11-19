@@ -48,6 +48,7 @@ export function useCliAnalyticsSessions(
     branch?: string
     projectName?: string
     isProjectUnattributed?: boolean
+    isBranchUnattributed?: boolean
   }
 ): UseCliAnalyticsSessionsResult {
   const snap = useSnapshot(cliAnalyticsStore)
@@ -60,7 +61,11 @@ export function useCliAnalyticsSessions(
     projects: filterProjects,
     repositories: repositoriesParam,
     branch: branchParam,
-  } = buildCliAnalyticsParams(filters, repositories, options?.branch)
+  } = buildCliAnalyticsParams(
+    filters,
+    repositories,
+    options?.isBranchUnattributed ? undefined : options?.branch
+  )
 
   // A clicked project group overrides the project filter; the null project sends the flag only.
   let projects = filterProjects
@@ -94,6 +99,7 @@ export function useCliAnalyticsSessions(
     options?.framework,
     options?.isUnattributed,
     options?.isProjectUnattributed,
+    options?.isBranchUnattributed,
   ])
   const [pageFilterKey, setPageFilterKey] = useState(filterKey)
   if (pageFilterKey !== filterKey) {
@@ -117,6 +123,7 @@ export function useCliAnalyticsSessions(
       framework: options?.framework || undefined,
       is_unattributed: options?.isUnattributed || undefined,
       is_project_unattributed: options?.isProjectUnattributed || undefined,
+      is_branch_unattributed: options?.isBranchUnattributed || undefined,
     })
 
     return () => {
@@ -136,6 +143,7 @@ export function useCliAnalyticsSessions(
     options?.framework,
     options?.isUnattributed,
     options?.isProjectUnattributed,
+    options?.isBranchUnattributed,
   ])
 
   const setPageState = (newPage: number, newPerPage?: number) => {

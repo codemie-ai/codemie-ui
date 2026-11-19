@@ -19,6 +19,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ABSENT_VALUE_MARKER } from '@/constants'
+import { UNATTRIBUTED_LABEL } from '@/constants/cliAnalytics'
 import { cliAnalyticsStore } from '@/store/cliAnalytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
@@ -350,91 +351,95 @@ describe('Cost Share by User legend', () => {
 })
 
 describe('Repositories Est. Cost (project / repository / branch)', () => {
+  const branchRow = (name: string | null, cost: number, pricing: object) => ({
+    branch: name,
+    session_count: 1,
+    turns: 1,
+    cost_usd: cost,
+    files_changed: 0,
+    lines_added: 0,
+    lines_removed: 0,
+    net_lines: 0,
+    tool_calls: 0,
+    tool_calls_success: 0,
+    tool_success_rate: 0,
+    ...pricing,
+  })
+  const page = (rows: object[]) => ({ data: { rows, pagination: PAGINATION } })
+
   it.each(['project', 'repository', 'branch', 'unattributed-branch'])(
     'keeps a partial subtotal in the %s Summary',
     async (level) => {
-      const branch = { ...repoRow('', 3, PARTIAL), branch: 'branch-partial' }
       const project = {
         ...repoRow('', 3, PARTIAL),
         project_name: 'proj-partial',
         repository_count: 1,
-        repositories: [
-          repoRow(level === 'unattributed-branch' ? null : 'repo-partial', 3, PARTIAL, [branch]),
-        ],
       }
-      serve({ projects: () => ({ data: { rows: [project], pagination: PAGINATION } }) })
+      const branchName = level === 'unattributed-branch' ? null : 'branch-partial'
+      serve({
+        projects: () => page([project]),
+        repositories: () => page([repoRow('repo-partial', 3, PARTIAL)]),
+        branches: () => page([branchRow(branchName, 3, PARTIAL)]),
+      })
       render(<RepositoriesView filters={FILTERS} />)
       await screen.findByText('proj-partial')
-      if (level === 'project') {
-        fireEvent.click(rowOf('proj-partial'))
-      } else {
-        fireEvent.click(screen.getByRole('button', { name: /Expand proj-partial/ }))
-        const repository = screen.getAllByRole('row').at(-1) as HTMLElement
-        if (level === 'repository') {
-          fireEvent.click(repository)
-        } else {
-          fireEvent.click(within(repository).getByRole('button', { name: /Expand/ }))
-          fireEvent.click(await screen.findByText('branch-partial'))
-        }
-      }
+      fireEvent.click(rowOf('proj-partial'))
       const dialog = await screen.findByRole('dialog')
-      const costCard = within(dialog)
-        .getByText('Est. Cost', { selector: 'p' })
-        .closest('.rounded-md') as HTMLElement
-      expect(within(costCard).getByText('$3.00')).toBeInTheDocument()
-      expect(tip(costCard)).toContain('Partial estimate')
-      expect(tip(costCard)).toContain(MODEL)
+      if (level !== 'project') {
+        fireEvent.click(await within(dialog).findByText('repo-partial'))
+      }
+      if (level === 'branch' || level === 'unattributed-branch') {
+        fireEvent.click(await within(dialog).findByText(branchName ?? UNATTRIBUTED_LABEL))
+      }
+      await waitFor(() => {
+        const costCard = within(dialog)
+          .getAllByText('Est. Cost', { selector: 'p' })
+          .at(-1)
+          ?.closest('.rounded-md') as HTMLElement
+        expect(within(costCard).getByText('$3.00')).toBeInTheDocument()
+        expect(tip(costCard)).toContain('Partial estimate')
+        expect(tip(costCard)).toContain(MODEL)
+      })
     }
   )
+
   it('marks each level for its own amount only', async () => {
-    const branch = (name: string, cost: number, pricing: object) => ({
-      branch: name,
-      session_count: 1,
-      turns: 1,
-      cost_usd: cost,
-      files_changed: 0,
-      lines_added: 0,
-      lines_removed: 0,
-      net_lines: 0,
-      tool_calls: 0,
-      tool_calls_success: 0,
-      tool_success_rate: 0,
-      ...pricing,
-    })
-    const project = {
-      ...repoRow('', 5, PARTIAL),
-      project_name: 'proj-p',
-      repository_count: 1,
-      repositories: [
-        repoRow('repo-clean', 2, CLEAN, [
-          branch('b-clean', 2, CLEAN),
-          branch('b-partial', 0, UNKNOWN),
-        ]),
-      ],
-    }
+    const project = { ...repoRow('', 5, PARTIAL), project_name: 'proj-p', repository_count: 1 }
     serve({
       projects: () => ({
-        data: { rows: [project], pagination: PAGINATION },
+        ...page([project]),
         metadata: { cost_incomplete: true, unpriced_models: [] },
       }),
+      repositories: () => page([repoRow('repo-clean', 2, CLEAN)]),
+      branches: () => page([branchRow('b-clean', 2, CLEAN), branchRow('b-partial', 0, UNKNOWN)]),
     })
     render(<RepositoriesView filters={FILTERS} />)
     await screen.findByText('proj-p')
-    fireEvent.click(screen.getByRole('button', { name: /Expand proj-p/ }))
-    fireEvent.click(await screen.findByRole('button', { name: /Expand repo-clean/ }))
-    await screen.findByText('b-partial')
+    const projectRow = rowOf('proj-p')
+    fireEvent.click(projectRow)
+    const dialog = await screen.findByRole('dialog')
+    await within(dialog).findByText('repo-clean')
 
-    expect(marks(rowOf('proj-p'))).toHaveLength(1)
-    expect(marks(rowOf('repo-clean'))).toHaveLength(0)
-    expect(marks(rowOf('b-clean'))).toHaveLength(0)
-    expect(marks(rowOf('b-partial'))).toHaveLength(1)
+    expect(marks(projectRow)).toHaveLength(1)
+    const repoRowEl = within(dialog).getByText('repo-clean').closest('tr') as HTMLElement
+    expect(marks(repoRowEl)).toHaveLength(0)
     // Per-amount pricing replaces the widget-level fallback.
     expect(screen.queryByTestId('cost-incomplete-notice')).toBeNull()
-    fireEvent.click(rowOf('b-partial'))
-    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(repoRowEl)
+    await within(dialog).findByText('b-partial')
+    const rowIn = (t: string) => within(dialog).getByText(t).closest('tr') as HTMLElement
+    expect(marks(rowIn('b-clean'))).toHaveLength(0)
+    expect(marks(rowIn('b-partial'))).toHaveLength(1)
+    fireEvent.click(rowIn('b-partial'))
+    await waitFor(() =>
+      expect(within(dialog).getAllByText(ABSENT_VALUE_MARKER).length).toBeGreaterThan(0)
+    )
     expect(within(dialog).queryByText('$0.00')).toBeNull()
-    expect(within(dialog).getByText(ABSENT_VALUE_MARKER)).toBeInTheDocument()
-    expect(tip(dialog)).toContain('Cost unknown')
+    const summaryCard = within(dialog)
+      .getAllByText('Est. Cost', { selector: 'p' })
+      .at(-1)
+      ?.closest('.rounded-md') as HTMLElement
+    expect(tip(summaryCard)).toContain('Cost unknown')
   })
 
   it.each([
@@ -447,7 +452,6 @@ describe('Repositories Est. Cost (project / repository / branch)', () => {
         ...repoRow('', 5, {}),
         project_name: 'proj-old',
         repository_count: 0,
-        repositories: [],
       }
       serve({
         projects: () => ({

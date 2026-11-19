@@ -1,0 +1,211 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved the check round: CR-001..CR-003 resolved; CR-004..CR-006 logged fix-later"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User accepted all recommended: fix CR-001..CR-003 now, CR-004..CR-006 later"
+    },
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved the check round: CR-001..CR-003 resolved; CR-004..CR-006 logged fix-later"
+    }
+  ],
+  "reviewed_head": "a2e2e80bc07faa1d4e4b600f4aae603b8c4ed686",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "All 3 fix-set findings verified against HEAD source and resolved; OverviewView passes no pagination props so it is unaffected by the RepositoriesTable change. CR-003 was resolved by documenting why the filter is not passed (the tab never sets the prop), as the recommendation allowed.",
+  "confidence": "medium",
+  "check_confidence": "high",
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 3,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/cli-analytics/views/ProjectRepositoriesList.tsx",
+      "line": 59,
+      "title": "Single-page repositories list shows pagination",
+      "problem": "Spec Behavior 6 requires pagination hidden when there is one page. RepositoriesTable renders Pagination whenever page props are given (RepositoriesTable.tsx:202) with no totalPages > 1 guard. The hook's setPage ignores perPage, so the per-page selector also has no effect.",
+      "impact": "Users see pagination and a non-functional per-page selector on every repositories list, including single-page ones; required spec behavior partially unmet.",
+      "recommendation": "Hide pagination when totalPages <= 1 and do not offer a per-page selector that setPage ignores.",
+      "status": "resolved",
+      "check_notes": "RepositoriesTable showPagination now requires totalPages > 1; per-page selector and perPageOptions removed. OverviewView passes no page props, so unaffected.",
+      "fix": {
+        "change": "RepositoriesTable hides pagination when totalPages<=1 and drops the ineffective per-page selector",
+        "test": "n/a"
+      },
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-now"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/cli-analytics/views/RepositoriesView.tsx",
+      "line": 81,
+      "title": "Tab description still mentions repositories",
+      "problem": "Spec Behavior 1 says the description no longer mentions repositories or branches, but it reads 'Click a project to view its repositories and sessions.'",
+      "impact": "Required spec behavior partially unmet; text is misleading about the tab's contents.",
+      "recommendation": "Reword the description so it no longer mentions repositories or branches.",
+      "status": "resolved",
+      "check_notes": "RepositoriesView description now reads 'Click a project to view its details.'",
+      "fix": {
+        "change": "Tab description reworded to 'Click a project to view its details.'",
+        "test": "n/a"
+      },
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-now"
+      }
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/cli-analytics/views/RepositoriesView.tsx",
+      "line": 170,
+      "title": "Repositories filter not passed to modal lists",
+      "problem": "RepositoriesView passes the repositories prop to useCliAnalyticsProjects but not to ProjectRepositoriesList or the repositories and branches hooks.",
+      "impact": "When the repositories filter is active, the project row figures and the modal lists can describe different sets. Reachability of the filter into this view was unconfirmed.",
+      "recommendation": "If the backend contract applies the repositories filter to these requests, pass it through ProjectRepositoriesList and both hooks; otherwise document why not.",
+      "status": "resolved",
+      "check_notes": "Comment documents that the repositories prop narrows project rows only and the tab never sets it; recommendation allowed documenting why not.",
+      "fix": {
+        "change": "Documented in RepositoriesView that the repositories prop narrows project rows only; the tab never sets it and the modal lists are project-scoped (no backend contract for passing it)",
+        "test": "n/a"
+      },
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-now"
+      }
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/analytics/components/cli-analytics/hooks/useCliAnalyticsBranches.ts",
+      "line": 83,
+      "title": "Stale branches slot may flash on reopen",
+      "problem": "The store slot keeps the prior repository's data with loading false until the fetch effect runs.",
+      "impact": "One frame of the previous repository's branches may show; self-corrects once loading is set.",
+      "recommendation": "Clear the slot on unmount or on fetch start in render.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-later"
+      }
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/analytics/components/cli-analytics/views/RepositoryBranchesList.tsx",
+      "line": 114,
+      "title": "Empty state shown alongside error",
+      "problem": "isEmpty is true when an error leaves rows empty, so 'No branch data available' appears with the error.",
+      "impact": "Mildly confusing message on a failed request; the error is still shown.",
+      "recommendation": "Make isEmpty also require !error.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-later"
+      }
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/analytics/components/cli-analytics/views/RepositoryBranchesList.tsx",
+      "line": 132,
+      "title": "Null branch used as table id",
+      "problem": "idPath='branch' and selection matching on branch; the unattributed row has a null branch.",
+      "impact": "Only one null row exists per list, so the trigger is narrow; reselecting after close could be ambiguous.",
+      "recommendation": "Key rows by branch ?? a sentinel.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-later"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Behavior 1: flat paged Projects table, project search, description without repositories",
+      "status": "partial",
+      "notes": "description still mentions repositories"
+    },
+    {
+      "kind": "spec",
+      "item": "Behavior 6: zero-based paging, page size 10, pagination hidden when one page",
+      "status": "partial",
+      "notes": "ProjectRepositoriesList shows pagination on a single page"
+    },
+    {
+      "kind": "spec",
+      "item": "Behaviors 2-5, 7, 8 and ACs 1-12",
+      "status": "pass",
+      "notes": "implemented as specified"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "7 subjects in range all match EPMCDME-<n>: <Capitalised summary> with non-zero ticket key"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "no HTML sinks, navigation sinks, postMessage, or config/secret use in changed files"
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "All four lenses and standards ran; 3 blocking (pagination shown on one page, stale tab description, repositories filter not passed to modal lists - reachability of the last unconfirmed) and 3 advisory. 9 candidates dismissed as noise; none deferred. Fix-pack, brief and dismissed sidecars written.",
+    "confidence": "medium",
+    "risk_flags": []
+  }
+}

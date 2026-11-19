@@ -22,6 +22,7 @@ import type {
   CliAnalyticsEfficiencyData,
   CliAnalyticsOverviewData,
   CliAnalyticsProjectsData,
+  CliAnalyticsBranchesData,
   CliAnalyticsRepositoriesData,
   CliAnalyticsSessionsData,
   CliAnalyticsToolsData,
@@ -58,7 +59,11 @@ interface CliAnalyticsState {
   } | null
   sessions: CliAnalyticsSessionsData | null
   overview: CliAnalyticsOverviewData | null
+  // A slot belongs to a consumer, not an endpoint: projectRepositories is the project modal's,
+  // repositories is Overview's, branches is the repository modal's.
   repositories: CliAnalyticsRepositoriesData | null
+  projectRepositories: CliAnalyticsRepositoriesData | null
+  branches: CliAnalyticsBranchesData | null
   projects: CliAnalyticsProjectsData | null
   cost: CliAnalyticsCostData | null
   efficiency: CliAnalyticsEfficiencyData | null
@@ -74,6 +79,8 @@ interface CliAnalyticsState {
   fetchSessions: (params: Record<string, unknown>) => Promise<void>
   fetchOverview: (params: Record<string, unknown>) => Promise<void>
   fetchRepositories: (params: Record<string, unknown>) => Promise<void>
+  fetchProjectRepositories: (params: Record<string, unknown>) => Promise<void>
+  fetchBranches: (params: Record<string, unknown>) => Promise<void>
   clearRepositories: () => void
   fetchProjects: (params: Record<string, unknown>) => Promise<void>
   fetchCost: (params: Record<string, unknown>) => Promise<void>
@@ -182,6 +189,8 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
   sessions: null,
   overview: null,
   repositories: null,
+  projectRepositories: null,
+  branches: null,
   projects: null,
   cost: null,
   efficiency: null,
@@ -305,6 +314,31 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
     if (data) cliAnalyticsStore.repositories = data.data
   },
 
+  async fetchProjectRepositories(params) {
+    cliAnalyticsStore.projectRepositories = null
+    const data = await fetchWithState<{ data: CliAnalyticsRepositoriesData }>(
+      cliAnalyticsStore,
+      'projectRepositories',
+      'v1/analytics/cli-analytics/repositories',
+      // The backend then puts the repository: null row last on the last page, outside the page of 10 (without it the paged /repositories ranks and counts it like any row).
+      { ...params, unattributed_last: true },
+      'Failed to fetch project repositories'
+    )
+    if (data) cliAnalyticsStore.projectRepositories = data.data
+  },
+
+  async fetchBranches(params) {
+    cliAnalyticsStore.branches = null
+    const data = await fetchWithState<{ data: CliAnalyticsBranchesData }>(
+      cliAnalyticsStore,
+      'branches',
+      'v1/analytics/cli-analytics/branches',
+      params,
+      'Failed to fetch repository branches'
+    )
+    if (data) cliAnalyticsStore.branches = data.data
+  },
+
   clearRepositories() {
     cliAnalyticsStore.repositories = null
   },
@@ -314,7 +348,8 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       cliAnalyticsStore,
       'projects',
       'v1/analytics/cli-analytics/projects',
-      params,
+      // The projects table does not list repositories; false lets the backend skip that part.
+      { ...params, include_repositories: false },
       'Failed to fetch local analytics projects'
     )
     if (data) cliAnalyticsStore.projects = withCostMetadata(data.data, data.metadata)

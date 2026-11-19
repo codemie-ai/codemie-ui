@@ -21,15 +21,21 @@ import SessionsView from './SessionsView'
 import AnalyticsWidget from '../../AnalyticsWidget'
 import MetricCard, { METRIC_VALUE_CLASS_NAME } from '../../widgets/MetricCard'
 
-import type { FC } from 'react'
+import type { FC, ReactNode } from 'react'
 
 interface ExtendedSessionsModalProps {
   target: ExtendedSessionsTarget
   isVisible: boolean
   onHide: () => void
+  body?: ReactNode
 }
 
-const ExtendedSessionsModal: FC<ExtendedSessionsModalProps> = ({ target, isVisible, onHide }) => (
+const ExtendedSessionsModal: FC<ExtendedSessionsModalProps> = ({
+  target,
+  isVisible,
+  onHide,
+  body,
+}) => (
   <Popup
     isFullWidth
     className="xl:max-w-[90vw]"
@@ -61,14 +67,17 @@ const ExtendedSessionsModal: FC<ExtendedSessionsModalProps> = ({ target, isVisib
           ))}
         </div>
       </AnalyticsWidget>
-      <SessionsView
-        filters={target.sessionFilters}
-        repositories={target.repositories}
-        isUnattributed={target.isUnattributed}
-        branch={target.branch}
-        projectName={target.projectName}
-        isProjectUnattributed={target.isProjectUnattributed}
-      />
+      {body ?? (
+        <SessionsView
+          filters={target.sessionFilters}
+          repositories={target.repositories}
+          isUnattributed={target.isUnattributed}
+          branch={target.branch}
+          projectName={target.projectName}
+          isProjectUnattributed={target.isProjectUnattributed}
+          isBranchUnattributed={target.isBranchUnattributed}
+        />
+      )}
     </div>
   </Popup>
 )
