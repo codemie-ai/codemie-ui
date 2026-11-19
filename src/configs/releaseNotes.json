@@ -1,5 +1,283 @@
 [
   {
+    "version": "2.69.0",
+    "date": "2026-11-19",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Unified integrations list",
+            "description": "View available integrations through a consolidated list.",
+            "issues": [
+              {
+                "key": "EPMCDME-17084",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17084"
+              }
+            ]
+          },
+          {
+            "title": "Download all Agent Workspace files",
+            "description": "Download all files from an Agent Workspace at once.",
+            "issues": [
+              {
+                "key": "EPMCDME-15770",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15770"
+              }
+            ]
+          },
+          {
+            "title": "Delete budgets",
+            "description": "Remove budgets that are no longer needed.",
+            "issues": [
+              {
+                "key": "EPMCDME-15633",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15633"
+              }
+            ]
+          },
+          {
+            "title": "Assistant-specific default datasource tools",
+            "description": "View and deselect default datasource tools for each assistant.",
+            "issues": [
+              {
+                "key": "EPMCDME-15114",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15114"
+              }
+            ]
+          },
+          {
+            "title": "Effort controls for newer models",
+            "description": "Use an effort parameter for supported newer models instead of the deprecated temperature setting.",
+            "issues": [
+              {
+                "key": "EPMCDME-13335",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13335"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "Hosted app access and sharing",
+            "description": "Open hosted apps directly and allow their managers to share them.",
+            "issues": [
+              {
+                "key": "EPMCDME-17247",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17247"
+              },
+              {
+                "key": "EPMCDME-17238",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17238"
+              }
+            ]
+          },
+          {
+            "title": "Simplified CLI agent navigation",
+            "description": "Show each CLI agent only once in the chat sidebar’s Folders section.",
+            "issues": [
+              {
+                "key": "EPMCDME-16623",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16623"
+              }
+            ]
+          },
+          {
+            "title": "Cost Center project navigation",
+            "description": "Open the relevant Project Management view from a Cost Center’s project count.",
+            "issues": [
+              {
+                "key": "EPMCDME-15632",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15632"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Security improvements",
+            "description": "Security and platform-hardening improvements are included in this release.",
+            "issues": []
+          },
+          {
+            "title": "Cost Center access for auditors",
+            "description": "Restore read access to Cost Centers for auditor-only users.",
+            "issues": [
+              {
+                "key": "EPMCDME-17380",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17380"
+              }
+            ]
+          },
+          {
+            "title": "Analytics and MCP result handling",
+            "description": "Include identity-keyed metrics in analytics user filters and preserve structured MCP results for LLM processing.",
+            "issues": [
+              {
+                "key": "EPMCDME-17132",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17132"
+              }
+            ]
+          },
+          {
+            "title": "Project member details navigation",
+            "description": "Preserve the selected-user filter when opening Users Management from Project Members.",
+            "issues": [
+              {
+                "key": "EPMCDME-16613",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16613"
+              }
+            ]
+          },
+          {
+            "title": "Workflow interface feedback",
+            "description": "Show the correct retry-attempt default and visually distinguish advisory toasts from success messages.",
+            "issues": [
+              {
+                "key": "EPMCDME-16498",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16498"
+              },
+              {
+                "key": "EPMCDME-16486",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16486"
+              }
+            ]
+          },
+          {
+            "title": "Cost Center budget allocation totals",
+            "description": "Correct allocated-budget values after project member changes.",
+            "issues": [
+              {
+                "key": "EPMCDME-16356",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16356"
+              }
+            ]
+          },
+          {
+            "title": "Persist skill and workflow favorites",
+            "description": "Retain favorite state after refreshing the page.",
+            "issues": [
+              {
+                "key": "EPMCDME-16337",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16337"
+              }
+            ]
+          },
+          {
+            "title": "Workflow chat history replay",
+            "description": "Prevent prior execution history from being duplicated recursively.",
+            "issues": [
+              {
+                "key": "EPMCDME-16117",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16117"
+              }
+            ]
+          },
+          {
+            "title": "Datasource tool replay",
+            "description": "Preserve native datasource tool calls during history replay.",
+            "issues": [
+              {
+                "key": "EPMCDME-15516",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15516"
+              }
+            ]
+          },
+          {
+            "title": "Project-change triggers",
+            "description": "Ensure webhooks and schedulers can trigger assistants and workflows after their project changes.",
+            "issues": [
+              {
+                "key": "EPMCDME-13973",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13973"
+              }
+            ]
+          },
+          {
+            "title": "Confluence embedding model persistence",
+            "description": "Retain the selected embedding model when editing a Confluence datasource.",
+            "issues": [
+              {
+                "key": "EPMCDME-12558",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-12558"
+              }
+            ]
+          },
+          {
+            "title": "InfoNgen MCP integration setup",
+            "description": "Support new environment-variable configuration for the InfoNgen MCP server.",
+            "issues": [
+              {
+                "key": "EPMCDME-11766",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-11766"
+              }
+            ]
+          },
+          {
+            "title": "Insights widget data presentation",
+            "description": "Correct sorting and total-value alignment in Assistant Chats and Workflow widgets.",
+            "issues": [
+              {
+                "key": "EPMCDME-11348",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-11348"
+              }
+            ]
+          },
+          {
+            "title": "Immediate default-budget assignment",
+            "description": "Assign the default budget when a CodeMie user is created, rather than after their first LLM session.",
+            "issues": [
+              {
+                "key": "EPMCDME-11032",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-11032"
+              }
+            ]
+          },
+          {
+            "title": "Accessible modal dialogs",
+            "description": "Correct the modal dialog implementation.",
+            "issues": [
+              {
+                "key": "EPMCDME-8523",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-8523"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.68.0",
     "date": "2026-11-16",
     "sections": [
