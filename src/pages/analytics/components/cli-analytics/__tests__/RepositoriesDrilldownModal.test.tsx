@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -32,13 +32,17 @@ vi.mock('@/components/Popup', () => ({
   default: ({
     children,
     headerContent,
+    bodyClassName,
   }: {
     children: React.ReactNode
     headerContent: React.ReactNode
+    bodyClassName?: string
   }) => (
     <div>
       {headerContent}
-      {children}
+      <div data-testid="popup-body" className={bodyClassName}>
+        {children}
+      </div>
     </div>
   ),
 }))
@@ -77,13 +81,15 @@ vi.mock('../../AnalyticsWidget', () => ({
     children,
     error,
     actions,
+    className,
   }: {
+    className?: string
     title: string
     children: React.ReactNode
     error?: { message: string } | null
     actions?: React.ReactNode
   }) => (
-    <div data-testid={`widget-${title.toLowerCase()}`}>
+    <div data-testid={`widget-${title.toLowerCase()}`} className={className}>
       <h3>{title}</h3>
       {error && <span data-testid="widget-error">{error.message}</span>}
       {actions}
@@ -229,5 +235,77 @@ describe('RepositoriesDrilldownModal', () => {
 
     expect(screen.getByTestId('sessions-view')).toBeInTheDocument()
     expect(useCliAnalyticsBranches).not.toHaveBeenCalled()
+  })
+
+  describe('scrolling layout', () => {
+    it('lets the modal body scroll vertically and never horizontally', () => {
+      renderModal()
+
+      const tokens = screen.getByTestId('popup-body').className.split(/\s+/)
+      expect(tokens).toContain('overflow-y-auto')
+      expect(tokens).toContain('overflow-x-hidden')
+      expect(tokens).not.toContain('overflow-hidden')
+    })
+
+    it('sizes the content wrapper by min-h-full and keeps a floor on the list widget', () => {
+      renderModal()
+
+      const wrapper = screen.getByTestId('popup-body').firstElementChild as HTMLElement
+      const tokens = wrapper.className.split(/\s+/)
+      expect(tokens).toContain('min-h-full')
+      expect(tokens).not.toContain('h-full')
+      expect(screen.getByTestId('widget-repositories').className).toContain('min-h-[320px]')
+    })
+
+    it('keeps the modal body offset per level: new levels start at the top, Back restores the parent', async () => {
+      const user = userEvent.setup()
+      renderModal()
+
+      const body = screen.getByTestId('popup-body')
+      body.scrollTop = 240
+
+      await user.click(screen.getByText('repo-a'))
+      expect(body.scrollTop).toBe(0)
+
+      body.scrollTop = 30
+      await user.click(screen.getByRole('button', { name: 'Back to P' }))
+      expect(body.scrollTop).toBe(240)
+
+      await user.click(screen.getByText('repo-a'))
+      expect(body.scrollTop).toBe(0)
+    })
+
+    it('restores the parent body offset from a breadcrumb', async () => {
+      const user = userEvent.setup()
+      renderModal()
+
+      const body = screen.getByTestId('popup-body')
+      body.scrollTop = 180
+      await user.click(screen.getByText('repo-a'))
+      await user.click(screen.getByText('main'))
+      body.scrollTop = 10
+
+      await user.click(screen.getByRole('button', { name: 'Go to P' }))
+
+      expect(body.scrollTop).toBe(180)
+    })
+
+    it('restores the list scroll position when navigating back', async () => {
+      const user = userEvent.setup()
+      renderModal()
+
+      const reposList = screen
+        .getByTestId('widget-repositories')
+        .querySelector('.overflow-y-auto') as HTMLElement
+      reposList.scrollTop = 120
+      fireEvent.scroll(reposList)
+      expect(reposList.scrollTop).toBe(120)
+
+      await user.click(screen.getByText('repo-a'))
+      reposList.scrollTop = 0
+      await user.click(screen.getByRole('button', { name: 'Back to P' }))
+
+      expect(reposList.scrollTop).toBe(120)
+    })
   })
 })

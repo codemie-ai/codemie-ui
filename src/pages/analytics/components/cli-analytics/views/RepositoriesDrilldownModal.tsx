@@ -18,6 +18,7 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -106,7 +107,7 @@ const columns = (label: string) => [
 ]
 
 const listWidgetClass =
-  'flex min-h-0 flex-1 flex-col !p-4 [&>div:first-child]:mb-2 [&_.widget-content]:flex [&_.widget-content]:min-h-0 [&_.widget-content]:flex-1 [&_.widget-content>.relative]:flex [&_.widget-content>.relative]:min-h-0 [&_.widget-content>.relative]:flex-1 [&_.widget-content>.relative>div:last-child]:flex [&_.widget-content>.relative>div:last-child]:min-h-0 [&_.widget-content>.relative>div:last-child]:flex-1 [&_.widget-content>.relative>div:last-child]:flex-col'
+  'flex min-h-[320px] flex-1 flex-col !p-4 [&>div:first-child]:mb-2 [&_.widget-content]:flex [&_.widget-content]:min-h-0 [&_.widget-content]:flex-1 [&_.widget-content>.relative]:flex [&_.widget-content>.relative]:min-h-0 [&_.widget-content>.relative]:flex-1 [&_.widget-content>.relative>div:last-child]:flex [&_.widget-content>.relative>div:last-child]:min-h-0 [&_.widget-content>.relative>div:last-child]:flex-1 [&_.widget-content>.relative>div:last-child]:flex-col'
 
 const Summary: FC<{ entry: DrillEntry }> = ({ entry }) => (
   <AnalyticsWidget
@@ -410,6 +411,8 @@ const RepositoriesDrilldownModal: FC<Props> = ({ project, filters, onClose }) =>
   const [activeIndex, setActiveIndex] = useState(0)
   const scrollRefs = useRef(new Map<string, RefObject<HTMLDivElement | null>>())
   const scrollPositions = useRef(new Map<string, number>())
+  const contentRef = useRef<HTMLDivElement>(null)
+  const bodyScrollPositions = useRef(new Map<string, number>())
 
   const listRef = useCallback((id: string) => {
     let ref = scrollRefs.current.get(id)
@@ -430,12 +433,37 @@ const RepositoriesDrilldownModal: FC<Props> = ({ project, filters, onClose }) =>
     )
   }, [])
 
+  // The modal body is one scroller shared by every level, so its offset is kept per entry.
+  const saveBodyScroll = useCallback(() => {
+    const body = contentRef.current?.parentElement
+    const current = stack[activeIndex]
+    if (body && current) bodyScrollPositions.current.set(current.id, body.scrollTop)
+  }, [activeIndex, stack])
+
+  const goToLevel = useCallback(
+    (index: number) => {
+      saveBodyScroll()
+      setActiveIndex(index)
+    },
+    [saveBodyScroll]
+  )
+
+  useLayoutEffect(() => {
+    const body = contentRef.current?.parentElement
+    const current = stack[activeIndex]
+    if (body && current) body.scrollTop = bodyScrollPositions.current.get(current.id) ?? 0
+    // Only a level change moves the body; pagination or data updates must not reset it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex])
+
   const addChild = useCallback(
     (entry: DrillEntry) => {
+      saveBodyScroll()
+      bodyScrollPositions.current.delete(entry.id)
       setStack((current) => [...current.slice(0, activeIndex + 1), entry])
       setActiveIndex(activeIndex + 1)
     },
-    [activeIndex]
+    [activeIndex, saveBodyScroll]
   )
 
   const openRepository = useCallback(
@@ -492,7 +520,7 @@ const RepositoriesDrilldownModal: FC<Props> = ({ project, filters, onClose }) =>
     [activeIndex, addChild, stack]
   )
 
-  const backOne = () => (activeIndex === 0 ? onClose() : setActiveIndex((index) => index - 1))
+  const backOne = () => (activeIndex === 0 ? onClose() : goToLevel(activeIndex - 1))
   const header = (
     <div className="flex w-full min-w-0 items-center">
       <button
@@ -522,7 +550,7 @@ const RepositoriesDrilldownModal: FC<Props> = ({ project, filters, onClose }) =>
                 type="button"
                 title={entry.name}
                 aria-label={`Go to ${entry.name}`}
-                onClick={() => setActiveIndex(index)}
+                onClick={() => goToLevel(index)}
                 className="max-w-[220px] truncate rounded-sm text-text-secondary hover:text-text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-accent"
               >
                 {entry.name}
@@ -551,16 +579,14 @@ const RepositoriesDrilldownModal: FC<Props> = ({ project, filters, onClose }) =>
       visible
       onHide={onClose}
       hideFooter
-      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden !p-4"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden !p-4"
     >
-      <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
+      <div ref={contentRef} className="flex min-h-full min-w-0 flex-col gap-3">
         {stack.map((entry, index) => (
           <section
             key={entry.id}
             aria-hidden={index !== activeIndex}
-            className={
-              index === activeIndex ? 'flex min-h-0 min-w-0 flex-1 flex-col gap-3' : 'hidden'
-            }
+            className={index === activeIndex ? 'flex min-w-0 flex-1 flex-col gap-3' : 'hidden'}
           >
             <Summary entry={entry} />
             {entry.kind === 'project' && (

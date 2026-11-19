@@ -1,0 +1,80 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User accepted all recommended; CR-001 fix-later"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User accepted all recommended; CR-001 fix-later"
+    }
+  ],
+  "reviewed_head": "97751897af99d0b31a077cbadaeb4462d76931be",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case lens only (compact profile); no spec so confidence is low. 1 advisory (scroll position not reset between drill levels); 2 dismissed as noise (jsdom-vacuous test claim, other fillAvailableHeight callers); 0 deferred.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/analytics/components/cli-analytics/views/RepositoriesDrilldownModal.tsx",
+      "line": 556,
+      "title": "Scroll position kept across drill-down levels",
+      "problem": "The popup body is now the single scroll container shared by all stacked sections; drilling into or back from a level does not reset its scrollTop, so a new level can open scrolled partway down.",
+      "impact": "Only on short viewports after the user scrolled the body; the breadcrumb lives in the popup header so it stays visible and the user can scroll up. Cosmetic/usability.",
+      "recommendation": "Reset the body scroll on activeIndex change, e.g. a ref on the body and useEffect(() => { bodyRef.current?.scrollTo({ top: 0 }) }, [activeIndex]).",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-later"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not part of this profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not part of this profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not part of this profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case lens only (compact profile); no spec so confidence is low. 1 advisory (scroll position not reset between drill levels); 2 dismissed as noise (jsdom-vacuous test claim, other fillAvailableHeight callers); 0 deferred.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

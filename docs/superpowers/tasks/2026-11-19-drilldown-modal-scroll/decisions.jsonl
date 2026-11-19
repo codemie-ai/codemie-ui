@@ -1,0 +1,2 @@
+{"ts":"2026-11-19T12:36:52Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved plan via question dialog","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-11-19T12:41:51Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"User accepted all recommended; CR-001 fix-later","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

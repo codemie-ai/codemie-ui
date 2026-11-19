@@ -50,12 +50,14 @@ vi.mock('../../AnalyticsWidget', () => ({
     title,
     children,
     error,
+    className,
   }: {
     title: string
     children: React.ReactNode
     error?: { message: string } | null
+    className?: string
   }) => (
-    <div data-testid={`widget-${title}`}>
+    <div data-testid={`widget-${title}`} className={className}>
       {error && <span data-testid="widget-error">{error.message}</span>}
       {children}
     </div>
@@ -425,6 +427,29 @@ describe('SessionsView', () => {
 
       expect(costCell()).toHaveTextContent('$0.02')
       expect(screen.queryByTestId('unpriced-cost-marker')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('fill-height layout', () => {
+    it('keeps a min-height floor on the widget when it fills the available height', () => {
+      render(<SessionsView filters={MOCK_FILTERS} fillAvailableHeight />)
+
+      expect(screen.getByTestId('widget-Sessions').className).toContain('min-h-[360px]')
+    })
+
+    it('does not add the floor without fillAvailableHeight', () => {
+      render(<SessionsView filters={MOCK_FILTERS} />)
+
+      expect(screen.getByTestId('widget-Sessions').className).not.toContain('min-h-[360px]')
+    })
+
+    it('keeps the table wrapper horizontally scrollable without imposing a height', () => {
+      render(<SessionsView filters={MOCK_FILTERS} fillAvailableHeight />)
+
+      const wrapper = screen.getByRole('table').closest('.overflow-x-auto') as HTMLElement
+      const tokens = wrapper.className.split(/\s+/)
+      expect(tokens).toContain('min-w-0')
+      expect(tokens.some((t) => /^(max-)?h-/.test(t))).toBe(false)
     })
   })
 })

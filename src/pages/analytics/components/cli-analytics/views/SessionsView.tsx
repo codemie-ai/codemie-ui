@@ -223,7 +223,7 @@ const SessionsView: FC<SessionsViewProps> = ({
       error={error ? { message: error } : null}
       className={
         fillAvailableHeight
-          ? 'flex min-h-0 min-w-0 flex-1 flex-col !p-4 [&>div:first-child]:mb-2 [&_.widget-content]:flex [&_.widget-content]:min-h-0 [&_.widget-content]:min-w-0 [&_.widget-content>.relative]:min-w-0 [&_.widget-content>.relative>div:last-child]:min-w-0 [&_.widget-content]:flex-1 [&_.widget-content>.relative]:flex [&_.widget-content>.relative]:min-h-0 [&_.widget-content>.relative]:flex-1 [&_.widget-content>.relative>div:last-child]:flex [&_.widget-content>.relative>div:last-child]:min-h-0 [&_.widget-content>.relative>div:last-child]:flex-1 [&_.widget-content>.relative>div:last-child]:flex-col'
+          ? 'flex min-h-[360px] min-w-0 flex-1 flex-col !p-4 [&>div:first-child]:mb-2 [&_.widget-content]:flex [&_.widget-content]:min-h-0 [&_.widget-content]:min-w-0 [&_.widget-content>.relative]:min-w-0 [&_.widget-content>.relative>div:last-child]:min-w-0 [&_.widget-content]:flex-1 [&_.widget-content>.relative]:flex [&_.widget-content>.relative]:min-h-0 [&_.widget-content>.relative]:flex-1 [&_.widget-content>.relative>div:last-child]:flex [&_.widget-content>.relative>div:last-child]:min-h-0 [&_.widget-content>.relative>div:last-child]:flex-1 [&_.widget-content>.relative>div:last-child]:flex-col'
           : undefined
       }
       actions={legacyCostState && <CostIncompleteNotice state={legacyCostState} />}
