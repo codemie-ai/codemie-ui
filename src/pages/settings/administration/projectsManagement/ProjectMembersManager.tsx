@@ -52,8 +52,8 @@ import ProjectMembersBulkActions from '@/pages/settings/administration/component
 import { analyticsStore } from '@/store/analytics'
 import { appInfoStore } from '@/store/appInfo'
 import { projectBudgetsStore } from '@/store/projectBudgets'
-import { projectModelSettingsStore } from '@/store/projectModelSettings'
 import { userStore } from '@/store/user'
+import { userModelOverridesStore } from '@/store/userModelOverrides'
 import { BudgetCategory } from '@/types/entity/budget'
 import { ProjectRole, ProjectType } from '@/types/entity/project'
 import { ProjectBudget, ProjectBudgetMemberAllocation } from '@/types/entity/projectBudget'
@@ -70,7 +70,10 @@ import toaster from '@/utils/toaster'
 import MemberAllocationOverrideModal, {
   MemberAllocationOverrideUpdate,
 } from './components/MemberAllocationOverrideModal'
-import ProjectMemberModelOverrideModal from './components/ProjectMemberModelOverrideModal'
+import ProjectMemberModelOverrideModal, {
+  ModelOverrideMap,
+} from './components/ProjectMemberModelOverrideModal'
+import { isModelAllowed } from './components/projectModelConfiguration'
 import UserBudgetsCell, {
   BudgetAllocationLookup,
   getUserBudgetUsage,
@@ -81,9 +84,81 @@ import ProjectMembersFilters, {
   getInitialFilters,
   BudgetUsageFilter,
   isDefaultBudgetUsageFilter,
+  ModelSettingsFilter,
   ProjectMembersFiltersState,
-  ModelSettingsFilterValue,
 } from './ProjectMembersFilters'
+
+const isExplicitModelOverride = ([, value]: [string, ModelOverrideMap[string]]) =>
+  value !== 'project'
+
+const getExplicitModelOverrides = (overrides: ModelOverrideMap): ModelOverrideMap =>
+  Object.fromEntries(Object.entries(overrides).filter(isExplicitModelOverride))
+
+interface PersistModelOverridesArgs {
+  userIds: string[]
+  overrides: ModelOverrideMap
+  defaultModel: string | undefined
+  projectAvailability: Record<string, boolean>
+  /** Models users were already granted that the modal does not list; kept so a re-save cannot drop them. */
+  preservedModels: string[]
+}
+
+const persistModelOverrides = async (
+  projectName: string,
+  {
+    userIds,
+    overrides,
+    defaultModel,
+    projectAvailability,
+    preservedModels,
+  }: PersistModelOverridesArgs
+): Promise<void> => {
+  const payloadDefaultModel = defaultModel ?? null
+  // Every selected user receives the same list (the union shown in the modal, as edited).
+  // The backend requires allowed_models on every create, even when only the default changed.
+  const allowedModels = [
+    ...Object.entries(overrides)
+      .filter(([modelId, value]) => isModelAllowed(modelId, value, projectAvailability))
+      .map(([modelId]) => modelId),
+    ...preservedModels,
+  ]
+
+  if (userIds.length === 1) {
+    await userModelOverridesStore.setUserModelOverride(
+      projectName,
+      userIds[0],
+      {
+        allowed_models: allowedModels,
+        default_model: payloadDefaultModel,
+      },
+      true
+    )
+    return
+  }
+
+  await userModelOverridesStore.batchUserModelOverrides(
+    projectName,
+    {
+      operation: 'grant',
+      user_ids: userIds,
+      allowed_models: allowedModels,
+      default_model: payloadDefaultModel,
+    },
+    true
+  )
+}
+
+const revokeModelOverrides = async (projectName: string, userIds: string[]): Promise<void> => {
+  if (userIds.length === 1) {
+    await userModelOverridesStore.deleteUserModelOverride(projectName, userIds[0], true)
+    return
+  }
+  await userModelOverridesStore.batchUserModelOverrides(
+    projectName,
+    { operation: 'revoke', user_ids: userIds },
+    true
+  )
+}
 
 const matchesBudgetUsage = (
   user: UserListItem,
@@ -119,14 +194,20 @@ const matchesBudgetUsage = (
 }
 
 const matchesModelSettings = (
-  userId: string,
-  modelSettingsFilter: ModelSettingsFilterValue,
-  userModelOverrides: Record<string, boolean>
+  user: UserListItem,
+  modelOverrideEnabled: Record<string, boolean>,
+  filter: ModelSettingsFilter
 ): boolean => {
-  if (modelSettingsFilter === 'all') return true
-  const hasOverride = userModelOverrides[userId] ?? false
-  return modelSettingsFilter === 'custom' ? hasOverride : !hasOverride
+  if (filter === 'all') return true
+
+  const overrideEnabled = modelOverrideEnabled[user.id] === true
+  return filter === 'custom' ? overrideEnabled === true : overrideEnabled === false
 }
+
+const isModelSettingsFilterActive = (
+  isUserModelOverrideEnabled: boolean,
+  filter: ModelSettingsFilter
+): boolean => isUserModelOverrideEnabled && filter !== 'all'
 
 // Stops the row-select click/keydown from bubbling past the actions cell without
 // putting a literal onClick/onKeyDown JSX attribute on the wrapping div.
@@ -140,7 +221,7 @@ interface ProjectMembersManagerProps {
   onMembersChanged?: () => Promise<void> | void
   budgets?: ProjectBudget[]
   onBudgetsChanged?: () => void | Promise<void>
-  isModelsConfigEnabled?: boolean
+  isUserModelOverrideEnabled?: boolean
 }
 
 const personalProjectTooltip = (action: string) =>
@@ -181,7 +262,7 @@ const getColumnDefinitions = (
   }
 
   const userColumnWidth = getUserColumnWidth(canManage, showBudgets)
-  const modelOverrideColumnWidth = !canManage && !showBudgets ? 'w-0' : 'w-[4%]'
+  const modelOverrideColumnWidth = 'w-[4%]'
   const roleColumnWidth = getRoleColumnWidth(canManage, showBudgets)
 
   columns.push({
@@ -247,7 +328,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   onMembersChanged,
   budgets,
   onBudgetsChanged,
-  isModelsConfigEnabled = false,
+  isUserModelOverrideEnabled: isModelOverrideFlagEnabled = false,
 }) => {
   const snap = useSnapshot(userStore)
   const { idpManagedEnabled, isAppInfoLoaded } = useSnapshot(appInfoStore)
@@ -281,6 +362,16 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     category: BudgetCategory | null
   } | null>(null)
   const [modelOverrideUsers, setModelOverrideUsers] = useState<UserListItem[]>([])
+  const [modelOverrides, setModelOverrides] = useState<Record<string, ModelOverrideMap>>({})
+  const [modelDefaults, setModelDefaults] = useState<Record<string, string>>({})
+  const [modelOverrideEnabled, setModelOverrideEnabled] = useState<Record<string, boolean>>({})
+  const [modelAllowedByUser, setModelAllowedByUser] = useState<Record<string, string[]>>({})
+  const [modelOverridesStatus, setModelOverridesStatus] = useState<'loading' | 'ready' | 'failed'>(
+    'loading'
+  )
+  const modelOverridesRequestRef = useRef(0)
+  const modelOverridesStatusRef = useRef(modelOverridesStatus)
+  modelOverridesStatusRef.current = modelOverridesStatus
   const [spendingByUserId, setSpendingByUserId] = useState<
     Record<string, ProjectMemberSpendingRow>
   >({})
@@ -289,9 +380,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   // separate from the `budgets` prop which drives the Budget Allocations column.
   const [memberBudgets, setMemberBudgets] = useState<ProjectBudget[]>([])
   const [budgetsLoaded, setBudgetsLoaded] = useState(false)
-
-  // Model overrides per user for filtering
-  const [userModelOverrides, setUserModelOverrides] = useState<Record<string, boolean>>({})
 
   const tableContainerRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -313,6 +401,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     !isAdmin && (currentUser?.applicationsAdmin?.includes(project.name || '') ?? false)
   const canManageProject = isAdmin || isProjectAdmin
   const hasUsersTabAccess = canAccessUsersTab(currentUser)
+  // Overrides are read and written only by managers; hide the column, filter and actions otherwise.
+  const isUserModelOverrideEnabled = isModelOverrideFlagEnabled && canManageProject
   const isPersonal = project.project_type === ProjectType.PERSONAL
 
   const showBudgets = !!budgets?.length
@@ -336,11 +426,22 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   budgetAllocationLookupRef.current = budgetAllocationLookup
   const spendingByUserIdRef = useRef(spendingByUserId)
   spendingByUserIdRef.current = spendingByUserId
-  const userModelOverridesRef = useRef(userModelOverrides)
-  userModelOverridesRef.current = userModelOverrides
+
+  // Read through a ref so the async override load doesn't recreate fetchUsers and refetch members.
+  const modelOverrideEnabledRef = useRef(modelOverrideEnabled)
+  modelOverrideEnabledRef.current = modelOverrideEnabled
 
   const hasBudgetUsageFilter = !isDefaultBudgetUsageFilter(filters.budgetUsage)
-  const hasModelSettingsFilter = filters.modelSettings !== 'all'
+  const hasModelSettingsFilter = isModelSettingsFilterActive(
+    isUserModelOverrideEnabled,
+    filters.modelSettings
+  )
+  const needsClientFiltering = hasBudgetUsageFilter || hasModelSettingsFilter
+  // An empty override map from a pending or failed load would hide every user under "Custom".
+  const matchesModelFilter = (user: UserListItem, overrideEnabled: Record<string, boolean>) =>
+    !hasModelSettingsFilter ||
+    modelOverridesStatusRef.current !== 'ready' ||
+    matchesModelSettings(user, overrideEnabled, filters.modelSettings)
   const visibleUsers = users
 
   const handleFiltersChange = useCallback((nextFilters: ProjectMembersFiltersState) => {
@@ -349,8 +450,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   }, [])
 
   const columnDefinitions = useMemo(
-    () => getColumnDefinitions(canManageProject, showBudgets, isModelsConfigEnabled),
-    [canManageProject, showBudgets, isModelsConfigEnabled]
+    () => getColumnDefinitions(canManageProject, showBudgets, isUserModelOverrideEnabled),
+    [canManageProject, showBudgets, isUserModelOverrideEnabled]
   )
 
   const perPageRef = useRef(pagination.per_page)
@@ -384,7 +485,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
 
   const fetchUsers = useCallback(
     async (page: number, perPage: number) => {
-      if (!hasBudgetUsageFilter && !hasModelSettingsFilter) {
+      if (!needsClientFiltering) {
         const result = await userStore.getUsers({
           page,
           perPage,
@@ -398,12 +499,14 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       const allUsers = await fetchAllMatchingUsers()
       const filteredUsers = allUsers.filter(
         (user) =>
-          matchesBudgetUsage(
-            user,
-            budgetAllocationLookupRef.current,
-            spendingByUserIdRef.current,
-            filters.budgetUsage
-          ) && matchesModelSettings(user.id, filters.modelSettings, userModelOverridesRef.current)
+          (!hasBudgetUsageFilter ||
+            matchesBudgetUsage(
+              user,
+              budgetAllocationLookupRef.current,
+              spendingByUserIdRef.current,
+              filters.budgetUsage
+            )) &&
+          matchesModelFilter(user, modelOverrideEnabledRef.current)
       )
       const start = page * perPage
       const result = {
@@ -420,7 +523,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       filters.modelSettings,
       getBaseUserFilters,
       hasBudgetUsageFilter,
-      hasModelSettingsFilter,
+      needsClientFiltering,
     ]
   )
 
@@ -429,16 +532,17 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     currentItems: visibleUsers,
     onFetchAll: async () => {
       const allUsers = await fetchAllMatchingUsers()
-      return hasBudgetUsageFilter || hasModelSettingsFilter
+      return needsClientFiltering
         ? allUsers.filter(
             (user) =>
-              matchesBudgetUsage(
-                user,
-                budgetAllocationLookupRef.current,
-                spendingByUserIdRef.current,
-                filters.budgetUsage
-              ) &&
-              matchesModelSettings(user.id, filters.modelSettings, userModelOverridesRef.current)
+              (!hasBudgetUsageFilter ||
+                matchesBudgetUsage(
+                  user,
+                  budgetAllocationLookupRef.current,
+                  spendingByUserIdRef.current,
+                  filters.budgetUsage
+                )) &&
+              matchesModelFilter(user, modelOverrideEnabled)
           )
         : allUsers
     },
@@ -496,6 +600,16 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     if (showBudgets) loadSpending()
   }, [showBudgets, loadSpending])
 
+  const isFirstOverrideEnabledRun = useRef(true)
+  useEffect(() => {
+    if (isFirstOverrideEnabledRun.current) {
+      isFirstOverrideEnabledRun.current = false
+      return
+    }
+    if (hasModelSettingsFilter) loadUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelOverrideEnabled])
+
   // Fetch project budgets independently for the "View analytics" link period calculation.
   // This is guarded by canManageProject and does NOT affect showBudgets or the budget column.
   useEffect(() => {
@@ -518,32 +632,6 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       cancelled = true
     }
   }, [canManageProject, project.name])
-
-  // Fetch project model settings to identify users with custom model overrides
-  useEffect(() => {
-    if (!isModelsConfigEnabled) {
-      // Bail out via the updater so an already-empty map keeps its reference — otherwise a
-      // fresh `{}` here cascades through fetchUsers -> loadUsers and double-fetches the table.
-      setUserModelOverrides((prev) => (Object.keys(prev).length ? {} : prev))
-      return () => {}
-    }
-    let cancelled = false
-    projectModelSettingsStore
-      .fetchSettings(project.name)
-      .then((settings) => {
-        if (!cancelled) {
-          setUserModelOverrides(
-            Object.fromEntries(
-              Object.entries(settings.member_overrides).map(([userId]) => [userId, true])
-            )
-          )
-        }
-      })
-      .catch(console.error)
-    return () => {
-      cancelled = true
-    }
-  }, [project.name, isModelsConfigEnabled])
 
   const handlePageChange = useCallback(
     async (page: number, newPerPage?: number) => {
@@ -706,9 +794,87 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
     [project.name]
   )
 
-  const openModelOverrides = useCallback((members: UserListItem[]) => {
-    setModelOverrideUsers(members)
-  }, [])
+  const openModelOverrides = useCallback(
+    (members: UserListItem[]) => {
+      // An empty map from a pending or failed load would make Apply revoke or overwrite real overrides.
+      if (modelOverridesStatus !== 'ready') {
+        toaster.error(
+          modelOverridesStatus === 'failed'
+            ? 'Model overrides could not be loaded. Reload the page and try again.'
+            : 'Model overrides are still loading. Try again in a moment.'
+        )
+        return
+      }
+      setModelOverrideUsers(members)
+    },
+    [modelOverridesStatus]
+  )
+
+  // Returns false only when the overrides could not be (re)loaded.
+  const loadModelOverrides = useCallback(async (): Promise<boolean> => {
+    if (!isUserModelOverrideEnabled || !canManageProject) return true
+    modelOverridesRequestRef.current += 1
+    const requestId = modelOverridesRequestRef.current
+    try {
+      const [overrides, models] = await Promise.all([
+        userModelOverridesStore.listUserModelOverrides(project.name),
+        appInfoStore.getLLMModels(),
+      ])
+      const allModelIds = models.map((model) => model.value)
+
+      const nextOverrides: Record<string, ModelOverrideMap> = {}
+      const nextDefaults: Record<string, string> = {}
+      const nextEnabled: Record<string, boolean> = {}
+      const nextAllowed: Record<string, string[]> = {}
+      overrides.forEach((override) => {
+        nextAllowed[override.user_id] = override.allowed_models
+        nextOverrides[override.user_id] = Object.fromEntries(
+          allModelIds.map((modelId) => [
+            modelId,
+            override.allowed_models.includes(modelId) ? 'enabled' : 'disabled',
+          ])
+        ) as ModelOverrideMap
+        if (override.default_model) {
+          nextDefaults[override.user_id] = override.default_model
+        }
+        // A record existing is what makes the override active — there is no separate flag.
+        nextEnabled[override.user_id] = true
+      })
+
+      if (requestId !== modelOverridesRequestRef.current) return true
+      setModelOverrides(nextOverrides)
+      setModelDefaults(nextDefaults)
+      setModelOverrideEnabled(nextEnabled)
+      setModelAllowedByUser(nextAllowed)
+      setModelOverridesStatus('ready')
+      return true
+    } catch (error) {
+      console.error('Failed to load model overrides:', error)
+      if (requestId !== modelOverridesRequestRef.current) return true
+      setModelOverrides({})
+      setModelDefaults({})
+      setModelOverrideEnabled({})
+      setModelAllowedByUser({})
+      setModelOverridesStatus('failed')
+      return false
+    }
+  }, [project.name, isUserModelOverrideEnabled, canManageProject])
+
+  // Another project's overrides must not stay usable while the new project's are loading.
+  const lastOverridesProjectRef = useRef(project.name)
+  useEffect(() => {
+    if (lastOverridesProjectRef.current === project.name) return
+    lastOverridesProjectRef.current = project.name
+    setModelOverridesStatus('loading')
+    setModelOverrides({})
+    setModelDefaults({})
+    setModelOverrideEnabled({})
+    setModelAllowedByUser({})
+  }, [project.name])
+
+  useEffect(() => {
+    loadModelOverrides()
+  }, [loadModelOverrides])
 
   const customRenderColumns = useMemo(
     () => ({
@@ -732,7 +898,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         </div>
       ),
       modelOverride: (user: UserListItem) =>
-        renderModelOverrideCell(isModelsConfigEnabled && (userModelOverrides[user.id] ?? false)),
+        renderModelOverrideCell(modelOverrideEnabled[user.id] ?? false),
       role: (user: UserListItem) => {
         const currentRole = getUserRole(user)
         const isCurrentUser = currentUser?.userId === user.id
@@ -819,7 +985,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             title: 'Override models',
             icon: <AiGenerateSvg className="w-[18px] h-[18px]" />,
             onClick: () => openModelOverrides([user]),
-            hidden: !isModelsConfigEnabled,
+            hidden: !isUserModelOverrideEnabled,
           }
         )
 
@@ -860,8 +1026,8 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       handleRoleChange,
       budgets,
       canManageBudgets,
-      userModelOverrides,
-      isModelsConfigEnabled,
+      modelOverrideEnabled,
+      isUserModelOverrideEnabled,
     ]
   )
 
@@ -907,7 +1073,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           <ProjectMembersFilters
             initialFilters={filters}
             onFilterChange={handleFiltersChange}
-            isModelsConfigEnabled={isModelsConfigEnabled}
+            isUserModelOverrideEnabled={isUserModelOverrideEnabled}
           />
         </div>
 
@@ -926,7 +1092,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
               onSuccess={onMembersChanged}
               onBudgetsChanged={refreshBudgets}
               onOverrideModels={() => openModelOverrides(selected)}
-              isModelsConfigEnabled={isModelsConfigEnabled}
+              isUserModelOverrideEnabled={isUserModelOverrideEnabled}
               budgets={budgets ?? []}
               budgetAllocationLookup={budgetAllocationLookup}
             />
@@ -1044,7 +1210,51 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         isOpen={modelOverrideUsers.length > 0}
         users={modelOverrideUsers}
         projectName={project.name}
+        projectOverrides={
+          modelOverrideUsers.length === 1 ? modelOverrides[modelOverrideUsers[0].id] : {}
+        }
+        projectOverridesByUser={modelOverrides}
+        defaultModel={
+          modelOverrideUsers.length === 1 ? modelDefaults[modelOverrideUsers[0].id] : undefined
+        }
+        defaultModelsByUser={modelDefaults}
         onClose={() => setModelOverrideUsers([])}
+        onApply={async (overrides, defaultModel, hasCustomDefault, projectAvailability) => {
+          const hasExplicitOverrides = Object.keys(getExplicitModelOverrides(overrides)).length > 0
+          const userIds = modelOverrideUsers.map((user) => user.id)
+          const shouldPersist = hasExplicitOverrides || hasCustomDefault
+          const preservedModels = Array.from(
+            new Set(userIds.flatMap((userId) => modelAllowedByUser[userId] ?? []))
+          ).filter((modelId) => !(modelId in overrides))
+
+          try {
+            if (shouldPersist) {
+              await persistModelOverrides(project.name, {
+                userIds,
+                overrides,
+                defaultModel,
+                projectAvailability,
+                preservedModels,
+              })
+            } else {
+              // Revoking a user without an override record would fail or be a no-op.
+              const userIdsWithOverride = userIds.filter((userId) => modelOverrideEnabled[userId])
+              if (userIdsWithOverride.length) {
+                await revokeModelOverrides(project.name, userIdsWithOverride)
+              }
+            }
+            const reloaded = await loadModelOverrides()
+            setModelOverrideUsers([])
+            if (reloaded) {
+              toaster.info('Model overrides updated')
+            } else {
+              toaster.error('Model overrides were saved, but the list could not be refreshed.')
+            }
+          } catch (error: any) {
+            console.error('Failed to update model overrides:', error)
+            toaster.error(getErrorMessage(error, 'Failed to update model overrides'))
+          }
+        }}
       />
     </>
   )

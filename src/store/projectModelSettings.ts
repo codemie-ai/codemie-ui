@@ -17,7 +17,6 @@ import { proxy } from 'valtio'
 import { appInfoStore } from '@/store/appInfo'
 import {
   DEFAULT_PROJECT_MODEL_SETTINGS,
-  MemberModelOverride,
   ProjectModelSettings,
 } from '@/types/entity/projectModelSettings'
 import api from '@/utils/api'
@@ -34,10 +33,6 @@ interface ProjectModelSettingsStore {
     settings: ProjectModelSettings
   ) => Promise<ProjectModelSettings>
   resetSettings: (projectName: string) => Promise<ProjectModelSettings>
-  saveMemberOverrides: (
-    projectName: string,
-    overrides: Record<string, MemberModelOverride | null>
-  ) => Promise<ProjectModelSettings>
 }
 
 const projectUrl = (projectName: string) => `v1/projects/${encodeURIComponent(projectName)}`
@@ -131,19 +126,5 @@ export const projectModelSettingsStore = proxy<ProjectModelSettingsStore>({
     } finally {
       this.saving = false
     }
-  },
-
-  /** Read-modify-write of member overrides; `null` removes a member's override. */
-  async saveMemberOverrides(projectName, overrides) {
-    const current = await this.fetchSettings(projectName)
-    const memberOverrides = { ...current.member_overrides }
-    Object.entries(overrides).forEach(([userId, override]) => {
-      if (override && (override.disabled_models.length || override.default_model)) {
-        memberOverrides[userId] = override
-      } else {
-        delete memberOverrides[userId]
-      }
-    })
-    return this.saveSettings(projectName, { ...current, member_overrides: memberOverrides })
   },
 })

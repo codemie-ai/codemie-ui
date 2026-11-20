@@ -1,0 +1,29 @@
+{
+  "decision": "approve",
+  "rationale": "All four lenses and the standards audit ran; every story/spec criterion passes and no candidate survived reachability checks. 0 deferred, about 22 dismissed as noise, by-design behavior or below the emission floor (e.g. stale doc comment on SetUserModelOverridePayload.allowed_models, fallback to allowed_models only on a failed fetch as intended, bulk Apply without change per D7).",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [
+    {"kind": "story-ac", "item": "AC1 Single user: admin sets a model access override for a user within the project", "status": "pass", "notes": "persistModelOverrides -> setUserModelOverride; persistence test covers it"},
+    {"kind": "story-ac", "item": "AC2 Bulk: override applied to a multi-user selection is saved for every selected user", "status": "pass", "notes": "batchUserModelOverrides grant with all selected user_ids; persistence test asserts u-1,u-2"},
+    {"kind": "spec", "item": "D1 Modal offers every platform-enabled non-router model regardless of project allow/deny-list", "status": "pass", "notes": "getConfigurableModels(catalog); test present"},
+    {"kind": "spec", "item": "D2 allowed_models always sent non-empty on single set and batch grant", "status": "pass", "notes": "Always built from resolved overrides plus preservedModels"},
+    {"kind": "spec", "item": "D3 Bulk edit shows union of selected users' effective models", "status": "pass", "notes": "getBulkSetting / getMixedModelValues; tests present"},
+    {"kind": "spec", "item": "D4 Bulk grants one shared list and default; differing defaults require choosing one", "status": "pass", "notes": "defaultModelMixed gates Apply until chosen"},
+    {"kind": "spec", "item": "D5 Bulk checkbox state: all checked, some mixed, none unchecked", "status": "pass", "notes": "getSelectionState; tests present"},
+    {"kind": "spec", "item": "D6 Untouched mixed model stays enabled; click makes it regular; reset clears mixed", "status": "pass", "notes": "tests present"},
+    {"kind": "spec", "item": "D7 Bulk Apply available without change; single-user requires a change", "status": "pass", "notes": "disabled condition matches spec"},
+    {"kind": "spec", "item": "D8 Apply disabled while default invalid or submit in flight", "status": "pass", "notes": "in-flight test present"},
+    {"kind": "spec", "item": "D9 Default radio disabled only on unchecked rows", "status": "pass", "notes": "ModelConfigurationTable RadioButton"},
+    {"kind": "spec", "item": "D10 Feature gated by isUserModelOverrideEnabled", "status": "pass", "notes": "row action and bulk item gated; tests present"},
+    {"kind": "spec", "item": "Entry point: row action -> setUserModelOverride", "status": "pass", "notes": "single-user branch"},
+    {"kind": "spec", "item": "Entry point: bulk menu -> batchUserModelOverrides grant", "status": "pass", "notes": "batch branch"},
+    {"kind": "spec", "item": "Reset to project settings removes the override (delete / batch revoke)", "status": "pass", "notes": "revoke restricted to users with an override; tests present"}
+  ],
+  "standards_review": [
+    {"kind": "commit-format", "status": "pass", "notes": "All 19 subjects in the review range match the documented EPMCDME-XXXX: Capital sentence format, non-zero ticket, no trailing period"},
+    {"kind": "code-quality", "status": "na", "notes": "No code-quality guide passed and .ai-run/guides/standards/code-quality.md is absent from the repo; absent standard"},
+    {"kind": "security", "status": "pass", "notes": "Changed source files checked against security-patterns.md: no HTML sinks, redirects, postMessage, or config/secret additions; override API path segments are encoded with encodeURIComponent; no .env, gitleaks, sonar or nginx changes in the range"}
+  ],
+  "findings": []
+}

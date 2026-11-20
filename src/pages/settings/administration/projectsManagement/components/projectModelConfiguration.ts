@@ -98,3 +98,29 @@ export const describeRouterAvailability = (
     ? 'Routers are offered only when every model they can route to is enabled in this project.'
     : 'Routers are offered in model pickers of this project.'
 }
+
+/** A member's choice for one model: follow the project, or force it on or off. */
+export type ModelOverrideValue = 'project' | 'enabled' | 'disabled'
+
+export const isModelAllowed = (
+  modelId: string,
+  value: ModelOverrideValue,
+  projectAvailability: Record<string, boolean>
+) => (value === 'project' ? !!projectAvailability[modelId] : value !== 'disabled')
+
+export const NO_DEFAULT_CANDIDATES_ERROR =
+  'Select at least one model available on the web — CLI-only routers cannot be the default'
+
+/** The default must be one of the models currently available; the same rule for project and member screens. */
+export const getDefaultModelStatus = (
+  available: readonly ModelOption[],
+  defaultModel: string | undefined
+): { isValid: boolean; error: string | undefined } => {
+  const isValid = !!defaultModel && available.some((model) => model.value === defaultModel)
+  if (!available.length) return { isValid, error: NO_DEFAULT_CANDIDATES_ERROR }
+  if (isValid) return { isValid, error: undefined }
+  return {
+    isValid,
+    error: defaultModel ? 'Selected model is not available' : 'Choose a default model',
+  }
+}

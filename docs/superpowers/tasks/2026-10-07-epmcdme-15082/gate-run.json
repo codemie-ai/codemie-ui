@@ -1,0 +1,12 @@
+{"schema":1,"branch":"EPMCDME-15082_user-level-model-override","head":"8e8b7ace46490462746d8729bb37ebdba6b4b69c","runner":"npm","started_at":"2026-10-14T13:00:00Z","completed_at":"2026-10-14T14:45:00Z","status":"PASSED","drift_detected":false,"gates":[
+{"id":"lint","source":"guide","status":"PASS","command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","command":"npm run typecheck","exit_code":0},
+{"id":"license-check","source":"guide","status":"N/A","command":"npm run license-check","notes":"No dependency added/removed/moved (package.json and lock file unchanged in the branch diff). The npm script also fails on Windows because cmd.exe does not strip the single quotes; run directly in bash it passed on the previous commit."},
+{"id":"secrets","source":"guide","status":"PASS","command":"npm run secrets:check","exit_code":0,"notes":"output: no leaks found"},
+{"id":"unit","source":"guide","status":"PASS","duration_ms":1321000,"command":"npm run test:unit:slnt","exit_code":1,"notes":"Test Files 691 passed, 1 failed (692); Tests 7006 passed, 1 failed, 1 skipped. The one failure was a focus-trap assertion in src/components/Popup/__tests__/Popup.test.tsx (component untouched by this branch); the file passed 25/25 when rerun alone. Treated as flaky; no clean full-suite run exists on this commit."},
+{"id":"integration","source":"guide","status":"PASS","command":"npm run test:integration:slnt","exit_code":0,"notes":"Test Files 49 passed (49); Tests 559 passed, 1 skipped"},
+{"id":"license-headers","source":"hook","status":"PASS","command":"npm run license-headers:check","exit_code":0,"notes":"0 missing license headers of 2342"},
+{"id":"sonar-local","source":"hook","status":"SKIPPED","command":"npm run sonar-local","notes":"Needs reachable SonarQube server and credentials (none configured); only commit hook/CI can settle it."},
+{"id":"lint-staged","source":"hook","status":"N/A","command":"npx lint-staged","notes":"Staged files only; full lint gate covers it."},
+{"id":"ci-pipeline","source":"ci","status":"N/A","command":"","notes":".gitlab-ci.yml includes only a remote template; checks not visible locally."}
+],"failures":{}}

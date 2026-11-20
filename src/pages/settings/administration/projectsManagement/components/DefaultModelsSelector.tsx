@@ -65,6 +65,7 @@ interface DefaultModelsSelectorProps {
   defaultModel: string
   onDefaultChange: (model: string) => void
   defaultModelError?: string
+  label?: string
 }
 
 const DefaultModelsSelector: FC<DefaultModelsSelectorProps> = ({
@@ -72,6 +73,7 @@ const DefaultModelsSelector: FC<DefaultModelsSelectorProps> = ({
   defaultModel,
   onDefaultChange,
   defaultModelError,
+  label = 'Project default model',
 }) => {
   const [localDefaultModel, setLocalDefaultModel] = useState(defaultModel)
 
@@ -103,7 +105,7 @@ const DefaultModelsSelector: FC<DefaultModelsSelectorProps> = ({
           htmlFor="project-default-model"
           className="mb-2 block text-xs font-medium text-text-quaternary"
         >
-          Project default model
+          {label}
         </label>
         <Select
           id="project-default-model"
@@ -119,7 +121,11 @@ const DefaultModelsSelector: FC<DefaultModelsSelectorProps> = ({
           placeholder="Select a model"
           rootClassName="w-full"
         />
-        {defaultModelError && <p className="mt-1 text-xs text-text-error">{defaultModelError}</p>}
+        {defaultModelError && (
+          <p className="mt-1 text-xs text-text-error" role="alert">
+            {defaultModelError}
+          </p>
+        )}
         {isDefaultModelPremium && (
           <PremiumSelectionNote testId="project-default-model-premium-note" />
         )}

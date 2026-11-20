@@ -7,7 +7,7 @@ import { useBlocker } from 'react-router'
 import Button from '@/components/Button'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
-import { ButtonSize, ButtonType } from '@/constants'
+import { ButtonType } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
 import { projectModelSettingsStore } from '@/store/projectModelSettings'
 import { ModelOption } from '@/types/entity/configuration'
@@ -15,19 +15,21 @@ import {
   DEFAULT_PROJECT_MODEL_SETTINGS,
   ProjectModelSettings,
 } from '@/types/entity/projectModelSettings'
-import { routerToModelOption } from '@/utils/routerToModelOption'
 import toaster from '@/utils/toaster'
 
 import DefaultModelsSelector from './components/DefaultModelsSelector'
 import ModelConfigurationTable, { ModelSelectionState } from './components/ModelConfigurationTable'
+import ModelSettingsActions from './components/ModelSettingsActions'
 import {
   getChecklistModels,
   getDefaultModelCandidates,
+  getDefaultModelStatus,
   isModelAvailable,
   ProjectModelSetting,
   selectionToSettings,
   settingsToSelection,
 } from './components/projectModelConfiguration'
+import { useProjectModelCatalog } from './hooks/useProjectModelCatalog'
 
 interface Props {
   projectName: string
@@ -60,7 +62,6 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
   const [savedSettings, setSavedSettings] = useState<ProjectModelSettings | null>(null)
   const [draft, setDraft] = useState<DraftState | null>(null)
   const [initialDraft, setInitialDraft] = useState<DraftState | null>(null)
-  const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState(false)
   const [resetRequested, setResetRequested] = useState(false)
   const [navigationDialogVisible, setNavigationDialogVisible] = useState(false)
@@ -80,38 +81,39 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
     appInfoStore.invalidateProjectLLMModels(projectName)
   }, [projectName])
 
+  // Web models plus CLI-only routers: a project's selection also decides what CodeMie CLI and the
+  // apps it connects (e.g. Claude Desktop) offer. This screen edits the selection, so the premium
+  // setting is not applied to it.
+  const { data: projectCatalog, error: catalogError } = useProjectModelCatalog(projectName, {
+    includeRouters: true,
+    hidePremium: false,
+  })
+  const loadError = !!catalogError
+
   useEffect(() => {
-    let cancelled = false
-    setLoadError(false)
-    Promise.all([
-      appInfoStore.getLLMCatalog(),
-      projectModelSettingsStore.fetchSettings(projectName),
-      appInfoStore.getProjectLLMModels(projectName),
-    ])
-      .then(([{ models, routers }, settings]) => {
-        if (cancelled) return
-        // Web models plus CLI-only routers: a project's selection also decides what CodeMie CLI
-        // and the apps it connects (e.g. Claude Desktop) offer.
-        const platformCatalog = [...models, ...routers.map(routerToModelOption)]
-        const configurable = getDefaultModelCandidates(platformCatalog).filter(canSelectDefault)
-        const checklist = getChecklistModels(platformCatalog)
-        const globalDefault =
-          configurable.find((model) => model.isDefault)?.value ?? configurable[0]?.value ?? ''
-        const nextDraft = toDraft(settings, checklist, globalDefault)
-        setCatalog(platformCatalog)
-        setSavedSettings(settings)
-        setDraft(nextDraft)
-        setInitialDraft(nextDraft)
-        setResetRequested(false)
-      })
-      .catch((error) => {
-        console.error('Failed to load project model settings:', error)
-        if (!cancelled) setLoadError(true)
-      })
-    return () => {
-      cancelled = true
-    }
+    appInfoStore.getProjectLLMModels(projectName)
   }, [projectName])
+
+  useEffect(() => {
+    if (catalogError) console.error('Failed to load project model settings:', catalogError)
+  }, [catalogError])
+
+  useEffect(() => {
+    if (!projectCatalog) return
+    const { catalog: platformCatalog, settings, selection } = projectCatalog
+    const configurable = getDefaultModelCandidates(platformCatalog).filter(canSelectDefault)
+    const globalDefault =
+      configurable.find((model) => model.isDefault)?.value ?? configurable[0]?.value ?? ''
+    const nextDraft: DraftState = {
+      selection,
+      defaultModel: settings.default_model ?? globalDefault,
+    }
+    setCatalog(platformCatalog)
+    setSavedSettings(settings)
+    setDraft(nextDraft)
+    setInitialDraft(nextDraft)
+    setResetRequested(false)
+  }, [projectCatalog])
 
   const hasHiddenConfiguredModels =
     !!draft &&
@@ -138,14 +140,11 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
   const checklistAvailableCount = draft
     ? checklistModels.filter((model) => isModelAvailable(model, draft.selection, false)).length
     : 0
-  const defaultIsValid = availableModels.some((model) => model.value === draft?.defaultModel)
-  let defaultModelError: string | undefined
-  if (draft && availableModels.length === 0) {
-    defaultModelError =
-      'Select at least one model available on the web — CLI-only routers cannot be the default'
-  } else if (!defaultIsValid && draft?.defaultModel) {
-    defaultModelError = 'Selected model is not available'
-  }
+  const { isValid: defaultIsValid, error } = getDefaultModelStatus(
+    availableModels,
+    draft?.defaultModel
+  )
+  const defaultModelError = draft ? error : undefined
 
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -297,22 +296,15 @@ const ProjectModelsSection: FC<Props> = ({ projectName }) => {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Button
-              size={ButtonSize.MEDIUM}
-              variant={ButtonType.SECONDARY}
-              onClick={resetToDefaults}
-              disabled={isAtDefaults || saving}
-            >
-              Reset to global settings
-            </Button>
-            <Button
-              size={ButtonSize.MEDIUM}
-              variant={ButtonType.PRIMARY}
-              onClick={saveChanges}
-              disabled={!hasChanges || !defaultIsValid || saving}
-            >
-              Apply changes
-            </Button>
+            <ModelSettingsActions
+              resetLabel="Reset to global settings"
+              onReset={resetToDefaults}
+              resetDisabled={isAtDefaults}
+              onApply={saveChanges}
+              applyDisabled={!hasChanges}
+              defaultIsValid={defaultIsValid}
+              busy={saving}
+            />
           </div>
         </div>
       </section>

@@ -124,6 +124,7 @@ export interface AppInfoStoreType {
   getLLMModels: (projectId?: string) => Promise<ModelOption[]>
   getLLMCatalog: () => Promise<{ models: ModelOption[]; routers: LLMRouterOption[] }>
   getProjectLLMModels: (projectName: string) => Promise<ModelOption[]>
+  fetchProjectLLMModels: (projectName: string) => Promise<ModelOption[]>
   invalidateProjectLLMModels: (projectName?: string) => void
   getImageGenerationModels: () => Promise<ModelOption[]>
   getEmbeddingsModels: () => Promise<ModelOption[]>
@@ -464,7 +465,7 @@ export const appInfoStore = proxy<AppInfoStoreType>({
     }
   },
 
-  async getProjectLLMModels(projectName) {
+  async fetchProjectLLMModels(projectName) {
     if (!projectName) return appInfoStore.getLLMModels()
     const pending = projectLlmModelsInFlight.get(projectName)
     if (pending) return pending
@@ -475,15 +476,21 @@ export const appInfoStore = proxy<AppInfoStoreType>({
         const data = await response.json()
         appInfoStore.projectLlmModels[projectName] = data.map(mapLlmModel)
         return appInfoStore.projectLlmModels[projectName]
-      } catch (error) {
-        console.error('Failed to fetch project LLM models:', error)
-        return []
       } finally {
         projectLlmModelsInFlight.delete(projectName)
       }
     })()
     projectLlmModelsInFlight.set(projectName, request)
     return request
+  },
+
+  async getProjectLLMModels(projectName) {
+    try {
+      return await appInfoStore.fetchProjectLLMModels(projectName)
+    } catch (error) {
+      console.error('Failed to fetch project LLM models:', error)
+      return []
+    }
   },
 
   invalidateProjectLLMModels(projectName) {

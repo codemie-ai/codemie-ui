@@ -19,18 +19,12 @@
  */
 export type ModelAvailabilityMode = 'all' | 'allow_list' | 'deny_list'
 
-export interface MemberModelOverride {
-  disabled_models: string[]
-  default_model: string | null
-}
-
 export interface ProjectModelSettings {
   mode: ModelAvailabilityMode
   models: string[]
   default_model: string | null
   hide_premium_models: boolean
   auto_routing_enabled: boolean
-  member_overrides: Record<string, MemberModelOverride>
 }
 
 export const DEFAULT_PROJECT_MODEL_SETTINGS: ProjectModelSettings = {
@@ -39,5 +33,4 @@ export const DEFAULT_PROJECT_MODEL_SETTINGS: ProjectModelSettings = {
   default_model: null,
   hide_premium_models: false,
   auto_routing_enabled: true,
-  member_overrides: {},
 }

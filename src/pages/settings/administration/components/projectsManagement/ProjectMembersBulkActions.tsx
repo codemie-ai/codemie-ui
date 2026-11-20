@@ -47,7 +47,7 @@ interface ProjectMembersBulkActionsProps {
   onSuccess?: () => void
   onBudgetsChanged?: () => void | Promise<void>
   onOverrideModels: () => void
-  isModelsConfigEnabled?: boolean
+  isUserModelOverrideEnabled?: boolean
   budgets: ProjectBudget[]
   budgetAllocationLookup: Record<
     string,
@@ -68,7 +68,7 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
   onSuccess,
   onBudgetsChanged,
   onOverrideModels,
-  isModelsConfigEnabled = false,
+  isUserModelOverrideEnabled = false,
   budgets,
   budgetAllocationLookup,
 }) => {
@@ -145,7 +145,7 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
             },
           ]
         : []),
-      ...(isModelsConfigEnabled
+      ...(isUserModelOverrideEnabled
         ? [
             {
               title: 'Override models',
@@ -165,7 +165,7 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
             },
           ]),
     ],
-    [canManageBudgets, isModelsConfigEnabled, membershipLocked, onOverrideModels, openPopup]
+    [canManageBudgets, isUserModelOverrideEnabled, membershipLocked, onOverrideModels, openPopup]
   )
 
   if (!canManageProject || selectedUsers.length === 0 || bulkActionItems.length === 0) {

@@ -113,16 +113,13 @@ describe('projectModelConfiguration', () => {
     })
   })
 
-  it('keeps member overrides and other fields from the base settings', () => {
-    const base = settings({
-      default_model: 'a',
-      member_overrides: { u1: { disabled_models: ['b'], default_model: null } },
-    })
+  it('keeps other fields from the base settings', () => {
+    const base = settings({ default_model: 'a', hide_premium_models: true })
 
     const result = selectionToSettings(base, { a: 'enabled' }, 'enable')
 
     expect(result.default_model).toBe('a')
-    expect(result.member_overrides).toEqual(base.member_overrides)
+    expect(result.hide_premium_models).toBe(true)
   })
 
   it('treats premium models as unavailable while premium hiding is on', () => {

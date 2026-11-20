@@ -42,7 +42,6 @@ import { MessageStatus } from '@/types/entity/conversation'
 import api, { sanitizeFileName } from '@/utils/api'
 import { transformChatBEtoFE } from '@/utils/chatHelpers'
 import { chatSkillsKey, removeChatStorage, sweepOrphanedChatKeys } from '@/utils/chatStorageUtils'
-import { getFilteredModelsForProject } from '@/utils/projectModelFiltering'
 import { clearSharedFileGrants, setSharedFileGrants } from '@/utils/sharedFileGrants'
 import storage from '@/utils/storage'
 import toaster from '@/utils/toaster'
@@ -1112,10 +1111,18 @@ export const chatsStore = proxy<ChatsStoreType>({
       // Fetched together so the two lists always commit atomically — awaiting them one after
       // another would leave a render window where one list reflects the new project and the
       // other still holds the previous (or empty) one.
-      const [filteredModels, filteredRouters] = await Promise.all([
-        getFilteredModelsForProject(projectId, appInfoStore.llmModels),
-        getFilteredModelsForProject(projectId, appInfoStore.llmRouters),
-      ])
+      let filteredModels = appInfoStore.llmModels
+      let filteredRouters = appInfoStore.llmRouters
+      if (projectId) {
+        // The backend list is already narrowed to the project; routers come back mixed in with
+        // the models and are matched to the full router options by id.
+        const projectModels = await appInfoStore.getProjectLLMModels(projectId)
+        const routerIds = new Set(
+          projectModels.filter((model) => model.isRouter).map((model) => model.value)
+        )
+        filteredModels = projectModels.filter((model) => !model.isRouter)
+        filteredRouters = appInfoStore.llmRouters.filter((router) => routerIds.has(router.value))
+      }
       // A late response must not replace the lists for the newly opened project.
       if (isCurrentRequest()) {
         chatsStore.filteredModels = filteredModels as ModelOption[]

@@ -69,10 +69,7 @@ const CATALOG: ModelOption[] = [
   { label: 'Router', value: 'router', isDefault: false, isRouter: true },
 ]
 
-const STORED: ProjectModelSettings = {
-  ...DEFAULT_PROJECT_MODEL_SETTINGS,
-  member_overrides: { u1: { disabled_models: ['model-b'], default_model: null } },
-}
+const STORED: ProjectModelSettings = { ...DEFAULT_PROJECT_MODEL_SETTINGS }
 
 const renderSection = async () => {
   const rendered = render(<ProjectModelsSection projectName="team" />)
@@ -211,7 +208,6 @@ describe('ProjectModelsSection', () => {
       models: ['model-a', 'premium', 'router'],
       default_model: 'model-a',
     })
-    expect(saved.member_overrides).toEqual(STORED.member_overrides)
     expect(mockAppInfoStore.invalidateProjectLLMModels).toHaveBeenCalledWith('team')
     expect(mockToastSuccess).toHaveBeenCalledWith('Model settings updated')
   })

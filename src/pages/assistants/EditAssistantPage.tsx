@@ -29,6 +29,7 @@ import { useVueRouter } from '@/hooks/useVueRouter'
 import { goBackAssistants } from '@/pages/assistants/utils/goBackAssistants'
 import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
 import { assistantsStore } from '@/store'
+import { appInfoStore } from '@/store/appInfo'
 import { settingsStore } from '@/store/settings'
 import { Assistant } from '@/types/entity/assistant'
 import toaster from '@/utils/toaster'
@@ -155,6 +156,8 @@ const EditAssistantPage = () => {
         const loaded = id
           ? await assistantsStore.getAssistant(id as string)
           : await assistantsStore.getAssistantBySlug(slug as string, false, projectName as string)
+        // The project's model list is cached per tab; refresh it so overrides saved elsewhere apply.
+        if (loaded?.project) await appInfoStore.getProjectLLMModels(loaded.project)
         setAssistant(loaded)
       } finally {
         setIsLoading(false)

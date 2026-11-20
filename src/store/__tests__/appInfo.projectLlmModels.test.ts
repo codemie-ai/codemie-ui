@@ -63,6 +63,20 @@ describe('appInfoStore project-scoped LLM models', () => {
     await expect(appInfoStore.getProjectLLMModels('p')).resolves.toEqual([])
   })
 
+  it('fetchProjectLLMModels rejects when the request fails and getProjectLLMModels still resolves empty', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockGet.mockRejectedValue(new Error('boom'))
+
+    await expect(appInfoStore.fetchProjectLLMModels('p')).rejects.toThrow('boom')
+    await expect(appInfoStore.getProjectLLMModels('p')).resolves.toEqual([])
+  })
+
+  it('fetchProjectLLMModels resolves an empty list for a legitimately empty response', async () => {
+    mockGet.mockResolvedValue(respond([]))
+
+    await expect(appInfoStore.fetchProjectLLMModels('p')).resolves.toEqual([])
+  })
+
   it('invalidates one project or all of them', () => {
     appInfoStore.projectLlmModels = { a: [], b: [] }
 

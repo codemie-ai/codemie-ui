@@ -34,7 +34,7 @@ import { SelectOption } from '@/types/filters'
 
 type RoleOptionValue = ProjectRoleBE.PLATFORM_ADMIN | ProjectRoleBE.USER | 'all'
 export type BudgetUsageRange = 'low' | 'medium' | 'high'
-export type ModelSettingsFilterValue = 'all' | 'project' | 'custom'
+export type ModelSettingsFilter = 'all' | 'project' | 'custom'
 
 export interface BudgetUsageFilter {
   categories: BudgetCategory[]
@@ -83,7 +83,7 @@ const ROLE_FILTER_OPTIONS: SelectOption<RoleOptionValue>[] = [
   { label: 'User', value: ProjectRoleBE.USER },
 ]
 
-const MODEL_SETTINGS_FILTER_OPTIONS: SelectOption<ModelSettingsFilterValue>[] = [
+const MODEL_SETTINGS_FILTER_OPTIONS: SelectOption<ModelSettingsFilter>[] = [
   { label: 'All', value: 'all' },
   { label: 'Project', value: 'project' },
   { label: 'Custom', value: 'custom' },
@@ -93,7 +93,7 @@ export interface ProjectMembersFiltersState {
   search: string
   role: RoleOptionValue
   budgetUsage: BudgetUsageFilter
-  modelSettings: ModelSettingsFilterValue
+  modelSettings: ModelSettingsFilter
 }
 
 export const PROJECT_MEMBERS_INITIAL_FILTERS: ProjectMembersFiltersState = {
@@ -118,13 +118,13 @@ export const getInitialFilters = (category: unknown): ProjectMembersFiltersState
 
 interface ProjectMembersFiltersProps {
   onFilterChange: (filters: ProjectMembersFiltersState) => void
-  isModelsConfigEnabled?: boolean
+  isUserModelOverrideEnabled?: boolean
   initialFilters?: ProjectMembersFiltersState
 }
 
 const ProjectMembersFilters: FC<ProjectMembersFiltersProps> = ({
   onFilterChange,
-  isModelsConfigEnabled = false,
+  isUserModelOverrideEnabled = false,
   initialFilters,
 }) => {
   const budgetUsagePanelRef = useRef<OverlayPanel>(null)
@@ -136,7 +136,8 @@ const ProjectMembersFilters: FC<ProjectMembersFiltersProps> = ({
     return (
       !localFilters.search &&
       localFilters.role === 'all' &&
-      isDefaultBudgetUsageFilter(localFilters.budgetUsage)
+      isDefaultBudgetUsageFilter(localFilters.budgetUsage) &&
+      localFilters.modelSettings === 'all'
     )
   }, [localFilters])
 
@@ -156,7 +157,7 @@ const ProjectMembersFilters: FC<ProjectMembersFiltersProps> = ({
     onFilterChange(newFilters)
   }
 
-  const handleModelSettingsChange = (e: { value: ModelSettingsFilterValue }) => {
+  const handleModelSettingsFilterChange = (e: { value: ModelSettingsFilter }) => {
     const newFilters = { ...localFilters, modelSettings: e.value }
     setLocalFilters(newFilters)
     onFilterChange(newFilters)
@@ -308,14 +309,14 @@ const ProjectMembersFilters: FC<ProjectMembersFiltersProps> = ({
           </div>
         </OverlayPanel>
       </div>
-      {isModelsConfigEnabled && (
+      {isUserModelOverrideEnabled && (
         <div className="min-w-44">
           <Select
             id="model-settings-filter"
             name="model-settings-filter"
-            label="Model settings"
+            label="Model Settings"
             value={localFilters.modelSettings}
-            onChange={handleModelSettingsChange}
+            onChange={handleModelSettingsFilterChange}
             options={MODEL_SETTINGS_FILTER_OPTIONS}
             placeholder="Filter by model settings"
           />

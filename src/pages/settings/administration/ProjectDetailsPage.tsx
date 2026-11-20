@@ -97,6 +97,7 @@ const ProjectDetailsPage = () => {
   const [isChargebackFeatureEnabled] = useProjectChargebackEnabled()
   const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const [isModelsConfigEnabled] = useFeatureFlag(FEATURE_FLAGS.PROJECT_MODEL_OVERRIDE)
+  const [isUserModelOverrideEnabled] = useFeatureFlag(FEATURE_FLAGS.USER_MODEL_OVERRIDE)
   const [project, setProject] = useState<ProjectDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditPopupVisible, setIsEditPopupVisible] = useState(false)
@@ -280,10 +281,7 @@ const ProjectDetailsPage = () => {
             onMembersChanged={loadProject}
             budgets={isMaintainer || isProjectAdmin ? budgets : undefined}
             onBudgetsChanged={isMaintainer || isProjectAdmin ? loadBudgets : undefined}
-            // Per-member model overrides have no backend support yet (EPMCDME-14349
-            // scoped the FE to the flat project-level allow-list); keep this entry
-            // point hidden regardless of the Models tab's own feature flag.
-            isModelsConfigEnabled={false}
+            isUserModelOverrideEnabled={isUserModelOverrideEnabled}
           />
         </div>
       )}

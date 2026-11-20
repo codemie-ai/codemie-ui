@@ -60,6 +60,7 @@ export const FEATURE_FLAGS = {
   SHAREPOINT_PKCE: 'features:sharepointPkce',
   // Standalone core gating; verify id against merged EPMCDME-16884
   CORE: 'features:core',
+  USER_MODEL_OVERRIDE: 'features:userModelOverride',
 } as const
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS]

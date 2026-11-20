@@ -276,6 +276,29 @@ describe('EditAssistantPage - Integration', () => {
     })
   })
 
+  describe('Project model list', () => {
+    it('waits for the project model refresh before showing the assistant', async () => {
+      let resolveModels: (value: never[]) => void = () => {}
+      const spy = vi.spyOn(appInfoStore, 'getProjectLLMModels').mockReturnValue(
+        new Promise((resolve) => {
+          resolveModels = resolve
+        })
+      )
+      mockAPI('GET', 'v1/config', [])
+      mockAPI('GET', 'v1/assistants/id/asst-123', createAssistantFixture())
+      mockAPI('GET', 'v1/llm/models', [])
+
+      renderPage('/assistants/asst-123/edit')
+
+      await waitFor(() => expect(spy).toHaveBeenCalledWith('test-proj'))
+      expect(screen.queryByText('Test Assistant')).not.toBeInTheDocument()
+
+      resolveModels([])
+      expect((await screen.findAllByText('Test Assistant')).length).toBeGreaterThan(0)
+      spy.mockRestore()
+    })
+  })
+
   describe('Skills field', () => {
     it('renders a skill name correctly even when the skill is outside the loaded catalog scope', async () => {
       const assistant = createAssistantFixture({

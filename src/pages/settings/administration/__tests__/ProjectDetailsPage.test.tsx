@@ -109,14 +109,18 @@ vi.mock('@/utils/toaster', () => ({
   },
 }))
 
-const { costCentersFlag, budgetManagementFlag } = vi.hoisted(() => ({
+const { costCentersFlag, budgetManagementFlag, userModelOverrideFlag } = vi.hoisted(() => ({
+  userModelOverrideFlag: vi.fn(() => [true, true] as [boolean, boolean]),
   costCentersFlag: vi.fn(() => [true, true] as [boolean, boolean]),
   budgetManagementFlag: vi.fn(() => [false, true] as [boolean, boolean]),
 }))
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
-  useFeatureFlag: (flag: string) =>
-    flag === FEATURE_FLAGS.COST_CENTERS ? costCentersFlag() : [true, true],
+  useFeatureFlag: (flag: string) => {
+    if (flag === FEATURE_FLAGS.COST_CENTERS) return costCentersFlag()
+    if (flag === FEATURE_FLAGS.USER_MODEL_OVERRIDE) return userModelOverrideFlag()
+    return [true, true]
+  },
   useBudgetManagementEnabled: () => budgetManagementFlag(),
   useProjectChargebackEnabled: () => [false, true] as [boolean, boolean],
 }))
@@ -142,6 +146,7 @@ describe('ProjectDetailsPage', () => {
     routeState.name = 'projects-management-overview'
     mockUserStore.user = null
     costCentersFlag.mockReturnValue([true, true])
+    userModelOverrideFlag.mockReturnValue([true, true])
     projectsStore.getProject = vi.fn().mockResolvedValue(mockProject)
     projectsStore.updateProject = vi.fn().mockResolvedValue(mockProject)
     userStore.user = { isAdmin: true } as any
@@ -165,6 +170,24 @@ describe('ProjectDetailsPage', () => {
     expect(await screen.findByTestId('project-members-manager')).toHaveTextContent('Test Project')
     expect(screen.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'true')
   })
+
+  it.each([
+    [true, true],
+    [false, false],
+  ])(
+    'passes isUserModelOverrideEnabled=%s to ProjectMembersManager when only the USER_MODEL_OVERRIDE flag is %s',
+    async (flagValue, expected) => {
+      userModelOverrideFlag.mockReturnValue([flagValue, true])
+      routeState.name = 'projects-management-members'
+      render(<ProjectDetailsPage />)
+
+      await screen.findByTestId('project-members-manager')
+
+      expect(projectMembersManagerMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ isUserModelOverrideEnabled: expected })
+      )
+    }
+  )
 
   it('renders Members as a route-level section', async () => {
     routeState.name = 'projects-management-members'

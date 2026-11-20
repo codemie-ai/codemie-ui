@@ -1,0 +1,146 @@
+{
+  "decision": "request-changes",
+  "rationale": "edge-case lens failed (file never written, confirmed absent twice) so the review has zero edge-case coverage and confidence is capped low; acceptance did not run (no spec present) so business_review is empty; standards found 1 blocking security row (missing encodeURIComponent on 5 call sites in projectModelOverrides.ts, folded in as CR-010); 2.3 verified all 10 surviving candidates live against current source; CR-006 (custom-default-only save persisting the full catalog) is ambiguous without a backend spec but is newly introduced by this change so it stays blocking per no-spec routing; 1 blind finding (deleted explanatory comment on ProjectDetailsPage.tsx) was dismissed as documentation-only, below the emission floor; 0 findings deferred.",
+  "confidence": "low",
+  "risk_flags": ["security", "breaking-change"],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "all 3 commit subjects match the documented format and ticket matches the branch name"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no code-quality guide exists in this repo and no ArtifactRef was passed; absent standard, not a gap"
+    },
+    {
+      "kind": "security",
+      "status": "fail",
+      "notes": "projectModelOverrides.ts interpolates projectName/userId raw in all 5 methods, diverging from every sibling store that wraps the equivalent segment in encodeURIComponent"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 166,
+      "title": "No test for column visibility under flag-off",
+      "problem": "No test renders ProjectMembersManager with isUserModelOverrideEnabled false/omitted to check the modelOverride column is hidden; every existing render test passes the flag true.",
+      "impact": "A layout regression where the override column always shows (see CR-002) would ship with the full test suite green.",
+      "recommendation": "Add a render test with isUserModelOverrideEnabled={false} asserting the modelOverride column/cell is absent, mirroring the always-true-flag tests that exist."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 186,
+      "title": "Model-override column renders unconditionally",
+      "problem": "getColumnDefinitions lost its showModelOverride parameter and now always pushes the modelOverride column with a fixed w-[4%] width regardless of isUserModelOverrideEnabled; when the flag is off, loadModelOverrides bails out early so modelOverrideEnabled stays {}, and the column renders an always-empty indicator.",
+      "impact": "Every project without the USER_MODEL_OVERRIDE feature flag now shows an extra empty 4%-wide column in the members table, a visible layout regression for the broader user population.",
+      "recommendation": "Reintroduce a showModelOverride/flag parameter on getColumnDefinitions and only push the modelOverride column (with its previous conditional width) when the flag is true."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 633,
+      "title": "loadModelOverrides misses a cancellation guard",
+      "problem": "loadModelOverrides (replacing the old settings-fetch effect) dropped the cancelled guard the prior effect used; nothing prevents a stale listUserModelOverrides/getLLMModels response from landing after a newer request started.",
+      "impact": "A rapid project switch or re-render can let a stale response overwrite fresher modelOverrides/modelDefaults/modelOverrideEnabled state, showing the wrong user's overrides.",
+      "recommendation": "Add the same cancelled-flag + cleanup pattern used by the budgets effect (ProjectMembersManager.tsx:454) around loadModelOverrides's state setters."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 1008,
+      "title": "Allowed-models assertion accepts any array",
+      "problem": "ProjectMembersModelOverridePersistence.test.tsx asserts allowed_models: expect.any(Array) rather than the concrete filtered list, and never checks default_model content either.",
+      "impact": "If the allowedModels filter were inverted or dropped a model, the persistence tests would still pass, shipping a wrong allow-list to the backend undetected.",
+      "recommendation": "Assert the concrete expected list, e.g. allowed_models: ['gpt-4'], and add a default_model assertion."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 1009,
+      "title": "Bulk apply grants mixed-state models to every user",
+      "problem": "For a bulk edit, a model left 'mixed' (differs per selected user, via getBulkSetting) is treated as allowed by allowedModels = Object.entries(overrides).filter(([, value]) => value !== 'disabled') when building the one shared payload sent to batchUserModelOverrides/setUserModelOverride.",
+      "impact": "This silently grants that model to every selected user, including ones who previously had it individually disabled, whereas the removed buildUserOverride logic preserved each member's own state for untouched mixed rows.",
+      "recommendation": "Do not fold a 'mixed' model into the shared allowed_models list; preserve each member's prior per-model state for untouched mixed rows instead of applying one shared list to the whole group."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 1012,
+      "title": "Custom-default-only save persists the entire catalog",
+      "problem": "When the only change is a custom default model (no model explicitly toggled), shouldPersist is still true and allowedModels is computed from overrides where every model is still 'project', so the entire current catalog gets persisted as an explicit allow-list rather than a 'no model-level restriction' marker.",
+      "impact": "A model added to the project later will not automatically be available to that user, even though the admin never intended to restrict models at all. The correct backend contract for this case is ambiguous without a spec, but the defect is newly introduced by this change.",
+      "recommendation": "Omit allowed_models or send an explicit no-restriction marker when only the default model changed; confirm the exact payload contract with the backend/API owner before changing it. Confidence on this item is low pending that confirmation."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 1012,
+      "title": "No test covers the override revoke/delete path",
+      "problem": "No test resets all per-model overrides to project defaults and applies, so the shouldPersist-false branch (deleteUserModelOverride for a single user, batchUserModelOverrides with operation 'revoke' for bulk) is never exercised.",
+      "impact": "If the revoke/delete logic regressed (e.g. still called setUserModelOverride/batch grant on reset, or never called delete), no test in the suite would fail.",
+      "recommendation": "Add a test that applies with all overrides reset to 'project' (via resetToProjectSettings then Apply) and asserts deleteUserModelOverride/batchUserModelOverrides(operation:'revoke') was called with the right args."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/ProjectMemberModelOverrideModal.tsx",
+      "line": 40,
+      "title": "Modal lost submit-state tracking during async apply",
+      "problem": "Props.onApply is typed as returning void, but the implementation passed in from ProjectMembersManager is an async function that can reject; the modal never awaits it and dropped its prior isSubmitting state, so 'Apply changes' and 'Reset to project settings' are never disabled while the save is in flight.",
+      "impact": "A user can double-click and fire duplicate setUserModelOverride/batchUserModelOverrides requests; the modal also has no way to know the save failed or is pending.",
+      "recommendation": "Type onApply as returning Promise<void>, await it in the modal, and reintroduce an isSubmitting state that disables both buttons while the save is pending."
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/projectModelOverrides.ts",
+      "line": 49,
+      "title": "Shared loading/error state races across concurrent calls",
+      "problem": "projectModelOverridesStore keeps a single shared loading/error field mutated by every method; loadModelOverrides fires listUserModelOverrides concurrently with appInfoStore.getLLMModels() via Promise.all, and any other concurrent caller (e.g. a simultaneous setUserModelOverride) would clobber loading/error with whichever call finishes last.",
+      "impact": "Any UI reading store.loading/store.error directly could show an incorrect transient state during concurrent operations.",
+      "recommendation": "Track in-flight state per call site rather than on one shared store-level field, or stop exposing loading/error until something actually consumes them safely."
+    },
+    {
+      "id": "CR-010",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/store/projectModelOverrides.ts",
+      "line": 53,
+      "title": "Path segments interpolated without URL encoding",
+      "problem": "projectName and userId are concatenated directly into the API path template literal in all 5 methods (listUserModelOverrides, getUserModelOverride, setUserModelOverride, deleteUserModelOverride, batchUserModelOverrides) without encodeURIComponent, unlike every sibling store (projectModelSettings.ts, projects.ts, budgets.ts, costCenters.ts, projectDisplayNames.ts, chats.ts) which wraps the equivalent segment.",
+      "impact": "An unencoded path/query-metacharacter in a project name or user id (e.g. containing '/', '?', '#') changes which backend path or query the request actually hits, letting a crafted identifier redirect the call to an unintended endpoint.",
+      "recommendation": "Wrap projectName and userId with encodeURIComponent at each of the 5 call sites (lines 53, 72, 98, 117, 140), matching the pattern in projectModelSettings.ts."
+    }
+  ]
+}
