@@ -506,6 +506,9 @@ export default {
   darkMode: ['variant', '.nottused * &'],
   theme: {
     extend: {
+      gridTemplateColumns: {
+        'activity-details': '14rem minmax(0, 1fr)',
+      },
       keyframes: {
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },

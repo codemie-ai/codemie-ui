@@ -22,6 +22,48 @@ import { ColumnDefinition, DefinitionTypes } from '@/types/table'
 
 import Table from '../Table'
 
+describe('Table isModalFooter pagination positioning', () => {
+  const pagination = { page: 0, totalPages: 2, perPage: 10 }
+
+  it('renders pagination in normal flow (shrink-0, not fixed/sticky) when isModalFooter is true', () => {
+    render(<Table items={[]} columnDefinitions={[]} pagination={pagination} isModalFooter />)
+    // The root wrapper must not reserve bottom padding for a fixed footer
+    const root = document.querySelector('.flex.flex-col.w-full')
+    expect(root).toBeInTheDocument()
+    expect(root).not.toHaveClass('pb-20')
+    // Pagination must not be fixed or sticky — it sits in normal document flow
+    expect(document.querySelector('.fixed.bottom-0')).not.toBeInTheDocument()
+    expect(document.querySelector('.sticky.bottom-0')).not.toBeInTheDocument()
+    // The pagination element is rendered as a shrink-0 child of the flex root
+    const paginationEl = document.querySelector('[data-testid="pagination"], .shrink-0')
+    expect(paginationEl).toBeInTheDocument()
+  })
+
+  it('uses fixed positioning when isModalFooter is false (default)', () => {
+    render(<Table items={[]} columnDefinitions={[]} pagination={pagination} />)
+    const paginationRoot = document.querySelector('.fixed.bottom-0')
+    expect(paginationRoot).toBeInTheDocument()
+    expect(document.querySelector('.sticky.bottom-0')).not.toBeInTheDocument()
+  })
+
+  it('root wrapper has flex-1 min-h-0 for bounded height when isModalFooter is true', () => {
+    render(<Table items={[]} columnDefinitions={[]} pagination={pagination} isModalFooter />)
+    const root = document.querySelector('.flex.flex-col.w-full')
+    expect(root).toBeInTheDocument()
+    expect(root).toHaveClass('flex-1')
+    expect(root).toHaveClass('min-h-0')
+  })
+
+  it('scroll container has min-h-0 overflow-auto for bounded scrolling when isModalFooter is true', () => {
+    render(<Table items={[]} columnDefinitions={[]} pagination={pagination} isModalFooter />)
+    // The scroll container must be flex-1 min-h-0 overflow-auto (not a fixed min-h-[300px])
+    const scrollContainer = document.querySelector('.overflow-auto.min-h-0')
+    expect(scrollContainer).toBeInTheDocument()
+    // Must NOT have the fixed min-height that would prevent bounded scrolling
+    expect(scrollContainer).not.toHaveClass('min-h-[300px]')
+  })
+})
+
 describe('Table aria-label', () => {
   it('sets aria-label on the table when ariaLabel is provided', () => {
     render(<Table items={[]} columnDefinitions={[]} ariaLabel="Widgets" />)

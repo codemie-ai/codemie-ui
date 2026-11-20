@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14326_project-history-modal",
+  "head": "b18cea3601d4e00a901e407288890434cc282b13",
+  "runner": "npm",
+  "started_at": "2026-09-24T11:43:00Z",
+  "completed_at": "2026-09-24T11:47:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12040,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 9362,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "No dependency was added, removed, or moved in this diff (package.json/package-lock.json unchanged vs merge base)."
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 7237,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: no leaks found."
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 58531,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 595 passed (595); Tests 6003 passed (6003)."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 31518,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 45 passed (45); Tests 530 passed | 1 skipped (531)."
+    },
+    {
+      "id": "ui",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": null,
+      "exit_code": null,
+      "notes": "UI surface changed (.tsx files under src/pages and src/utils) but no configured UI test script (no test:ui in package.json, no UI gate in quality-gates.md); browser verification is a separate caller decision."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 222,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2144 files, 0 missing license headers. Enforced by Husky pre-commit hook; not in quality-gates.md."
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 136,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "Self-skipping: exit 0 but output reads '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN locally to run the real scan; CI will run it for real. Enforced by Husky pre-commit hook; not in quality-gates.md."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Working tree has no staged files at time of this run (lint-staged only lints staged files); full-repo `lint` gate above already covers the same rules. Enforced by Husky pre-commit hook; not in quality-gates.md."
+    }
+  ],
+  "failures": {}
+}

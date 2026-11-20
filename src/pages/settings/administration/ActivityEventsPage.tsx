@@ -21,7 +21,6 @@ import DatePicker from '@/components/form/DatePicker/DatePicker'
 import Input from '@/components/form/Input/Input'
 import MultiSelect from '@/components/form/MultiSelect/MultiSelect'
 import Select from '@/components/form/Select/Select'
-import Popup from '@/components/Popup'
 import Table from '@/components/Table'
 import UserSelector from '@/components/UserSelector/UserSelector'
 import { DECIMAL_PAGINATION_OPTIONS } from '@/constants'
@@ -30,18 +29,23 @@ import { activityEventsStore } from '@/store/activityEvents'
 import { userStore } from '@/store/user'
 import { ActivityEvent } from '@/types/entity/activityEvent'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import {
+  getEventActorLabel,
+  getEventAttributeRows,
+  getEventTargetLabel,
+  PresentableActivityEvent,
+} from '@/utils/activityEventPresentation'
 import { formatDate } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 
 import { computeFilteredOptions, revalidateSelections } from './components/activityEventsFilters'
 
 const columnDefinitions: ColumnDefinition[] = [
-  { key: 'created_at', label: 'When', type: DefinitionTypes.Custom, headClassNames: 'w-[13%]' },
-  { key: 'domain', label: 'Domain', type: DefinitionTypes.String, headClassNames: 'w-[11%]' },
-  { key: 'event_type', label: 'Event', type: DefinitionTypes.String, headClassNames: 'w-[18%]' },
-  { key: 'entity', label: 'Entity', type: DefinitionTypes.Custom, headClassNames: 'w-[18%]' },
-  { key: 'actor', label: 'Actor', type: DefinitionTypes.Custom, headClassNames: 'w-[16%]' },
-  { key: 'attributes', label: 'Details', type: DefinitionTypes.Custom, headClassNames: 'w-[24%]' },
+  { key: 'created_at', label: 'When', type: DefinitionTypes.Custom, headClassNames: 'w-[15%]' },
+  { key: 'domain', label: 'Domain', type: DefinitionTypes.String, headClassNames: 'w-[13%]' },
+  { key: 'event_type', label: 'Event', type: DefinitionTypes.String, headClassNames: 'w-[22%]' },
+  { key: 'entity', label: 'Entity', type: DefinitionTypes.Custom, headClassNames: 'w-[22%]' },
+  { key: 'actor', label: 'Actor', type: DefinitionTypes.Custom, headClassNames: 'w-[20%]' },
 ]
 
 const SORT_OPTIONS = [
@@ -66,89 +70,57 @@ function renderCreatedAt(item: ActivityEvent) {
   )
 }
 
-function renderEntity(item: ActivityEvent) {
-  if (item.entity_type || item.entity_id) {
-    return (
-      <div className="flex flex-col min-w-0">
-        {item.entity_type && (
-          <span className="text-xs text-text-quaternary truncate">{item.entity_type}</span>
-        )}
-        {item.entity_id && (
-          <span className="text-text-primary text-sm truncate" title={item.entity_id}>
-            {item.entity_id}
-          </span>
-        )}
-      </div>
-    )
+function toPresentable(item: ActivityEvent): PresentableActivityEvent {
+  return {
+    event_type: item.event_type,
+    entity_type: item.entity_type ?? undefined,
+    entity_id: item.entity_id ?? undefined,
+    actor_name: item.actor_name ?? undefined,
+    actor_email: item.actor_email ?? undefined,
+    actor_id: item.actor_id ?? undefined,
+    attributes: item.attributes,
+    created_at: item.created_at,
   }
-  return <span className="text-text-quaternary">—</span>
+}
+
+function renderEntity(item: ActivityEvent) {
+  return (
+    <span className="text-text-primary text-sm truncate">
+      {getEventTargetLabel(toPresentable(item))}
+    </span>
+  )
 }
 
 function renderActor(item: ActivityEvent) {
-  if (item.actor_name || item.actor_email) {
-    return (
-      <div className="flex flex-col min-w-0">
-        {item.actor_name && (
-          <span className="text-text-primary text-sm truncate">{item.actor_name}</span>
-        )}
-        {item.actor_email && (
-          <span className="text-xs text-text-quaternary truncate">{item.actor_email}</span>
-        )}
-      </div>
-    )
-  }
-  return <span className="text-text-quaternary text-sm">system</span>
-}
-
-interface AttributesCellProps {
-  readonly item: ActivityEvent
-  readonly onSelect: (item: ActivityEvent) => void
-}
-
-function AttributesCell({ item, onSelect }: AttributesCellProps) {
-  const hasAttrs = item.attributes && Object.keys(item.attributes).length > 0
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(item)}
-      className="text-left w-full rounded hover:bg-surface-base-tertiary transition-colors p-1 -m-1 group"
-    >
-      {hasAttrs ? (
-        <div className="flex flex-wrap gap-1">
-          {Object.entries(item.attributes!).map(([k, v]) => (
-            <span
-              key={k}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-surface-base-tertiary border border-border-primary group-hover:border-border-secondary"
-            >
-              <span className="text-text-quaternary">{k}:</span>
-              <span className="text-text-primary font-medium truncate max-w-[100px]">
-                {String(v)}
-              </span>
-            </span>
-          ))}
-        </div>
-      ) : (
-        <span className="text-text-quaternary text-xs group-hover:text-text-secondary">
-          View details
-        </span>
-      )}
-    </button>
+    <span className="text-text-primary text-sm truncate">
+      {getEventActorLabel(toPresentable(item))}
+    </span>
   )
 }
 
-function makeAttributesRenderer(onSelect: (item: ActivityEvent) => void) {
-  return (item: ActivityEvent) => <AttributesCell item={item} onSelect={onSelect} />
-}
-
-function DetailRow({ label, value }: { readonly label: string; readonly value: React.ReactNode }) {
+function renderExpandedRow(item: ActivityEvent) {
+  const rows = getEventAttributeRows(toPresentable(item))
   return (
-    <div className="flex flex-col gap-0.5 py-2 border-b border-border-structural last:border-0">
-      <span className="text-xs text-text-quaternary">{label}</span>
-      <span className="text-sm text-text-primary break-all">
-        {value ?? <span className="text-text-quaternary">—</span>}
-      </span>
+    <div className="p-3 flex flex-col gap-1">
+      {rows.length ? (
+        rows.map((r) => (
+          <div key={r.label}>
+            <span className="text-text-quaternary text-xs">{r.label}: </span>
+            <span className="text-text-primary text-sm">{r.value}</span>
+          </div>
+        ))
+      ) : (
+        <span className="text-text-quaternary text-sm">No additional detail</span>
+      )}
     </div>
   )
+}
+
+const customRenderColumns = {
+  created_at: renderCreatedAt,
+  entity: renderEntity,
+  actor: renderActor,
 }
 
 const ActivityEventsPage: FC = () => {
@@ -166,7 +138,11 @@ const ActivityEventsPage: FC = () => {
   const [to, setTo] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [perPage, setPerPage] = useState(50)
-  const [selectedEvent, setSelectedEvent] = useState<ActivityEvent | null>(null)
+  const [expandedRowIds, setExpandedRowIds] = useState<string[]>([])
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedRowIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
+  }, [])
 
   const hasActiveFilters =
     domain.length > 0 ||
@@ -266,16 +242,6 @@ const ActivityEventsPage: FC = () => {
       entityTypeOptions: entOpts.map((t) => ({ label: t, value: t })),
     }
   }, [filterOptions, domain])
-
-  const customRenderColumns = useMemo(
-    () => ({
-      created_at: renderCreatedAt,
-      entity: renderEntity,
-      actor: renderActor,
-      attributes: makeAttributesRenderer(setSelectedEvent),
-    }),
-    [setSelectedEvent]
-  )
 
   if (currentUser && !isMaintainer) return null
 
@@ -379,54 +345,10 @@ const ActivityEventsPage: FC = () => {
           loadEvents(page, limit)
         }}
         perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+        expandedRowIds={expandedRowIds}
+        onToggleExpand={toggleExpand}
+        renderExpandedRow={renderExpandedRow}
       />
-
-      {selectedEvent && (
-        <Popup
-          header={selectedEvent.event_type}
-          visible
-          onHide={() => setSelectedEvent(null)}
-          hideFooter
-          isFullWidth={false}
-          className="w-full max-w-lg"
-          bodyClassName="pb-4"
-        >
-          <div className="flex flex-col">
-            <DetailRow label="When" value={formatDate(selectedEvent.created_at, DATETIME_FORMAT)} />
-            <DetailRow label="Domain" value={selectedEvent.domain} />
-            <DetailRow label="Event type" value={selectedEvent.event_type} />
-            <DetailRow label="Entity type" value={selectedEvent.entity_type} />
-            <DetailRow label="Entity ID" value={selectedEvent.entity_id} />
-            <DetailRow
-              label="Actor"
-              value={
-                selectedEvent.actor_name || selectedEvent.actor_email ? (
-                  <span>
-                    {selectedEvent.actor_name}
-                    {selectedEvent.actor_name && selectedEvent.actor_email && ' · '}
-                    {selectedEvent.actor_email}
-                  </span>
-                ) : (
-                  'system'
-                )
-              }
-            />
-            {selectedEvent.actor_id && (
-              <DetailRow label="Actor ID" value={selectedEvent.actor_id} />
-            )}
-            <div className="flex flex-col gap-1.5 py-2">
-              <span className="text-xs text-text-quaternary">Attributes</span>
-              {selectedEvent.attributes && Object.keys(selectedEvent.attributes).length > 0 ? (
-                <pre className="text-xs text-text-primary bg-surface-base-tertiary border border-border-primary rounded-lg p-3 overflow-auto max-h-64 whitespace-pre-wrap break-all">
-                  {JSON.stringify(selectedEvent.attributes, null, 2)}
-                </pre>
-              ) : (
-                <span className="text-sm text-text-quaternary">—</span>
-              )}
-            </div>
-          </div>
-        </Popup>
-      )}
     </div>
   )
 

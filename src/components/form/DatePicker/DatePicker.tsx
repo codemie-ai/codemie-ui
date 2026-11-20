@@ -232,7 +232,7 @@ const DatePicker = forwardRef<ReactDatePicker, DatePickerProps>(
             }}
             calendarClassName="!bg-surface-base-primary !border !border-border-specific-panel-outline !rounded-lg !shadow-lg !p-4 !font-geist"
             wrapperClassName="w-full"
-            popperClassName="!z-50 -mt-1"
+            popperClassName="!z-[60] -mt-1"
             popperPlacement="bottom-end"
             portalId="app"
             dayClassName={(date) => {

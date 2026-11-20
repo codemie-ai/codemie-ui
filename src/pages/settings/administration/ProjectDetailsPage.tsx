@@ -41,6 +41,7 @@ import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
 
+import ProjectActivityHistoryModal from './projectsManagement/components/ProjectActivityHistoryModal'
 import ProjectBudgetsSection, {
   ProjectBudgetsAccess,
 } from './projectsManagement/ProjectBudgetsSection'
@@ -99,6 +100,7 @@ const ProjectDetailsPage = () => {
   const [project, setProject] = useState<ProjectDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditPopupVisible, setIsEditPopupVisible] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [budgets, setBudgets] = useState<ProjectBudget[]>([])
 
   const isPersonalProject = project?.project_type === ProjectType.PERSONAL
@@ -314,11 +316,20 @@ const ProjectDetailsPage = () => {
         contentTitle={getProjectDisplayName(project)}
         onBack={handleBack}
         rightContent={
-          canManageProject ? (
-            <Button size={ButtonSize.MEDIUM} onClick={() => setIsEditPopupVisible(true)}>
-              Edit Project
-            </Button>
-          ) : null
+          <div className="flex gap-2">
+            {!isPersonalProject &&
+              project.project_instance_id &&
+              (isAdmin || isMaintainer || isProjectAdmin) && (
+                <Button size={ButtonSize.MEDIUM} onClick={() => setIsHistoryOpen(true)}>
+                  History
+                </Button>
+              )}
+            {canManageProject && (
+              <Button size={ButtonSize.MEDIUM} onClick={() => setIsEditPopupVisible(true)}>
+                Edit Project
+              </Button>
+            )}
+          </div>
         }
         content={<div className={cn(isMembersView && 'flex h-full flex-col')}>{tabContent}</div>}
       />
@@ -329,6 +340,15 @@ const ProjectDetailsPage = () => {
         onHide={() => setIsEditPopupVisible(false)}
         onSubmit={handleSaveProject}
       />
+
+      {isHistoryOpen && project.project_instance_id && (
+        <ProjectActivityHistoryModal
+          key={project.project_instance_id}
+          projectInstanceId={project.project_instance_id}
+          projectName={project.name}
+          onHide={() => setIsHistoryOpen(false)}
+        />
+      )}
     </>
   )
 }

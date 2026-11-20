@@ -50,6 +50,7 @@ const referenceKeys = [
   'innerPagination',
   'loading',
   'perPageOptions',
+  'paginationVariant',
   'idPath',
   'customRenderColumns',
   'onSort',
@@ -107,6 +108,7 @@ const ignoredKeys = [
   'onSelectRow',
   'onSelectAllChange',
   'ariaLabel',
+  'isModalFooter',
 ] as const satisfies ReadonlyArray<keyof TableProps<unknown>>
 
 // Exhaustiveness guard. propsAreEqual compares props against an explicit

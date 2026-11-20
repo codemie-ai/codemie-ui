@@ -1,0 +1,181 @@
+{
+  "decision": "approve",
+  "rationale": "All 9 prior blocking findings (CR-001..CR-009) verified resolved against current source: pagination.totalCount is now rendered above the table; actor_id is carried into PresentableActivityEvent and toPresentable() and surfaced as an Actor ID attribute row; listEvents responses are guarded by a monotonically increasing requestIdRef so a stale response no longer overwrites newer state, and a skipNextPerPageEffectRef prevents the perPage-change effect from re-issuing a conflicting page-0 load; projectName is now encodeURIComponent-wrapped in both listEvents and loadMetadata request paths; loadMetadata failures now populate a separate metadataError field and handleRetry re-issues loadMetadata when it is set; AMOUNT_KEY_HINT no longer matches 'limit'/'cost' substrings; getEventTargetLabel falls back to entity_type alone when only it is present; formatAttributeValue recurses into nested objects/arrays instead of JSON.stringify. No new blocking findings raised — this round verifies only the prior ids per the check-round contract.",
+  "confidence": "high",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "all 6 commit subjects in range follow EPMCDME-14326: Capital sentence format"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no code-quality standards guide in the repo and no ArtifactRef passed"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "no dangerouslySetInnerHTML, no unsafe navigation, no secrets; attribute values render as auto-escaped React text nodes"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/components/Pagination/Pagination.tsx",
+      "line": 37,
+      "title": "Total matching count is never displayed",
+      "problem": "Pagination preserves filters correctly, but the API's total matching count has no rendering path.",
+      "impact": "The required acceptance criterion \"displays the total matching count from the API\" has no implementing UI anywhere in the diff.",
+      "recommendation": "Add a total-count prop to Pagination (or render it directly beside the Table in the modal) and wire pagination.totalCount into it."
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/ActivityEventsPage.tsx",
+      "line": 65,
+      "title": "actor_id dropped from migrated detail view",
+      "problem": "The new toPresentable() mapping omits actor_id entirely.",
+      "impact": "actor_id, a previously-visible audit identifier, is no longer shown anywhere in the UI after this migration.",
+      "recommendation": "Surface actor_id in the expanded row (or the Actor cell) when present."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/ProjectActivityHistoryModal.tsx",
+      "line": 130,
+      "title": "No sequencing guards overlapping listEvents/loadMetadata calls",
+      "problem": "loadEvents and the mount-time loadMetadata call fire with no AbortController or request-id tracking.",
+      "impact": "A slower earlier response can resolve after a newer one and overwrite the store with stale events/pagination for a filter the user has already changed away from.",
+      "recommendation": "Track a request id (or AbortController) per call and ignore a response that is not the latest before writing it into the store."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/settings/administration/projectsManagement/components/ProjectActivityHistoryModal.tsx",
+      "line": 196,
+      "title": "Page-size change races the filter effect back to page 0",
+      "problem": "onPaginationChange calls setPerPage(limit) and loadEvents(page, limit) directly, but perPage is also a dependency of the filter-driven useEffect that calls loadEvents(0, perPage) whenever perPage changes.",
+      "impact": "Changing the page size triggers a second, conflicting load that resets back to page 0, so the user's requested page is silently discarded.",
+      "recommendation": "Exclude perPage-only changes from the filter effect."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/projectActivityEvents.ts",
+      "line": 65,
+      "title": "projectName not URL-encoded in the request path",
+      "problem": "projectName is interpolated directly into the request path with no encodeURIComponent, unlike every other v1/projects/${...} call in the codebase.",
+      "impact": "A project name containing '/', '?', '#', or spaces would corrupt the request path or query string.",
+      "recommendation": "Wrap projectName with encodeURIComponent at both call sites."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/store/projectActivityEvents.ts",
+      "line": 80,
+      "title": "Metadata failures cannot be recovered via Retry",
+      "problem": "listEvents and loadMetadata both write failures into the same shared error field; the modal's handleRetry only re-issues store.listEvents.",
+      "impact": "A metadata-endpoint failure surfaces the generic error/Retry UI, but clicking Retry can never re-issue loadMetadata, violating the required retry-recovers acceptance criterion.",
+      "recommendation": "Use separate error fields (eventsError/metadataError) and have handleRetry re-issue whichever call actually failed."
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/activityEventPresentation.tsx",
+      "line": 37,
+      "title": "AMOUNT_KEY_HINT regex over-matches non-monetary keys",
+      "problem": "AMOUNT_KEY_HINT = /(amount|budget|spend|limit|cost)/i is broad enough to match unrelated numeric keys such as retry_limit or cost_center_id.",
+      "impact": "A non-monetary numeric attribute whose key happens to contain one of these substrings is formatted as currency.",
+      "recommendation": "Tighten the hint to whole-word/suffix matches on the specific attribute keys the backend actually emits for budget events."
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/utils/activityEventPresentation.tsx",
+      "line": 49,
+      "title": "getEventTargetLabel drops entity_type when entity_id is absent",
+      "problem": "getEventTargetLabel has no branch for an event with entity_type set but no entity_id/entity_label; it falls through to '—'.",
+      "impact": "An event with only entity_type set renders an em dash instead of the available type information, a regression from the previous rendering.",
+      "recommendation": "Add a branch returning event.entity_type before the final fallback."
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/utils/activityEventPresentation.tsx",
+      "line": 65,
+      "title": "formatAttributeValue still dumps raw JSON for objects",
+      "problem": "formatAttributeValue falls back to JSON.stringify(value) for any object-typed attribute value.",
+      "impact": "A nested-object attribute on an event still renders as a raw JSON string inside the expanded row, directly contradicting the required 'never raw JSON' acceptance criterion.",
+      "recommendation": "Recurse into object values to render named key/value pairs instead of JSON.stringify."
+    }
+  ],
+  "finding_status": [
+    {
+      "id": "CR-001",
+      "status": "resolved",
+      "notes": "ProjectActivityHistoryModal.tsx now renders '{pagination.totalCount} total event(s)' above the Table, sourced from mapActivityEventPagination(data.pagination); covered by a new modal test asserting the count 123 renders."
+    },
+    {
+      "id": "CR-002",
+      "status": "resolved",
+      "notes": "toPresentable() now includes actor_id: item.actor_id ?? undefined, and getEventAttributeRows appends an 'Actor ID' row when present; a new ActivityEventsPage test asserts 'a1' renders in the expanded row."
+    },
+    {
+      "id": "CR-003",
+      "status": "resolved",
+      "notes": "loadEvents now increments a requestIdRef and only forceRerenders if its captured id is still current, discarding stale in-flight responses; a new test resolves a slower first request after a second and asserts the stale row never appears."
+    },
+    {
+      "id": "CR-004",
+      "status": "resolved",
+      "notes": "onPaginationChange now sets skipNextPerPageEffectRef before setPerPage when the limit changes, and the perPage-driven useEffect consults that ref to skip its own redundant page-0 reload."
+    },
+    {
+      "id": "CR-005",
+      "status": "resolved",
+      "notes": "Both listEvents and loadMetadata now wrap projectName with encodeURIComponent; a new store test asserts 'proj/weird name' is requested as 'proj%2Fweird%20name' in both paths."
+    },
+    {
+      "id": "CR-006",
+      "status": "resolved",
+      "notes": "loadMetadata now writes failures to a new metadataError field (store.error is left untouched); handleRetry checks metadataError first and re-issues loadMetadata, else re-issues loadEvents; a new modal test asserts Retry after a metadata-only failure calls loadMetadata again, not listEvents."
+    },
+    {
+      "id": "CR-007",
+      "status": "resolved",
+      "notes": "AMOUNT_KEY_HINT narrowed to /(^|_)(amount|budget|spend)($|_)/i, dropping 'limit'/'cost' entirely; a new test confirms retry_limit and cost_center_id render as plain numbers, not currency."
+    },
+    {
+      "id": "CR-008",
+      "status": "resolved",
+      "notes": "getEventTargetLabel gained an `if (event.entity_type) return event.entity_type` branch before the '—' fallback; a new test confirms an entity_type-only event renders 'budget'."
+    },
+    {
+      "id": "CR-009",
+      "status": "resolved",
+      "notes": "formatAttributeValue now recurses into object/array values, rendering 'Key: value' pairs (and joining array items) instead of JSON.stringify; a new test confirms a nested object renders as readable text with no leading '{'."
+    }
+  ]
+}

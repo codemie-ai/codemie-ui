@@ -55,6 +55,7 @@ export interface ProjectMember {
 }
 
 export interface ProjectDetail extends ProjectListItem {
+  project_instance_id?: string
   members: ProjectMember[]
   spending?: ProjectSpendingSummary | null
   spending_widget?: ProjectSpendingWidget | null

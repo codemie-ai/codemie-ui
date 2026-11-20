@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Add a Project History Modal (isolated store, project-scoped API client, shared event-presentation module, and migration of the platform-admin Activity Events page onto it) to codemie-ui.",
+  "generated": "2026-09-24T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 21,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Six deliverables across layers: new project-scoped store (no in-repo precedent for a non-singleton Valtio store), new types module, new shared event-presentation module, new modal + filter subcomponents, entry-point edit on ProjectDetailsPage, and a migration of ActivityEventsPage.tsx's raw-JSON/chip rendering onto the shared module." },
+    { "dimension": "requirements_clarity", "reason": "Contract and acceptance criteria are detailed and confirmed against the shipped backend, but two implementation decisions are explicitly open in the research: expand-in-row vs. popup-on-click for detail rendering, and the isolation mechanism (factory-produced proxy vs. component-local state) for the non-singleton store." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is the singleton ActivityEventsStore/Popup/Table stack, which covers filter chrome, pagination, and row expansion, but has no precedent for the required isolated-store mechanism; combined with the test-coverage gap on the exact code being changed (no test exists for the Popup detail view, the chip rendering being replaced, or the personal-project gate), and enumerated edge cases (unknown event type fallback, deleted-actor identity snapshot, empty vs. disabled state) with no existing defensive-test template to extend." },
+    { "dimension": "file_change_estimate", "reason": "Estimated ~5-6 new files (store, types module, shared presentation module, modal, filter subcomponents) and ~2-3 modified files (ProjectDetailsPage.tsx, ActivityEventsPage.tsx, possibly activityEventsFilters.ts) across 3+ directories (store/, types/entity/, pages/settings/administration/ and its components/ subtree)." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from L (4) to XL (5): 'Migrate/Refactor' — the task requires migrating ActivityEventsPage.tsx's existing raw-JSON Popup detail view and raw-chip row rendering onto the new shared presentation module, a refactor of an existing subsystem rather than purely additive work.",
+    "Technical Risk bumped from M (3) to L (4): acceptance criteria enumerate specific edge/error cases (unknown event type fallback, deleted-actor identity snapshot, empty-vs-disabled state distinction, error/retry state) and no existing test template in this codebase covers this defensive pattern for activity events — ActivityEventsPage.test.tsx only covers pure filter-helper functions, not the Popup/chip rendering or these edge cases."
+  ],
+  "split_recommendation": null
+}

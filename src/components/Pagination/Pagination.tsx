@@ -27,6 +27,7 @@ import { cn } from '@/utils/utils'
 
 export interface PaginationProps {
   className?: string
+  variant?: 'default' | 'neutral'
   currentPage: number
   totalPages: number
   setPage: (_page: number, _perPage?: number) => void
@@ -40,6 +41,7 @@ export interface PaginationProps {
 
 const Pagination: React.FC<PaginationProps> = ({
   className = '',
+  variant = 'default',
   currentPage,
   totalPages,
   setPage,
@@ -52,6 +54,7 @@ const Pagination: React.FC<PaginationProps> = ({
   const { isDark, appearance } = useTheme()
   const isMobileLayout = useIsMobileLayout()
   const isContentGradientEnabled = appearance?.gradients ?? true
+  const isNeutral = variant === 'neutral'
   const labelId = useId()
   const perPageLabelId = useId()
   const [currentPerPage, setCurrentPerPage] = useState<number | undefined>(perPage)
@@ -94,16 +97,25 @@ const Pagination: React.FC<PaginationProps> = ({
 
   const buttonClasses = useCallback(
     (isActive: boolean = false) =>
-      [
+      cn(
         'px-2 flex justify-center items-center',
-        'text-text-accent text-h5 bg-surface-base-secondary',
+        'text-h5',
+        isNeutral
+          ? 'text-text-primary bg-surface-base-content'
+          : 'text-text-accent bg-surface-base-secondary',
         'rounded-lg border transition-colors select-none',
-        'hover:!border-border-accent',
-        isActive
-          ? 'border-border-accent !bg-surface-specific-pagination-active'
-          : 'border-border-structural cursor-pointer',
-      ].join(' '),
-    []
+        isNeutral
+          ? 'hover:!border-border-secondary hover:text-text-accent'
+          : 'hover:!border-border-accent',
+        {
+          'text-text-accent border-border-secondary !bg-surface-base-tertiary':
+            isNeutral && isActive,
+          'border-border-primary cursor-pointer': isNeutral && !isActive,
+          'border-border-accent !bg-surface-specific-pagination-active': !isNeutral && isActive,
+          'border-border-structural cursor-pointer': !isNeutral && !isActive,
+        }
+      ),
+    [isNeutral]
   )
 
   if (totalPages <= 1 && !(alwaysShowPerPage && perPage)) {
@@ -114,15 +126,21 @@ const Pagination: React.FC<PaginationProps> = ({
     <div
       data-testid={dataTestId}
       className={cn(
-        'flex items-center text-sm gap-2 border-t-1 border-border-structural bg-surface-base-primary bg-no-repeat bg-right-bottom',
+        'flex items-center text-sm gap-2 border-t-1 border-border-structural',
+        !isNeutral && 'bg-surface-base-primary bg-no-repeat bg-right-bottom',
         // On small screens the page size moves to its own line rather than past the screen edge.
         'max-lg:flex-wrap',
         responsive && 'flex-wrap',
         className
       )}
-      style={{
-        backgroundImage: !isDark && isContentGradientEnabled ? `url(${contentGradient})` : 'none',
-      }}
+      style={
+        isNeutral
+          ? undefined
+          : {
+              backgroundImage:
+                !isDark && isContentGradientEnabled ? `url(${contentGradient})` : 'none',
+            }
+      }
     >
       {pageNumbers.length > 1 && (
         <nav
@@ -229,8 +247,8 @@ const Pagination: React.FC<PaginationProps> = ({
             options={options}
             placeholder="Per Page"
             value={currentPerPage?.toString()}
-            className="!w-33 !border-border-tertiary"
-            classNameValue="!text-text-accent"
+            className={cn('!w-33', !isNeutral && '!border-border-tertiary')}
+            classNameValue={isNeutral ? undefined : '!text-text-accent'}
             onChange={handlePerPageChange}
             a11yCombobox
             ariaLabelledBy={perPageLabelId}

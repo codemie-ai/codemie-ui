@@ -208,6 +208,7 @@ export interface TableProps<T = TableItem> {
   innerPagination?: boolean
   onPaginationChange?: PaginationProps['setPage']
   perPageOptions?: PaginationProps['perPageOptions']
+  paginationVariant?: PaginationProps['variant']
   pagination?: { page: number; totalPages: number; perPage: number; totalCount?: number }
   embedded?: boolean
   noWrap?: boolean
@@ -240,6 +241,7 @@ export interface TableProps<T = TableItem> {
   emptyState?: React.ReactNode
   rowTestIdPrefix?: string
   paginationTestId?: string
+  isModalFooter?: boolean
 }
 
 const Table = <T,>({
@@ -251,6 +253,7 @@ const Table = <T,>({
   loading = false,
   pagination,
   perPageOptions,
+  paginationVariant,
   customRenderColumns = {},
   onSort,
   onPaginationChange,
@@ -279,6 +282,7 @@ const Table = <T,>({
   emptyState,
   rowTestIdPrefix,
   paginationTestId,
+  isModalFooter = false,
 }: TableProps<T>): React.ReactNode => {
   const isLazyMode = !!pagination?.totalCount && !!onSelectAllChange
 
@@ -396,15 +400,26 @@ const Table = <T,>({
   }
 
   return (
-    <div className={cn('w-full relative flex flex-col', { 'pb-20': !embedded && !!pagination })}>
+    <div
+      className={cn('w-full relative flex flex-col', {
+        // Modal mode: fill the parent's bounded height; let only the table body scroll.
+        // Normal mode: reserve bottom padding for the fixed-position footer.
+        'flex-1 min-h-0': isModalFooter,
+        'pb-20': !embedded && !!pagination && !isModalFooter,
+      })}
+    >
       {loading && (
         <div className="absolute inset-0 bg-surface-base-primary flex items-center justify-center z-30">
           <Spinner />
         </div>
       )}
       <div
-        className={cn('w-full grow', {
-          'overflow-auto min-h-[300px] show-scroll': !embedded,
+        className={cn({
+          // Modal mode: flex-1 min-h-0 lets this region shrink to fit the parent; pagination
+          // sits below in normal flow as a shrink-0 sibling.
+          'w-full flex-1 min-h-0 overflow-auto show-scroll': !embedded && isModalFooter,
+          // Normal mode: grow fills remaining height; a min-h prevents collapse on short lists.
+          'w-full grow overflow-auto min-h-[300px] show-scroll': !embedded && !isModalFooter,
         })}
       >
         {showCards ? (
@@ -502,9 +517,13 @@ const Table = <T,>({
         <Pagination
           {...paginationProps}
           data-testid={paginationTestId}
+          variant={paginationVariant}
           className={cn(
-            'fixed bottom-0 right-0 bg-surface-base-primary max-w-full px-6 pt-[20px] pb-[14px] transition-all duration-150 z-40',
-            paginationOffset
+            isModalFooter
+              ? // Normal-flow footer stays outside the scrolling rows and never shrinks.
+                'shrink-0 max-w-full px-6 pt-[20px] pb-[14px] transition-all duration-150 z-40 border-t border-border-structural'
+              : 'fixed bottom-0 right-0 bg-surface-base-primary max-w-full px-6 pt-[20px] pb-[14px] transition-all duration-150 z-40',
+            !isModalFooter && paginationOffset
           )}
         />
       )}

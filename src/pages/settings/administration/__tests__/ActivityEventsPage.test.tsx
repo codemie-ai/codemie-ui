@@ -12,11 +12,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-import { describe, it, expect } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi } from 'vitest'
 
+import { activityEventsStore } from '@/store/activityEvents'
 import { ActivityEventFilterOptions } from '@/types/entity/activityEvent'
 
+import ActivityEventsPage from '../ActivityEventsPage'
 import { computeFilteredOptions, revalidateSelections } from '../components/activityEventsFilters'
+
+vi.mock('valtio', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('valtio')>()
+  return {
+    ...actual,
+    useSnapshot: vi.fn((store: unknown) => store),
+  }
+})
+
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual('react-router')
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  }
+})
+
+vi.mock('@/pages/settings/components/SettingsLayout', () => ({
+  default: ({ contentTitle, content }: any) => (
+    <div>
+      <h1>{contentTitle}</h1>
+      {content}
+    </div>
+  ),
+}))
+
+vi.mock('@/store/user', () => ({
+  userStore: {
+    user: { isMaintainer: true },
+  },
+}))
+
+vi.mock('@/store/activityEvents', () => ({
+  activityEventsStore: {
+    events: [],
+    pagination: { page: 0, perPage: 50, totalPages: 0, totalCount: 0 },
+    loading: false,
+    filterOptions: { domains: [], event_types: [], entity_types: [], mapping: {} },
+    filterOptionsLoading: false,
+    listEvents: vi.fn().mockResolvedValue(undefined),
+    loadFilterOptions: vi.fn().mockResolvedValue(undefined),
+  },
+}))
 
 const FILTER_OPTIONS: ActivityEventFilterOptions = {
   domains: ['budget_management', 'user_management', 'project_management'],
@@ -96,5 +143,49 @@ describe('revalidateSelections', () => {
     )
     expect(result.eventType).toEqual(['budget.created', 'user.created'])
     expect(result.entityType).toEqual(['budget', 'user'])
+  })
+})
+
+describe('ActivityEventsPage — shared presentation migration', () => {
+  it('renders no raw JSON attribute dump and no Popup; expanding a row shows readable attribute rows', async () => {
+    activityEventsStore.events = [
+      {
+        id: '1',
+        domain: 'members',
+        event_type: 'member_added',
+        entity_type: 'user',
+        entity_id: 'u1',
+        actor_id: 'a1',
+        actor_name: 'Admin',
+        actor_email: 'admin@x.com',
+        attributes: { role: 'viewer' },
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    render(<ActivityEventsPage />)
+    await userEvent.click(await screen.findByRole('button', { name: /expand/i }))
+    expect(await screen.findByText('viewer')).toBeInTheDocument()
+    expect(screen.queryByText(/^\{/)).not.toBeInTheDocument()
+    expect(document.querySelector('[role="dialog"]')).not.toBeInTheDocument()
+  })
+
+  it('still surfaces actor_id in the expanded row after the migration', async () => {
+    activityEventsStore.events = [
+      {
+        id: '1',
+        domain: 'members',
+        event_type: 'member_added',
+        entity_type: 'user',
+        entity_id: 'u1',
+        actor_id: 'a1',
+        actor_name: 'Admin',
+        actor_email: 'admin@x.com',
+        attributes: {},
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    render(<ActivityEventsPage />)
+    await userEvent.click(await screen.findByRole('button', { name: /expand/i }))
+    expect(await screen.findByText('a1')).toBeInTheDocument()
   })
 })

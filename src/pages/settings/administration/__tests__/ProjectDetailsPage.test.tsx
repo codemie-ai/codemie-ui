@@ -14,6 +14,7 @@
 //
 
 import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
@@ -122,6 +123,7 @@ vi.mock('@/hooks/useFeatureFlags', () => ({
 
 const mockProject: ProjectDetail = {
   name: 'Test Project',
+  project_instance_id: 'project-instance-1',
   description: 'Project description',
   project_type: 'shared',
   created_by: 'admin@epam.com',
@@ -671,5 +673,88 @@ describe('budgetsAccess — project-admin access control (EPMCDME-13962)', () =>
         expect(typeof lastMembersProps().onBudgetsChanged).toBe('function')
       })
     })
+  })
+})
+
+describe('ProjectDetailsPage — activity history entry point (EPMCDME-14326)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    routeState.name = 'projects-management-detail'
+    mockUserStore.user = null
+    costCentersFlag.mockReturnValue([true, true])
+    projectsStore.getProject = vi.fn().mockResolvedValue(mockProject)
+    projectsStore.updateProject = vi.fn().mockResolvedValue(mockProject)
+    userStore.getCurrentUser = vi.fn().mockResolvedValue(userStore.user)
+    projectDisplayNamesStore.invalidate = vi.fn()
+  })
+
+  it.each([
+    {
+      role: 'platform admin',
+      user: { isAdmin: true, isMaintainer: false, isAuditor: false, applicationsAdmin: [] },
+    },
+    {
+      role: 'maintainer',
+      user: { isAdmin: false, isMaintainer: true, isAuditor: false, applicationsAdmin: [] },
+    },
+    {
+      role: 'project admin',
+      user: {
+        isAdmin: false,
+        isMaintainer: false,
+        isAuditor: false,
+        applicationsAdmin: ['Test Project'],
+      },
+    },
+  ])('shows History to a $role', async ({ user }) => {
+    mockUserStore.user = user
+
+    render(<ProjectDetailsPage />)
+
+    expect(await screen.findByRole('button', { name: /history/i })).toBeInTheDocument()
+  })
+
+  it.each([
+    {
+      role: 'auditor',
+      user: { isAdmin: false, isMaintainer: false, isAuditor: true, applicationsAdmin: [] },
+    },
+    {
+      role: 'regular member',
+      user: { isAdmin: false, isMaintainer: false, isAuditor: false, applicationsAdmin: [] },
+    },
+  ])('hides History from an unauthorized $role', async ({ user }) => {
+    mockUserStore.user = user
+
+    render(<ProjectDetailsPage />)
+
+    await screen.findByText('Description')
+    expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
+  })
+
+  it('opens the activity history modal when an authorized user clicks History', async () => {
+    mockUserStore.user = {
+      isAdmin: true,
+      isMaintainer: false,
+      isAuditor: false,
+      applicationsAdmin: [],
+    }
+
+    render(<ProjectDetailsPage />)
+    await userEvent.click(await screen.findByRole('button', { name: /history/i }))
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('shows no History button at all for a personal project', async () => {
+    projectsStore.getProject = vi.fn().mockResolvedValue({
+      ...mockProject,
+      project_type: 'personal',
+    })
+
+    render(<ProjectDetailsPage />)
+
+    await screen.findByText('Description')
+    expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
   })
 })
