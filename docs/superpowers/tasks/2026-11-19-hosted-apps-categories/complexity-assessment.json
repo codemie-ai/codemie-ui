@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "task": "Add 0-3 categories to hosted applications in the CodeMie UI: form pickers, a required 1-3 publish dialog sending a body, category names on cards and details, a category filter with cursor reset on all catalog tabs, and backend error display.",
+  "generated": "2026-11-19T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 5, "label": "XL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 20,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    {
+      "dimension": "component_scope",
+      "reason": "Seven touch points inside one feature folder: hosted entity type, hosted store (CatalogFilters, create/update/publish bodies, paging), hostedCollections filter registry, HostedCatalogFilters, HostedApplicationForm and formSchema, useHostedCardActions publish dialog, and the card and overview. Every piece has a sibling pattern and there are no new abstractions, so L rather than XL."
+    },
+    {
+      "dimension": "technical_risk",
+      "reason": "Closest patterns are the workflow publish modal and MarketplaceCategories. They do not cover three behaviours here. The hosted publish dialog closes on error, which conflicts with AC7. hostedErrorMessage ignores details.fields and details.code. nextCursor survives a non-scope filter change, so a load-more can send a stale cursor (INVALID_CURSOR). The ACs enumerate error and edge cases (INVALID_REQUEST, INVALID_CATEGORIES, INVALID_FILTER, INVALID_CURSOR, IDEMPOTENCY_CONFLICT, 0/1/3/4 picks), and the analysis found no existing parameterised error-path test for them (no test covers loadApplications(true) after a non-scope filter change), so Technical Risk is bumped to L. Backend behaviour is unverifiable from this repo and the ship has to wait for the backend rollout."
+    },
+    {
+      "dimension": "file_change_estimate",
+      "reason": "About 10 source files modified (type, store, hostedCollections, useHostedApplicationCatalog, useHostedCardActions, formSchema, form, catalog filters, card, overview). At least 6 existing test suites need extending, and 1-2 files may be new (publish dialog, category helper). That is roughly 16 files, but in one feature area with no structural impact, so XL rather than XXL."
+    }
+  ],
+  "red_flags_applied": [
+    "Technical Risk bumped from M to L: acceptance criteria enumerate error and edge cases with no existing error-path test template, and the closest pattern does not cover the publish-dialog-closes-on-error or details.code error display behaviour",
+    "Clarity: AC7 conflicts with current dialog behaviour and backend behaviour is unverified, so Requirements Clarity held at M rather than S"
+  ],
+  "split_recommendation": null
+}

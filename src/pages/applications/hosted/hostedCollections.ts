@@ -31,29 +31,48 @@ const MAX_FILTER_LENGTH = 200
 export interface HostedCatalogSearch {
   query: string
   project: string[]
+  category: string[]
   createdBy?: string
   shared?: HostedSharedFilter
   status?: HostedStatusFilter
 }
 
 /** URL keys a hosted tab may accept; the API rejects any its scope does not support. */
-export type HostedFilterKey = 'project' | 'created_by' | 'shared' | 'status'
+export type HostedFilterKey = 'project' | 'created_by' | 'category' | 'shared' | 'status'
 
 interface HostedFilter {
   /** Reads the key from the URL; unknown values are ignored. */
   read(search: URLSearchParams): Partial<HostedCatalogSearch>
   /** The API parameters it sends; nothing while it is unset. */
   params(search: HostedCatalogSearch): Partial<CatalogFilters>
+  /** Writes the filter bar value to the URL; the caller has already deleted the key. */
+  write(next: URLSearchParams, value: unknown): void
 }
 
 const pick = <T extends string>(value: string | null, allowed: readonly T[]) =>
   allowed.includes(value as T) ? (value as T) : undefined
 
+const text = (value: unknown) =>
+  typeof value === 'string' ? value.trim().slice(0, MAX_FILTER_LENGTH) : ''
+
+/** Sets `key` to the value, or leaves it out while the value is empty. */
+const writeText = (key: string) => (next: URLSearchParams, value: unknown) => {
+  const written = text(value)
+  if (written) next.set(key, written)
+}
+
+/** Appends one `key` per distinct non-empty value. */
+const writeList = (key: string) => (next: URLSearchParams, value: unknown) => {
+  const values = Array.isArray(value) ? value : []
+  for (const item of new Set(values.map(text).filter(Boolean))) next.append(key, item)
+}
+
 /** How each URL filter is read and which API parameter it becomes. */
-const HOSTED_FILTERS: Record<HostedFilterKey, HostedFilter> = {
+export const HOSTED_FILTERS: Record<HostedFilterKey, HostedFilter> = {
   project: {
     read: (search) => ({ project: [...new Set(search.getAll('project').filter(Boolean))] }),
     params: ({ project }) => (project.length ? { project } : {}),
+    write: writeList('project'),
   },
   created_by: {
     read: (search) => {
@@ -61,6 +80,19 @@ const HOSTED_FILTERS: Record<HostedFilterKey, HostedFilter> = {
       return createdBy ? { createdBy } : {}
     },
     params: ({ createdBy }) => (createdBy ? { created_by: createdBy } : {}),
+    write: writeText('created_by'),
+  },
+  category: {
+    // Ids are sent as they are; the API rejects one it does not know.
+    read: (search) => ({
+      category: [
+        ...new Set(
+          search.getAll('category').filter((id) => id.length > 0 && id.length <= MAX_FILTER_LENGTH)
+        ),
+      ],
+    }),
+    params: ({ category }) => (category.length ? { category } : {}),
+    write: writeList('category'),
   },
   shared: {
     read: (search) => {
@@ -68,6 +100,7 @@ const HOSTED_FILTERS: Record<HostedFilterKey, HostedFilter> = {
       return shared ? { shared } : {}
     },
     params: ({ shared }) => (shared ? { shared } : {}),
+    write: writeText('shared'),
   },
   status: {
     read: (search) => {
@@ -75,8 +108,12 @@ const HOSTED_FILTERS: Record<HostedFilterKey, HostedFilter> = {
       return status ? { status } : {}
     },
     params: ({ status }) => (status ? { status } : {}),
+    write: writeText('status'),
   },
 }
+
+/** Every URL filter key, in registry order. */
+export const HOSTED_FILTER_KEYS = Object.keys(HOSTED_FILTERS) as HostedFilterKey[]
 
 /** One Applications tab served by hosted applications. */
 export interface HostedCollection {
@@ -93,7 +130,7 @@ export interface HostedCollection {
 }
 
 /** Filters every hosted tab accepts. */
-const COMMON_FILTERS: readonly HostedFilterKey[] = ['project', 'created_by']
+const COMMON_FILTERS: readonly HostedFilterKey[] = ['project', 'created_by', 'category']
 
 export const HOSTED_COLLECTIONS: Record<HostedCollectionId, HostedCollection> = {
   mine: {
@@ -145,7 +182,7 @@ export const readHostedCatalogSearch = (
   id: HostedCollectionId
 ): HostedCatalogSearch =>
   Object.assign(
-    { query: (search.get('q') ?? '').slice(0, MAX_FILTER_LENGTH), project: [] },
+    { query: (search.get('q') ?? '').slice(0, MAX_FILTER_LENGTH), project: [], category: [] },
     ...HOSTED_COLLECTIONS[id].filters.map((key) => HOSTED_FILTERS[key].read(search))
   )
 

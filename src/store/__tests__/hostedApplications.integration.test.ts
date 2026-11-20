@@ -487,6 +487,60 @@ describe('error messages shown to people', () => {
   ])('maps %s', (_case, error, message) => {
     expect(hostedErrorMessage(error)).toBe(message)
   })
+
+  describe('field messages', () => {
+    const withDetails = (message: unknown, fields: unknown) =>
+      Object.assign(new Response('{}', { status: 422 }), {
+        parsedError: { message, details: { fields } },
+      })
+
+    it('joins the field messages with a semicolon', () => {
+      const error = withDetails('Validation failed', [
+        { message: 'Name is required' },
+        { message: 'Too many categories' },
+      ])
+      expect(hostedErrorMessage(error)).toBe('Name is required; Too many categories')
+    })
+
+    it('strips the "Value error, " prefix the server puts on field messages', () => {
+      const error = withDetails('Validation failed', [
+        { message: 'Value error, At least one category is required' },
+        { message: 'Value error, Maximum 3 categories allowed' },
+        { message: 'Value error, category IDs must be unique' },
+      ])
+      expect(hostedErrorMessage(error)).toBe(
+        'At least one category is required; Maximum 3 categories allowed; category IDs must be unique'
+      )
+    })
+
+    it('ignores entries without a non-empty string message', () => {
+      const error = withDetails('Validation failed', [
+        { message: 42 },
+        { message: '' },
+        null,
+        { field: 'x' },
+        { message: 'Name is required' },
+      ])
+      expect(hostedErrorMessage(error)).toBe('Name is required')
+    })
+
+    it('falls back to the message when no field message is usable', () => {
+      const error = withDetails('Validation failed', [{ message: 1 }, { message: '' }])
+      expect(hostedErrorMessage(error)).toBe('Validation failed')
+    })
+
+    it('falls back to the message when the joined text is over 500 characters', () => {
+      const error = withDetails('Validation failed', [{ message: 'x'.repeat(501) }])
+      expect(hostedErrorMessage(error)).toBe('Validation failed')
+    })
+
+    it('falls back to the generic text when nothing usable is left', () => {
+      expect(hostedErrorMessage(withDetails('Unknown error', [{ message: 'x'.repeat(501) }]))).toBe(
+        generic
+      )
+      expect(hostedErrorMessage(withDetails(undefined, 'not a list'))).toBe(generic)
+    })
+  })
 })
 
 describe('catalog filters', () => {
@@ -505,7 +559,29 @@ describe('catalog filters', () => {
       sort: 'name_asc',
     })
     expect(store.items).toHaveLength(1)
-    expect(store.nextCursor).toBe('next')
+    expect(store.nextCursor).toBeNull()
+  })
+
+  it('drops the cursor at once on a non-scope filter change, keeping the items', () => {
+    store.setFilters({ scope: 'mine', q: '', sort: 'updated_desc' })
+    store.items = [app as never]
+    store.nextCursor = 'next'
+    store.setFilters({ scope: 'mine', q: '', sort: 'updated_desc', category: ['a'] })
+    expect(store.nextCursor).toBeNull()
+    expect(store.items).toHaveLength(1)
+  })
+
+  it('never sends the old cursor after a filter change and a failed first page', async () => {
+    const get = vi
+      .spyOn(api, 'get')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [app], next_cursor: 'old' })))
+      .mockRejectedValueOnce(new Error('boom'))
+    await store.loadApplications()
+    store.setFilters({ scope: 'mine', q: 'x', sort: 'updated_desc' })
+    await store.loadApplications()
+    await store.loadApplications(true)
+    expect(get).toHaveBeenCalledTimes(2)
+    expect(get.mock.calls[1][1]?.params?.cursor).toBeUndefined()
   })
 
   it('clears stale results and shows loading when the scope changes', () => {
@@ -535,6 +611,20 @@ describe('catalog filters', () => {
 })
 
 describe('catalog filter parameters', () => {
+  const page = () => new Response(JSON.stringify({ items: [], next_cursor: null }))
+
+  it('repeats the category parameter and omits it when empty', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => page())
+    store.setFilters({ scope: 'mine', q: '', sort: 'updated_desc', category: ['a', 'b'] })
+    await store.loadApplications()
+    store.setFilters({ scope: 'mine', q: '', sort: 'updated_desc', category: [] })
+    await store.loadApplications()
+    const first = new URL(String(fetchSpy.mock.calls[0][0]), 'http://localhost')
+    const second = new URL(String(fetchSpy.mock.calls[1][0]), 'http://localhost')
+    expect(first.searchParams.getAll('category')).toEqual(['a', 'b'])
+    expect(second.searchParams.has('category')).toBe(false)
+  })
+
   it('repeats the project parameter and sends the narrowing filters', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
@@ -681,15 +771,22 @@ describe('access contract calls', () => {
     expect(store.items).toEqual([])
   })
 
-  it.each(['publish', 'unpublish'] as const)(
-    '%s calls the marketplace endpoint',
-    async (action) => {
-      const post = vi.spyOn(api, 'post').mockResolvedValue(json({ ...app }))
-      await store[action](app as never)
-      expect(post.mock.calls[0][0]).toBe(`${root}/marketplace/${action}`)
-      expect(new Headers(post.mock.calls[0][2]?.headers).get('If-Match')).toBe(app.etag)
-    }
-  )
+  it('unpublish calls the marketplace endpoint', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue(json({ ...app }))
+    await store.unpublish(app as never)
+    expect(post.mock.calls[0][0]).toBe(`${root}/marketplace/unpublish`)
+    expect(new Headers(post.mock.calls[0][2]?.headers).get('If-Match')).toBe(app.etag)
+  })
+
+  it('publish posts the categories with the idempotency key', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue(json({ ...app }))
+    await store.publish(app as never, ['c1'], 'k')
+    expect(post.mock.calls[0][0]).toBe(`${root}/marketplace/publish`)
+    expect(post.mock.calls[0][1]).toEqual({ categories: ['c1'] })
+    const headers = new Headers(post.mock.calls[0][2]?.headers)
+    expect(headers.get('If-Match')).toBe(app.etag)
+    expect(headers.get('Idempotency-Key')).toBe('k')
+  })
 
   it('reads who the application is shared with', async () => {
     const get = vi

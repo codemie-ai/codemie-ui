@@ -16,13 +16,16 @@ import './reviewRegressionSetup'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 
+import { assistantsStore } from '@/store/assistants'
+
 import { useHostedCardActions } from '../useHostedCardActions'
+import { resetHostedCategoriesRequest } from '../useHostedCategories'
 
 const boundary = vi.hoisted(() => ({
   current: true,
   onChanged: vi.fn(),
   onError: vi.fn(),
-  store: { getApplication: vi.fn(), deleteApplication: vi.fn() },
+  store: { getApplication: vi.fn(), deleteApplication: vi.fn(), publish: vi.fn() },
 }))
 vi.mock('@/store/hostedApplications', () => ({
   hostedApplicationsStore: boundary.store,
@@ -60,10 +63,13 @@ const Harness = () => {
     onChanged: boundary.onChanged,
     onError: boundary.onError,
   })
-  const trash = actions.menuItems(app as never).find((item: any) => item.title === 'Delete')
+  const items = actions.menuItems(app as never) as any[]
+  const trash = items.find((item) => item.title === 'Delete')
+  const publish = items.find((item) => item.title === 'Publish to Marketplace')
   return (
     <>
-      <button onClick={() => (trash as any).onClick()}>Move to trash</button>
+      <button onClick={() => trash.onClick()}>Move to trash</button>
+      <button onClick={() => publish.onClick()}>Publish it</button>
       {actions.dialogs}
     </>
   )
@@ -73,6 +79,11 @@ beforeEach(() => {
   vi.clearAllMocks()
   boundary.current = true
   boundary.store.getApplication.mockResolvedValue(app)
+  resetHostedCategoriesRequest()
+  assistantsStore.assistantCategories = []
+  vi.spyOn(assistantsStore, 'getAssistantCategories').mockImplementation(async () => {
+    assistantsStore.assistantCategories = [{ id: 'a', name: 'Analytics', description: '' }] as never
+  })
 })
 
 it('closes the confirmation when the request settles after the visit changed', async () => {
@@ -93,6 +104,35 @@ it('closes the confirmation when the request settles after the visit changed', a
   })
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   expect(boundary.onChanged).not.toHaveBeenCalled()
+})
+
+it('closes the publish dialog without a refresh or error when it settles after the visit changed', async () => {
+  let finish: (value: unknown) => void = () => undefined
+  boundary.store.getApplication.mockResolvedValue({
+    ...app,
+    categories: [{ id: 'a', name: 'Analytics' }],
+  })
+  boundary.store.publish.mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve
+    })
+  )
+  render(<Harness />)
+  fireEvent.click(screen.getByRole('button', { name: 'Publish it' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Publish' }))
+  expect(boundary.store.publish).toHaveBeenCalledWith(
+    expect.objectContaining({ id: app.id }),
+    ['a'],
+    expect.any(String)
+  )
+  boundary.current = false
+  await act(async () => {
+    finish(app)
+    await Promise.resolve()
+  })
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(boundary.onChanged).not.toHaveBeenCalled()
+  expect(boundary.onError).not.toHaveBeenCalled()
 })
 
 it('closes the confirmation and keeps the error for the visit that is still current', async () => {

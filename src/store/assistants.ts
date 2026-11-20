@@ -601,9 +601,9 @@ export const assistantsStore = proxy<AssistantsStoreType>({
     return api.get(`v1/assistants/prebuilt/${slug}`).then((response) => response.json())
   },
 
-  getAssistantCategories() {
+  getAssistantCategories(options?: { skipErrorHandling?: boolean }) {
     return api
-      .get('v1/assistants/categories')
+      .get('v1/assistants/categories', options)
       .then((response) => response.json())
       .then((categories) => {
         assistantsStore.assistantCategories = categories

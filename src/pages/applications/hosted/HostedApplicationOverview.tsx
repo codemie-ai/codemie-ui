@@ -19,6 +19,7 @@ import DetailsProperty from '@/components/details/DetailsProperty'
 import DetailsSidebar from '@/components/details/DetailsSidebar'
 import DetailsSidebarSection from '@/components/details/DetailsSidebar/components/DetailsSidebarSection'
 import { SharedWithList, SharedWithLoadError } from '@/components/sharing'
+import SidebarTags from '@/pages/assistants/components/AssistantDetails/components/sidebar_details/SidebarTags'
 import { userStore } from '@/store/user'
 import type { HostedApplication, HostedVersion } from '@/types/entity/hostedApplication'
 import type { SharedWithUser } from '@/types/entity/sharing'
@@ -119,6 +120,14 @@ const HostedApplicationOverview = ({
           <DetailsProperty label="Created" value={formatDateTime(app.created_at, 'day')} />
         )}
       </DetailsSidebarSection>
+      {app.categories?.length ? (
+        <DetailsSidebarSection headline="CATEGORIES">
+          <SidebarTags
+            noItemsMessage="No categories assigned"
+            items={app.categories.map((category) => ({ value: category.name }))}
+          />
+        </DetailsSidebarSection>
+      ) : null}
       {sharedWith && (
         <DetailsSidebarSection headline="Shared with">
           {sharedWithFailed && onRetrySharedWith && (

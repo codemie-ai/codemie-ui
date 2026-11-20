@@ -32,6 +32,7 @@ import { hostedApplicationsStore as store, hostedErrorMessage } from '@/store/ho
 import type { HostedApplication } from '@/types/entity/hostedApplication'
 
 import { hostedActions, type HostedActionKey } from './hostedAccess'
+import HostedPublishDialog from './HostedPublishDialog'
 import { hostedRoutes } from './hostedRoutes'
 import HostedSecurityDialog, { type HostedSecurityAction } from './HostedSecurityDialog'
 import HostedSharePopup from './HostedSharePopup'
@@ -164,15 +165,11 @@ export const useHostedCardActions = ({ isCurrent, onChanged, onDeleted, onError 
       )}
       {/* As for skills: publishing reaches everyone, so both directions ask first. */}
       {pending?.kind === 'publish' && (
-        <ConfirmationModal
-          visible
-          className="max-sm:!min-w-0"
-          header="Publish to Marketplace?"
-          message="Everyone in your organization will be able to find this application in the Marketplace and open it."
-          confirmText="Publish"
-          confirmDisabled={busy}
-          onCancel={close}
-          onConfirm={() => run(() => store.publish(pending.app))}
+        <HostedPublishDialog
+          app={pending.app}
+          isCurrent={isCurrent}
+          onClose={() => setPending(null)}
+          onDone={done}
         />
       )}
       {pending?.kind === 'unpublish' && (

@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-17253_hosted-apps-categories",
+  "head": "5ad94571ced4e94813e2e3289aedd688ca5de4bc",
+  "runner": "npm",
+  "started_at": "2026-11-19T11:58:00Z",
+  "completed_at": "2026-11-19T12:08:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 24000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 18000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 197000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 945 passed (945); Tests 10015 passed | 1 skipped"
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 112000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 89 passed (89); Tests 1054 passed | 1 skipped"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 49000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: no leaks found"
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2000,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "summary printed, stderr empty"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 500,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2864 files, 0 missing license headers"
+    },
+    {
+      "id": "sonar",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "notes": "SONAR_TOKEN not set in the runner environment (the hook gets it from .env.local); sonar-local uploads analysis, so not run. Enable by exporting SONAR_TOKEN with the Sonar host reachable."
+    }
+  ],
+  "failures": {}
+}

@@ -14,15 +14,18 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { PrimeReactProvider } from 'primereact/api'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { UnsavedChangesProvider } from '@/hooks/useUnsavedChangesWarning'
+import { assistantsStore } from '@/store/assistants'
 import { hostedApplicationsStore } from '@/store/hostedApplications'
 import { userStore } from '@/store/user'
 import type { HostedApplication, SuspensionRefused } from '@/types/entity/hostedApplication'
 import api from '@/utils/api'
 
 import HostedApplicationForm from '../HostedApplicationForm'
+import { resetHostedCategoriesRequest } from '../useHostedCategories'
 
 // The page frame: its header holds the Cancel and Save actions.
 vi.mock('@/components/Layouts/Layout', () => ({
@@ -46,7 +49,19 @@ beforeEach(() => {
     { name: 'alpha', display_name: null },
     { name: 'beta', display_name: null },
   ] as never)
+  resetHostedCategoriesRequest()
+  assistantsStore.assistantCategories = []
+  vi.spyOn(assistantsStore, 'getAssistantCategories').mockImplementation(async () => {
+    assistantsStore.assistantCategories = CATEGORIES as never
+  })
 })
+
+const CATEGORIES = [
+  { id: 'a', name: 'Analytics', description: '' },
+  { id: 'b', name: 'Business', description: '' },
+  { id: 'c', name: 'Coding', description: '' },
+  { id: 'd', name: 'Design', description: '' },
+]
 
 const baseApp = (over: Partial<HostedApplication> = {}): HostedApplication =>
   ({
@@ -65,15 +80,18 @@ const baseApp = (over: Partial<HostedApplication> = {}): HostedApplication =>
 const mockPatch = (app: HostedApplication) =>
   vi.spyOn(api, 'patch').mockResolvedValue({ json: async () => app } as Response)
 
+// Without CSS transitions the picker panel opens synchronously in jsdom.
 const renderEdit = (app: HostedApplication) =>
   render(
-    <UnsavedChangesProvider>
-      <HostedApplicationForm
-        application={app}
-        onCancel={() => undefined}
-        onSaved={() => undefined}
-      />
-    </UnsavedChangesProvider>
+    <PrimeReactProvider value={{ unstyled: true, cssTransition: false }}>
+      <UnsavedChangesProvider>
+        <HostedApplicationForm
+          application={app}
+          onCancel={() => undefined}
+          onSaved={() => undefined}
+        />
+      </UnsavedChangesProvider>
+    </PrimeReactProvider>
   )
 
 // The selector greys out and ignores pointer events while disabled.
@@ -185,6 +203,7 @@ describe('project and sharing fields', () => {
       description: 'A static visual',
       project: 'alpha',
       shared: true,
+      categories: [],
     })
   })
 
@@ -202,7 +221,7 @@ describe('project and sharing fields', () => {
   })
 
   it('sends only shared when toggling it on a published application', async () => {
-    const app = baseApp({ is_global: true })
+    const app = baseApp({ is_global: true, categories: [{ id: 'a', name: 'Analytics' }] })
     const patch = mockPatch(app)
     renderEdit(app)
     await userEvent.setup().click(sharedSwitch())
@@ -305,5 +324,156 @@ describe('leaving the page', () => {
     expect(screen.getByRole('heading', { name: 'Edit application' })).toBeInTheDocument()
     // Edit changes the details only; versions are uploaded from the details page.
     expect(screen.queryByText(/Upload the build output/)).not.toBeInTheDocument()
+  })
+})
+
+// The categories field: the nearest block holding both the "up to 3" hint and the picker.
+const categoriesField = () => {
+  let node: HTMLElement = screen.getByText(/Choose up to 3 categories/)
+  while (!node.querySelector('[data-pc-name="multiselect"]')) node = node.parentElement!
+  return node
+}
+const openCategories = async () => {
+  fireEvent.click(categoriesField().querySelector('[data-pc-name="multiselect"]')!)
+}
+// The picker's option item that holds `name` (selected names also show as chips).
+const option = async (name: string) =>
+  (await screen.findByText(name, { selector: 'li div' })).closest('li')!
+const pick = async (...names: string[]) => {
+  await openCategories()
+  // The open panel lists every option, so they can be found together and clicked in order.
+  const items = await Promise.all(names.map(option))
+  items.forEach((item) => fireEvent.click(item))
+}
+
+const renderCreate = () =>
+  render(
+    <PrimeReactProvider value={{ unstyled: true, cssTransition: false }}>
+      <UnsavedChangesProvider>
+        <HostedApplicationForm onCancel={() => undefined} onSaved={() => undefined} />
+      </UnsavedChangesProvider>
+    </PrimeReactProvider>
+  )
+
+const fillCreate = async () => {
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText(/Application name/), 'Delivery map')
+  await user.type(screen.getByRole('textbox', { name: /^Description/ }), 'A static visual')
+  await screen.findByText('alpha')
+}
+
+describe('categories', () => {
+  it('loads the list once and the picker is not stuck loading', async () => {
+    renderCreate()
+    await openCategories()
+    expect(await option('Analytics')).toBeInTheDocument()
+    expect(assistantsStore.getAssistantCategories).toHaveBeenCalledTimes(1)
+    expect(categoriesField().querySelector('[data-pc-section="loadingicon"]')).toBeNull()
+  })
+
+  it('creates with no categories when none is picked', async () => {
+    const post = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ json: async () => baseApp() } as Response)
+    renderCreate()
+    await fillCreate()
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1))
+    expect(post.mock.calls[0][1]).toMatchObject({ categories: [] })
+  })
+
+  it('creates with the two picked categories', async () => {
+    const post = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ json: async () => baseApp() } as Response)
+    renderCreate()
+    await fillCreate()
+    await pick('Analytics', 'Business')
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1))
+    expect(post.mock.calls[0][1]).toMatchObject({ categories: ['a', 'b'] })
+  })
+
+  it('refuses a fourth pick', async () => {
+    const post = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ json: async () => baseApp() } as Response)
+    renderCreate()
+    await fillCreate()
+    await pick('Analytics', 'Business', 'Coding', 'Design')
+    expect(await screen.findByText('You can select maximum 3 categories')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1))
+    expect(post.mock.calls[0][1]).toMatchObject({ categories: ['a', 'b', 'c'] })
+  })
+
+  const unpublished = () =>
+    baseApp({
+      categories: [
+        { id: 'a', name: 'Analytics' },
+        { id: 'b', name: 'Business' },
+      ],
+    })
+
+  it('pre-fills the saved categories and sends none when they are unchanged', async () => {
+    const app = unpublished()
+    const patch = mockPatch(app)
+    renderEdit(app)
+    await openCategories()
+    expect(await option('Analytics')).toHaveAttribute('aria-selected', 'true')
+    expect(await option('Business')).toHaveAttribute('aria-selected', 'true')
+    const name = screen.getByLabelText(/Application name/)
+    const user = userEvent.setup()
+    await user.clear(name)
+    await user.type(name, 'Renamed')
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(patch).toHaveBeenCalledTimes(1))
+    expect(patch.mock.calls[0][1]).toEqual({ name: 'Renamed' })
+  })
+
+  it('sends an empty list when the categories are cleared', async () => {
+    const app = unpublished()
+    const patch = mockPatch(app)
+    renderEdit(app)
+    await pick('Analytics', 'Business')
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(patch).toHaveBeenCalledTimes(1))
+    expect(patch.mock.calls[0][1]).toEqual({ categories: [] })
+  })
+
+  it('requires a category for a published application and blocks the save', async () => {
+    const patch = mockPatch(baseApp({ is_global: true }))
+    renderEdit(baseApp({ is_global: true, categories: [] }))
+    await screen.findByText('alpha')
+    expect(categoriesField().querySelector('.input-label-required')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(
+      await screen.findByText('A published application needs at least one category')
+    ).toBeInTheDocument()
+    expect(patch).not.toHaveBeenCalled()
+  })
+
+  it('shows the notice next to the field when the list fails to load', async () => {
+    vi.mocked(assistantsStore.getAssistantCategories).mockRejectedValue(new Error('boom'))
+    renderCreate()
+    expect(await screen.findByText('Categories could not be loaded')).toBeInTheDocument()
+    expect(categoriesField().parentElement).toHaveTextContent('Categories could not be loaded')
+  })
+
+  it('shows the field messages of a 422 and keeps the values', async () => {
+    vi.spyOn(api, 'post').mockRejectedValue({
+      status: 422,
+      parsedError: {
+        message: 'Validation failed',
+        details: { fields: [{ field: 'categories', message: 'Unknown category: b' }] },
+      },
+    })
+    renderCreate()
+    await fillCreate()
+    await pick('Analytics', 'Business')
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Unknown category: b')
+    expect(screen.getByLabelText(/Application name/)).toHaveValue('Delivery map')
+    expect(await option('Analytics')).toHaveAttribute('aria-selected', 'true')
   })
 })

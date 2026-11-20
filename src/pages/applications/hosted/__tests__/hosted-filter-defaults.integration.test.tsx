@@ -17,12 +17,15 @@ import { PrimeReactProvider } from 'primereact/api'
 import { MemoryRouter, useLocation } from 'react-router'
 import { beforeEach, expect, it, vi } from 'vitest'
 
+import HostedApplicationsPage from '@/pages/applications/hosted/HostedApplicationsPage'
 import HostedCatalogFilters from '@/pages/applications/hosted/HostedCatalogFilters'
 import {
   HOSTED_COLLECTIONS,
   type HostedCollectionId,
 } from '@/pages/applications/hosted/hostedCollections'
 import { useHostedApplicationCatalog } from '@/pages/applications/hosted/useHostedApplicationCatalog'
+import { resetHostedCategoriesRequest } from '@/pages/applications/hosted/useHostedCategories'
+import { assistantsStore } from '@/store/assistants'
 import { userStore } from '@/store/user'
 
 vi.mock('valtio', async (importOriginal) => ({
@@ -32,6 +35,11 @@ vi.mock('valtio', async (importOriginal) => ({
 const boundary = vi.hoisted(() => ({
   store: {
     capabilities: { view: true, create: true } as unknown,
+    capabilitiesStatus: 'ready',
+    items: [] as unknown[],
+    nextCursor: null,
+    loading: false,
+    error: null as string | null,
     ensureCapabilities: vi.fn(),
     setFilters: vi.fn(),
     loadApplications: vi.fn(),
@@ -85,6 +93,11 @@ beforeEach(() => {
     { name: 'beta', display_name: 'Beta' },
   ] as never)
   vi.spyOn(userStore, 'loadHostedApplicationsUsers').mockResolvedValue(CREATORS as never)
+  resetHostedCategoriesRequest()
+  assistantsStore.assistantCategories = []
+  vi.spyOn(assistantsStore, 'getAssistantCategories').mockResolvedValue(undefined as never)
+  boundary.store.items = []
+  boundary.store.error = null
 })
 
 it('offers Project, Created by, Shared and Status on My apps', async () => {
@@ -94,6 +107,7 @@ it('offers Project, Created by, Shared and Status on My apps', async () => {
   expect(screen.getByText('Created by')).toBeVisible()
   expect(screen.getByText('SHARED')).toBeVisible()
   expect(screen.getByText('STATUS')).toBeVisible()
+  expect(screen.getByText('CATEGORIES')).toBeVisible()
   expect(screen.getByRole('radio', { name: 'Not shared' })).toBeInTheDocument()
   expect(screen.getByRole('radio', { name: 'With people' })).toBeInTheDocument()
   expect(screen.getByRole('radio', { name: 'With project' })).toBeInTheDocument()
@@ -106,11 +120,12 @@ it('offers Project, Created by, Shared and Status on My apps', async () => {
 })
 
 it.each(['project', 'marketplace', 'shared'] as const)(
-  "offers only Project and Created by on %s, with that tab's creators",
+  "offers only Project, Created by and Categories on %s, with that tab's creators",
   async (scope) => {
     renderFilters(scope, '/apps/' + scope)
     expect(screen.getByText('PROJECT')).toBeVisible()
     expect(screen.getByText('Created by')).toBeVisible()
+    expect(screen.getByText('CATEGORIES')).toBeVisible()
     expect(screen.queryByText('SHARED')).not.toBeInTheDocument()
     expect(screen.queryByText('STATUS')).not.toBeInTheDocument()
     expect(screen.queryByText('ARTIFACT TYPE')).not.toBeInTheDocument()
@@ -230,4 +245,79 @@ it('lets the collection registry decide which filters a tab offers, keeps and se
   } finally {
     HOSTED_COLLECTIONS.marketplace.filters = declared
   }
+})
+
+const TAB_PATHS = {
+  mine: '/apps',
+  project: '/apps/project',
+  marketplace: '/apps/marketplace',
+  shared: '/apps/shared',
+}
+
+it.each(Object.entries(TAB_PATHS))(
+  'sends each URL category once on %s, before the category list loads',
+  async (_tab, path) => {
+    vi.mocked(assistantsStore.getAssistantCategories).mockReturnValue(new Promise(() => {}))
+    renderCatalog(path + '?category=a&category=a&category=b')
+    await waitFor(() => expect(boundary.store.setFilters).toHaveBeenCalled())
+    expect(lastSentFilters().category).toEqual(['a', 'b'])
+  }
+)
+
+it('sends no category when none is picked', async () => {
+  renderCatalog('/apps/marketplace?project=alpha')
+  await waitFor(() => expect(boundary.store.setFilters).toHaveBeenCalled())
+  expect(lastSentFilters()).not.toHaveProperty('category')
+})
+
+it('writes picked categories as repeated URL keys and keeps the projects', async () => {
+  assistantsStore.assistantCategories = [
+    { id: 'c1', name: 'Dev', description: '' },
+    { id: 'c2', name: 'Ops', description: '' },
+  ] as never
+  renderFilters('project', '/apps/project?project=alpha')
+  await optionsLoaded()
+  fireEvent.click(screen.getByText('Categories').closest('[data-pc-name="multiselect"]')!)
+  fireEvent.click(await screen.findByText('Dev'))
+  fireEvent.click(screen.getByText('Ops'))
+  await waitFor(() => expect(currentSearch().getAll('category')).toEqual(['c1', 'c2']))
+  expect(currentSearch().getAll('project')).toEqual(['alpha'])
+})
+
+it('shows the categories notice in the bar when the list fails to load', async () => {
+  vi.mocked(assistantsStore.getAssistantCategories).mockRejectedValue(new Error('boom'))
+  renderFilters('mine')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Categories could not be loaded')
+  expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible()
+  expect(screen.getByRole('textbox', { name: 'Search' })).toBeVisible()
+})
+
+it('shows a rejected filter error above the previous results and keeps the filter bar', async () => {
+  boundary.store.items = [
+    {
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      name: 'Delivery map',
+      description: 'desc',
+      artifact_kind: 'html',
+      publisher: { display_name: 'Pat' },
+      updated_at: '2026-10-05T12:00:00Z',
+      capabilities: { can_launch: true, can_manage: false },
+      user_abilities: ['read'],
+      has_active_version: false,
+      created_by: { id: 'u-2' },
+    },
+  ]
+  boundary.store.error = 'INVALID_FILTER: unknown category'
+  render(
+    <MemoryRouter initialEntries={['/apps/marketplace?category=gone']}>
+      <PrimeReactProvider value={{ unstyled: true, cssTransition: false }}>
+        <HostedApplicationsPage />
+      </PrimeReactProvider>
+    </MemoryRouter>
+  )
+  await optionsLoaded()
+  expect(screen.getByRole('alert')).toHaveTextContent('INVALID_FILTER: unknown category')
+  expect(screen.getByText('Delivery map')).toBeVisible()
+  expect(screen.getByRole('textbox', { name: 'Search' })).toBeVisible()
+  expect(screen.getByText('CATEGORIES')).toBeVisible()
 })

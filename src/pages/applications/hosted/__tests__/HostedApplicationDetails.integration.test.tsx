@@ -16,6 +16,7 @@ import './reviewRegressionSetup'
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { assistantsStore } from '@/store/assistants'
 import { hostedApplicationsStore as store } from '@/store/hostedApplications'
 import type {
   HostedApplication,
@@ -26,6 +27,7 @@ import type {
 import HostedApplicationDetails from '../HostedApplicationDetails'
 import { hostedRoutes } from '../hostedRoutes'
 import { useHostedApplicationDetails } from '../useHostedApplicationDetails'
+import { resetHostedCategoriesRequest } from '../useHostedCategories'
 
 // What the server reports for a suspended application.
 const SUSPENDED_REFUSES: SuspensionRefused[] = ['activate', 'move', 'publish', 'share_on']
@@ -353,22 +355,52 @@ describe('details access model', () => {
     expect(hostedRoutes.view(route.id)).toBe('/apps/' + route.id + '/view')
   })
 
-  it('publishes and removes from the marketplace after a confirmation, with no category dialog', async () => {
-    const app = make()
+  it('publishes with the categories from the publish dialog and removes after a confirmation', async () => {
+    resetHostedCategoriesRequest()
+    assistantsStore.assistantCategories = []
+    vi.spyOn(assistantsStore, 'getAssistantCategories').mockImplementation(async () => {
+      assistantsStore.assistantCategories = [
+        { id: 'a', name: 'Analytics', description: '' },
+      ] as never
+    })
+    const app = make({ categories: [{ id: 'a', name: 'Analytics' }] })
     vi.spyOn(store, 'getApplication').mockResolvedValue(app)
     const publish = vi.spyOn(store, 'publish').mockResolvedValue(app)
     const unpublish = vi.spyOn(store, 'unpublish').mockResolvedValue(app)
     const { unmount } = show(app)
     fireEvent.click(await screen.findByRole('button', { name: 'Publish to Marketplace' }))
     expect(publish).not.toHaveBeenCalled()
-    fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }))
-    await waitFor(() => expect(publish).toHaveBeenCalledWith(app))
+    fireEvent.click(await screen.findByRole('button', { name: 'Publish' }))
+    await waitFor(() => expect(publish).toHaveBeenCalledWith(app, ['a'], expect.any(String)))
     unmount()
     show(make({ is_global: true }))
     fireEvent.click(await screen.findByRole('button', { name: 'Remove from Marketplace' }))
     expect(unpublish).not.toHaveBeenCalled()
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }))
     await waitFor(() => expect(unpublish).toHaveBeenCalled())
+  })
+
+  it('lists the category names in a CATEGORIES section only when there are any', async () => {
+    vi.spyOn(store, 'getApplication').mockResolvedValue(make())
+    const { unmount } = show(
+      make({
+        categories: [
+          { id: 'a', name: 'Analytics' },
+          { id: 'b', name: 'Productivity' },
+        ],
+      })
+    )
+    expect(await screen.findByText('CATEGORIES')).toBeInTheDocument()
+    expect(screen.getByText('Analytics')).toBeInTheDocument()
+    expect(screen.getByText('Productivity')).toBeInTheDocument()
+    unmount()
+    const empty = show(make({ categories: [] }))
+    await screen.findByText('OVERVIEW')
+    expect(screen.queryByText('CATEGORIES')).not.toBeInTheDocument()
+    empty.unmount()
+    show(make())
+    await screen.findByText('OVERVIEW')
+    expect(screen.queryByText('CATEGORIES')).not.toBeInTheDocument()
   })
 
   it('deletes after a confirmation and returns to the applications root', async () => {

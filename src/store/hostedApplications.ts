@@ -94,13 +94,21 @@ export function hostedErrorMessage(error: unknown): string {
   if (error instanceof HostedUserError) return error.message
   if (error instanceof TypeError && /fetch|network|load failed/i.test(error.message))
     return NETWORK_ERROR
-  const message = (error as { parsedError?: { message?: unknown } } | null)?.parsedError?.message
-  return typeof message === 'string' &&
-    message.length > 0 &&
-    message.length <= 500 &&
-    message !== 'Unknown error'
-    ? message
-    : GENERIC_ERROR
+  const parsed = (
+    error as { parsedError?: { message?: unknown; details?: { fields?: unknown } } } | null
+  )?.parsedError
+  const fields = parsed?.details?.fields
+  const fieldText = Array.isArray(fields)
+    ? fields
+        .map((field) => (field as { message?: unknown } | null)?.message)
+        .filter((text): text is string => typeof text === 'string' && text.length > 0)
+        .map((text) => text.replace(/^Value error, /, ''))
+        .join('; ')
+    : ''
+  const usable = (text: unknown): text is string =>
+    typeof text === 'string' && text.length > 0 && text.length <= 500 && text !== 'Unknown error'
+  if (usable(fieldText)) return fieldText
+  return usable(parsed?.message) ? parsed.message : GENERIC_ERROR
 }
 
 function protocol(etag?: string, key: string = crypto.randomUUID()) {
@@ -139,6 +147,8 @@ export interface CatalogFilters {
   sort: 'updated_desc' | 'created_desc' | 'name_asc'
   /** Project names; sent as a repeated `project` parameter. */
   project?: string[]
+  /** Category ids; sent as a repeated `category` parameter. */
+  category?: string[]
   /** Creator display name, matched exactly (as in skills). */
   created_by?: string
   /** My apps only. */
@@ -181,12 +191,24 @@ interface HostedApplicationsStore {
     id: string
   ): Promise<{ state: string; remaining_prefixes: number; charged_bytes: number }>
   createApplication(
-    body: { name: string; description: string; project: string; shared?: boolean },
+    body: {
+      name: string
+      description: string
+      project: string
+      shared?: boolean
+      categories?: string[]
+    },
     key?: string
   ): Promise<HostedApplication>
   updateApplication(
     app: HostedApplication,
-    body: { name?: string; description?: string; project?: string; shared?: boolean },
+    body: {
+      name?: string
+      description?: string
+      project?: string
+      shared?: boolean
+      categories?: string[]
+    },
     key?: string
   ): Promise<HostedApplication>
   /** Replaces the owner's custom card cover (PNG, JPEG or WebP up to 1 MiB). */
@@ -194,8 +216,8 @@ interface HostedApplicationsStore {
   /** Removes the custom cover; the card falls back to its generated initials cover. */
   removeCover(app: HostedApplication, key?: string): Promise<HostedApplication>
   deleteApplication(app: HostedApplication, key?: string): Promise<void>
-  /** Puts the application in the marketplace. */
-  publish(app: HostedApplication, key?: string): Promise<HostedApplication>
+  /** Puts the application in the marketplace under the given categories. */
+  publish(app: HostedApplication, categories: string[], key?: string): Promise<HostedApplication>
   unpublish(app: HostedApplication, key?: string): Promise<HostedApplication>
   /**
    * Named sharing of hosted applications; the share popup and the details page use it as is.
@@ -309,6 +331,8 @@ export const hostedApplicationsStore = proxy<HostedApplicationsStore>({
   setFilters(next) {
     const contextChanged = !sameCatalogContext(this.filters, next)
     this.filters = { ...next }
+    // A cursor belongs to the filters that produced it; keep the items but never reuse it.
+    this.nextCursor = null
     if (!contextChanged) return
     // Never show results of the previous scope, even if its request is still in flight.
     catalogSequence += 1
@@ -469,11 +493,11 @@ export const hostedApplicationsStore = proxy<HostedApplicationsStore>({
     this.items = this.items.filter((item) => item.id !== app.id)
   },
 
-  async publish(app, key) {
+  async publish(app, categories, key) {
     return replaceItem(
       this,
       await currentJson(
-        api.post(appPath(app.id) + '/marketplace/publish', {}, protocol(app.etag, key))
+        api.post(appPath(app.id) + '/marketplace/publish', { categories }, protocol(app.etag, key))
       )
     )
   },

@@ -24,15 +24,17 @@ import Textarea from '@/components/form/Textarea'
 import PageLayout from '@/components/Layouts/Layout'
 import ProjectSelector from '@/components/ProjectSelector'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
+import MarketplaceCategories from '@/pages/assistants/components/AssistantForm/components/MarketplaceCategories'
 import { hostedApplicationsStore as store, hostedErrorMessage } from '@/store/hostedApplications'
 import type { HostedTransferProgress as Progress } from '@/store/utils/hostedApplicationUpload'
-import type { HostedApplication } from '@/types/entity/hostedApplication'
+import { hostedCategoryIds, type HostedApplication } from '@/types/entity/hostedApplication'
 
 import { applicationMetadataSchema, type ApplicationMetadataForm } from './formSchema'
 import { isManager, suspensionRefuses } from './hostedAccess'
 import HostedArtifactUpload from './HostedArtifactUpload'
 import HostedCoverField, { NO_COVER_CHANGE, type HostedCoverChange } from './HostedCoverField'
 import HostedTransferProgress from './HostedTransferProgress'
+import { HostedCategoriesNotice, useHostedCategories } from './useHostedCategories'
 
 interface Props {
   /** The application to edit; without it the form creates a new one. */
@@ -50,6 +52,8 @@ const changedMetadata = (current: HostedApplication, values: ApplicationMetadata
   if (current.description !== values.description) changes.description = values.description
   if (values.project && (current.project ?? '') !== values.project) changes.project = values.project
   if (!!current.shared !== values.shared) changes.shared = values.shared
+  if (values.categories.join() !== hostedCategoryIds(current).join())
+    changes.categories = values.categories
   return changes
 }
 
@@ -61,13 +65,19 @@ const changedMetadata = (current: HostedApplication, values: ApplicationMetadata
 const HostedApplicationForm = ({ application, onCancel, onSaved }: Props) => {
   const selectId = useId()
   const descriptionId = useId()
+  // A published application keeps at least one category.
+  const published = !!application?.is_global
+  const categoriesList = useHostedCategories()
   const form = useForm<ApplicationMetadataForm>({
-    resolver: yupResolver(applicationMetadataSchema, { context: { creating: !application } }),
+    // The resolver reads its context from here; yup options' own context is overwritten.
+    resolver: yupResolver(applicationMetadataSchema),
+    context: { creating: !application, published },
     defaultValues: {
       name: application?.name ?? '',
       description: application?.description ?? '',
       project: application?.project ?? '',
       shared: !!application?.shared,
+      categories: hostedCategoryIds(application),
     },
   })
   const [file, setFile] = useState<File | null>(null)
@@ -284,6 +294,23 @@ const HostedApplicationForm = ({ application, onCancel, onSaved }: Props) => {
             />
           )}
         />
+        <div className="flex flex-col gap-2">
+          <Controller
+            control={form.control}
+            name="categories"
+            render={({ field }) => (
+              <MarketplaceCategories
+                ref={field.ref}
+                value={field.value}
+                onChange={field.onChange}
+                loadOnMount={false}
+                required={published}
+                error={form.formState.errors.categories?.message}
+              />
+            )}
+          />
+          <HostedCategoriesNotice status={categoriesList.status} retry={categoriesList.retry} />
+        </div>
         <HostedCoverField
           application={persisted.current}
           name={form.watch('name')}

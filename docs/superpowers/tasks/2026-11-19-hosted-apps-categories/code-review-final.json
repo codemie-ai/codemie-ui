@@ -1,0 +1,249 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "deterministic",
+    "rationale": "All four lenses and standards ran; AC1-AC10 pass, no blocking finding; 5 advisory (CR-001..CR-005, minor), 0 deferred"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "deterministic",
+      "rationale": "All four lenses and standards ran; AC1-AC10 pass, no blocking finding; 5 advisory (CR-001..CR-005, minor), 0 deferred"
+    }
+  ],
+  "reviewed_head": "ce4f76d117cf5b1fbd76e01237e4b02efaf0d132",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "All four lenses and standards ran; all AC1-AC10 pass and no blocking finding survived. Reachability was checked for the store, hook, dialog and form candidates only; the rest are advisory. 5 advisory (included in the findings total), 0 deferred, 12 dismissed (see code-review-dismissed.local.md).",
+  "confidence": "medium",
+  "check_confidence": null,
+  "risk_flags": [
+    "breaking-change",
+    "data-contract"
+  ],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/applications/hosted/HostedApplicationForm.tsx",
+      "line": 56,
+      "title": "Category change check is order-sensitive",
+      "problem": "changedMetadata compares values.categories.join() with the saved ids in order, so the same set in a different order counts as changed.",
+      "impact": "Only a reorder of the same categories triggers it, and the result is one needless categories PATCH that bumps the etag. No data is lost.",
+      "recommendation": "Compare sorted copies of both id lists.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "no gate row: recommended action",
+        "source": "default",
+        "action": "fix-later"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/applications/hosted/HostedApplicationForm.tsx",
+      "line": 74,
+      "title": "Create-mode project rule has no test",
+      "problem": "The yup context moved into useForm({ context: { creating, published } }). No test leaves the project empty on create and expects 'Project is required'. Same root cause as none.",
+      "impact": "Wiring reads correct today; only a future regression of the context would pass every test and let a project-less application be created.",
+      "recommendation": "Add a create-form test that clicks Create with no project, expects 'Project is required' and no api.post call.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "no gate row: recommended action",
+        "source": "default",
+        "action": "fix-later"
+      }
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/applications/hosted/HostedApplicationForm.tsx",
+      "line": 306,
+      "title": "Category picker has no loading state",
+      "problem": "The picker is rendered with loadOnMount={false}, so while useHostedCategories is loading it shows no options and no spinner; saved ids may appear unnamed.",
+      "impact": "Brief cosmetic gap during the first load; a failure is surfaced by the separate notice with Retry.",
+      "recommendation": "Pass loading={categoriesList.status === 'loading'} to the picker.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "no gate row: recommended action",
+        "source": "default",
+        "action": "fix-later"
+      }
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/applications/hosted/HostedPublishDialog.tsx",
+      "line": 58,
+      "title": "412 re-read ignores latest categories",
+      "problem": "reread replaces revision and key but leaves selected untouched, so the next Publish sends the old selection over categories changed elsewhere.",
+      "impact": "Needs a concurrent edit of categories plus a 412 in the same dialog session; the user sees the error and presses Publish again knowingly.",
+      "recommendation": "Reseed selected from the re-read application when the user has not edited it, or tell the user the categories changed.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "no gate row: recommended action",
+        "source": "default",
+        "action": "fix-later"
+      }
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/applications/hosted/useHostedCategories.tsx",
+      "line": 25,
+      "title": "Shared categories request never invalidated",
+      "problem": "The module-level request stays resolved after success; if assistantCategories is later emptied the hook reports ready with no categories and never refetches.",
+      "impact": "Needs the store list to be emptied after a successful load (store reset); then the picker stays empty until reload.",
+      "recommendation": "Clear request on success, or refetch when the store list is empty on mount.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "no gate row: recommended action",
+        "source": "default",
+        "action": "fix-later"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "AC1: publish dialog lists shared categories, starts with current ones, publishes {categories: [ids]}",
+      "status": "pass",
+      "notes": "Dialog seeded from saved ids; store publish posts categories."
+    },
+    {
+      "kind": "spec",
+      "item": "AC2: publishing with none blocked with 'At least one category is required', no request",
+      "status": "pass",
+      "notes": "Covered by dialog test."
+    },
+    {
+      "kind": "spec",
+      "item": "AC3: a 4th category cannot be picked in form and dialog",
+      "status": "pass",
+      "notes": "No dialog test for the limit."
+    },
+    {
+      "kind": "spec",
+      "item": "AC4: create form sends 0-3 picked ids as categories",
+      "status": "pass",
+      "notes": "Schema max 3; create tests cover [] and two ids."
+    },
+    {
+      "kind": "spec",
+      "item": "AC5: edit form shows categories, sends categories only when changed, [] when cleared",
+      "status": "pass",
+      "notes": "Tests for unchanged and cleared."
+    },
+    {
+      "kind": "spec",
+      "item": "AC6: published app marks Categories required and blocks save when empty",
+      "status": "pass",
+      "notes": "Schema rule and test present."
+    },
+    {
+      "kind": "spec",
+      "item": "AC7: 422/409 shows details.fields[].message else message; form and dialog stay open",
+      "status": "pass",
+      "notes": "Joined field messages with 500 cap and fallback."
+    },
+    {
+      "kind": "spec",
+      "item": "AC8: cards and details overview show category names, nothing when none",
+      "status": "pass",
+      "notes": "Card span and overview section with tests."
+    },
+    {
+      "kind": "spec",
+      "item": "AC9: category filter on all tabs as repeated params, kept in URL; filter change clears cursor",
+      "status": "pass",
+      "notes": "Tests per tab."
+    },
+    {
+      "kind": "spec",
+      "item": "AC10: no category picked sends no category param",
+      "status": "pass",
+      "notes": "Component and store tests."
+    },
+    {
+      "kind": "spec",
+      "item": "Idempotency-Key reused on retry with unchanged selection; new on changed selection or re-fetched revision",
+      "status": "pass",
+      "notes": "412 re-read test."
+    },
+    {
+      "kind": "spec",
+      "item": "Publish settling after route/user change closes the dialog and shows nothing",
+      "status": "pass",
+      "notes": "isCurrent checks with tests."
+    },
+    {
+      "kind": "spec",
+      "item": "URL category id sent as read before list loads; 422 INVALID_FILTER shown inline",
+      "status": "pass",
+      "notes": "Tests keep results and bar."
+    },
+    {
+      "kind": "spec",
+      "item": "Category list load failure shows notice with Retry, no toast, one shared request",
+      "status": "pass",
+      "notes": "Hook test asserts no toast."
+    },
+    {
+      "kind": "spec",
+      "item": "Non-goals: no change to shared selector behaviour, no backend change",
+      "status": "pass",
+      "notes": "Optional props default to old behaviour."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "7 subjects in the review range all match the EPMCDME-<n>: <Capitalised summary> format from git-workflow.md R1 with a non-zero ticket key (EPMCDME-17253)"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "guide .ai-run/guides/standards/code-quality.md is absent from the repo and no ref was passed; absent standard, not a gap"
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "guide .ai-run/guides/security/security-practices.md is absent; courtesy check against security-patterns.md found no HTML sinks, redirects, postMessage, env reads or logging in added lines."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "All four lenses and standards ran; all AC1-AC10 pass and no blocking finding survived. Reachability was checked for the store, hook, dialog and form candidates only; the rest are advisory. 5 advisory (included in the findings total), 0 deferred, 12 dismissed (see code-review-dismissed.local.md).",
+    "confidence": "medium",
+    "risk_flags": [
+      "breaking-change",
+      "data-contract"
+    ]
+  }
+}

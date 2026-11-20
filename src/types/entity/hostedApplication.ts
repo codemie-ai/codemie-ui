@@ -64,6 +64,11 @@ export interface HostedCapabilities {
   }>
 }
 
+export interface HostedCategory {
+  id: string
+  name: string
+}
+
 export interface HostedApplication extends Entity {
   id: string
   name: string
@@ -95,7 +100,13 @@ export interface HostedApplication extends Entity {
   created_at?: string
   /** True when the owner uploaded a custom card cover image. */
   has_cover?: boolean
+  /** Up to three shared assistant categories. */
+  categories?: HostedCategory[]
 }
+
+/** Category ids of `app` in saved order; a missing field counts as none. */
+export const hostedCategoryIds = (app?: Pick<HostedApplication, 'categories'> | null): string[] =>
+  (app?.categories ?? []).map(({ id }) => id)
 
 export interface HostedUsage {
   byte_limit: number

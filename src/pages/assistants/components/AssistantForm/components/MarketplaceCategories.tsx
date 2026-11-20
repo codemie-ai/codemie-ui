@@ -30,11 +30,24 @@ interface MarketplaceCategoriesProps {
   onChange: (categoryIds: string[]) => void
   isAIGenerated?: boolean
   error?: string
+  required?: boolean
+  /** False when the caller loads the category list itself. */
+  loadOnMount?: boolean
 }
 
 const MarketplaceCategories = forwardRef<PrimeMultiselect, MarketplaceCategoriesProps>(
-  ({ value, onChange, isAIGenerated = false, error: externalError }, ref) => {
-    const [isLoading, setIsLoading] = useState(true)
+  (
+    {
+      value,
+      onChange,
+      isAIGenerated = false,
+      error: externalError,
+      required = false,
+      loadOnMount = true,
+    },
+    ref
+  ) => {
+    const [isLoading, setIsLoading] = useState(loadOnMount)
     const [internalError, setInternalError] = useState('')
     const { assistantCategories, getAssistantCategories } = useSnapshot(assistantsStore)
 
@@ -58,6 +71,7 @@ const MarketplaceCategories = forwardRef<PrimeMultiselect, MarketplaceCategories
     }
 
     useEffect(() => {
+      if (!loadOnMount) return
       const fetchData = async () => {
         try {
           await getAssistantCategories()
@@ -111,6 +125,7 @@ const MarketplaceCategories = forwardRef<PrimeMultiselect, MarketplaceCategories
           options={categoryOptions}
           value={value ?? []}
           error={externalError || internalError}
+          required={required}
           loading={isLoading}
           onChange={(e) => handleChange(e.value)}
           renderOption={(option) => CategoryOption(option as Option)}

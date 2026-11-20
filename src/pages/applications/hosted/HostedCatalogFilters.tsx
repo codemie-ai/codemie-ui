@@ -28,11 +28,14 @@ import { createdBy } from '@/utils/helpers'
 
 import {
   HOSTED_COLLECTIONS,
+  HOSTED_FILTER_KEYS,
+  HOSTED_FILTERS,
   hasHostedFilters,
   readHostedCatalogSearch,
   type HostedCollectionId,
   type HostedFilterKey,
 } from './hostedCollections'
+import { HostedCategoriesNotice, useHostedCategories } from './useHostedCategories'
 
 interface Props {
   query: string
@@ -53,8 +56,6 @@ const STATUS_OPTIONS: FilterOption[] = [
   { label: 'Published', value: 'published' },
   { label: 'Unpublished', value: 'unpublished' },
 ]
-/** Every URL filter the bar can write; a tab keeps only the ones it declares. */
-const FILTER_KEYS: HostedFilterKey[] = ['project', 'created_by', 'shared', 'status']
 
 const text = (value: unknown) =>
   typeof value === 'string' ? value.trim().slice(0, MAX_FILTER_LENGTH) : ''
@@ -63,10 +64,17 @@ const HostedCatalogFilters = ({ query, scope }: Props) => {
   const [search, setSearch] = useSearchParams()
   const accepted = HOSTED_COLLECTIONS[scope].filters
   const catalogSearch = readHostedCatalogSearch(search, scope)
-  const { project, createdBy: creator, shared, status } = catalogSearch
+  const { project, category, createdBy: creator, shared, status } = catalogSearch
   const projectKey = JSON.stringify(project)
   // Stable while the selected projects stay the same.
   const selectedProjects = useMemo<string[]>(() => JSON.parse(projectKey), [projectKey])
+  const categoryKey = JSON.stringify(category)
+  const selectedCategories = useMemo<string[]>(() => JSON.parse(categoryKey), [categoryKey])
+  const { categories, status: categoriesStatus, retry: retryCategories } = useHostedCategories()
+  const categoryOptions = useMemo<FilterOption[]>(
+    () => categories.map(({ id, name }) => ({ label: name, value: id })),
+    [categories]
+  )
 
   const { projectOptions, loadProjectOptions } = useProjectOptions()
   const resolvedProjectOptions = useResolvedProjectOptions(projectOptions, selectedProjects)
@@ -130,6 +138,14 @@ const HostedCatalogFilters = ({ query, scope }: Props) => {
         value: creator ?? '',
         options: createdByOptions,
       },
+      category: {
+        name: 'category',
+        label: 'Categories',
+        type: FilterDefinitionType.Multiselect,
+        value: selectedCategories,
+        options: categoryOptions,
+        config: { maxSelectedLabels: 3 },
+      },
       shared: {
         name: 'shared',
         label: 'Shared',
@@ -156,6 +172,8 @@ const HostedCatalogFilters = ({ query, scope }: Props) => {
     isLoadingProjects,
     creator,
     createdByOptions,
+    selectedCategories,
+    categoryOptions,
     shared,
     status,
   ])
@@ -168,14 +186,9 @@ const HostedCatalogFilters = ({ query, scope }: Props) => {
           value ? next.set(key, value) : next.delete(key)
         setText('q', text(values.q))
         // Keys the tab does not declare are dropped, so they are never sent.
-        for (const key of FILTER_KEYS) {
+        for (const key of HOSTED_FILTER_KEYS) {
           next.delete(key)
-          if (!accepted.includes(key)) continue
-          if (key === 'project') {
-            const projects = Array.isArray(values.project) ? values.project : []
-            for (const name of new Set(projects.map(text).filter(Boolean)))
-              next.append('project', name)
-          } else setText(key, text(values[key]))
+          if (accepted.includes(key)) HOSTED_FILTERS[key].write(next, values[key])
         }
         return next
       },
@@ -183,27 +196,30 @@ const HostedCatalogFilters = ({ query, scope }: Props) => {
     )
 
   return (
-    <Filters
-      key={scope}
-      refreshOnValuesUpdate
-      searchKey="q"
-      searchValue={query}
-      searchPlaceholder="Search"
-      filterDefinitions={definitions}
-      onApply={apply}
-      areFiltersEmpty={!query && !hasHostedFilters(scope, catalogSearch)}
-      renderCustomFilter={(definition, _value, updateValue) =>
-        definition.name === CREATED_BY ? (
-          <UserFilter
-            setIsChecked={setIsChecked}
-            isChecked={isChecked}
-            definition={definition}
-            value={definition.value as string}
-            onChange={(value) => updateValue(value)}
-          />
-        ) : null
-      }
-    />
+    <>
+      <Filters
+        key={scope}
+        refreshOnValuesUpdate
+        searchKey="q"
+        searchValue={query}
+        searchPlaceholder="Search"
+        filterDefinitions={definitions}
+        onApply={apply}
+        areFiltersEmpty={!query && !hasHostedFilters(scope, catalogSearch)}
+        renderCustomFilter={(definition, _value, updateValue) =>
+          definition.name === CREATED_BY ? (
+            <UserFilter
+              setIsChecked={setIsChecked}
+              isChecked={isChecked}
+              definition={definition}
+              value={definition.value as string}
+              onChange={(value) => updateValue(value)}
+            />
+          ) : null
+        }
+      />
+      <HostedCategoriesNotice status={categoriesStatus} retry={retryCategories} />
+    </>
   )
 }
 export default HostedCatalogFilters

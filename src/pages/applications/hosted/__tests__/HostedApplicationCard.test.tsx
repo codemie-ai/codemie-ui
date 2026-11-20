@@ -16,12 +16,14 @@ import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-li
 import { MemoryRouter } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { assistantsStore } from '@/store/assistants'
 import { navigate } from '@/test-utils/_mock-state'
 import type { HostedApplication } from '@/types/entity/hostedApplication'
 
 import { hostedActions } from '../hostedAccess'
 import HostedApplicationCard from '../HostedApplicationCard'
 import { useHostedCardActions } from '../useHostedCardActions'
+import { resetHostedCategoriesRequest } from '../useHostedCategories'
 
 import type { ReactNode } from 'react'
 
@@ -105,6 +107,22 @@ describe('card labels', () => {
     renderCard(make({ shared: true }))
     expect(screen.queryByText('Shared with project')).not.toBeInTheDocument()
     expect(screen.queryByText('Not shared with project')).not.toBeInTheDocument()
+  })
+
+  it('does not show category names on the card', () => {
+    renderCard(
+      make({
+        categories: [
+          { id: 'a', name: 'Analytics' },
+          { id: 'b', name: 'Productivity' },
+        ],
+      })
+    )
+    // The card still renders the app's other text, so the absence is not a rendering failure.
+    expect(screen.getByText('Visual')).toBeInTheDocument()
+    expect(screen.queryByText(/Analytics/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Productivity/)).not.toBeInTheDocument()
+    expect(screen.queryByTestId('hosted-card-categories')).not.toBeInTheDocument()
   })
 
   it('marks a suspended application on the card', () => {
@@ -292,14 +310,26 @@ describe('card menu actions', () => {
     boundary.store.deleteApplication.mockResolvedValue(undefined)
   })
 
-  it('confirms before publishing a fresh revision to the marketplace', async () => {
+  it('publishes a fresh revision with its categories from the publish dialog', async () => {
+    resetHostedCategoriesRequest()
+    assistantsStore.assistantCategories = []
+    vi.spyOn(assistantsStore, 'getAssistantCategories').mockImplementation(async () => {
+      assistantsStore.assistantCategories = [
+        { id: 'a', name: 'Analytics', description: '' },
+      ] as never
+    })
+    const categorized = { ...fresh, categories: [{ id: 'a', name: 'Analytics' }] }
+    boundary.store.getApplication.mockResolvedValue(categorized)
     mount()
     fireEvent.click(screen.getByRole('button', { name: 'Publish to Marketplace' }))
+    expect(await screen.findByText('Publish to Marketplace?')).toBeInTheDocument()
     expect(boundary.store.publish).not.toHaveBeenCalled()
-    fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }))
-    await waitFor(() => expect(boundary.store.publish).toHaveBeenCalledWith(fresh))
-    expect(options.onChanged).toHaveBeenCalled()
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    await waitFor(() =>
+      expect(boundary.store.publish).toHaveBeenCalledWith(categorized, ['a'], expect.any(String))
+    )
+    await waitFor(() => expect(options.onChanged).toHaveBeenCalled())
+    expect(screen.queryByText('Publish to Marketplace?')).not.toBeInTheDocument()
   })
 
   it('confirms before removing from the marketplace, and Cancel changes nothing', async () => {

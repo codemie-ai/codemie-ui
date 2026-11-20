@@ -108,7 +108,7 @@ describe('create application page', () => {
       expect(navigate).toHaveBeenCalledWith(hostedRoutes.details(id), { replace: true })
     )
     expect(boundary.store.createApplication).toHaveBeenCalledWith(
-      { name: 'Visual', description: 'A diagram', project: 'alpha' },
+      { name: 'Visual', description: 'A diagram', project: 'alpha', categories: [] },
       expect.any(String)
     )
   })

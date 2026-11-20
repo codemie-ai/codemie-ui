@@ -32,5 +32,14 @@ export const applicationMetadataSchema = yup.object({
     .trim()
     .required('Description is required')
     .max(2000, 'Use at most 2,000 characters'),
+  // Up to three; a published (marketplace) application keeps at least one.
+  categories: yup
+    .array(yup.string().required())
+    .defined()
+    .max(3, 'Choose at most 3 categories')
+    .when('$published', {
+      is: true,
+      then: (schema) => schema.min(1, 'A published application needs at least one category'),
+    }),
 })
 export type ApplicationMetadataForm = yup.InferType<typeof applicationMetadataSchema>
