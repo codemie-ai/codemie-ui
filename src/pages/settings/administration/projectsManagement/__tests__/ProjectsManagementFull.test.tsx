@@ -64,6 +64,7 @@ vi.mock('@/components/Table', () => ({
         <div key={item.name} data-testid={`row-${item.name}`}>
           {customRenderColumns?.name?.(item)}
           {customRenderColumns?.assignments?.(item)}
+          {customRenderColumns?.users?.(item)}
         </div>
       ))}
     </div>
@@ -233,6 +234,74 @@ describe('ProjectsManagementFull — resource counter links', () => {
     expect(screen.getByRole('link', { name: /integrations/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /skills/i })).toBeInTheDocument()
     expect(screen.getByTestId('row-my-project')).toBeInTheDocument()
+  })
+})
+
+describe('ProjectsManagementFull — users link', () => {
+  it('opens the project Members tab for users with users-tab access', () => {
+    render(
+      <MemoryRouter>
+        <ProjectsManagementFull />
+      </MemoryRouter>
+    )
+    expect(resolveMock).toHaveBeenCalledWith({
+      name: 'projects-management-members',
+      params: { projectName: 'my-project' },
+    })
+    expect(resolveMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'administration-users' })
+    )
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
+    expect(hrefs).toContain('/projects-management-members')
+  })
+
+  it('opens the project Members tab for users without users-tab access', () => {
+    vi.mocked(useSnapshot).mockImplementation((store) => {
+      if (store === projectsStore) {
+        return {
+          projects: [mockProject],
+          pagination: { page: 1, perPage: 10, total: 1, totalPages: 1 },
+          loading: false,
+        }
+      }
+      if (store === userStore) return { user: { platform_role: 'user', isAdmin: false } }
+      return {}
+    })
+    render(
+      <MemoryRouter>
+        <ProjectsManagementFull />
+      </MemoryRouter>
+    )
+    expect(resolveMock).toHaveBeenCalledWith({
+      name: 'projects-management-members',
+      params: { projectName: 'my-project' },
+    })
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
+    expect(hrefs).toContain('/projects-management-members')
+  })
+
+  it('renders a non-clickable users badge for personal projects', () => {
+    vi.mocked(useSnapshot).mockImplementation((store) => {
+      if (store === projectsStore) {
+        return {
+          projects: [{ ...mockProject, project_type: 'personal' }],
+          pagination: { page: 1, perPage: 10, total: 1, totalPages: 1 },
+          loading: false,
+        }
+      }
+      if (store === userStore) return { user: { platform_role: 'admin', isAdmin: true } }
+      return {}
+    })
+    render(
+      <MemoryRouter>
+        <ProjectsManagementFull />
+      </MemoryRouter>
+    )
+    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
+    expect(hrefs).not.toContain('/projects-management-members')
+    expect(resolveMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'projects-management-members' })
+    )
   })
 })
 

@@ -32,6 +32,7 @@ import InfoWarning from '@/components/InfoWarning'
 import NavigationMore, { NavigationItem } from '@/components/NavigationMore/NavigationMore'
 import Table from '@/components/Table'
 import { ButtonSize, DECIMAL_PAGINATION_OPTIONS, ButtonType, InfoWarningType } from '@/constants'
+import { PROJECTS_MANAGEMENT_MEMBERS } from '@/constants/routes'
 import { useDebouncedApply } from '@/hooks/useDebounceApply'
 import {
   useFeatureFlag,
@@ -52,7 +53,6 @@ import { Project, ProjectCounters, ProjectType } from '@/types/entity/project'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import { formatCurrency, formatSpend } from '@/utils/currency'
-import { canAccessUsersTab } from '@/utils/permissions'
 import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
@@ -575,19 +575,17 @@ const ProjectsManagementFull: FC = () => {
     projectsStore.pagination.page = page
   }, [])
 
-  const hasUsersTabAccess = canAccessUsersTab(currentUser)
-
   const buildUsersLink = useCallback(
     (project: Project): string => {
-      if (!hasUsersTabAccess) return ''
+      if (project.project_type === ProjectType.PERSONAL) return ''
 
       const { path, searchParamsString } = router.resolve({
-        name: 'administration-users',
-        query: { projects: [project.name] },
+        name: PROJECTS_MANAGEMENT_MEMBERS,
+        params: { projectName: project.name },
       })
       return searchParamsString ? `${path}?${searchParamsString}` : path
     },
-    [hasUsersTabAccess, router]
+    [router]
   )
 
   const customRenderColumns = useMemo(

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-16T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single component (ProjectsManagementFull): Users column cell now links to the project Members route via a buildUsersLink callback gated by canAccessUsersTab." },
+    { "dimension": "technical_risk", "reason": "Reuses existing router.resolve, PROJECTS_MANAGEMENT_MEMBERS route constant and canAccessUsersTab permission helper; link is empty when the user lacks access. No new security surface." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
