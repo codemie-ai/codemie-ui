@@ -13,10 +13,12 @@
 // limitations under the License.
 //
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
 import { UserListItem } from '@/types/entity/user'
+import toaster from '@/utils/toaster'
 
 import UserDetailsPopup from '../UserDetailsPopup'
 
@@ -35,6 +37,7 @@ const { mockUserStore } = vi.hoisted(() => ({
 }))
 
 vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
+vi.mock('@/utils/toaster', () => ({ default: { error: vi.fn() } }))
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal<typeof import('valtio')>()
   return { ...actual, useSnapshot: (store: any) => store }
@@ -91,6 +94,7 @@ const pressedState = () =>
 
 describe('UserDetailsPopup — confirmed default survives a failed refresh (R05)', () => {
   beforeEach(() => {
+    appInfoStore.isAppInfoLoaded = true
     vi.clearAllMocks()
     mockUserStore.user = {
       userId: 'viewer-1',
@@ -136,5 +140,36 @@ describe('UserDetailsPopup — confirmed default survives a failed refresh (R05)
 
     await waitFor(() => expect(screen.getByText('proj-a')).toBeInTheDocument())
     expect(screen.queryByTestId('spinner')).not.toBeInTheDocument()
+  })
+
+  it('shows a toast when the refetch after an edit fails', async () => {
+    mockUserStore.getUserById
+      .mockResolvedValueOnce(
+        makeUser([
+          { name: 'proj-a', is_project_admin: false, is_default: true },
+          { name: 'proj-b', is_project_admin: false, is_default: false },
+        ])
+      )
+      .mockRejectedValue(new Error('network down'))
+
+    render(<UserDetailsPopup userId="target-1" isOpen onClose={vi.fn()} />)
+    await waitFor(() => expect(screen.getByText('proj-b')).toBeInTheDocument())
+
+    const rowB = screen.getByText('proj-b').closest('tr') as HTMLElement
+    fireEvent.click(rowB.querySelector('[data-testid="default-toggle"]') as HTMLElement)
+
+    await waitFor(() =>
+      expect(toaster.error).toHaveBeenCalledWith('Failed to refresh user details')
+    )
+  })
+
+  it('does not show the refresh toast when the initial load fails', async () => {
+    mockUserStore.getUserById.mockRejectedValue(new Error('network down'))
+
+    render(<UserDetailsPopup userId="target-1" isOpen onClose={vi.fn()} />)
+    await waitFor(() => expect(mockUserStore.getUserById).toHaveBeenCalledTimes(1))
+    await act(async () => {})
+
+    expect(toaster.error).not.toHaveBeenCalled()
   })
 })

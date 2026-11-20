@@ -16,6 +16,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
 import { UserListItem } from '@/types/entity/user'
 
 import UserDetailsPopup from '../UserDetailsPopup'
@@ -91,6 +92,7 @@ const pressedState = () =>
 
 describe('UserDetailsPopup — refresh after a project change keeps the panel (EPMCDME-15747)', () => {
   beforeEach(() => {
+    appInfoStore.isAppInfoLoaded = true
     vi.clearAllMocks()
     mockUserStore.user = {
       userId: 'viewer-1',

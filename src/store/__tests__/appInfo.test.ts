@@ -142,6 +142,54 @@ describe('appInfoStore.loadAppInfo file datasource upload limit', () => {
   )
 })
 
+describe('appInfoStore.loadAppInfo IDP managed flag', () => {
+  const info = (extra: Record<string, unknown> = {}) =>
+    okResponse({ message: 'Codemie', version: '1.2.3', description: 'Test', ...extra })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    appInfoStore.idpManagedEnabled = false
+    appInfoStore.isAppInfoLoaded = false
+  })
+
+  it('starts with the app info not loaded, so the default flag is not mistaken for a fact', () => {
+    expect(appInfoStore.isAppInfoLoaded).toBe(false)
+  })
+
+  it.each([true, false])(
+    'stores idpManagedEnabled=%s from v1/info and marks it loaded',
+    async (flag) => {
+      appInfoStore.idpManagedEnabled = !flag
+      mockGet.mockResolvedValue(info({ idpManagedEnabled: flag }))
+
+      await appInfoStore.loadAppInfo()
+
+      expect(appInfoStore.idpManagedEnabled).toBe(flag)
+      expect(appInfoStore.isAppInfoLoaded).toBe(true)
+    }
+  )
+
+  it('treats a v1/info without the flag (older backend) as not IDP managed, but loaded', async () => {
+    mockGet.mockResolvedValue(info())
+
+    await appInfoStore.loadAppInfo()
+
+    expect(appInfoStore.idpManagedEnabled).toBe(false)
+    expect(appInfoStore.isAppInfoLoaded).toBe(true)
+  })
+
+  it('stays not loaded when v1/info fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockGet.mockRejectedValue(new Error('network'))
+
+    await appInfoStore.loadAppInfo()
+
+    expect(appInfoStore.isAppInfoLoaded).toBe(false)
+    expect(appInfoStore.idpManagedEnabled).toBe(false)
+    consoleError.mockRestore()
+  })
+})
+
 describe('appInfoStore.loadReleaseNotes', () => {
   beforeEach(() => {
     vi.clearAllMocks()

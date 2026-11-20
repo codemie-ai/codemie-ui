@@ -20,6 +20,7 @@ import { render, screen } from '@testing-library/react'
 import { useSnapshot } from 'valtio'
 import { describe, it, expect, vi } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 
@@ -41,7 +42,12 @@ vi.mock('@/hooks/useFeatureFlags', () => ({
 }))
 
 vi.mock('@/pages/settings/components/SettingsLayout', () => ({
-  default: ({ content }: any) => <div>{content}</div>,
+  default: ({ content, rightContent }: any) => (
+    <div>
+      {rightContent}
+      {content}
+    </div>
+  ),
 }))
 
 vi.mock('@/components/Table', () => ({
@@ -132,7 +138,24 @@ const baseProject = {
   user_count: 5,
 }
 
-const renderWithProject = (counters: Record<string, number>) => {
+interface AppConfigState {
+  idpManaged?: boolean
+  appInfoLoaded?: boolean
+}
+
+const NO_BLOCKERS = {
+  assistants_count: 0,
+  workflows_count: 0,
+  integrations_count: 0,
+  datasources_count: 0,
+  skills_count: 0,
+}
+
+const renderWithProject = (
+  counters: Record<string, number>,
+  { idpManaged = false, appInfoLoaded = true }: AppConfigState = {}
+) => {
+  const appState = { idpManaged, appInfoLoaded }
   vi.mocked(useSnapshot).mockImplementation((store) => {
     if (store === projectsStore) {
       return {
@@ -144,10 +167,14 @@ const renderWithProject = (counters: Record<string, number>) => {
     if (store === userStore) {
       return { user: { platform_role: 'admin', isAdmin: true } }
     }
+    if (store === appInfoStore) {
+      return { idpManagedEnabled: appState.idpManaged, isAppInfoLoaded: appState.appInfoLoaded }
+    }
     return {}
   })
 
-  render(<ProjectsManagementFull />)
+  const view = render(<ProjectsManagementFull />)
+  return { appState, rerender: () => view.rerender(<ProjectsManagementFull />) }
 }
 
 describe('ProjectsManagementFull — delete eligibility (EPMCDME-14866)', () => {
@@ -230,5 +257,47 @@ describe('ProjectsManagementFull — delete eligibility (EPMCDME-14866)', () => 
 
     const deleteButton = screen.getByRole('button', { name: 'Delete' })
     expect(deleteButton.title).toContain('assistants, workflows, and datasources')
+  })
+
+  describe('IDP managed mode', () => {
+    it('hides Delete action when IDP managed mode is enabled', () => {
+      renderWithProject(NO_BLOCKERS, { idpManaged: true })
+
+      expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+    })
+
+    it('hides Delete until the app info is loaded, when the flag still has its default', () => {
+      renderWithProject(NO_BLOCKERS, { idpManaged: false, appInfoLoaded: false })
+
+      expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+    })
+
+    it('shows Delete once the app info is loaded and the deployment is not IDP managed', () => {
+      renderWithProject(NO_BLOCKERS, { idpManaged: false, appInfoLoaded: true })
+
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    })
+
+    it('shows Create once the app info finishes loading on a non-IDP deployment', () => {
+      const { appState, rerender } = renderWithProject(NO_BLOCKERS, { appInfoLoaded: false })
+      expect(screen.queryByRole('button', { name: /create/i })).not.toBeInTheDocument()
+
+      appState.appInfoLoaded = true
+      rerender()
+
+      expect(screen.getByRole('button', { name: /create/i })).toBeInTheDocument()
+    })
+
+    it('hides Create button when IDP managed mode is enabled', () => {
+      renderWithProject(NO_BLOCKERS, { idpManaged: true })
+
+      expect(screen.queryByRole('button', { name: /create/i })).not.toBeInTheDocument()
+    })
+
+    it('shows Create button for an admin when the deployment is not IDP managed', () => {
+      renderWithProject(NO_BLOCKERS, { idpManaged: false })
+
+      expect(screen.getByRole('button', { name: /create/i })).toBeInTheDocument()
+    })
   })
 })

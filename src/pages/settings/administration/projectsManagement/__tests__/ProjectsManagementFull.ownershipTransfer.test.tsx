@@ -17,6 +17,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useSnapshot } from 'valtio'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 import toaster from '@/utils/toaster'
@@ -162,6 +163,9 @@ describe('ProjectsManagementFull — ownership transfer', () => {
       if (store === userStore) {
         return { user: { platform_role: 'admin', isAdmin: true } }
       }
+      if (store === appInfoStore) {
+        return { idpManagedEnabled: false, isAppInfoLoaded: true }
+      }
       return {}
     })
 
@@ -195,6 +199,33 @@ describe('ProjectsManagementFull — ownership transfer', () => {
       if (store === userStore) {
         return { user: { platform_role: 'admin', isAdmin: true } }
       }
+      if (store === appInfoStore) {
+        return { idpManagedEnabled: false, isAppInfoLoaded: true }
+      }
+      return {}
+    })
+
+    render(<ProjectsManagementFull />)
+
+    expect(screen.queryByRole('button', { name: 'Change ownership' })).toBeNull()
+  })
+
+  it.each([
+    ['IdP managed mode is on', { idpManagedEnabled: true, isAppInfoLoaded: true }],
+    ['the app info has not loaded', { idpManagedEnabled: false, isAppInfoLoaded: false }],
+  ])('does not show "Change ownership" when %s', (_label, flags) => {
+    vi.mocked(useSnapshot).mockImplementation((store) => {
+      if (store === projectsStore) {
+        return {
+          projects: [mockProject],
+          pagination: { page: 1, perPage: 10, total: 1, totalPages: 1 },
+          loading: false,
+        }
+      }
+      if (store === userStore) {
+        return { user: { platform_role: 'admin', isAdmin: true } }
+      }
+      if (store === appInfoStore) return flags
       return {}
     })
 
@@ -214,6 +245,9 @@ describe('ProjectsManagementFull — ownership transfer', () => {
       }
       if (store === userStore) {
         return { user: { platform_role: 'user', isAdmin: false, applications: [] } }
+      }
+      if (store === appInfoStore) {
+        return { idpManagedEnabled: false, isAppInfoLoaded: true }
       }
       return {}
     })

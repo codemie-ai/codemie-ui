@@ -20,7 +20,7 @@ import { UserListItem } from '@/types/entity/user'
 
 import UserDetailsPopup from '../UserDetailsPopup'
 
-const { mockUserStore } = vi.hoisted(() => ({
+const { mockUserStore, mockAppInfoStore } = vi.hoisted(() => ({
   mockUserStore: {
     user: null as any,
     getUserById: vi.fn(),
@@ -28,9 +28,11 @@ const { mockUserStore } = vi.hoisted(() => ({
     updateUser: vi.fn(),
     updateUserBudgets: vi.fn(),
   },
+  mockAppInfoStore: { idpManagedEnabled: false, isAppInfoLoaded: true },
 }))
 
 vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
+vi.mock('@/store/appInfo', () => ({ appInfoStore: mockAppInfoStore }))
 
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal<typeof import('valtio')>()
@@ -98,6 +100,8 @@ describe('UserDetailsPopup — projects management gate (EPMCDME-15112)', () => 
   beforeEach(() => {
     vi.clearAllMocks()
     mockUserStore.getUserBudgets.mockResolvedValue([])
+    mockAppInfoStore.idpManagedEnabled = false
+    mockAppInfoStore.isAppInfoLoaded = true
   })
 
   it('canManageProjects is true for an admin viewer', async () => {
@@ -128,6 +132,39 @@ describe('UserDetailsPopup — projects management gate (EPMCDME-15112)', () => 
     await waitForContent()
 
     expect(canManageProjectsSpy).toHaveBeenCalledWith(true)
+  })
+
+  it('canManageProjects is false for an admin viewer when IDP managed is enabled', async () => {
+    mockAppInfoStore.idpManagedEnabled = true
+    mockUserStore.user = {
+      userId: 'viewer-1',
+      isAdmin: true,
+      isMaintainer: false,
+      isAuditor: false,
+    }
+    mockUserStore.getUserById.mockResolvedValue(makeUser())
+
+    renderPopup()
+    await waitForContent()
+
+    expect(canManageProjectsSpy).toHaveBeenCalledWith(false)
+  })
+
+  it('canManageProjects is false for an admin viewer until the app info has loaded', async () => {
+    mockAppInfoStore.isAppInfoLoaded = false
+    mockUserStore.user = {
+      userId: 'viewer-1',
+      isAdmin: true,
+      isMaintainer: false,
+      isAuditor: false,
+    }
+    mockUserStore.getUserById.mockResolvedValue(makeUser())
+
+    renderPopup()
+    await waitForContent()
+
+    expect(canManageProjectsSpy).toHaveBeenCalledWith(false)
+    expect(canManageProjectsSpy).not.toHaveBeenCalledWith(true)
   })
 
   it('canManageProjects is false for an auditor-only viewer', async () => {

@@ -25,6 +25,8 @@ const { mockUserStore, mockAppInfoStore } = vi.hoisted(() => ({
   },
   mockAppInfoStore: {
     getIdpProvider: vi.fn(() => 'local'),
+    idpManagedEnabled: false,
+    isAppInfoLoaded: true,
     configs: [] as unknown[],
     isConfigFetched: true,
     fetchCustomerConfig: vi.fn(),
@@ -93,6 +95,8 @@ describe('UsersManagementPage — Create user button', () => {
       pagination: { page: 0, per_page: 10, total: 0 },
     })
     mockAppInfoStore.getIdpProvider.mockReturnValue('local')
+    mockAppInfoStore.idpManagedEnabled = false
+    mockAppInfoStore.isAppInfoLoaded = true
   })
 
   it('is hidden for a plain user on a local IDP', async () => {
@@ -141,5 +145,21 @@ describe('UsersManagementPage — Create user button', () => {
     expect(screen.queryByTestId('create-user-popup')).not.toBeInTheDocument()
 
     await waitFor(() => expect(mockUserStore.getUsers).toHaveBeenCalledTimes(2))
+  })
+
+  it('is hidden for an admin when IdP managed mode is on', async () => {
+    mockUserStore.user = { isAdmin: true, isMaintainer: false, isAuditor: false }
+    mockAppInfoStore.idpManagedEnabled = true
+    render(<UsersManagementPage />)
+    await waitFor(() => expect(mockUserStore.getUsers).toHaveBeenCalled())
+    expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
+  })
+
+  it('is hidden for an admin until the app info has loaded', async () => {
+    mockUserStore.user = { isAdmin: true, isMaintainer: false, isAuditor: false }
+    mockAppInfoStore.isAppInfoLoaded = false
+    render(<UsersManagementPage />)
+    await waitFor(() => expect(mockUserStore.getUsers).toHaveBeenCalled())
+    expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
   })
 })

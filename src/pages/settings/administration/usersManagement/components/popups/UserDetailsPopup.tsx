@@ -30,10 +30,12 @@ import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import BudgetAssignmentsEditor from '@/pages/settings/administration/components/BudgetAssignmentsEditor'
 import UserProjectsTable from '@/pages/settings/administration/usersManagement/components/UserProjectsTable'
 import SpendingCard from '@/pages/settings/components/SpendingCard'
+import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
 import { BudgetAssignment } from '@/types/entity/budget'
 import { UserAssignedProject, UserListItem, UserType } from '@/types/entity/user'
 import { FilterOption } from '@/types/filters'
+import toaster from '@/utils/toaster'
 
 const USER_TYPE_OPTIONS: FilterOption[] = [
   { label: 'Regular', value: USER_TYPES.regular },
@@ -46,6 +48,34 @@ interface UserDetailsModalProps {
   onClose: () => void
   onSave?: () => void
 }
+
+interface AdminSwitchState {
+  idpLocked: boolean
+  canEditPlatformRoles: boolean
+  isUpdatingRoles: boolean
+  targetIsAdmin: boolean
+  targetIsMaintainer: boolean
+  viewerIsAdmin: boolean
+  viewerIsMaintainer: boolean
+}
+
+// The Admin role comes from the identity provider in IDP managed mode. Otherwise an admin cannot
+// demote another admin (a maintainer can), and a maintainer is always an admin, so that flag cannot
+// be cleared here.
+const isAdminSwitchDisabled = ({
+  idpLocked,
+  canEditPlatformRoles,
+  isUpdatingRoles,
+  targetIsAdmin,
+  targetIsMaintainer,
+  viewerIsAdmin,
+  viewerIsMaintainer,
+}: AdminSwitchState): boolean =>
+  idpLocked ||
+  !canEditPlatformRoles ||
+  isUpdatingRoles ||
+  targetIsMaintainer ||
+  (targetIsAdmin && viewerIsAdmin && !viewerIsMaintainer)
 
 const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, onSave }) => {
   const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
@@ -66,13 +96,25 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
   const detailsRequestId = useRef(0)
   const refreshInFlight = useRef(false)
   const { user: currentUser } = useSnapshot(userStore)
+  const { idpManagedEnabled, isAppInfoLoaded } = useSnapshot(appInfoStore)
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
   const isAuditorUser = currentUser?.isAuditor ?? false
   const canViewBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer || isAuditorUser)
   const canManageBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer)
-  const canEditPlatformRoles = isMaintainer && currentUser?.userId !== userId
-  const canAssignAuditor = (isAdmin || isMaintainer) && currentUser?.userId !== userId
+  // Until the app info has loaded the IDP mode is unknown, so treat it as locked rather than open
+  const idpLocked = idpManagedEnabled || !isAppInfoLoaded
+  const canEditPlatformRoles = isMaintainer && currentUser?.userId !== userId && !idpLocked
+  const canAssignAuditor = canEditPlatformRoles
+  const adminSwitchDisabled = isAdminSwitchDisabled({
+    idpLocked,
+    canEditPlatformRoles,
+    isUpdatingRoles,
+    targetIsAdmin: roleFlags.is_admin,
+    targetIsMaintainer: roleFlags.is_maintainer,
+    viewerIsAdmin: isAdmin,
+    viewerIsMaintainer: isMaintainer,
+  })
 
   // A refresh after an edit keeps the details on screen: swapping them for the spinner collapses
   // the panel and resets its scroll position (EPMCDME-15747).
@@ -100,6 +142,9 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
         })
       } else {
         console.error('Failed to fetch user details:', detailsResult.reason)
+        if (refresh) {
+          toaster.error('Failed to refresh user details')
+        }
       }
       if (budgetsResult.status === 'fulfilled') {
         setBudgetAssignments(budgetsResult.value)
@@ -107,8 +152,6 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
         setBudgetAssignments([])
         console.error('Failed to fetch user budgets:', budgetsResult.reason)
       }
-    } catch (error) {
-      console.error('Failed to fetch user details:', error)
     } finally {
       if (requestId === detailsRequestId.current) {
         setIsLoading(false)
@@ -193,6 +236,8 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
     value: boolean
   ) => {
     if (!user || !userId || !canEditPlatformRoles || isUpdatingRoles) return
+    if (key === 'is_admin' && adminSwitchDisabled) return
+    if (key === 'is_maintainer' && !isMaintainer) return
 
     const previousFlags = roleFlags
     const nextFlags = { ...roleFlags, [key]: value }
@@ -267,7 +312,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
 
           <div className="flex flex-col gap-4">
             <div className="flex gap-12 items-center">
-              {isAdmin ? (
+              {isAdmin && !idpLocked ? (
                 <div className="flex flex-row items-center gap-1.5">
                   <span className="text-xs text-text-primary">User Type:</span>
                   <Select
@@ -317,7 +362,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
                     id="user-admin-role"
                     label="Admin"
                     value={roleFlags.is_admin}
-                    disabled={!canEditPlatformRoles || isUpdatingRoles || roleFlags.is_maintainer}
+                    disabled={adminSwitchDisabled}
                     onChange={(e) => handleRoleChange('is_admin', e.target.checked)}
                   />
 
@@ -325,7 +370,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
                     id="user-maintainer-role"
                     label="Maintainer"
                     value={roleFlags.is_maintainer}
-                    disabled={!canEditPlatformRoles || isUpdatingRoles}
+                    disabled={!isMaintainer || !canEditPlatformRoles || isUpdatingRoles}
                     onChange={(e) => handleRoleChange('is_maintainer', e.target.checked)}
                   />
                 </div>
@@ -379,7 +424,7 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
             <UserProjectsTable
               user={user}
               onProjectsChange={handleProjectsChange}
-              canManageProjects={isAdmin || isMaintainer}
+              canManageProjects={(isAdmin || isMaintainer) && !idpLocked}
             />
           </div>
         </div>

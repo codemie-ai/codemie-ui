@@ -46,6 +46,7 @@ interface UsersManagementBulkActionsProps {
   onClearSelection: () => void
   refresh: () => void
   canManageBudgets?: boolean
+  membershipLocked?: boolean
 }
 
 const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
@@ -53,6 +54,7 @@ const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
   onClearSelection,
   refresh,
   canManageBudgets = false,
+  membershipLocked = false,
 }) => {
   const [activePopup, setActivePopup] = useState<ActivePopup | null>(null)
 
@@ -71,8 +73,12 @@ const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
   const bulkActionItems = useMemo(
     () => [
       // { label: 'Change Role', onClick: () => openPopup('changeRole') },
-      { label: 'Assign to Project', onClick: () => openPopup('assignToProject') },
-      { label: 'Unassign from Project', onClick: () => openPopup('unassignFromProject') },
+      ...(membershipLocked
+        ? []
+        : [
+            { label: 'Assign to Project', onClick: () => openPopup('assignToProject') },
+            { label: 'Unassign from Project', onClick: () => openPopup('unassignFromProject') },
+          ]),
       ...(canManageBudgets
         ? [
             { label: 'Assign Budgets', onClick: () => openPopup('assignBudgets') },
@@ -81,7 +87,7 @@ const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
           ]
         : []),
     ],
-    [canManageBudgets, openPopup]
+    [canManageBudgets, membershipLocked, openPopup]
   )
 
   const handleBudgetSubmit = async (assignments: BudgetAssignment[]) => {
@@ -89,6 +95,8 @@ const UsersManagementBulkActions: FC<UsersManagementBulkActionsProps> = ({
     await userStore.bulkSetBudgets(userIds, assignments)
     closePopup(true)
   }
+
+  if (bulkActionItems.length === 0) return null
 
   return (
     <>

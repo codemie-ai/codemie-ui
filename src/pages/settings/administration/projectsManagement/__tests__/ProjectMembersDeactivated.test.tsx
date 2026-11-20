@@ -19,6 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
 import { useVueRouter } from '@/hooks/useVueRouter'
 import ProjectMembersManager from '@/pages/settings/administration/projectsManagement/ProjectMembersManager'
+import { appInfoStore } from '@/store/appInfo'
 import { userStore } from '@/store/user'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 
@@ -81,6 +82,7 @@ describe('ProjectMembersManager — deactivated members', () => {
     vi.restoreAllMocks()
     vi.clearAllMocks()
     vi.mocked(useVueRouter).mockReturnValue(mockRouterState as never)
+    appInfoStore.isAppInfoLoaded = true
     userStore.user = { userId: 'admin-1', isAdmin: true } as never
   })
 

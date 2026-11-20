@@ -22,6 +22,7 @@ import { MemoryRouter } from 'react-router'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import ProjectMembersManager from '@/pages/settings/administration/projectsManagement/ProjectMembersManager'
+import { appInfoStore } from '@/store/appInfo'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { userStore } from '@/store/user'
 import { ProjectType } from '@/types/entity/project'
@@ -127,6 +128,7 @@ describe('ProjectMembersManager — Actions dropdown', () => {
   }
 
   beforeEach(() => {
+    appInfoStore.isAppInfoLoaded = true
     vi.clearAllMocks()
     userStore.user = { userId: 'admin-1', isAdmin: true } as never
     userStore.getUsers = vi

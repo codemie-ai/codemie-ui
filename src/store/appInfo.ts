@@ -80,6 +80,9 @@ export interface AppInfoStoreType {
   appVersion: string
   apiVersion: string | null
   fileDatasourceMaxUploadCount: number
+  idpManagedEnabled: boolean
+  // True only once v1/info has loaded: until then idpManagedEnabled is its default (false), not a fact
+  isAppInfoLoaded: boolean
   appReleases: Release[]
   viewedAppReleaseVersion: string
   llmModels: ModelOption[]
@@ -293,6 +296,8 @@ export const appInfoStore = proxy<AppInfoStoreType>({
   appVersion: APP_VERSION,
   apiVersion: null,
   fileDatasourceMaxUploadCount: DEFAULT_FILE_DATASOURCE_MAX_UPLOAD_COUNT,
+  idpManagedEnabled: false,
+  isAppInfoLoaded: false,
   appReleases: [],
   viewedAppReleaseVersion: '',
   llmModels: [],
@@ -336,6 +341,8 @@ export const appInfoStore = proxy<AppInfoStoreType>({
       this.fileDatasourceMaxUploadCount = getFileDatasourceMaxUploadCount(
         data.fileDatasourceMaxUploadCount
       )
+      this.idpManagedEnabled = data.idpManagedEnabled ?? false
+      this.isAppInfoLoaded = true
     } catch (error) {
       console.error('Error loading app info:', error)
     }

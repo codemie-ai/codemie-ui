@@ -22,6 +22,7 @@ import { MemoryRouter } from 'react-router'
 import { describe, it, expect, vi } from 'vitest'
 
 import ProjectDetailsPage from '@/pages/settings/administration/ProjectDetailsPage'
+import { appInfoStore } from '@/store/appInfo'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
 
@@ -106,6 +107,7 @@ describe('ProjectDetailsPage Members - page size survives member actions (EPMCDM
       user_type: 'INTERNAL',
       applications: [],
     })
+    appInfoStore.isAppInfoLoaded = true
     userStore.user = { userId: 'admin-1', isAdmin: true } as never
     mockAPI('GET', `v1/projects/${PROJECT}`, projectResponse(25))
     mockAPI('GET', 'v1/admin/users', usersPage(members(1, 10), 10, 25), { per_page: 10 })

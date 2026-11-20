@@ -16,6 +16,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { appInfoStore } from '@/store/appInfo'
 import { UserListItem } from '@/types/entity/user'
 
 import UserDetailsPopup from '../UserDetailsPopup'
@@ -117,6 +118,7 @@ const adminSwitch = () => screen.getByTestId<HTMLInputElement>('user-admin-role'
 // that refresh still reads the pre-save snapshot. The confirmed save must win either way.
 describe('UserDetailsPopup — a save during an in-place refresh is not overwritten', () => {
   beforeEach(() => {
+    appInfoStore.isAppInfoLoaded = true
     vi.clearAllMocks()
     mockUserStore.user = {
       userId: 'viewer-1',

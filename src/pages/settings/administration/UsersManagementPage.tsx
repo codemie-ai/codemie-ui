@@ -90,7 +90,8 @@ const UsersManagementPage: FC = () => {
   const router = useRouter()
   const [isBudgetManagementEnabled] = useBudgetManagementEnabled()
   const { user: currentUser } = useSnapshot(userStore)
-  useSnapshot(appInfoStore)
+  const { idpManagedEnabled, isAppInfoLoaded } = useSnapshot(appInfoStore)
+  const idpLocked = idpManagedEnabled || !isAppInfoLoaded
   const { filters, handleFilterChange } = useUsersManagementFilters()
   const isAdmin = currentUser?.isAdmin ?? false
   const isMaintainer = currentUser?.isMaintainer ?? false
@@ -98,12 +99,12 @@ const UsersManagementPage: FC = () => {
   const isLocalAuth = appInfoStore.getIdpProvider() === 'local'
   const canViewBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer || isAuditor)
   const canManageBudgets = isBudgetManagementEnabled && (isAdmin || isMaintainer)
-  const canManageUserStatus = isAdmin || isMaintainer
+  const canManageUserStatus = (isAdmin || isMaintainer) && !idpLocked
   // Same rank rule as the backend: only a maintainer changes a maintainer's status
   const canChangeStatusOf = (target: UserListItem) =>
     canManageUserStatus && (!target.is_maintainer || isMaintainer)
   const currentUserId = currentUser?.userId
-  const canCreateUser = (isAdmin || isMaintainer) && isLocalAuth
+  const canCreateUser = (isAdmin || isMaintainer) && isLocalAuth && !idpLocked
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false)
   const effectiveFilters = useMemo(
     () => ({
@@ -505,6 +506,7 @@ const UsersManagementPage: FC = () => {
                   refresh={refreshFromFirstPage}
                   onClearSelection={clearSelection}
                   canManageBudgets={canManageBudgets}
+                  membershipLocked={idpLocked}
                 />
               )}
             </div>

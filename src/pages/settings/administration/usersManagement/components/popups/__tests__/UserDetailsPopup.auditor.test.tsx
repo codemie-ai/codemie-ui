@@ -24,7 +24,7 @@ import UserDetailsPopup from '../UserDetailsPopup'
 // Store mocks
 // ---------------------------------------------------------------------------
 
-const { mockUserStore } = vi.hoisted(() => ({
+const { mockUserStore, mockAppInfoStore } = vi.hoisted(() => ({
   mockUserStore: {
     user: null as any,
     getUserById: vi.fn(),
@@ -32,9 +32,11 @@ const { mockUserStore } = vi.hoisted(() => ({
     updateUser: vi.fn(),
     updateUserBudgets: vi.fn(),
   },
+  mockAppInfoStore: { idpManagedEnabled: false, isAppInfoLoaded: true },
 }))
 
 vi.mock('@/store/user', () => ({ userStore: mockUserStore }))
+vi.mock('@/store/appInfo', () => ({ appInfoStore: mockAppInfoStore }))
 
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal<typeof import('valtio')>()
@@ -85,7 +87,9 @@ vi.mock('@/components/Button', () => ({
 vi.mock('@/components/Tooltip', () => ({ default: () => null }))
 vi.mock('@/components/details/DetailsCopyField', () => ({ default: () => null }))
 vi.mock('@/components/details/DetailsProperty', () => ({ default: () => null }))
-vi.mock('@/components/form/Select/Select', () => ({ default: () => null }))
+vi.mock('@/components/form/Select/Select', () => ({
+  default: () => <div data-testid="user-type-select" />,
+}))
 vi.mock('@/pages/settings/components/SpendingCard', () => ({ default: () => null }))
 vi.mock('@/pages/settings/administration/components/BudgetAssignmentsEditor', () => ({
   default: () => <div data-testid="budget-assignments-editor" />,
@@ -133,6 +137,78 @@ describe('UserDetailsPopup — auditor role (EPMCDME-10930)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUserStore.getUserBudgets.mockResolvedValue([])
+    mockAppInfoStore.idpManagedEnabled = false
+    mockAppInfoStore.isAppInfoLoaded = true
+  })
+
+  describe('Admin switch', () => {
+    const viewAs = async (viewer: object, target: Partial<UserListItem>) => {
+      mockUserStore.user = { userId: 'viewer-1', isMaintainer: false, isAuditor: false, ...viewer }
+      mockUserStore.getUserById.mockResolvedValue(makeUser({ id: 'target-2', ...target }))
+      renderPopup('target-2')
+      await waitForContent()
+      return screen.getByTestId('switch-user-admin-role')
+    }
+
+    it('is enabled when an admin views a regular user', async () => {
+      expect(await viewAs({ isAdmin: true, isMaintainer: true }, { is_admin: false })).not.toBeDisabled()
+    })
+
+    it('is disabled for a maintainer target, whose admin flag cannot be cleared', async () => {
+      expect(
+        await viewAs({ isAdmin: true, isMaintainer: true }, { is_admin: true, is_maintainer: true })
+      ).toBeDisabled()
+    })
+
+    it('is disabled in IDP managed mode, where the Admin role comes from the identity provider', async () => {
+      mockAppInfoStore.idpManagedEnabled = true
+
+      expect(await viewAs({ isAdmin: true, isMaintainer: true }, { is_admin: false })).toBeDisabled()
+    })
+
+    it('is disabled until the app info has loaded, when the IDP mode is still unknown', async () => {
+      mockAppInfoStore.isAppInfoLoaded = false
+
+      expect(await viewAs({ isAdmin: true, isMaintainer: true }, { is_admin: false })).toBeDisabled()
+    })
+
+    it('is enabled when a maintainer, who counts as an admin, views an admin', async () => {
+      expect(
+        await viewAs({ isAdmin: true, isMaintainer: true }, { is_admin: true })
+      ).not.toBeDisabled()
+    })
+
+    it('demotes an admin when a maintainer turns the switch off', async () => {
+      mockUserStore.updateUser.mockResolvedValue(undefined)
+      const adminSwitch = await viewAs({ isAdmin: true, isMaintainer: true }, { is_admin: true })
+
+      fireEvent.click(adminSwitch)
+
+      await waitFor(() =>
+        expect(mockUserStore.updateUser).toHaveBeenCalledWith(
+          'target-2',
+          expect.objectContaining({ is_admin: false })
+        )
+      )
+    })
+  })
+
+  it('hides the Platform Roles section when the viewer is admin-only (not maintainer)', async () => {
+    mockUserStore.user = {
+      userId: 'viewer-1',
+      isAdmin: true,
+      isMaintainer: false,
+      isAuditor: false,
+    }
+    mockUserStore.getUserById.mockResolvedValue(makeUser({ id: 'target-2' }))
+
+    renderPopup('target-2')
+    await waitForContent()
+
+    expect(screen.queryByText('Platform Roles')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('switch-user-auditor-role')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('switch-user-admin-role')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('switch-user-maintainer-role')).not.toBeInTheDocument()
   })
 
   it('Platform Roles section is visible when viewer is maintainer', async () => {
@@ -298,5 +374,45 @@ describe('UserDetailsPopup — auditor role (EPMCDME-10930)', () => {
     )
     expect(auditorSwitch).not.toBeChecked()
     expect(auditorSwitch).toBeDisabled()
+  })
+})
+
+describe('UserDetailsPopup — IdP locked platform roles', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUserStore.getUserBudgets.mockResolvedValue([])
+    mockUserStore.user = {
+      userId: 'viewer-1',
+      isAdmin: true,
+      isMaintainer: true,
+      isAuditor: false,
+    }
+    mockUserStore.getUserById.mockResolvedValue(makeUser())
+    mockAppInfoStore.idpManagedEnabled = false
+    mockAppInfoStore.isAppInfoLoaded = true
+  })
+
+  it('keeps the user type editable and all role switches enabled when not locked', async () => {
+    renderPopup()
+    await waitForContent()
+
+    expect(screen.getByTestId('user-type-select')).toBeInTheDocument()
+    expect(screen.getByTestId('switch-user-auditor-role')).not.toBeDisabled()
+    expect(screen.getByTestId('switch-user-admin-role')).not.toBeDisabled()
+    expect(screen.getByTestId('switch-user-maintainer-role')).not.toBeDisabled()
+  })
+
+  it.each([
+    ['IdP managed mode is on', { idpManagedEnabled: true, isAppInfoLoaded: true }],
+    ['the app info has not loaded', { idpManagedEnabled: false, isAppInfoLoaded: false }],
+  ])('shows user type read-only and disables every role switch when %s', async (_l, flags) => {
+    Object.assign(mockAppInfoStore, flags)
+    renderPopup()
+    await waitForContent()
+
+    expect(screen.queryByTestId('user-type-select')).not.toBeInTheDocument()
+    expect(screen.getByTestId('switch-user-auditor-role')).toBeDisabled()
+    expect(screen.getByTestId('switch-user-admin-role')).toBeDisabled()
+    expect(screen.getByTestId('switch-user-maintainer-role')).toBeDisabled()
   })
 })

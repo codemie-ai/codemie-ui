@@ -40,6 +40,8 @@ interface ProjectMembersBulkActionsProps {
   canManageProject: boolean
   isProjectAdmin: boolean
   canManageBudgets: boolean
+  // Roles and membership are controlled by the identity provider: hide Change Role and Unassign
+  membershipLocked?: boolean
   onClearSelection: () => void
   refresh: () => void
   onSuccess?: () => void
@@ -60,6 +62,7 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
   canManageProject,
   isProjectAdmin,
   canManageBudgets,
+  membershipLocked = false,
   onClearSelection,
   refresh,
   onSuccess,
@@ -124,11 +127,15 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
 
   const bulkActionItems = useMemo(
     () => [
-      {
-        title: 'Change Role',
-        icon: <EditSvg className="icon" />,
-        onClick: () => openPopup('changeRole'),
-      },
+      ...(membershipLocked
+        ? []
+        : [
+            {
+              title: 'Change Role',
+              icon: <EditSvg className="icon" />,
+              onClick: () => openPopup('changeRole'),
+            },
+          ]),
       ...(canManageBudgets
         ? [
             {
@@ -147,17 +154,21 @@ const ProjectMembersBulkActions: FC<ProjectMembersBulkActionsProps> = ({
             },
           ]
         : []),
-      { title: 'bulk-actions-divider', divider: true as const },
-      {
-        title: 'Unassign from Project',
-        icon: <DeleteSvg className="icon" />,
-        onClick: () => openPopup('unassign'),
-      },
+      ...(membershipLocked
+        ? []
+        : [
+            { title: 'bulk-actions-divider', divider: true as const },
+            {
+              title: 'Unassign from Project',
+              icon: <DeleteSvg className="icon" />,
+              onClick: () => openPopup('unassign'),
+            },
+          ]),
     ],
-    [canManageBudgets, isModelsConfigEnabled, onOverrideModels, openPopup]
+    [canManageBudgets, isModelsConfigEnabled, membershipLocked, onOverrideModels, openPopup]
   )
 
-  if (!canManageProject || selectedUsers.length === 0) {
+  if (!canManageProject || selectedUsers.length === 0 || bulkActionItems.length === 0) {
     return null
   }
 

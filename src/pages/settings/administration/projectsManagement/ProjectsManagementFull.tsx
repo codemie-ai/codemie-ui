@@ -43,6 +43,7 @@ import BudgetSpendCell from '@/pages/settings/administration/components/BudgetSp
 import NameLinkCell from '@/pages/settings/administration/components/NameLinkCell'
 import ChangeOwnershipModal from '@/pages/settings/administration/components/projectsManagement/ChangeOwnershipModal'
 import SettingsLayout from '@/pages/settings/components/SettingsLayout'
+import { appInfoStore } from '@/store/appInfo'
 import { projectDisplayNamesStore } from '@/store/projectDisplayNames'
 import { projectsStore } from '@/store/projects'
 import { userStore } from '@/store/user'
@@ -204,6 +205,7 @@ const renderUsersColumn = (buildUsersLink: (project: Project) => string) => (ite
 const ProjectsManagementFull: FC = () => {
   const router = useVueRouter()
   const { user: currentUser } = useSnapshot(userStore)
+  const { idpManagedEnabled, isAppInfoLoaded } = useSnapshot(appInfoStore)
   const { projects, pagination, loading } = useSnapshot(projectsStore)
   const {
     search,
@@ -634,13 +636,16 @@ const ProjectsManagementFull: FC = () => {
             onClick: () => handleEditProject(item),
           })
 
-          if (!isPersonal) {
+          if (!isPersonal && isAppInfoLoaded && !idpManagedEnabled) {
             menuItems.push({
               title: 'Change ownership',
               icon: <ShareSvg />,
               onClick: () => handleChangeOwnership(item),
             })
+          }
 
+          // Until v1/info has loaded idpManagedEnabled is only its default (false): keep Delete hidden
+          if (!isPersonal && isAppInfoLoaded && !idpManagedEnabled) {
             const hasCountData = item.counters !== undefined
             const blockingLabels = getBlockingResourceLabels(item)
             const shouldDisableDelete = !hasCountData || blockingLabels.length > 0
@@ -683,12 +688,15 @@ const ProjectsManagementFull: FC = () => {
       canManageProject,
       isUserManagementEnabled,
       buildUsersLink,
+      idpManagedEnabled,
+      isAppInfoLoaded,
     ]
   )
 
   const renderHeaderActions = useMemo(() => {
     if (!isConfigLoaded) return null
     if (!isProjectCreationForNonAdminsEnabled && !currentUser?.isAdmin) return null
+    if (idpManagedEnabled || !isAppInfoLoaded) return null
 
     return (
       <Button onClick={handleAddProject} size={ButtonSize.MEDIUM}>
@@ -696,7 +704,14 @@ const ProjectsManagementFull: FC = () => {
         Create
       </Button>
     )
-  }, [handleAddProject, isProjectCreationForNonAdminsEnabled, isConfigLoaded, currentUser?.isAdmin])
+  }, [
+    handleAddProject,
+    isProjectCreationForNonAdminsEnabled,
+    isConfigLoaded,
+    currentUser?.isAdmin,
+    idpManagedEnabled,
+    isAppInfoLoaded,
+  ])
 
   const renderContent = () => {
     return (

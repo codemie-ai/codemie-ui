@@ -50,6 +50,7 @@ import AddUserModal, {
 } from '@/pages/settings/administration/components/AddUserModal'
 import ProjectMembersBulkActions from '@/pages/settings/administration/components/projectsManagement/ProjectMembersBulkActions'
 import { analyticsStore } from '@/store/analytics'
+import { appInfoStore } from '@/store/appInfo'
 import { projectBudgetsStore } from '@/store/projectBudgets'
 import { projectModelSettingsStore } from '@/store/projectModelSettings'
 import { userStore } from '@/store/user'
@@ -249,6 +250,9 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
   isModelsConfigEnabled = false,
 }) => {
   const snap = useSnapshot(userStore)
+  const { idpManagedEnabled, isAppInfoLoaded } = useSnapshot(appInfoStore)
+  // Locked while the IDP setting is unknown, so nothing is offered that the backend would refuse
+  const membershipLocked = idpManagedEnabled || !isAppInfoLoaded
   const currentUser = snap.user
   const router = useVueRouter()
 
@@ -733,6 +737,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         const currentRole = getUserRole(user)
         const isCurrentUser = currentUser?.userId === user.id
         const isDisabled =
+          membershipLocked ||
           isPersonal ||
           !canManageProject ||
           (isProjectAdmin && isCurrentUser) ||
@@ -773,7 +778,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
         const isCreator = user.id === project.created_by
 
         const menuItems: NavigationMenuItem[] = []
-        const unassignHidden = isCreator || isPersonal || !canManageProject
+        const unassignHidden = isCreator || isPersonal || !canManageProject || membershipLocked
 
         if (isEnterpriseEdition()) {
           menuItems.push({
@@ -841,6 +846,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       project,
       canManageProject,
       isPersonal,
+      membershipLocked,
       handleDeleteUser,
       budgetAllocationLookup,
       spendingByUserId,
@@ -861,7 +867,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
 
   const headerActions = useMemo(
     () =>
-      canManageProject && !isPersonal ? (
+      canManageProject && !isPersonal && !membershipLocked ? (
         <div className="flex gap-2">
           <Button
             onClick={() => setShowImportModal(true)}
@@ -881,7 +887,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
           </Button>
         </div>
       ) : null,
-    [canManageProject, isPersonal]
+    [canManageProject, isPersonal, membershipLocked]
   )
 
   return (
@@ -914,6 +920,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
               canManageProject={canManageProject}
               isProjectAdmin={isProjectAdmin}
               canManageBudgets={canManageBudgets}
+              membershipLocked={membershipLocked}
               onClearSelection={clearSelection}
               refresh={refreshFromFirstPage}
               onSuccess={onMembersChanged}

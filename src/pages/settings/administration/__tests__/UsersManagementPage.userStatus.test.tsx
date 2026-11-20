@@ -30,6 +30,8 @@ const { mockUserStore, mockAppInfoStore } = vi.hoisted(() => ({
   },
   mockAppInfoStore: {
     getIdpProvider: vi.fn(() => 'local'),
+    idpManagedEnabled: false,
+    isAppInfoLoaded: true,
     configs: [] as unknown[],
     isConfigFetched: true,
     fetchCustomerConfig: vi.fn(),
@@ -152,6 +154,8 @@ describe('UsersManagementPage — user status', () => {
     vi.mocked(storage.getObject).mockReturnValue([])
     setRole({ isAdmin: true })
     mockAppInfoStore.getIdpProvider.mockReturnValue('local')
+    mockAppInfoStore.idpManagedEnabled = false
+    mockAppInfoStore.isAppInfoLoaded = true
     mockUserStore.deactivateUser.mockResolvedValue({ message: 'ok' })
     mockUserStore.reactivateUser.mockResolvedValue({})
     setUsers(ACTIVE, INACTIVE)
@@ -180,6 +184,16 @@ describe('UsersManagementPage — user status', () => {
     ['plain user', {}],
   ])('hides the actions from a %s', async (_label, role) => {
     setRole(role)
+    await renderPage()
+    expect(await row('u-active')).not.toHaveTextContent(/activate user/)
+    expect(await row('u-inactive')).not.toHaveTextContent(/activate user/)
+  })
+
+  it.each([
+    ['IdP managed mode is on', { idpManagedEnabled: true, isAppInfoLoaded: true }],
+    ['the app info has not loaded', { idpManagedEnabled: false, isAppInfoLoaded: false }],
+  ])('hides Deactivate and Reactivate when %s', async (_label, flags) => {
+    Object.assign(mockAppInfoStore, flags)
     await renderPage()
     expect(await row('u-active')).not.toHaveTextContent(/activate user/)
     expect(await row('u-inactive')).not.toHaveTextContent(/activate user/)
