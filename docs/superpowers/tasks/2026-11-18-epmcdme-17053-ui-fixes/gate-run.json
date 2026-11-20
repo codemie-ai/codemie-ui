@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-17053_ui-fixes",
+  "head": "9bed55bcb2650a03214b9365ca341f4326468fa6",
+  "runner": "npm",
+  "started_at": "2026-11-18T14:00:00Z",
+  "completed_at": "2026-11-18T14:20:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 37000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 29000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 336000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 939 passed (939); Tests 9973 passed | 1 skipped"
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 165000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 88 passed (88); Tests 980 passed | 1 skipped"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 36000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: no leaks found (working tree only, not git history)"
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 2000,
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "stderr empty; summary printed"
+    },
+    {
+      "id": "sonar",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Skip if SONAR_TOKEN unset: SONAR_TOKEN is not set in the environment and .env.local is absent. Set SONAR_TOKEN (and reach the Sonar host) to run locally; CI/pre-commit re-checks."
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "Checked 2853 files, 0 missing license headers"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Nothing staged; operates on staged files only. Underlying lint and typecheck covered by guide gates."
+    },
+    {
+      "id": "wait-ci-init",
+      "source": "ci",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "external pre-ci-guard template",
+      "exit_code": null,
+      "notes": "Waits on external ci-pipeline and compliance-report contexts; only runs in MR pipeline targeting main; cannot run locally."
+    }
+  ],
+  "failures": {}
+}

@@ -30,6 +30,7 @@ import StatusBadge, { StatusEnum } from '@/components/StatusBadge/StatusBadge'
 import Table from '@/components/Table'
 import { ButtonSize, ButtonType, DECIMAL_PAGINATION_OPTIONS } from '@/constants'
 import { PROJECTS_MANAGEMENT_DETAIL } from '@/constants/routes'
+import { USER_TYPE_LABELS } from '@/constants/user'
 import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import { useRouter } from '@/hooks/useRouter'
 import { useTableSelection } from '@/hooks/useTableSelection'
@@ -343,7 +344,9 @@ const UsersManagementPage: FC = () => {
       },
 
       user_type: (item: UserListItem) => (
-        <span className="text-xs font-medium capitalize">{item.user_type}</span>
+        <span className="text-xs font-medium capitalize">
+          {USER_TYPE_LABELS[item.user_type] ?? item.user_type}
+        </span>
       ),
 
       superadmin: (item: UserListItem) => {

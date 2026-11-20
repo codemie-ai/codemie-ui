@@ -48,7 +48,7 @@ export interface UserData {
   stt_support: boolean
 }
 
-export type UserType = 'regular' | 'external'
+export type UserType = 'regular' | 'external' | 'service_account'
 
 export interface UserListItem {
   id: string

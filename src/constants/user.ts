@@ -23,4 +23,11 @@ export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES]
 export const USER_TYPES = {
   regular: 'regular',
   external: 'external',
+  service_account: 'service_account',
 } as const
+
+export const USER_TYPE_LABELS: Record<string, string> = {
+  [USER_TYPES.regular]: 'Regular',
+  [USER_TYPES.external]: 'External User',
+  [USER_TYPES.service_account]: 'Service Account',
+}

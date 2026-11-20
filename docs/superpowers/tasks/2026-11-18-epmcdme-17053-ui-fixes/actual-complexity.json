@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-18T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Diffstat reports 4 files changed (21 insertions, 6 deletions), which maps to M. All four are small, UI-only edits: constants/user.ts, types/entity/user.ts, UserDetailsPopup.tsx and UsersManagementPage.tsx." },
+    { "dimension": "component_scope", "reason": "Adds a service_account entry to USER_TYPES and USER_TYPE_LABELS and widens the UserType union. UserDetailsPopup builds its dropdown options from the constants, and the Users list column reads the same label map. Two consumers in the same UI layer, following an existing pattern." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

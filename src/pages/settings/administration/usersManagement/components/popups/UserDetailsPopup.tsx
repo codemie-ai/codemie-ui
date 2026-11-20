@@ -25,7 +25,7 @@ import Switch from '@/components/form/Switch'
 import Popup from '@/components/Popup'
 import Spinner from '@/components/Spinner'
 import Tooltip from '@/components/Tooltip'
-import { USER_TYPES } from '@/constants/user'
+import { USER_TYPE_LABELS, USER_TYPES } from '@/constants/user'
 import { useBudgetManagementEnabled } from '@/hooks/useFeatureFlags'
 import BudgetAssignmentsEditor from '@/pages/settings/administration/components/BudgetAssignmentsEditor'
 import UserProjectsTable from '@/pages/settings/administration/usersManagement/components/UserProjectsTable'
@@ -38,8 +38,9 @@ import { FilterOption } from '@/types/filters'
 import toaster from '@/utils/toaster'
 
 const USER_TYPE_OPTIONS: FilterOption[] = [
-  { label: 'Regular', value: USER_TYPES.regular },
-  { label: 'External User', value: USER_TYPES.external },
+  { label: USER_TYPE_LABELS[USER_TYPES.regular], value: USER_TYPES.regular },
+  { label: USER_TYPE_LABELS[USER_TYPES.external], value: USER_TYPES.external },
+  { label: USER_TYPE_LABELS[USER_TYPES.service_account], value: USER_TYPES.service_account },
 ]
 
 interface UserDetailsModalProps {
@@ -325,7 +326,11 @@ const UserDetailsPopup: FC<UserDetailsModalProps> = ({ userId, isOpen, onClose, 
               ) : (
                 <DetailsProperty
                   label="User Type"
-                  value={<span className="capitalize">{user.user_type}</span>}
+                  value={
+                    <span className="capitalize">
+                      {USER_TYPE_LABELS[user.user_type] ?? user.user_type}
+                    </span>
+                  }
                   className="text-sm"
                 />
               )}

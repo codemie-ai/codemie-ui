@@ -1,0 +1,71 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; 0 blocking findings, 1 pre-existing deferred item (DF-001)"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; 0 blocking findings, 1 pre-existing deferred item (DF-001)"
+    }
+  ],
+  "reviewed_head": "9bed55bcb2650a03214b9365ca341f4326468fa6",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Acceptance was skipped (no spec), so confidence is low; the edge-case lens found no blocking defect in the diff. 1 deferred: service_account falls through the external-only settings gate in src/utils/settings.ts (pre-existing; backlog in code-review-deferred.local.md). 1 dismissed as cosmetic (User Type label wrapping).",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [
+    {
+      "id": "DF-001",
+      "severity": "major",
+      "file": "src/utils/settings.ts",
+      "line": 206,
+      "title": "service_account bypasses external-only settings gate",
+      "problem": "isConfigItemEnabled hides availableForExternal === false items only when user_type is external; a service_account user still sees them.",
+      "preexisting": "Gate compared only against USER_TYPE_EXTERNAL before this change; intent for service accounts is unspecified."
+    }
+  ],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not run for the compact profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not run for the compact profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not run for the compact profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Acceptance was skipped (no spec), so confidence is low; the edge-case lens found no blocking defect in the diff. 1 deferred: service_account falls through the external-only settings gate in src/utils/settings.ts (pre-existing; backlog in code-review-deferred.local.md). 1 dismissed as cosmetic (User Type label wrapping).",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

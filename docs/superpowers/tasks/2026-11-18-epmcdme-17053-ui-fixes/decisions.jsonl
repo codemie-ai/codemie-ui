@@ -1,0 +1,2 @@
+{"ts":"2026-11-18T11:51:58Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved plan via prompt","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-11-18T12:02:56Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved; 0 blocking findings, 1 pre-existing deferred item (DF-001)","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
