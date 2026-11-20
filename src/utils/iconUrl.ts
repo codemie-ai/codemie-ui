@@ -18,8 +18,8 @@ import { decodeFileName } from '@/utils/utils'
 
 export const WORKFLOW_ICON_NAME_PREFIX = 'workflow-icons/'
 
-export const WORKFLOW_ICON_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif'
-export const WORKFLOW_ICON_HINT = 'Must be PNG, JPEG, WebP or GIF and max size 500kb'
+export const WORKFLOW_ICON_ACCEPT = 'image/png,image/jpeg,image/svg+xml'
+export const WORKFLOW_ICON_HINT = 'Must be PNG, JPEG or SVG and max size 512kb'
 
 const ABSOLUTE_OR_INLINE_URL = /^(https?:\/\/|\/|data:)/
 

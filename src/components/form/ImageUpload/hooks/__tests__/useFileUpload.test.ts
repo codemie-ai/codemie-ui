@@ -142,13 +142,13 @@ describe('useFileUpload', () => {
         maxSizeMB: 0.5,
         onChange,
         uploadFile,
-        accept: 'image/png,image/jpeg,image/webp,image/gif',
+        accept: 'image/png,image/jpeg,image/svg+xml',
       })
     )
 
     await act(async () => {
       await result.current.handleFileUpload(
-        new File(['x'], 'icon.gif', { type: 'application/octet-stream' })
+        new File(['x'], 'icon.svg', { type: 'application/octet-stream' })
       )
     })
 
@@ -163,12 +163,12 @@ describe('useFileUpload', () => {
         maxSizeMB: 0.5,
         onChange,
         uploadFile,
-        accept: 'image/png,image/jpeg,image/webp,image/gif',
+        accept: 'image/png,image/jpeg,image/svg+xml',
       })
     )
 
     await act(async () => {
-      await result.current.handleFileUpload(new File(['x'], 'icon.webp', { type: '' }))
+      await result.current.handleFileUpload(new File(['x'], 'icon.png', { type: '' }))
     })
 
     expect(uploadFile).toHaveBeenCalledTimes(1)
@@ -177,13 +177,13 @@ describe('useFileUpload', () => {
 
   it('rejects a dropped file whose type is outside the accept list, before uploading', async () => {
     const uploadFile = vi.fn()
-    const svg = new File(['<svg/>'], 'icon.svg', { type: 'image/svg+xml' })
+    const svg = new File(['GIF89a'], 'icon.gif', { type: 'image/gif' })
     const { result } = renderHook(() =>
       useFileUpload({
         maxSizeMB: 0.5,
         onChange: vi.fn(),
         uploadFile,
-        accept: 'image/png,image/jpeg,image/webp,image/gif',
+        accept: 'image/png,image/jpeg,image/svg+xml',
       })
     )
 

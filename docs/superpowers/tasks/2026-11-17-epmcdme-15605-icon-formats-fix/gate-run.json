@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15605_fix-files-format-for-workflow-icons",
+  "head": "9f4ca38b42f2a2e482e650526850965852222128",
+  "runner": "npm",
+  "started_at": "2026-11-17T00:00:00Z",
+  "completed_at": "2026-11-17T00:00:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 933 passed (933)"
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 87 passed (87)"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "no leaks found"
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run license-check",
+      "exit_code": 0
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "0 missing"
+    },
+    {
+      "id": "sonar",
+      "source": "hook",
+      "status": "SKIPPED",
+      "command": "npm run sonar-local",
+      "notes": "Not run: uploads analysis to remote Sonar and reruns full suites (already run above); CI/hook only. Run locally with SONAR_TOKEN set."
+    }
+  ],
+  "failures": {}
+}

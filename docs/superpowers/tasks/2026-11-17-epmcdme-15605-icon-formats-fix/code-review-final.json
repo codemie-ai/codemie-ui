@@ -1,0 +1,14 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case lens ran; acceptance skipped (no spec), so confidence is medium. One candidate (removed webp/gif extension fallback) dismissed: the map is only an empty-MIME fallback, and the only other ImageUpload caller does not depend on it.",
+  "confidence": "medium",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not expected for this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not expected for this profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not expected for this profile." }
+  ],
+  "findings": [],
+  "deferred": []
+}
