@@ -1,0 +1,10 @@
+{"schema":1,"branch":"EPMCDME-17657-frontend-check","head":"b3909439c81b9fc1c212980e3307145abc2b49a4","runner":"npm","started_at":"2026-11-20T09:00:00Z","completed_at":"2026-11-20T09:15:00Z","status":"PASSED","drift_detected":false,"gates":[
+{"id":"lint","source":"guide","status":"PASS","duration_ms":17000,"command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":13000,"command":"npm run typecheck","exit_code":0},
+{"id":"unit-tests","source":"guide","status":"PASS","duration_ms":186000,"command":"npm run test:unit:slnt","exit_code":0,"notes":"Test Files 958 passed (958); Tests 10211 passed | 1 skipped"},
+{"id":"integration-tests","source":"guide","status":"PASS","duration_ms":97000,"command":"npm run test:integration:slnt","exit_code":0,"notes":"Test Files 91 passed (91); Tests 1038 passed | 1 skipped"},
+{"id":"secrets","source":"guide","status":"PASS","duration_ms":5000,"command":"npm run secrets:check","exit_code":0,"notes":"no leaks found"},
+{"id":"license","source":"guide","status":"PASS","duration_ms":3000,"command":"npm run license-check","exit_code":0,"notes":"summary printed, no stderr errors"},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":500,"command":"npm run license-headers:check","exit_code":0,"notes":"0 missing license headers"},
+{"id":"sonar","source":"hook","status":"SKIPPED","duration_ms":0,"command":"npm run sonar-local","exit_code":null,"notes":"Uploads analysis to Sonar host; not run locally. Needs SONAR_TOKEN and reachable Sonar host; only CI/pre-commit settles it."}
+],"failures":{}}

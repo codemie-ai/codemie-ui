@@ -44,13 +44,13 @@ const AnalyticsPage: FC = () => {
   const { user } = useSnapshot(userStore)
   const { dashboards } = useSnapshot(analyticsStore)
   const isAdmin = user?.isAdmin ?? false
-  const isProjectAdmin = user?.projects?.some((project) => project.is_project_admin) ?? false
   const isAuditor = user?.isAuditor ?? false
   const [isCustomizationEnabled] = useFeatureFlag('feature:dashboardCustomization')
   const [isLeaderboardConfigEnabled] = useFeatureFlag('aiChampionsLeaderboard')
   const isLeaderboardEnabled = (isAdmin || isAuditor) && isLeaderboardConfigEnabled
   const [isCliAnalyticsConfigEnabled] = useFeatureFlag(FEATURE_FLAGS.CLI_ANALYTICS)
-  const isCliAnalyticsEnabled = (isAdmin || isProjectAdmin) && isCliAnalyticsConfigEnabled
+  // Visible to every role; the backend scopes the data each role may read.
+  const isCliAnalyticsEnabled = isCliAnalyticsConfigEnabled
   const isMaintainer = user?.isMaintainer ?? false
   const [isUsageAttributionConfigEnabled, isUsageAttributionFlagLoaded] = useFeatureFlag(
     FEATURE_FLAGS.USAGE_ATTRIBUTION

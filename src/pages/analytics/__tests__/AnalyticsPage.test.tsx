@@ -288,7 +288,7 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     )
   })
 
-  it('passes isCliAnalyticsEnabled=false when the user admins no project', () => {
+  it('passes isCliAnalyticsEnabled=true when the user admins no project', () => {
     userStore.user = {
       userId: 'test-user',
       email: 'test@test.com',
@@ -307,11 +307,11 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
     render(<AnalyticsPage />)
     expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
       'data-cli-analytics-enabled',
-      'false'
+      'true'
     )
   })
 
-  it('passes isCliAnalyticsEnabled=false when not admin even with flag enabled', () => {
+  it('passes isCliAnalyticsEnabled=true for a regular user when the flag is enabled', () => {
     userStore.user = {
       userId: 'test-user',
       email: 'test@test.com',
@@ -325,6 +325,81 @@ describe('AnalyticsPage - CLI Analytics feature flag gate', () => {
       if (flag === 'features:analyticsCLIInsights') return [true, true]
       if (flag === 'features:cliAnalytics') return [true, true]
       return [false, true]
+    })
+    render(<AnalyticsPage />)
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-cli-analytics-enabled',
+      'true'
+    )
+  })
+
+  it('passes isCliAnalyticsEnabled=true for an auditor who is not admin or project admin', () => {
+    userStore.user = {
+      userId: 'test-user',
+      email: 'test@test.com',
+      isAdmin: false,
+      isAuditor: true,
+      isAuthenticated: true,
+    }
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'features:cliAnalytics') return [true, true]
+      return [false, true]
+    })
+    render(<AnalyticsPage />)
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-cli-analytics-enabled',
+      'true'
+    )
+  })
+
+  it('passes isCliAnalyticsEnabled=false for an auditor when the flag is disabled', () => {
+    userStore.user = {
+      userId: 'test-user',
+      email: 'test@test.com',
+      isAdmin: false,
+      isAuditor: true,
+      isAuthenticated: true,
+    }
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'features:cliAnalytics') return [false, true]
+      return [true, true]
+    })
+    render(<AnalyticsPage />)
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-cli-analytics-enabled',
+      'false'
+    )
+  })
+
+  it('passes isCliAnalyticsEnabled=true for a maintainer who is not admin or project admin', () => {
+    userStore.user = {
+      userId: 'test-user',
+      email: 'test@test.com',
+      isAdmin: false,
+      isMaintainer: true,
+      isAuthenticated: true,
+    }
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'features:cliAnalytics') return [true, true]
+      return [false, true]
+    })
+    render(<AnalyticsPage />)
+    expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(
+      'data-cli-analytics-enabled',
+      'true'
+    )
+  })
+
+  it('passes isCliAnalyticsEnabled=false for a regular user when the flag is disabled', () => {
+    userStore.user = {
+      userId: 'test-user',
+      email: 'test@test.com',
+      isAdmin: false,
+      isAuthenticated: true,
+    }
+    vi.mocked(useFeatureFlag).mockImplementation((flag: string) => {
+      if (flag === 'features:cliAnalytics') return [false, true]
+      return [true, true]
     })
     render(<AnalyticsPage />)
     expect(screen.getByTestId('analytics-dashboard')).toHaveAttribute(

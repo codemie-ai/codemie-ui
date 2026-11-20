@@ -1,0 +1,61 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "No findings; user approved"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "No findings; user approved"
+    }
+  ],
+  "reviewed_head": "b3909439c81b9fc1c212980e3307145abc2b49a4",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case lens ran clean with zero findings; no spec/story existed so acceptance was skipped (no-spec, confidence low). 0 deferred, 0 advisory, 0 dismissed; standards not expected for the compact profile.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case lens ran clean with zero findings; no spec/story existed so acceptance was skipped (no-spec, confidence low). 0 deferred, 0 advisory, 0 dismissed; standards not expected for the compact profile.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}
