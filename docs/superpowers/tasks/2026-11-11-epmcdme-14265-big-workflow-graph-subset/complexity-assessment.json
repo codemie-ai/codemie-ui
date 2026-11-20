@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "task": "Fix the Workflows UI graph so a large (~50-state) workflow renders all states and transitions from the YAML/API payload, with a large-workflow regression test (EPMCDME-14265).",
+  "generated": "2026-11-11T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 4, "label": "L" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 3, "label": "M" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 2, "label": "S" }
+  },
+  "total": 18,
+  "size": "M",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Likely change surface is buildNodes, the deserializer and possibly useWorkflowData / the drawer-vs-graph filtering in WorkflowDetailsPage. buildNodes, buildEdges and deserialize are shared by the edit page, visual diff and createState, so the base M is bumped to L." },
+    { "dimension": "requirements_clarity", "reason": "The root cause is unconfirmed: the Philips YAML is not in the repo and the analysis lists five hypotheses (H1-H5). Acceptance criteria 'node count equals YAML state count' conflicts with synthetic iterator, branch, start and end nodes, and 'same structure as /v1/workflows/{id}/' conflicts with the history-YAML selection path. Reproduction is needed before the design is fixed." },
+    { "dimension": "technical_risk", "reason": "No exact precedent: the walk-based buildNodes and the DFS-based deserializer apply different reachability rules, and a fix in one can shift the other. buildNodes, buildGraph and layout have no tests today, so regressions in the edit page and visual diff would go undetected. Closest existing pattern is the deserializer test-plus-YAML-fixture approach, which does not cover the build layer. The AC enumerates edge cases (small/medium no regression, large workflows) with no existing parameterized test template for the build layer. Frontend-only and easily reversible, so L rather than XL." }
+  ],
+  "red_flags_applied": [
+    "Component Scope bumped from M to L: touches shared workflow-editor utils (buildNodes/deserialize) used by edit page, visual diff and createState.",
+    "Clarity red flag: root cause unknown and criteria partly contradict the existing design (Requirements Clarity held at L).",
+    "Technical Risk bumped for AC-enumerated variant cases with no existing build-layer test template."
+  ],
+  "split_recommendation": null
+}

@@ -128,12 +128,21 @@ const fixForbiddenStateIDs = (states: SerializedState[]) => {
   })
 }
 
+/** IDs the branch-state generator must respect while processing states */
+interface BranchIdContext {
+  /** Ids of states written by the user (states and orphaned_states) */
+  userStateIds: Set<string>
+  /** Every id a generated branch id must avoid */
+  reservedIds: Set<string>
+}
+
 /** Creates a decision node if state has condition or switch */
 const createBranchState = (
   metaStates: SerializedMetaState[],
   state: SerializedState,
   isConnected: boolean,
-  existingStates: StateConfiguration[]
+  existingStates: StateConfiguration[],
+  { userStateIds, reservedIds }: BranchIdContext
 ): StateConfiguration | null => {
   if (!state.next?.condition && !state.next?.switch) {
     return null
@@ -141,8 +150,14 @@ const createBranchState = (
 
   const nodeType = state.next.condition ? NodeTypes.CONDITIONAL : NodeTypes.SWITCH
   const { meta_next_state_id: metaStateID, ...nextWithoutMetaId } = state.next
-  const branchId = metaStateID || generateStateID(nodeType, existingStates)
-  const metaState = metaStateID ? metaStates.find((meta) => meta.id === metaStateID) ?? {} : {}
+  const isDuplicate =
+    !!metaStateID &&
+    (userStateIds.has(metaStateID) || existingStates.some((s) => s.id === metaStateID))
+  const keepsMetaId = !!metaStateID && !isDuplicate
+  const branchId = keepsMetaId
+    ? metaStateID
+    : generateStateID(nodeType, existingStates, reservedIds)
+  const metaState = keepsMetaId ? metaStates.find((meta) => meta.id === metaStateID) ?? {} : {}
 
   return {
     id: branchId,
@@ -160,7 +175,8 @@ const processStates = (
   states: SerializedState[],
   metaStates: SerializedMetaState[],
   config: WorkflowConfiguration,
-  isConnected: boolean
+  isConnected: boolean,
+  branchIdContext: BranchIdContext
 ): void => {
   for (const state of states) {
     const loadedState: StateConfiguration = {
@@ -169,7 +185,13 @@ const processStates = (
     }
 
     // Handle branch states (condition/switch)
-    const branchState = createBranchState(metaStates, state, isConnected, config.states)
+    const branchState = createBranchState(
+      metaStates,
+      state,
+      isConnected,
+      config.states,
+      branchIdContext
+    )
     if (branchState) {
       loadedState.next ??= {}
       loadedState.next.meta_next_state_id = branchState.id
@@ -323,8 +345,20 @@ export const deserialize = (yamlString: string): WorkflowConfiguration => {
   const connectedStates = states.filter((state) => !orphanedStateIDs.has(state.id))
   const detectedOrphans = states.filter((state) => orphanedStateIDs.has(state.id))
 
-  processStates(connectedStates, metaStates, loadedConfig, true)
-  processStates([...orphanedStates, ...detectedOrphans], metaStates, loadedConfig, false)
+  const userStateIds = new Set([...states, ...orphanedStates].map((state) => state.id))
+  const branchIdContext: BranchIdContext = {
+    userStateIds,
+    reservedIds: new Set([...userStateIds, ...metaStates.map((meta) => meta.id)]),
+  }
+
+  processStates(connectedStates, metaStates, loadedConfig, true, branchIdContext)
+  processStates(
+    [...orphanedStates, ...detectedOrphans],
+    metaStates,
+    loadedConfig,
+    false,
+    branchIdContext
+  )
   processOrphanedMetaStates(metaStates, loadedConfig)
 
   addIteratorStates(loadedConfig)

@@ -1,0 +1,190 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "CR-001 and CR-002 resolved; targeted verifier approved with no new findings"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "Fix CR-001 (untested notice wiring) and CR-002 (notice not gated on execution loading)"
+    },
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "CR-001 and CR-002 resolved; targeted verifier approved with no new findings"
+    }
+  ],
+  "reviewed_head": "03636d919fbb66bc8d54a4927b3263068c3dd5fe",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "Both prior blocking findings are resolved in the current source: the graphNotice memo is now gated on isExecutionLoading/isExecutionStatesLoading (CR-002), and the page integration test has a 'Graph notice' block covering the older-version, missing-steps, no-notice and still-loading cases (CR-001). No new findings are discovered on this round; AC6, AC8 and AC9 stay pending-stage-7.",
+  "confidence": "medium",
+  "check_confidence": "high",
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 2,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/WorkflowDetailsPage.tsx",
+      "line": 141,
+      "title": "Graph notice wiring has no page-level test",
+      "problem": "The graphNotice memo (graphedYaml from useWorkflowData's workflow, currentYaml and yamlHistory from the store workflow) and the WorkflowGraphNotice render are exercised by no test. getWorkflowGraphNotice.test.ts feeds the helper literal arguments and WorkflowGraphNotice.test.tsx feeds the component a literal notice. WorkflowDetailsPage.integration.test.tsx uses yaml_config_history: [] and never mentions a notice.",
+      "impact": "Swapping graphedYaml and currentYaml, passing the wrong history, dropping the render line or gating on the wrong workflow object would ship a details page that never shows (or always shows) the notice while every test passes. This notice is the user-facing cue for AC9 and AC11.",
+      "recommendation": "In src/pages/workflows/__tests__/WorkflowDetailsPage.integration.test.tsx add cases: a workflow whose yaml_config_history holds an older yaml with an execution dated before update_date shows the 'older version of this workflow' status text; an execution state whose resolved id has no node in yaml_config shows 'Steps with no node in the graph: <id>'; an execution on the current yaml shows no notice.",
+      "status": "resolved",
+      "check_notes": "WorkflowDetailsPage.integration.test.tsx has a 'Graph notice' describe with older-version, missing-steps and no-notice cases rendered through the page.",
+      "fix": {
+        "change": "Added page-level integration tests for the graph notice wiring: older-version, missing steps, and no-notice cases",
+        "test": "src/pages/workflows/__tests__/WorkflowDetailsPage.integration.test.tsx > Graph notice"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/WorkflowDetailsPage.tsx",
+      "line": 222,
+      "title": "Graph notice not gated on execution loading",
+      "problem": "WorkflowGraphNotice is rendered outside the !isExecutionLoading guard that wraps the editor, and graphNotice is computed from extendedStates (the previous run's states until the new ones load) against the editor config of the newly selected, possibly historical, yaml.",
+      "impact": "When the user switches executions, a transient false 'Steps with no node in the graph' or 'older version' notice can show until loading finishes. Reachability was not confirmed: the ordering of the store update and the editor config update was not traced.",
+      "recommendation": "Return null from the graphNotice memo while isExecutionLoading or isExecutionStatesLoading is true (add both to the dependency list), so the notice is computed only when execution states and the graphed yaml belong to the same run. Cover it in the page integration test.",
+      "status": "resolved",
+      "check_notes": "WorkflowDetailsPage.tsx:143 returns null while isExecutionLoading or isExecutionStatesLoading; both are in the memo deps; a test holds the execution response back and asserts no notice until release.",
+      "fix": {
+        "change": "graphNotice memo returns null while isExecutionLoading or isExecutionStatesLoading is true; both added to its dependencies",
+        "test": "src/pages/workflows/__tests__/WorkflowDetailsPage.integration.test.tsx > does not show the notice while the execution is still loading"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Approach 3: flat pass adds missing nodes after other producers, warns each added id, never adds start/end/iterator/bare branch",
+      "status": "partial",
+      "notes": "Companion branch node pushed with its decision parent is not warned; plan.md and task-3 report record this as a deliberate ruling."
+    },
+    {
+      "kind": "spec",
+      "item": "Approach 4: generateStateID reserved set covers states, orphaned, meta_states and pushed branch ids",
+      "status": "pass",
+      "notes": "reservedIds and existingStates cover it; duplicate meta_next_state_id gets a fresh id."
+    },
+    {
+      "kind": "spec",
+      "item": "Approach 5: place unpositioned nodes via whole-graph layout before saveStatesToMetaState on initial load",
+      "status": "pass",
+      "notes": "placeUnpositionedNodes runs before the final save; saved positions untouched; applyLayout is non-mutating."
+    },
+    {
+      "kind": "spec",
+      "item": "AC1: ~50-state fixture node ids equal every YAML state id plus start, end, branch and iterator nodes",
+      "status": "pass",
+      "notes": "largeWorkflow.test.ts compares sorted ids."
+    },
+    {
+      "kind": "spec",
+      "item": "AC2: node count equals YAML states plus synthetic nodes, asserted exactly",
+      "status": "pass",
+      "notes": "59 nodes asserted against 50 states."
+    },
+    {
+      "kind": "spec",
+      "item": "AC3: no dangling edges; edge set equals fixture transitions",
+      "status": "pass",
+      "notes": "74 edges compared to expected keys built from the YAML."
+    },
+    {
+      "kind": "spec",
+      "item": "AC4: no shared node ids; duplicate meta_next_state_id and user state named conditional_N get distinct ids",
+      "status": "pass",
+      "notes": "branchIds.test.ts and largeWorkflow.test.ts cover it."
+    },
+    {
+      "kind": "spec",
+      "item": "AC5: partial meta_states: unpositioned nodes do not share a position, saved positions unchanged",
+      "status": "pass",
+      "notes": "largeWorkflow.test.ts and buildGraph.test.ts cover it."
+    },
+    {
+      "kind": "spec",
+      "item": "AC6: existing deserializer fixtures give same node ids and edges; buildVisualDiffGraph.test.ts passes unchanged",
+      "status": "pending-stage-7",
+      "notes": "existingFixtures.test.ts pins ids and edges; suite run is the remaining proof."
+    },
+    {
+      "kind": "spec",
+      "item": "AC7: regression test builds the large fixture through WorkflowEditor with ReactFlow mocked",
+      "status": "pass",
+      "notes": "WorkflowEditor.largeWorkflow.test.tsx asserts the 59 node ids."
+    },
+    {
+      "kind": "spec",
+      "item": "AC8: zoom, pan, fit-to-screen, fullscreen untouched; manual fit-to-screen check on the real workflow",
+      "status": "pending-stage-7",
+      "notes": "No hunk touches the controls; manual evidence belongs in the MR."
+    },
+    {
+      "kind": "spec",
+      "item": "AC9: manual post-fix check on the Philips workflow; Step 0 record in MR",
+      "status": "pending-stage-7",
+      "notes": "Code side present; evidence is manual and MR-side."
+    },
+    {
+      "kind": "spec",
+      "item": "AC10: buildNodes unit test with a connected state the walk misses; one node per state, console.warn per added id",
+      "status": "pass",
+      "notes": "buildNodes.test.ts covers sibling and iterator-child cases."
+    },
+    {
+      "kind": "spec",
+      "item": "AC11: notice for non-current graphed YAML or steps lacking a node; reuses removeNonExistingStates; helper unit tests",
+      "status": "pass",
+      "notes": "Helper and component unit tests cover both conditions; page wiring itself untested (CR-001)."
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "8 subjects in the review range all match the documented EPMCDME-<n>: <Capitalised summary> format with a non-zero ticket number"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard, nothing to adjudicate against"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "security-patterns.md checked against changed source files; no HTML sinks, navigation from untrusted input, postMessage, env or secret usage found; WorkflowGraphNotice renders step ids and dates as React text children"
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "All four lenses and the standards audit ran; AC6, AC8 and AC9 stay pending-stage-7. Two major findings in WorkflowDetailsPage: the graph notice wiring has no page-level test, and the notice is not gated on execution loading (reachability unconfirmed). 20 candidates were dismissed as noise or already handled, nothing was deferred, and no deferred backlog was written.",
+    "confidence": "medium",
+    "risk_flags": []
+  }
+}

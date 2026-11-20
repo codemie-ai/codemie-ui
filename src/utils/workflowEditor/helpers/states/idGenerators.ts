@@ -36,16 +36,18 @@ type ActorConfiguration = AssistantConfiguration | ToolConfiguration | CustomNod
  *
  * @param nodeType - The type of node (e.g., 'assistant', 'tool', 'iterator', 'condition')
  * @param existingStates - Array of existing states to check for ID conflicts
+ * @param reservedIds - Extra IDs that must not be reused, counted like existing state IDs
  * @returns A unique ID string with format: nodeType_number
  */
 export const generateStateID = (
   nodeType: NodeType,
-  existingStates: StateConfiguration[]
+  existingStates: StateConfiguration[],
+  reservedIds: Iterable<string> = []
 ): string => {
   const prefixWithUnderscore = `${nodeType}_`
-  const existingIDs = existingStates
-    .map((state) => state.id)
-    .filter((id) => id.startsWith(prefixWithUnderscore))
+  const existingIDs = [...existingStates.map((state) => state.id), ...reservedIds].filter((id) =>
+    id.startsWith(prefixWithUnderscore)
+  )
 
   if (existingIDs.length === 0) {
     return `${prefixWithUnderscore}1`

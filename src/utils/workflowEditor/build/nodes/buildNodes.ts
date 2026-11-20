@@ -18,6 +18,8 @@ import {
   hasConditionLogic,
   hasSwitchLogic,
   hasMultipleNextStates,
+  hasDecisionLogic,
+  isDecisionState,
   isIterator,
   isMetaState
 } from '@/utils/workflowEditor/helpers/states'
@@ -289,6 +291,34 @@ const buildOrphanedIterators = (
   }
 }
 
+/**
+ * Adds a node for every state the entry walk did not reach, so no state is dropped.
+ * A decision parent also brings its branch node. Branch, iterator, start and end states
+ * are never added on their own.
+ */
+const buildMissingNodes = (
+  nodes: WorkflowNode[],
+  config: WorkflowConfiguration
+): void => {
+  const hasNode = (id: string) => nodes.some(node => node.id === id)
+
+  for (const state of config.states) {
+    if (isIterator(state) || isDecisionState(state)) continue
+    if (state.id === START_NODE_ID || state.id === END_NODE_ID) continue
+    if (hasNode(state.id)) continue
+
+    nodes.push(buildNode(state, nodes, config))
+    console.warn(`Node added outside entry walk: ${state.id}`)
+
+    if (!hasDecisionLogic(state)) continue
+
+    const branchState = findMetaState(state.next?.meta_next_state_id, config)
+    if (branchState && !hasNode(branchState.id)) {
+      nodes.push(buildNode(branchState, nodes, config))
+    }
+  }
+}
+
 export const buildNodes = (
   configuration: WorkflowConfiguration
 ): WorkflowNode[] => {
@@ -311,6 +341,8 @@ export const buildNodes = (
   }
 
   buildOrphanedIterators(nodes, configuration)
+
+  buildMissingNodes(nodes, configuration)
 
   const hasEndNode = nodes.some(node => node.id === END_NODE_ID)
   if (!hasEndNode) buildEndNode(nodes, configuration)

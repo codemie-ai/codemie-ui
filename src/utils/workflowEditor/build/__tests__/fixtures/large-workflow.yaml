@@ -1,0 +1,446 @@
+---
+assistants:
+  - id: worker
+    model: gpt-4o-2024-11-20
+    system_prompt: |
+      You are a worker.
+    temperature: 0.2
+states:
+  - id: intake
+    assistant_id: worker
+    task: |
+      Handle intake.
+    next:
+      state_id: parse
+  - id: parse
+    assistant_id: worker
+    task: |
+      Handle parse.
+    next:
+      state_id: normalize
+  - id: normalize
+    assistant_id: worker
+    task: |
+      Handle normalize.
+    next:
+      state_id: conditional_1
+  - id: conditional_1
+    assistant_id: worker
+    task: |
+      Handle conditional_1.
+    next:
+      state_id: classify
+  - id: classify
+    assistant_id: worker
+    task: |
+      Handle classify.
+    next:
+      switch:
+        cases:
+          - condition: kind == 'a'
+            state_id: kind_a
+          - condition: kind == 'b'
+            state_id: kind_b
+          - condition: kind == 'c'
+            state_id: kind_c
+          - condition: kind == 'd'
+            state_id: kind_d
+        default: kind_other
+  - id: kind_a
+    assistant_id: worker
+    task: |
+      Handle kind_a.
+    next:
+      state_id: a_step_1
+  - id: a_step_1
+    assistant_id: worker
+    task: |
+      Handle a_step_1.
+    next:
+      state_id: a_step_2
+  - id: a_step_2
+    assistant_id: worker
+    task: |
+      Handle a_step_2.
+    next:
+      state_id: merge
+  - id: kind_b
+    assistant_id: worker
+    task: |
+      Handle kind_b.
+    next:
+      state_id: b_step_1
+  - id: b_step_1
+    assistant_id: worker
+    task: |
+      Handle b_step_1.
+    next:
+      state_id: merge
+  - id: kind_c
+    assistant_id: worker
+    task: |
+      Handle kind_c.
+    next:
+      state_id: c_step_1
+  - id: c_step_1
+    assistant_id: worker
+    task: |
+      Handle c_step_1.
+    next:
+      state_id: c_step_2
+  - id: c_step_2
+    assistant_id: worker
+    task: |
+      Handle c_step_2.
+    next:
+      state_id: c_step_3
+  - id: c_step_3
+    assistant_id: worker
+    task: |
+      Handle c_step_3.
+    next:
+      state_id: merge
+  - id: kind_d
+    assistant_id: worker
+    task: |
+      Handle kind_d.
+    next:
+      state_id: merge
+  - id: kind_other
+    assistant_id: worker
+    task: |
+      Handle kind_other.
+    next:
+      state_id: merge
+  - id: merge
+    assistant_id: worker
+    task: |
+      Handle merge.
+    next:
+      state_ids: [fan_1, fan_2, fan_3, fan_4]
+  - id: fan_1
+    assistant_id: worker
+    task: |
+      Handle fan_1.
+    next:
+      state_id: fan_join
+  - id: fan_2
+    assistant_id: worker
+    task: |
+      Handle fan_2.
+    next:
+      state_id: fan_join
+  - id: fan_3
+    assistant_id: worker
+    task: |
+      Handle fan_3.
+    next:
+      state_id: fan_join
+  - id: fan_4
+    assistant_id: worker
+    task: |
+      Handle fan_4.
+    next:
+      state_id: fan_join
+  - id: fan_join
+    assistant_id: worker
+    task: |
+      Handle fan_join.
+    next:
+      condition:
+        expression: fan_ok
+        then: review_one
+        otherwise: review_two
+  - id: review_one
+    assistant_id: worker
+    task: |
+      Handle review_one.
+    next:
+      meta_next_state_id: conditional_7
+      condition:
+        expression: needs_items
+        then: it_fetch
+        otherwise: manual_review
+  - id: review_two
+    assistant_id: worker
+    task: |
+      Handle review_two.
+    next:
+      meta_next_state_id: conditional_7
+      condition:
+        expression: has_items
+        then: it_fetch
+        otherwise: manual_review
+  - id: manual_review
+    assistant_id: worker
+    task: |
+      Handle manual_review.
+    next:
+      state_id: late_check
+  - id: it_fetch
+    assistant_id: worker
+    task: |
+      Handle it_fetch.
+    next:
+      state_ids: [it_a, it_b, it_c]
+      iter_key: items
+  - id: it_a
+    assistant_id: worker
+    task: |
+      Handle it_a.
+    next:
+      state_id: it_done
+  - id: it_b
+    assistant_id: worker
+    task: |
+      Handle it_b.
+    next:
+      state_id: it_done
+  - id: it_c
+    assistant_id: worker
+    task: |
+      Handle it_c.
+    next:
+      state_id: it_done
+  - id: it_done
+    assistant_id: worker
+    task: |
+      Handle it_done.
+    next:
+      state_id: late_check
+  - id: late_check
+    assistant_id: worker
+    task: |
+      Handle late_check.
+    next:
+      meta_next_state_id: conditional_8
+      condition:
+        expression: all_clear
+        then: tail_1
+        otherwise: tail_alt
+  - id: tail_alt
+    assistant_id: worker
+    task: |
+      Handle tail_alt.
+    next:
+      state_id: audit_1
+  - id: audit_1
+    assistant_id: worker
+    task: |
+      Handle audit_1.
+    next:
+      state_id: audit_2
+  - id: audit_2
+    assistant_id: worker
+    task: |
+      Handle audit_2.
+    next:
+      state_id: tail_1
+  - id: tail_1
+    assistant_id: worker
+    task: |
+      Handle tail_1.
+    next:
+      state_id: tail_2
+  - id: tail_2
+    assistant_id: worker
+    task: |
+      Handle tail_2.
+    next:
+      state_id: tail_3
+  - id: tail_3
+    assistant_id: worker
+    task: |
+      Handle tail_3.
+    next:
+      switch:
+        cases:
+          - condition: route == 'x'
+            state_id: tail_4a
+          - condition: route == 'y'
+            state_id: tail_4b
+        default: tail_5
+  - id: tail_4a
+    assistant_id: worker
+    task: |
+      Handle tail_4a.
+    next:
+      state_id: tail_6
+  - id: tail_4b
+    assistant_id: worker
+    task: |
+      Handle tail_4b.
+    next:
+      state_id: tail_6
+  - id: tail_5
+    assistant_id: worker
+    task: |
+      Handle tail_5.
+    next:
+      state_id: tail_6
+  - id: tail_6
+    assistant_id: worker
+    task: |
+      Handle tail_6.
+    next:
+      state_id: tail_7
+  - id: tail_7
+    assistant_id: worker
+    task: |
+      Handle tail_7.
+    next:
+      state_id: tail_8
+  - id: tail_8
+    assistant_id: worker
+    task: |
+      Handle tail_8.
+    next:
+      state_id: tail_9
+  - id: tail_9
+    assistant_id: worker
+    task: |
+      Handle tail_9.
+    next:
+      state_id: tail_10
+  - id: tail_10
+    assistant_id: worker
+    task: |
+      Handle tail_10.
+    next:
+      state_id: publish
+  - id: publish
+    assistant_id: worker
+    task: |
+      Handle publish.
+    next:
+      state_ids: [pub_a, pub_b, pub_c]
+  - id: pub_a
+    assistant_id: worker
+    task: |
+      Handle pub_a.
+    next:
+      state_id: notify
+  - id: pub_b
+    assistant_id: worker
+    task: |
+      Handle pub_b.
+    next:
+      state_id: notify
+  - id: pub_c
+    assistant_id: worker
+    task: |
+      Handle pub_c.
+    next:
+      state_id: notify
+  - id: notify
+    assistant_id: worker
+    task: |
+      Handle notify.
+    next:
+      state_id: end
+meta_states:
+  - id: intake
+    type: assistant
+    position:
+      x: 0
+      y: 0
+  - id: parse
+    type: assistant
+    position:
+      x: 400
+      y: 0
+  - id: normalize
+    type: assistant
+    position:
+      x: 800
+      y: 0
+  - id: conditional_1
+    type: assistant
+    position:
+      x: 1200
+      y: 0
+  - id: classify
+    type: assistant
+    position:
+      x: 1600
+      y: 0
+  - id: kind_a
+    type: assistant
+    position:
+      x: 0
+      y: 300
+  - id: kind_b
+    type: assistant
+    position:
+      x: 400
+      y: 300
+  - id: a_step_1
+    type: assistant
+    position:
+      x: 800
+      y: 300
+  - id: merge
+    type: assistant
+    position:
+      x: 1200
+      y: 300
+  - id: fan_1
+    type: assistant
+    position:
+      x: 1600
+      y: 300
+  - id: fan_join
+    type: assistant
+    position:
+      x: 0
+      y: 600
+  - id: review_one
+    type: assistant
+    position:
+      x: 400
+      y: 600
+  - id: manual_review
+    type: assistant
+    position:
+      x: 800
+      y: 600
+  - id: it_done
+    type: assistant
+    position:
+      x: 1200
+      y: 600
+  - id: late_check
+    type: assistant
+    position:
+      x: 1600
+      y: 600
+  - id: tail_alt
+    type: assistant
+    position:
+      x: 0
+      y: 900
+  - id: tail_3
+    type: assistant
+    position:
+      x: 400
+      y: 900
+  - id: tail_6
+    type: assistant
+    position:
+      x: 800
+      y: 900
+  - id: publish
+    type: assistant
+    position:
+      x: 1200
+      y: 900
+  - id: notify
+    type: assistant
+    position:
+      x: 1600
+      y: 900
+  - id: conditional_7
+    type: conditional
+    position:
+      x: 2100
+      y: 150

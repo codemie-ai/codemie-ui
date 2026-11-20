@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-14265-big-workflow-graph-subset",
+  "head": "03636d919fbb66bc8d54a4927b3263068c3dd5fe",
+  "runner": "npm",
+  "started_at": "2026-11-12T11:40:27Z",
+  "completed_at": "2026-11-12T11:56:25Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {"id": "lint", "source": "guide", "status": "PASS", "duration_ms": 46258, "command": "npm run lint", "exit_code": 0, "notes": "script-shell was bash (npm_config_script_shell=Git Bash bash.exe)"},
+    {"id": "typecheck", "source": "guide", "status": "PASS", "duration_ms": 27065, "command": "npm run typecheck", "exit_code": 0, "notes": "script-shell was bash (npm_config_script_shell=Git Bash bash.exe)"},
+    {"id": "unit-tests", "source": "guide", "status": "PASS", "duration_ms": 454635, "command": "npm run test:unit:slnt", "exit_code": 0, "notes": "script-shell was bash. Test Files 911 passed (911); Tests 9308 passed | 1 skipped (9309)"},
+    {"id": "integration-tests", "source": "guide", "status": "PASS", "duration_ms": 198293, "command": "npm run test:integration:slnt", "exit_code": 0, "notes": "script-shell was bash. Test Files 84 passed (84); Tests 886 passed | 1 skipped (887)"},
+    {"id": "secrets", "source": "guide", "status": "PASS", "duration_ms": 187110, "command": "npm run secrets:check", "exit_code": 0, "notes": "script-shell was bash. gitleaks: 'no leaks found' (scanned ~1.69 GB working tree)"},
+    {"id": "license", "source": "guide", "status": "PASS", "duration_ms": 4155, "command": "npm run license-check", "exit_code": 0, "notes": "script-shell was bash. Full summary printed (MIT 1038, ISC 51, Apache-2.0 35, ...); no 'Found error' on stderr. Previous run's FAIL was the cmd.exe quoting artifact."},
+    {"id": "sonar", "source": "guide", "status": "SKIPPED", "duration_ms": 0, "command": "npm run sonar-local", "exit_code": null, "notes": "script-shell was bash (not executed). Guide Skip-if met: SONAR_TOKEN unset (script would exit 0 without scanning). Set SONAR_TOKEN and ensure the Sonar host is reachable to run locally; CI/Sonar must settle it."},
+    {"id": "license-headers", "source": "hook", "status": "PASS", "duration_ms": 1689, "command": "npm run license-headers:check", "exit_code": 0, "notes": "script-shell was bash. Checked 2783 files, 0 missing license headers"},
+    {"id": "lint-staged", "source": "hook", "status": "N/A", "duration_ms": 0, "command": "npx lint-staged", "exit_code": null, "notes": "script-shell was bash (not executed). Operates on staged files only; nothing is staged. Its eslint and tsc steps are covered by lint and typecheck gates."}
+  ],
+  "failures": {}
+}
