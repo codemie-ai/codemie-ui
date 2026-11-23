@@ -1,5 +1,294 @@
 [
   {
+    "version": "2.70.0",
+    "date": "2026-11-23",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Workflow icon uploads",
+            "description": "Workflows can use an uploaded icon file instead of requiring an icon URL.",
+            "issues": [
+              {
+                "key": "EPMCDME-15605",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15605"
+              }
+            ]
+          },
+          {
+            "title": "Downloadable chat artifacts",
+            "description": "Files generated through MCP in chat can be downloaded, including non-image files.",
+            "issues": [
+              {
+                "key": "EPMCDME-14735",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14735"
+              }
+            ]
+          },
+          {
+            "title": "Project history",
+            "description": "Added a project-history modal to view changes made to a project.",
+            "issues": [
+              {
+                "key": "EPMCDME-14326",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14326"
+              }
+            ]
+          },
+          {
+            "title": "Project activity trail",
+            "description": "Added project-scoped activity tracking for clearer visibility into project events.",
+            "issues": [
+              {
+                "key": "EPMCDME-14325",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14325"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "GPT Sol 6.2 availability",
+            "description": "Added GPT Sol 6.2 to CodeMie.",
+            "issues": [
+              {
+                "key": "EPMCDME-17407",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17407"
+              }
+            ]
+          },
+          {
+            "title": "Hosted-app categories",
+            "description": "Added categories and category filtering for hosted apps, with a required category when publishing to the marketplace.",
+            "issues": [
+              {
+                "key": "EPMCDME-17249",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17249"
+              }
+            ]
+          },
+          {
+            "title": "More reliable usage attribution",
+            "description": "Usage Attribution can use LiteLLM hourly-span data when available.",
+            "issues": [
+              {
+                "key": "EPMCDME-17194",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17194"
+              }
+            ]
+          },
+          {
+            "title": "IdP-managed user support",
+            "description": "Added backend support and read-only administration for users managed through an identity provider.",
+            "issues": [
+              {
+                "key": "EPMCDME-15435",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15435"
+              },
+              {
+                "key": "EPMCDME-15436",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15436"
+              }
+            ]
+          },
+          {
+            "title": "Model replacement in assistants",
+            "description": "Assistants can replace models that have been removed or deprecated.",
+            "issues": [
+              {
+                "key": "EPMCDME-14418",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14418"
+              }
+            ]
+          },
+          {
+            "title": "Direct project-member navigation",
+            "description": "The Users link in Project Management now opens the project’s Members tab.",
+            "issues": [
+              {
+                "key": "EPMCDME-17134",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17134"
+              }
+            ]
+          },
+          {
+            "title": "Improved stale-datasource cleanup",
+            "description": "Stale datasources and related Elasticsearch indexes are deleted safely, with oldest-first processing and activity re-checks.",
+            "issues": [
+              {
+                "key": "EPMCDME-13161",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13161"
+              },
+              {
+                "key": "EPMCDME-17192",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17192"
+              }
+            ]
+          },
+          {
+            "title": "Insights sorting",
+            "description": "Updated sorting on the Insights page.",
+            "issues": [
+              {
+                "key": "EPMCDME-17440",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17440"
+              }
+            ]
+          },
+          {
+            "title": "Datasource toggle guidance",
+            "description": "Configured information icons are now shown for toggles while editing a datasource.",
+            "issues": [
+              {
+                "key": "EPMCDME-17517",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17517"
+              }
+            ]
+          },
+          {
+            "title": "Faster subagent startup",
+            "description": "Subagent executors are prepared concurrently to reduce response-stream startup latency.",
+            "issues": [
+              {
+                "key": "EPMCDME-15952",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15952"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Security maintenance",
+            "description": "Included security remediation updates.",
+            "issues": []
+          },
+          {
+            "title": "File parsing stability",
+            "description": "Resolved a file-parsing pool deadlock.",
+            "issues": [
+              {
+                "key": "EPMCDME-17537",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17537"
+              }
+            ]
+          },
+          {
+            "title": "Cost Center navigation",
+            "description": "Fixed the Cost Center project-count link for auditor users so it opens Project Management.",
+            "issues": [
+              {
+                "key": "EPMCDME-17495",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17495"
+              }
+            ]
+          },
+          {
+            "title": "Disabled-model validation",
+            "description": "Prevented disabled models from being accepted in project settings.",
+            "issues": [
+              {
+                "key": "EPMCDME-17444",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17444"
+              }
+            ]
+          },
+          {
+            "title": "Non-enterprise test reliability",
+            "description": "Gated budget-router and attribution tests correctly when codemie-enterprise is unavailable.",
+            "issues": [
+              {
+                "key": "EPMCDME-17403",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17403"
+              }
+            ]
+          },
+          {
+            "title": "CLI Analytics session reporting",
+            "description": "Restored reporting of Cowork sessions to CLI Analytics.",
+            "issues": [
+              {
+                "key": "EPMCDME-17128",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17128"
+              }
+            ]
+          },
+          {
+            "title": "Service-account creation",
+            "description": "Corrected service-account user type creation and prevented creation of an empty project.",
+            "issues": [
+              {
+                "key": "EPMCDME-17053",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17053"
+              }
+            ]
+          },
+          {
+            "title": "CLI Analytics duration accuracy",
+            "description": "Prevented housekeeping telemetry from inflating Claude Desktop session durations.",
+            "issues": [
+              {
+                "key": "EPMCDME-16847",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16847"
+              }
+            ]
+          },
+          {
+            "title": "Claude prompt-cache reuse",
+            "description": "Preserved checkpoints required for Claude prompt-cache reuse.",
+            "issues": [
+              {
+                "key": "EPMCDME-16827",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16827"
+              }
+            ]
+          },
+          {
+            "title": "Workflow graph rendering",
+            "description": "Fixed workflow graphs that displayed only a subset of valid states.",
+            "issues": [
+              {
+                "key": "EPMCDME-14265",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14265"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.69.0",
     "date": "2026-11-19",
     "sections": [
