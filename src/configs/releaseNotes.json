@@ -27,28 +27,6 @@
                 "link": "https://jiraeu.epam.com/browse/EPMCDME-14735"
               }
             ]
-          },
-          {
-            "title": "Project history",
-            "description": "Added a project-history modal to view changes made to a project.",
-            "issues": [
-              {
-                "key": "EPMCDME-14326",
-                "type": "STORY",
-                "link": "https://jiraeu.epam.com/browse/EPMCDME-14326"
-              }
-            ]
-          },
-          {
-            "title": "Project activity trail",
-            "description": "Added project-scoped activity tracking for clearer visibility into project events.",
-            "issues": [
-              {
-                "key": "EPMCDME-14325",
-                "type": "STORY",
-                "link": "https://jiraeu.epam.com/browse/EPMCDME-14325"
-              }
-            ]
           }
         ]
       },
@@ -74,17 +52,6 @@
                 "key": "EPMCDME-17249",
                 "type": "STORY",
                 "link": "https://jiraeu.epam.com/browse/EPMCDME-17249"
-              }
-            ]
-          },
-          {
-            "title": "More reliable usage attribution",
-            "description": "Usage Attribution can use LiteLLM hourly-span data when available.",
-            "issues": [
-              {
-                "key": "EPMCDME-17194",
-                "type": "STORY",
-                "link": "https://jiraeu.epam.com/browse/EPMCDME-17194"
               }
             ]
           },
