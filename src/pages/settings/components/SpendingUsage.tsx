@@ -95,11 +95,11 @@ const SpendingUsage: FC<SpendingUsageProps> = ({
         hideLabel
       />
 
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <span className="text-xs text-text-quaternary whitespace-nowrap">
+      <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+        <span className="text-text-quaternary whitespace-nowrap">
           {spendingLabel}: {formatMetricValue(spent, MetricFormat.CURRENCY)}
         </span>
-        <span className="text-xs text-text-quaternary whitespace-nowrap">
+        <span className="text-text-quaternary whitespace-nowrap">
           Available:{' '}
           <span className="font-semibold" style={{ color: statusColor }}>
             {available}

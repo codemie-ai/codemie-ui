@@ -30,7 +30,7 @@ const ProfilePage: FC = () => {
 
   const renderContent = () => {
     return (
-      <div className="settings-cards flex flex-col gap-6 w-fit max-w-[816px] pt-8 gap-x-6">
+      <div className="settings-cards flex flex-col gap-6 w-fit max-w-5xl pt-8 gap-x-6 pb-6">
         <ProfileCard user={user!} />
         {isEnterpriseEdition() && <SpendingCard />}
         <ConversationCard />
