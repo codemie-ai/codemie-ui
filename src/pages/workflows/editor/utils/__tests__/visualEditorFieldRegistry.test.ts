@@ -281,6 +281,11 @@ describe('visualEditorFieldRegistry', () => {
       expect(isAdvancedConfigField('recursion_limit')).toBe(true)
     })
 
+    it('returns true for the workflow-level contract defaults', () => {
+      expect(isAdvancedConfigField('save_validation')).toBe(true)
+      expect(isAdvancedConfigField('require_input_contracts')).toBe(true)
+    })
+
     it('returns true for nested retry_policy fields', () => {
       expect(isAdvancedConfigField('retry_policy.max_attempts')).toBe(true)
       expect(isAdvancedConfigField('retry_policy.initial_interval')).toBe(true)

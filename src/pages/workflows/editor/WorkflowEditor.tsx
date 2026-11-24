@@ -42,6 +42,7 @@ import {
 import { NodeType, WorkflowEdge, WorkflowNode } from '@/types/workflowEditor/base'
 import { cn } from '@/utils/utils'
 import { downloadWorkflowImage } from '@/utils/workflowEditor/helpers/export/downloadWorkflowImage'
+import { getNodeOutline, groupIssuesByState } from '@/utils/workflowEditor/helpers/issueSeverity'
 import { isNoteNode, isStartOrEndNode } from '@/utils/workflowEditor/helpers/nodes/nodeTypeCheckers'
 import { serialize } from '@/utils/workflowEditor/serialization'
 
@@ -112,6 +113,10 @@ interface WorkflowEditorProps {
   isFullscreen: boolean
   onLoadExample?: () => void
   issues?: WorkflowIssue[] | null
+  outcomeKey?: string
+  onCheck?: () => void
+  isChecking?: boolean
+  isCheckLocked?: boolean
   setIssues?: Dispatch<SetStateAction<WorkflowIssue[] | null>>
   className?: string
   withDocs?: boolean
@@ -159,6 +164,8 @@ export interface WorkflowEditorRef {
   showWorkflowConfig: () => void
   triggerGeneralConfigValidation: () => Promise<void>
   saveCurrentTab: () => Promise<boolean>
+  /** True while the open node, edge, YAML or settings panel holds edits it has not applied yet. */
+  isPanelDirty: () => boolean
   getYamlConfig: () => string
   getWorkflowFields: () => WorkflowFormValues | null
   openIssuesPanel: () => void
@@ -176,6 +183,10 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       isFullscreen = false,
       onLoadExample,
       issues,
+      outcomeKey,
+      onCheck,
+      isChecking,
+      isCheckLocked,
       setIssues,
       className,
       withDocs = true,
@@ -351,11 +362,16 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
         await configPanelRef.current?.triggerGeneralConfigValidation()
       },
       saveCurrentTab: async () => (await configPanelRef.current?.save()) ?? true,
+      isPanelDirty: () => configPanelRef.current?.isDirty() ?? false,
       getYamlConfig: () => serialize(editor.config),
       getWorkflowFields: () => configPanelRef.current?.getWorkflowFields() ?? null,
+      // Text typed in an open panel after Check or Save started is not in the response being shown,
+      // so a dirty panel asks to save or discard before the Issues tab replaces it.
       openIssuesPanel: () => {
-        setTabs([TAB_DATA.ISSUES.ID])
-        setActiveTab(TAB_DATA.ISSUES.ID)
+        executeWithUnsavedCheck(() => {
+          setTabs([TAB_DATA.ISSUES.ID])
+          setActiveTab(TAB_DATA.ISSUES.ID)
+        })
       },
       closeIssuesPanel: () => {
         setTabs(filterOutIssuesTab)
@@ -410,9 +426,13 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       [locked, editor.onConnect]
     )
 
+    // ReactFlow measures nodes by itself; a measurement discards no panel edit, so it needs no prompt.
     const handleNodesChange = useCallback(
       (changes: NodeChange[]) => {
-        executeWithUnsavedCheck(() => editor.onNodesChange(changes))
+        const measured = changes.filter((change) => change.type === 'dimensions')
+        const userChanges = changes.filter((change) => change.type !== 'dimensions')
+        if (measured.length > 0) editor.onNodesChange(measured)
+        if (userChanges.length > 0) executeWithUnsavedCheck(() => editor.onNodesChange(userChanges))
       },
       [editor, isConfigTabVisible]
     )
@@ -443,7 +463,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
 
     useEffect(() => {
       setTempIssues(issues)
-    }, [editor.selectedNode?.id, issues?.length])
+    }, [editor.selectedNode?.id, issues])
 
     const { issueMethods } = useWorkflowIssues({
       issues,
@@ -468,6 +488,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       removeArrayIssue,
     } = useWorkflowFieldIssues({
       configStates: editor.config.states,
+      customNodes: editor.config.custom_nodes,
       activeIssue,
       selectedStateId: editor.selectedNode?.id ?? null,
       setDirtyIssues,
@@ -546,19 +567,16 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       ]
     )
 
-    const nodeHasError = useCallback(
-      (node: WorkflowNode) => {
-        return (
-          issues
-            ?.filter((issue) => issue.stateId === node.id)
-            .filter((issue) => {
-              if (isWorkflowAssistantToolIssue(issue)) return true
-              return isFieldSupported(issue.path, node.type)
-            })
-            .some((issue) => !isIssueResolved(issue)) ?? false
-        )
-      },
-      [issues, isIssueResolved, isIssueDirty]
+    const issuesByState = useMemo(() => groupIssuesByState(issues), [issues])
+
+    const getOutline = useCallback(
+      (node: WorkflowNode) =>
+        getNodeOutline(
+          issuesByState.get(node.id),
+          isIssueResolved,
+          (issue) => isWorkflowAssistantToolIssue(issue) || isFieldSupported(issue.path, node.type)
+        ),
+      [issuesByState, isIssueResolved]
     )
 
     const wrappedNodes = useMemo(() => {
@@ -579,7 +597,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
             failures: execStateData.iterationStats?.failures,
             totalItems: execStateData.totalItems,
             active: execStateData.isActive,
-            hasError: nodeHasError(node),
+            outline: getOutline(node),
             handlesStatus: execution.handlesStatusMap.get(node.id),
             // Distinct from `highlighted` (iterator drag-over): marks nodes backed by
             // the assistant currently open in the side panel.
@@ -592,7 +610,7 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
       execution.processedNodes,
       execution.isEnabled,
       nodeCallbacks,
-      nodeHasError,
+      getOutline,
       execution.getNodeExecutionData,
       execution.handlesStatusMap,
       highlightedNodeIds,
@@ -615,6 +633,10 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
     const context = useMemo(
       () => ({
         issues: issues ?? null,
+        outcomeKey,
+        onCheck,
+        isChecking,
+        isCheckLocked,
         activeIssue,
         selectedStateId: editor.selectedNode?.id ?? null,
         tempIssues,
@@ -637,6 +659,10 @@ const WorkflowEditor = forwardRef<WorkflowEditorRef, WorkflowEditorProps>(
         activeIssue,
         editor.selectedNode?.id,
         issues,
+        outcomeKey,
+        onCheck,
+        isChecking,
+        isCheckLocked,
         tempIssues,
         removeArrayIssue,
         issueMethods,

@@ -26,6 +26,8 @@ import {
   WorkflowPoolConfig,
 } from '@/types/workflowEditor/configuration'
 
+import type { ValidationMode } from '../helpers/contractProtocol'
+
 export interface SerializedState {
   id: string
 
@@ -33,7 +35,9 @@ export interface SerializedState {
   task?: string
   finish_iteration?: boolean
   next?: NextState
+  input_schema?: string
   output_schema?: string
+  save_validation?: ValidationMode
   retry_policy?: RetryPolicy
   wait_for_user_confirmation?: boolean
   interrupt_before?: boolean

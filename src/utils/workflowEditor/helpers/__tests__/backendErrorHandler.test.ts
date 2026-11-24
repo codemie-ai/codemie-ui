@@ -15,7 +15,11 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { processBackendError, WorkflowValidationError } from '../backendErrorHandler'
+import {
+  parseRejection,
+  processBackendError,
+  WorkflowValidationError,
+} from '../backendErrorHandler'
 
 describe('processBackendError', () => {
   describe('validation errors', () => {
@@ -58,6 +62,7 @@ describe('processBackendError', () => {
         path: 'model',
         configLine: 3,
         error_type: 'schema_validation',
+        outcome: 'ERROR',
       })
       expect(result.issues?.[1]).toEqual({
         id: '2',
@@ -66,10 +71,11 @@ describe('processBackendError', () => {
         path: 'retry_policy',
         configLine: 42,
         error_type: 'schema_validation',
+        outcome: 'ERROR',
       })
     })
 
-    it('should return null for empty errors array', () => {
+    it('should return the general error for an empty errors array', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
         details: {
@@ -82,7 +88,9 @@ describe('processBackendError', () => {
       const result = processBackendError(error)
 
       expect(result.issues).toBeNull()
-      expect(result.generalError).toBeNull()
+      expect(result.generalError).toBe(
+        'Workflow Configuration error: Invalid YAML config was provided'
+      )
     })
 
     it('should handle issues without stateId (global fields)', () => {
@@ -206,6 +214,7 @@ describe('processBackendError', () => {
         stateId: 'assistant_12',
         configLine: 142,
         error_type: 'cross_reference_validation',
+        outcome: 'ERROR',
       })
     })
 
@@ -244,7 +253,7 @@ describe('processBackendError', () => {
       expect(result.issues?.[1].path).toBe('data_source_id')
     })
 
-    it('should return null for empty cross_reference_validation errors array', () => {
+    it('should return the general error for an empty cross_reference_validation errors array', () => {
       const error: WorkflowValidationError = {
         message: 'Workflow Configuration error',
         details: {
@@ -257,7 +266,7 @@ describe('processBackendError', () => {
       const result = processBackendError(error)
 
       expect(result.issues).toBeNull()
-      expect(result.generalError).toBeNull()
+      expect(result.generalError).toBe('Workflow Configuration error: No references to validate')
     })
   })
 
@@ -362,7 +371,7 @@ describe('processBackendError', () => {
       const result = processBackendError(error)
 
       expect(result.issues).toBeNull()
-      expect(result.generalError).toBeNull()
+      expect(result.generalError).toBe('Workflow Configuration error: Invalid config')
     })
 
     it('should handle undefined errors in schema_validation', () => {
@@ -378,7 +387,7 @@ describe('processBackendError', () => {
       const result = processBackendError(error)
 
       expect(result.issues).toBeNull()
-      expect(result.generalError).toBeNull()
+      expect(result.generalError).toBe('Workflow Configuration error: Invalid config')
     })
 
     it('should handle missing error_type in details', () => {
@@ -507,5 +516,163 @@ describe('processBackendError', () => {
         'Permission denied: You do not have permission to update this workflow. Contact your administrator'
       )
     })
+  })
+
+  describe('contract_validation errors', () => {
+    it('whitelists contract_validation and maps outcome, config_section and config_path', () => {
+      const error = {
+        message: 'Workflow Configuration error',
+        details: {
+          error_type: 'contract_validation',
+          message: 'Workflow contracts are not satisfied',
+          errors: [
+            {
+              id: 'e-1',
+              outcome: 'ERROR',
+              state_id: 'c1',
+              path: 'x',
+              config_path: 'input_schema.properties.x',
+              config_section: 'states',
+              config_line: 12,
+              message: 'missing',
+              meta: { label: 'certain runtime failure', strict_source: 'state' },
+            },
+          ],
+        },
+      } as unknown as WorkflowValidationError
+
+      const result = processBackendError(error)
+
+      expect(result.generalError).toBeNull()
+      expect(result.issues).toEqual([
+        {
+          id: 'e-1',
+          outcome: 'ERROR',
+          stateId: 'c1',
+          // Contract issues name their field through config_path, not path.
+          path: 'input_schema',
+          configPath: 'input_schema.properties.x',
+          configSection: 'states',
+          configLine: 12,
+          message: 'missing',
+          meta: { label: 'certain runtime failure', strict_source: 'state' },
+          error_type: 'contract_validation',
+        },
+      ])
+    })
+  })
+})
+
+describe('processBackendError — details sent as text', () => {
+  it('appends string details to the general error', () => {
+    const result = processBackendError({
+      message: 'Workflow Configuration error',
+      details: 'Guardrail not found',
+    })
+
+    expect(result).toEqual({
+      issues: null,
+      generalError: 'Workflow Configuration error: Guardrail not found',
+    })
+  })
+})
+
+describe('processBackendError — shared issue converter', () => {
+  it('camel-cases meta keys, reads unknown outcomes as ERROR and drops unknown fields', () => {
+    const result = processBackendError({
+      message: 'Workflow Configuration error',
+      details: {
+        error_type: 'resource_validation',
+        message: 'Missing resources',
+        errors: [
+          {
+            id: 'r1',
+            message: 'Toolkit missing',
+            path: 'tools',
+            state_id: 's1',
+            outcome: 'SURPRISE',
+            extra_field: 'not copied',
+            meta: { toolkit_name: 'Jira', tool_name: 'search', custom: 1 },
+          },
+        ] as any,
+      },
+    })
+
+    expect(result.issues).toEqual([
+      {
+        id: 'r1',
+        message: 'Toolkit missing',
+        path: 'tools',
+        stateId: 's1',
+        configLine: 0,
+        error_type: 'resource_validation',
+        outcome: 'ERROR',
+        meta: { toolkitName: 'Jira', toolName: 'search', custom: 1 },
+      },
+    ])
+  })
+})
+
+describe('parseRejection', () => {
+  it('returns the issues and coverage of a structured rejection', () => {
+    const coverage = {
+      validated_states: 1,
+      total_states: 2,
+      uncovered_state_ids: ['s2'],
+      analysed: true,
+      cap_reached: false,
+    }
+    const parsed = parseRejection({
+      message: 'Workflow Configuration error',
+      details: {
+        error_type: 'contract_validation',
+        message: 'Contracts are not satisfied',
+        errors: [{ id: 'c1', message: 'missing', outcome: 'ERROR' }] as any,
+        coverage,
+      } as any,
+    })
+
+    expect(parsed?.issues).toHaveLength(1)
+    expect(parsed?.issues[0].error_type).toBe('contract_validation')
+    expect(parsed?.coverage).toEqual(coverage)
+  })
+
+  it('returns the issues of a non-contract structured rejection', () => {
+    const parsed = parseRejection({
+      message: 'Workflow Configuration error',
+      details: {
+        error_type: 'schema_validation',
+        message: 'Invalid',
+        errors: [{ id: '1', message: 'bad', path: 'model' }] as any,
+      },
+    })
+
+    expect(parsed?.issues.map((issue) => issue.path)).toEqual(['model'])
+  })
+
+  it('is null for a structured rejection that lists no issues', () => {
+    expect(
+      parseRejection({
+        message: 'Workflow Configuration error',
+        details: { error_type: 'schema_validation', message: 'Invalid', errors: [] },
+      })
+    ).toBeNull()
+  })
+
+  it('is null for an error type outside the whitelist', () => {
+    expect(
+      parseRejection({
+        message: 'Error',
+        details: {
+          error_type: 'database_error',
+          message: 'down',
+          errors: [{ id: '1', message: 'x' }] as any,
+        },
+      })
+    ).toBeNull()
+  })
+
+  it('is null for text details', () => {
+    expect(parseRejection({ message: 'Error', details: 'plain text' })).toBeNull()
   })
 })

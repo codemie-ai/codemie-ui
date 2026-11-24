@@ -36,7 +36,7 @@ vi.mock('../../hooks/useWorkflowContext', () => ({
 }))
 
 vi.mock('../CommonStateFields', () => ({
-  default: forwardRef(({ showTask = true, showOutputSchema = true }: any, ref: any) => {
+  default: forwardRef(({ showTask = true, contractFields }: any, ref: any) => {
     useImperativeHandle(ref, () => ({
       validate: () => Promise.resolve(true),
       getValues: () => ({
@@ -56,8 +56,11 @@ vi.mock('../CommonStateFields', () => ({
     return (
       <div data-testid="common-state-fields">
         {showTask && <textarea aria-label="Task" placeholder="Describe the task for this node" />}
-        {showOutputSchema && (
-          <textarea aria-label="Output Schema" placeholder="Expected output format (JSON Schema)" />
+        {contractFields === 'full' && (
+          <textarea
+            aria-label="Output contract"
+            placeholder="Expected output format (JSON Schema)"
+          />
         )}
       </div>
     )
@@ -162,12 +165,10 @@ describe('SubWorkflowTab', () => {
     })
   })
 
-  it('hides Task and Output Schema', () => {
+  it('hides Task and asks CommonStateFields for the full contract fields', () => {
     render(<SubWorkflowTab {...defaultProps} />)
     expect(screen.queryByPlaceholderText('Describe the task for this node')).not.toBeInTheDocument()
-    expect(
-      screen.queryByPlaceholderText('Expected output format (JSON Schema)')
-    ).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Expected output format (JSON Schema)')).toBeInTheDocument()
   })
 
   it('isDirty() returns false on initial mount when workflow_id is empty (regression EPMCDME-14620)', async () => {

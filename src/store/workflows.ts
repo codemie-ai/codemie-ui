@@ -45,6 +45,13 @@ const WORKFLOWS_FETCH_BATCH_SIZE = 50
 export const ERROR_FORMAT_STRING = 'string' as const
 export const ERROR_FORMAT_JSON = 'json' as const
 
+export interface ValidateWorkflowConfigParams {
+  /** Present on the edit page and restore (`/{id}/validate`); absent on the new page (`/validate`). */
+  id?: string | number
+  body: Record<string, any>
+  signal?: AbortSignal
+}
+
 export type ErrorFormat = typeof ERROR_FORMAT_STRING | typeof ERROR_FORMAT_JSON
 
 const SHOW_NEW_WORKFLOW_AI_POPUP = 'codemie-new-workflow-ai-popup'
@@ -90,17 +97,18 @@ interface WorkflowsStore {
   ) => Promise<WorkflowTemplateMaterializeSeed>
   getWorkflowOptions: (params?: { search?: string; project?: string }) => Promise<Workflow>
   getSelectableWorkflows: (params?: { search?: string; project?: string }) => Promise<Workflow[]>
-  createWorkflow: (values: any, errorFormat?: ErrorFormat) => Promise<any>
-  updateWorkflow: (id: string | number, values: any, errorFormat?: ErrorFormat) => Promise<any>
-  validateWorkflow: (
+  createWorkflow: (values: any, errorFormat?: ErrorFormat, ownErrors?: boolean) => Promise<any>
+  updateWorkflow: (
     id: string | number,
     values: any,
     errorFormat?: ErrorFormat,
-    options?: { skipErrorHandling?: boolean }
-  ) => Promise<Response>
+    ownErrors?: boolean
+  ) => Promise<any>
+  validateWorkflowConfig: (params: ValidateWorkflowConfigParams) => Promise<Response>
   deleteWorkflow: (id: string | number) => Promise<void>
   getWorkflowDiagram: (payload: any) => Promise<any>
   clearCurrentWorkflow: () => void
+  refreshCurrentWorkflowHistory: (id: string) => Promise<void>
   createWorkflowExecution: (
     workflowId: string | number,
     message: string,
@@ -333,40 +341,43 @@ export const workflowsStore = proxy<WorkflowsStore>({
     return response.json()
   },
 
-  async createWorkflow(values: any, errorFormat?: ErrorFormat) {
+  /** `ownErrors`: the caller reports failures itself, so the global error toast is skipped. */
+  async createWorkflow(values: any, errorFormat?: ErrorFormat, ownErrors = false) {
     let url = 'v1/workflows'
     if (errorFormat) {
       url += `?error_format=${errorFormat}`
     }
-    const options = errorFormat === ERROR_FORMAT_JSON ? { skipErrorHandling: true } : {}
+    const options =
+      errorFormat === ERROR_FORMAT_JSON || ownErrors ? { skipErrorHandling: true } : {}
     return api.post(url, values, options)
   },
 
-  async updateWorkflow(id: string | number, values: any, errorFormat?: ErrorFormat) {
+  async updateWorkflow(
+    id: string | number,
+    values: any,
+    errorFormat?: ErrorFormat,
+    ownErrors = false
+  ) {
     let url = `v1/workflows/${id}`
     if (errorFormat) {
       url += `?error_format=${errorFormat}`
     }
-    const options = errorFormat === ERROR_FORMAT_JSON ? { skipErrorHandling: true } : {}
+    const options =
+      errorFormat === ERROR_FORMAT_JSON || ownErrors ? { skipErrorHandling: true } : {}
     return api.put(url, values, options)
   },
 
-  async validateWorkflow(
-    id: string | number,
-    values: any,
-    errorFormat?: ErrorFormat,
-    options: { skipErrorHandling?: boolean } = {}
-  ) {
-    let url = `v1/workflows/${id}/validate`
-    if (errorFormat) url += `?error_format=${errorFormat}`
-    // skipErrorHandling defaults to true when errorFormat is ERROR_FORMAT_JSON so the
-    // caller's catch block handles the structured error without a second global toast.
-    // Pass { skipErrorHandling: true } explicitly when calling without errorFormat to
-    // avoid a double notification.
-    const requestOptions = {
-      skipErrorHandling: options.skipErrorHandling ?? errorFormat === ERROR_FORMAT_JSON,
+  async validateWorkflowConfig({ id, body, signal }: ValidateWorkflowConfigParams) {
+    const options = { skipErrorHandling: true, signal }
+    const query = `error_format=${ERROR_FORMAT_JSON}`
+
+    if (id !== undefined) {
+      return api.post(`v1/workflows/${id}/validate?${query}`, body, options)
     }
-    return api.post(url, values, requestOptions)
+
+    // The id-less endpoint takes the create body; it has no history field.
+    const { yaml_config_history: _history, ...createBody } = body ?? {}
+    return api.post(`v1/workflows/validate?${query}`, createBody, options)
   },
 
   async deleteWorkflow(id: string | number) {
@@ -381,6 +392,18 @@ export const workflowsStore = proxy<WorkflowsStore>({
     this.currentWorkflow = null
     this.currentWorkflowLoading = false
     this.currentWorkflowError = null
+  },
+
+  // Re-reads the version history and start hint of the open workflow without `fetchWorkflow`,
+  // which flips the loading flag and remounts the form.
+  async refreshCurrentWorkflowHistory(this: WorkflowsStore, id: string) {
+    const fresh = await this.getWorkflow(id, true)
+    if (!this.currentWorkflow || String(this.currentWorkflow.id) !== String(id)) return
+    this.currentWorkflow = {
+      ...this.currentWorkflow,
+      yaml_config_history: fresh.yaml_config_history,
+      start_hint: fresh.start_hint,
+    }
   },
 
   async createWorkflowExecution(

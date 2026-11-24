@@ -182,6 +182,13 @@ export interface WorkflowTransitionsResponse {
 
 export type WorkflowFieldPath = string
 
+export type IssueOutcome = 'ERROR' | 'WARNING' | 'UNVERIFIED'
+
+export interface WorkflowIssueMeta {
+  label?: string
+  strict_source?: 'workflow' | 'state'
+}
+
 export interface WorkflowBaseIssue {
   id: string
   message: string
@@ -191,10 +198,14 @@ export interface WorkflowBaseIssue {
   configLine: number
   error_type?: string
   status?: 'resolved' | 'dirty'
+  outcome: IssueOutcome
+  configSection?: string
+  configPath?: string
+  meta?: WorkflowIssueMeta
 }
 
 export interface WorkflowAssistantToolIssue extends WorkflowBaseIssue {
-  meta: {
+  meta: WorkflowIssueMeta & {
     toolkitType: 'tools' | 'external-tools'
     toolkitName: string
     toolName?: string
@@ -202,7 +213,7 @@ export interface WorkflowAssistantToolIssue extends WorkflowBaseIssue {
 }
 
 export interface WorkflowAssistantMcpIssue extends WorkflowBaseIssue {
-  meta: { mcpName: string }
+  meta: WorkflowIssueMeta & { mcpName: string }
 }
 
 export type WorkflowIssue =
@@ -213,7 +224,7 @@ export type WorkflowIssue =
 export function isWorkflowAssistantToolIssue(
   issue: WorkflowIssue
 ): issue is WorkflowAssistantToolIssue {
-  return (
+  return !!(
     'meta' in issue &&
     issue.meta &&
     'toolkitName' in issue.meta &&
@@ -225,7 +236,7 @@ export function isWorkflowAssistantToolIssue(
 export function isWorkflowAssistantMcpIssue(
   issue: WorkflowIssue
 ): issue is WorkflowAssistantMcpIssue {
-  return 'meta' in issue && issue.meta && 'mcpName' in issue.meta
+  return !!('meta' in issue && issue.meta && 'mcpName' in issue.meta)
 }
 
 export interface WorkflowInlineCredential {

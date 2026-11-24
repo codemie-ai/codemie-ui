@@ -31,6 +31,7 @@ import Input from '@/components/form/Input'
 import Select from '@/components/form/Select'
 import Switch from '@/components/form/Switch'
 import TooltipButton from '@/components/TooltipButton'
+import { useWorkflowContractsEnabled } from '@/hooks/useFeatureFlags'
 import { NodeTypes } from '@/types/workflowEditor'
 import { CommonStateConfiguration, RetryPolicy } from '@/types/workflowEditor/configuration'
 import {
@@ -38,9 +39,12 @@ import {
   START_NODE_ID,
   END_NODE_ID,
 } from '@/utils/workflowEditor/constants'
+import { VALIDATION_MODES, ValidationMode } from '@/utils/workflowEditor/helpers/contractProtocol'
 
 import ConfigAccordion from './components/ConfigAccordion'
+import ContractFields from './components/ContractFields'
 import FieldController from './components/FieldController'
+import { SKIP_WHEN_CONTRACTS_OFF } from './utils/contractModes'
 import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import { registerFields } from '../utils/visualEditorFieldRegistry'
 
@@ -121,6 +125,22 @@ registerFields(
   [NodeTypes.ASSISTANT, NodeTypes.CUSTOM, NodeTypes.TOOL, NodeTypes.TRANSFORM]
 )
 
+/**
+ * Contract controls (ContractFields). No error-type restriction on purpose: an entry with no error types
+ * matches every error type, contract_validation included, and restricting `output_schema` would make the
+ * shared exact-path entry contract-only (see mergeTypes).
+ */
+registerFields(
+  ['input_schema', 'save_validation', 'output_schema'],
+  [
+    NodeTypes.ASSISTANT,
+    NodeTypes.TOOL,
+    NodeTypes.CUSTOM,
+    NodeTypes.SUB_WORKFLOW,
+    NodeTypes.TRANSFORM,
+  ]
+)
+
 /** Normalize clear_context_store value to valid option */
 const normalizeClearContextStore = (val: any): boolean | 'keep_current' =>
   val === CONTEXT_STORE_KEEP_CURRENT ? CONTEXT_STORE_KEEP_CURRENT : val === true || val === 'true'
@@ -128,7 +148,10 @@ const normalizeClearContextStore = (val: any): boolean | 'keep_current' =>
 export interface CommonNodeFieldValues {
   id: string
   task?: string
+  input_schema?: string
   output_schema?: string
+  /** Empty string means "use the workflow default"; the key is then omitted on save. */
+  save_validation?: ValidationMode | ''
   interrupt_before?: boolean
   finish_iteration?: boolean
   resolve_dynamic_values_in_prompt?: boolean
@@ -151,14 +174,20 @@ interface CommonNodeFieldsProps {
   idDisabled?: boolean
   showAllFields?: boolean
   showTask?: boolean
-  showOutputSchema?: boolean
+  /**
+   * Renders the contract section: `full` is input contract, output contract and mode; `input`
+   * drops the output contract (transform).
+   */
+  contractFields?: 'full' | 'input'
 }
 
 const getDefaultValues = (state: CommonStateConfiguration): CommonNodeFieldValues => {
   return {
     id: state?.id || '',
     task: state?.task || '',
+    input_schema: state?.input_schema || '',
     output_schema: state?.output_schema || '',
+    save_validation: state?.save_validation || '',
     interrupt_before: state?.interrupt_before || false,
     finish_iteration: state?.finish_iteration || false,
     resolve_dynamic_values_in_prompt: state?.resolve_dynamic_values_in_prompt || false,
@@ -203,7 +232,12 @@ const validationSchema = Yup.object().shape({
       return !forbidden.includes(value.toLowerCase())
     }),
   task: Yup.string().optional(),
+  input_schema: Yup.string().optional().when('$contractsEnabled', SKIP_WHEN_CONTRACTS_OFF),
   output_schema: Yup.string().optional(),
+  save_validation: Yup.string()
+    .oneOf(['', ...VALIDATION_MODES])
+    .optional()
+    .when('$contractsEnabled', SKIP_WHEN_CONTRACTS_OFF),
   interrupt_before: Yup.boolean().optional(),
   finish_iteration: Yup.boolean().optional(),
   resolve_dynamic_values_in_prompt: Yup.boolean().optional(),
@@ -231,11 +265,9 @@ const validationSchema = Yup.object().shape({
 })
 
 const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps>(
-  (
-    { state, idDisabled = false, showAllFields = true, showTask = true, showOutputSchema = true },
-    ref
-  ) => {
+  ({ state, idDisabled = false, showAllFields = true, showTask = true, contractFields }, ref) => {
     const { setActiveIssue, activeIssue } = useWorkflowContext()
+    const [contractsEnabled] = useWorkflowContractsEnabled()
     const {
       control,
       getValues,
@@ -246,6 +278,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
       resolver: yupResolver(validationSchema) as any,
       mode: 'onChange',
       defaultValues: getDefaultValues(state),
+      context: { contractsEnabled },
     })
 
     const [transitionExpanded, setTransitionExpanded] = useState(false)
@@ -317,22 +350,7 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
                         placeholder="Describe the task for this node"
                         rows={4}
                         error={fieldState.error?.message}
-                      />
-                    )}
-                  />
-                )}
-
-                {showOutputSchema && (
-                  <FieldController
-                    name="output_schema"
-                    control={control}
-                    render={({ field, fieldState }) => (
-                      <ExpandableTextarea
-                        {...field}
-                        label="Output Schema"
-                        placeholder="Expected output format (JSON Schema)"
-                        rows={4}
-                        error={fieldState.error?.message}
+                        warning={fieldState.warning}
                       />
                     )}
                   />
@@ -397,6 +415,16 @@ const CommonStateFields = forwardRef<CommonStateFieldsRef, CommonNodeFieldsProps
             )}
           </div>
         </ConfigAccordion>
+
+        {contractFields && (contractsEnabled || contractFields === 'full') && (
+          <ConfigAccordion title="Contracts" defaultExpanded={true}>
+            <ContractFields
+              control={control}
+              showOutput={contractFields === 'full'}
+              showLinking={contractsEnabled}
+            />
+          </ConfigAccordion>
+        )}
 
         {showAllFields && (
           <>

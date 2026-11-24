@@ -24,29 +24,47 @@ import { ButtonType } from '@/constants'
 import { useWorkflowAIEnabled } from '@/hooks/useFeatureFlags'
 import { useVueRoute } from '@/hooks/useVueRouter'
 import { goBackFromWorkflowEdit } from '@/pages/workflows/utils/goBackWorkflows'
-import { appInfoStore } from '@/store/appInfo'
+import {
+  clearOutcome,
+  contractOutcomeStore,
+  resetOutcome,
+  takeHandedOverIssues,
+} from '@/store/contractOutcome'
 import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
 import { WorkflowIssue } from '@/types/entity'
-import { ConfigItem } from '@/types/entity/configuration'
 import { WorkflowAIRefineResponse } from '@/types/entity/workflow'
-import API from '@/utils/api'
 import { canEdit } from '@/utils/entity'
 import toaster from '@/utils/toaster'
 import {
-  processBackendError,
-  WorkflowValidationError,
-} from '@/utils/workflowEditor/helpers/backendErrorHandler'
-import { isVisualEditorEnabled } from '@/utils/workflows'
+  hasSaveWarnings,
+  isSaveFinding,
+  parseContractOutcome,
+  ParsedContractOutcome,
+} from '@/utils/workflowEditor/helpers/contractProtocol'
 import { notifyAboutWarnings } from '@/utils/workflowWarnings'
 
 import RefineWorkflowPromptPopup from './components/RefineWorkflowPromptPopup'
-import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
+import WorkflowForm, { WorkflowFormRef, WorkflowSubmitOutcome } from './components/WorkflowForm'
 import WorkflowsNavigation from './components/WorkflowsNavigation'
 import WorkflowVersionHistoryPopup from './components/WorkflowVersionHistoryPopup'
 import WorkflowVisualVersionHistoryPopup from './components/WorkflowVisualVersionHistoryPopup'
 import WorkflowStartExecutionPopup from './details/popups/WorkflowStartExecutionPopup'
+import { useContractCheck } from './editor/hooks/useContractCheck'
+import { readJsonBody, useIssuesOutcome } from './editor/hooks/useIssuesOutcome'
 import EditWorkflowHeaderActions from './EditWorkflowHeaderActions'
 import { useWorkflowHistoryRestore } from './useWorkflowHistoryRestore'
+
+const countWarnings = (issues: WorkflowIssue[]) => issues.filter(isSaveFinding).length
+
+const UNREADABLE_SAVE_RESULT_MESSAGE =
+  "Workflow saved, but its validation result couldn't be read. Run Check to review it."
+
+/** `truncated` counts entries the backend cut off, whose severity is unknown. */
+const warningsToast = (count: number, truncated = 0) => {
+  if (count === 0) return 'Workflow saved, but some warnings could not be listed'
+  const more = truncated > 0 ? ', and more are not listed' : ''
+  return `Workflow saved with ${count} warning${count === 1 ? '' : 's'}${more}`
+}
 
 const EditWorkflowPage: React.FC = () => {
   const route = useVueRoute()
@@ -60,26 +78,26 @@ const EditWorkflowPage: React.FC = () => {
   // non-null only while an unsaved AI refinement is active
   const [preRefinementYaml, setPreRefinementYaml] = useState<string | null>(null)
 
+  // Saved with warnings (here or on the new page): the page stays open and the header offers Done.
+  const [savedWithWarnings, setSavedWithWarnings] = useState(false)
+  // Start hint of this page's last successful save. The store copy is refreshed after a warned save
+  // without being awaited, and stays old if that refresh fails, so Run anyway reads this one.
+  const [savedStartHint, setSavedStartHint] = useState<string | undefined>(undefined)
+  const [isDirty, setIsDirty] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  // The workflow this page currently shows; a save that outlives it must not touch anything.
+  const activeIdRef = useRef<string | null>(null)
+  const pendingOpenPanelRef = useRef(false)
+
   const [workflowAIEnabled] = useWorkflowAIEnabled()
 
   const { currentWorkflow, currentWorkflowLoading, currentWorkflowError } =
     useSnapshot(workflowsStore)
-  const { configs } = useSnapshot(appInfoStore)
-
-  const visualEditorEnabled = isVisualEditorEnabled(configs as ConfigItem[])
-
-  const applyWorkflowBackendValidationError = (parsedError: WorkflowValidationError) => {
-    setIssues(null)
-    const { issues: backendIssues, generalError } = processBackendError(parsedError)
-    if (backendIssues) {
-      setIssues(backendIssues)
-      formRef.current?.openIssuesPanel()
-    } else if (generalError) {
-      toaster.error(generalError)
-    } else {
-      toaster.error('Validation returned no issue details')
-    }
-  }
+  const { beginSave, showIssues, showSaveFailure } = useIssuesOutcome({
+    formRef,
+    outcomeKey: id,
+    setIssues,
+  })
 
   const {
     showVersionHistory,
@@ -95,8 +113,14 @@ const EditWorkflowPage: React.FC = () => {
     workflowId: id,
     formRef,
     setIssues,
-    applyWorkflowBackendValidationError,
     onRestoreApplied: () => setPreRefinementYaml(null),
+  })
+
+  const { check, isChecking } = useContractCheck({
+    formRef,
+    workflowId: id,
+    outcomeKey: id,
+    setIssues,
   })
 
   useEffect(() => {
@@ -107,44 +131,121 @@ const EditWorkflowPage: React.FC = () => {
     }
   }, [id])
 
+  // Takes over the outcome handed over for this workflow (a create that came back with warnings);
+  // an outcome for anything else is stale. Leaving clears the slot only when it is still ours.
+  useEffect(() => {
+    activeIdRef.current = id
+    setSavedWithWarnings(false)
+    setSavedStartHint(undefined)
+    setIsDirty(false)
+    setIsSaving(false)
+
+    const handedOverIssues = takeHandedOverIssues(id)
+    const { outcome } = contractOutcomeStore
+    if (handedOverIssues && outcome?.key === id) {
+      setIssues(handedOverIssues)
+      pendingOpenPanelRef.current = true
+      setSavedWithWarnings(true)
+      const count = countWarnings(handedOverIssues)
+      const truncated = outcome.truncated ?? 0
+      if (count > 0 || truncated > 0) toaster.info(warningsToast(count, truncated))
+    } else {
+      resetOutcome()
+    }
+
+    return () => {
+      activeIdRef.current = null
+      pendingOpenPanelRef.current = false
+      clearOutcome(id)
+    }
+  }, [id])
+
+  // The form mounts once the workflow has loaded; the panel can only open after that.
+  useEffect(() => {
+    if (pendingOpenPanelRef.current && !currentWorkflowLoading && currentWorkflow) {
+      pendingOpenPanelRef.current = false
+      formRef.current?.openIssuesPanel()
+    }
+  }, [currentWorkflowLoading, currentWorkflow])
+
   useEffect(() => {
     if (currentWorkflowError) {
+      clearOutcome(id)
+      pendingOpenPanelRef.current = false
       toaster.error('Failed to load workflow data')
     }
   }, [currentWorkflowError])
 
-  const submit = async (values: any, shouldOpenExecution = false) => {
-    const errorFormat = visualEditorEnabled ? ERROR_FORMAT_JSON : undefined
+  // "Run anyway" reads the start hint from the store, and the save may have changed it.
+  const refreshHistory = () => {
+    workflowsStore.refreshCurrentWorkflowHistory(id).catch((error) => {
+      // The saved workflow is unaffected; the history and start hint refresh on the next load.
+      console.error('Failed to refresh the workflow history after a save', error)
+    })
+  }
+
+  const finishWarnedSave = (parsed: ParsedContractOutcome, warningCount: number) => {
+    showIssues(parsed, 'saved')
+    setSavedWithWarnings(true)
+    toaster.info(warningsToast(warningCount, parsed.truncated))
+    notifyAboutWarnings({ warnings: parsed.otherWarnings }, { prefixSaved: true })
+    // Not awaited: the save is done, and a slow history read must not hold the form lock.
+    refreshHistory()
+  }
+
+  const submit = async (
+    values: any,
+    shouldOpenExecution = false
+  ): Promise<WorkflowSubmitOutcome> => {
+    const submittedId = id
+    // A response that outlives its page or its workflow is not shown: no navigation, no store writes.
+    const isCurrent = () => activeIdRef.current === submittedId
 
     try {
-      setIssues(null)
-      formRef.current?.clearAllResolvedFields()
+      beginSave()
+      // A save result replaces the previous one: the Saved header comes back only if this save warns.
+      setSavedWithWarnings(false)
 
-      const response = await workflowsStore.updateWorkflow(id, values, errorFormat)
+      const response = await workflowsStore.updateWorkflow(id, values, ERROR_FORMAT_JSON, true)
+      // The save went through either way; an unreadable body only means its findings are unknown.
+      const { readable, body } = await readJsonBody(response)
+      const parsed = parseContractOutcome(body)
+      if (!isCurrent()) return 'navigated'
+      setSavedStartHint(values.start_hint ?? '')
+
+      if (!readable) {
+        // Navigating away would drop findings nobody saw. Check treats the same case as a failure.
+        toaster.info(UNREADABLE_SAVE_RESULT_MESSAGE)
+        refreshHistory()
+        return 'stayed'
+      }
+
       // Refinement is now the saved baseline — revert no longer makes sense
       setPreRefinementYaml(null)
+
+      if (hasSaveWarnings(parsed)) {
+        finishWarnedSave(parsed, countWarnings(parsed.issues))
+        return 'stayed'
+      }
+
       toaster.info('Workflow has been updated successfully!')
 
       // Slots whose integration is left to whoever runs the workflow do not block saving, but the
       // author should know they depend on each user's own setup.
-      notifyAboutWarnings(await response?.json().catch(() => undefined), { prefixSaved: true })
+      notifyAboutWarnings({ warnings: parsed.otherWarnings }, { prefixSaved: true })
 
       if (shouldOpenExecution) {
         await workflowsStore.fetchWorkflow(id)
+        if (!isCurrent()) return 'navigated'
         setShowExecutionPopup(true)
-      } else {
-        goBackFromWorkflowEdit({ workflowId: id })
+        return 'stayed'
       }
+      goBackFromWorkflowEdit({ workflowId: id })
+      return 'navigated'
     } catch (error: any) {
-      if (errorFormat !== ERROR_FORMAT_JSON) {
-        API.handleError({ error: error.parsedError })
-        return
-      }
-      if (error?.parsedError) {
-        applyWorkflowBackendValidationError(error.parsedError)
-      } else {
-        toaster.error('Failed to save the workflow')
-      }
+      if (!isCurrent()) return 'navigated'
+      showSaveFailure(error)
+      return 'error'
     }
   }
 
@@ -198,9 +299,12 @@ const EditWorkflowPage: React.FC = () => {
         rightContent={
           <EditWorkflowHeaderActions
             workflowAIEnabled={workflowAIEnabled}
-            visualEditorEnabled={visualEditorEnabled}
             hasPreRefinement={!!preRefinementYaml}
             isBusy={currentWorkflowLoading || !currentWorkflow}
+            isChecking={isChecking}
+            isSaving={isSaving}
+            isSavedWithWarnings={savedWithWarnings && !isDirty}
+            onRunAnyway={() => setShowExecutionPopup(true)}
             onRevert={() => setShowRevertConfirm(true)}
             onRefine={handleRefineStart}
             onBack={onBack}
@@ -225,8 +329,14 @@ const EditWorkflowPage: React.FC = () => {
           <WorkflowForm
             ref={formRef}
             onSubmit={submit}
+            onDirtyChange={setIsDirty}
+            onSavingChange={setIsSaving}
             issues={issues}
             setIssues={setIssues}
+            outcomeKey={id}
+            onCheck={check}
+            isChecking={isChecking}
+            isCheckLocked={isSaving}
             workflow={currentWorkflow}
             isEditing
             onShowVersionHistory={handleShowVersionHistory}
@@ -258,7 +368,7 @@ const EditWorkflowPage: React.FC = () => {
         isVisible={showExecutionPopup}
         onHide={() => setShowExecutionPopup(false)}
         workflowId={id}
-        startHint={currentWorkflow?.start_hint}
+        startHint={savedStartHint ?? currentWorkflow?.start_hint}
       />
 
       <RefineWorkflowPromptPopup

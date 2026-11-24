@@ -28,6 +28,8 @@ import { cn } from '@/utils/utils'
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   name?: string
   error?: string
+  /** Non-blocking amber message; ignored while `error` is set. */
+  warning?: string
   label?: string
   hint?: string
   id?: string
@@ -53,6 +55,7 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
     {
       name,
       error,
+      warning,
       label,
       hint,
       id,
@@ -110,6 +113,7 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
         <FieldAnnouncer
           id={id}
           error={error}
+          warning={warning}
           describedBy={callerDescribedBy}
           errorClassName="text-text-error text-sm"
         >
@@ -126,7 +130,8 @@ const Textarea = forwardRef<TextareaRef, TextareaProps>(
                 'rounded-lg border border-border-primary p-2 py-2.5 px-3 max-h-96 min-h-12 text-sm transition',
                 'bg-surface-base-content placeholder:text-text-specific-input-placeholder focus:outline-none !text-text-primary show-scroll w-auto [scrollbar-width:auto]',
                 error && 'border-border-error',
-                !error && 'focus:border-border-secondary hover:border-border-secondary',
+                !error && warning && 'border-aborted-secondary',
+                !error && !warning && 'focus:border-border-secondary hover:border-border-secondary',
                 className,
                 disabled && 'bg-surface-base-chat opacity-60 hover:border-border-primary'
               )}

@@ -328,3 +328,45 @@ states:
     expect(state?._meta?.type).toBe(NodeTypes.SUB_WORKFLOW)
   })
 })
+
+describe('deserialize - custom actor reference', () => {
+  const yamlFor = (actorId: string) => `
+custom_nodes:
+  - id: ${actorId}
+    custom_node_id: transform_node
+    config:
+      mappings:
+        - output_field: result
+          type: extract
+          source_path: a.b
+states:
+  - id: shape
+    custom_node_id: ${actorId}
+    next:
+      state_id: end
+`
+
+  it.each(['my_transform', 'transform_node'])(
+    'infers a Transform node when the state points to actor "%s" of type transform_node',
+    (actorId) => {
+      const loaded = deserialize(yamlFor(actorId))
+
+      expect(loaded.states.find((s) => s.id === 'shape')?._meta?.type).toBe(NodeTypes.TRANSFORM)
+    }
+  )
+
+  it('keeps a Custom node when the referenced actor is another custom type', () => {
+    const loaded = deserialize(`
+custom_nodes:
+  - id: my_node
+    custom_node_id: state_processor_node
+states:
+  - id: shape
+    custom_node_id: my_node
+    next:
+      state_id: end
+`)
+
+    expect(loaded.states.find((s) => s.id === 'shape')?._meta?.type).toBe(NodeTypes.CUSTOM)
+  })
+})

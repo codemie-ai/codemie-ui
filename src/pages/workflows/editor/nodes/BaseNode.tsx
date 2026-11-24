@@ -21,8 +21,9 @@ import StatusBadge from '@/components/StatusBadge'
 import WorkflowExecutionStateControls from '@/pages/workflows/details/states/WorkflowExecutionStateControls'
 import { WorkflowExecutionStatus } from '@/types/entity'
 import { cn } from '@/utils/utils'
+import type { NodeOutline } from '@/utils/workflowEditor/helpers/issueSeverity'
 
-import { getStatusBorderClass } from './common'
+import { getNodeOutlineClass, getStatusBorderClass } from './common'
 import { DIFF_BORDER_CLASS, NODE_RENDER_MODE, useNodeRenderState } from './diffChromeContext'
 import { ExecutionContext } from '../../details/hooks/useExecutionsContext'
 
@@ -30,7 +31,7 @@ export interface BaseNodeProps {
   children: React.ReactNode
   classNames?: string
   selected?: boolean
-  hasError?: boolean
+  outline?: NodeOutline
   isConnected?: boolean
   status?: WorkflowExecutionStatus
   success?: number
@@ -44,7 +45,7 @@ const BaseNode: React.FC<BaseNodeProps> = ({
   classNames = '',
   isConnected,
   selected = false,
-  hasError = false,
+  outline = null,
   status,
   success,
   failures,
@@ -69,11 +70,10 @@ const BaseNode: React.FC<BaseNodeProps> = ({
               'border-transparent': status,
             }),
         {
-          'outline outline-offset-2 outline-failed-secondary': hasError && !diffStatus,
-          'outline outline-offset-2 outline-border-accent': highlighted && !hasError && !diffStatus,
           '!pointer-events-auto cursor-grab': isIteratorNode && !isVisualDiff,
         },
         !diffStatus && getStatusBorderClass(status),
+        !diffStatus && getNodeOutlineClass(outline, highlighted),
         classNames
       )}
     >

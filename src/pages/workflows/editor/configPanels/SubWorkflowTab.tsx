@@ -164,7 +164,7 @@ const SubWorkflowTab = forwardRef<SubWorkflowTabRef, SubWorkflowTabProps>(
             ref={commonStateFieldsRef}
             state={state}
             showTask={false}
-            showOutputSchema={false}
+            contractFields="full"
           />
         </form>
 

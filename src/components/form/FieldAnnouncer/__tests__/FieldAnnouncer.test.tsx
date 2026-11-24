@@ -95,4 +95,33 @@ describe('FieldAnnouncer', () => {
 
     expect(screen.getByRole('alert')).toHaveClass('text-sm', 'custom-error')
   })
+
+  describe('warning', () => {
+    it('links the field to an amber warning node without marking it invalid', () => {
+      renderField({ id: 'name', warning: 'Looks suspicious', describedBy: 'name-hint' })
+
+      const input = screen.getByRole('textbox')
+      const warningNode = screen.getByText('Looks suspicious')
+
+      expect(warningNode).toHaveAttribute('id', 'name-warning')
+      expect(warningNode).toHaveClass('text-sm', 'text-aborted-primary')
+      expect(input).toHaveAttribute('aria-describedby', 'name-hint name-warning')
+      expect(input).toHaveAttribute('aria-invalid', 'false')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('applies warningClassName on top of the amber styling', () => {
+      renderField({ id: 'name', warning: 'Hmm', warningClassName: 'custom-warning' })
+
+      expect(screen.getByText('Hmm')).toHaveClass('text-aborted-primary', 'custom-warning')
+    })
+
+    it('renders only the error when both error and warning are set', () => {
+      renderField({ id: 'name', error: 'Required', warning: 'Hmm' })
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Required')
+      expect(screen.queryByText('Hmm')).not.toBeInTheDocument()
+      expect(screen.getByRole('textbox')).toHaveAttribute('aria-describedby', 'name-error')
+    })
+  })
 })

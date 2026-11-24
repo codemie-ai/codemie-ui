@@ -241,4 +241,32 @@ describe('Input', () => {
       expect(input).toHaveAttribute('aria-required', 'true')
     })
   })
+
+  describe('warning', () => {
+    it('renders the warning text in amber and an amber border', () => {
+      const { container } = render(
+        <Input id="name" name="name" value="" onChange={noop} warning="Looks suspicious" />
+      )
+
+      const warningNode = screen.getByText('Looks suspicious')
+      expect(warningNode).toHaveClass('text-aborted-primary')
+      expect(screen.getByRole('textbox')).toHaveAttribute('aria-describedby', warningNode.id)
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid', 'true')
+      expect(container.querySelector('.input-block-container')).toHaveClass(
+        'border-aborted-secondary'
+      )
+    })
+
+    it('renders only the error when both error and warning are set', () => {
+      const { container } = render(
+        <Input id="name" name="name" value="" onChange={noop} error="Bad" warning="Hmm" />
+      )
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Bad')
+      expect(screen.queryByText('Hmm')).not.toBeInTheDocument()
+      const block = container.querySelector('.input-block-container')
+      expect(block).toHaveClass('border-failed-secondary')
+      expect(block).not.toHaveClass('border-aborted-secondary')
+    })
+  })
 })

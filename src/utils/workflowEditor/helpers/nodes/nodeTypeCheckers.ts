@@ -20,7 +20,31 @@
  */
 
 import { WorkflowNode, NodeTypes } from '@/types/workflowEditor/base'
-import { END_NODE_ID, START_NODE_ID, ITERATOR_ID_PREFIX } from '@/utils/workflowEditor/constants'
+import { CustomNodeConfiguration } from '@/types/workflowEditor/configuration'
+import {
+  END_NODE_ID,
+  START_NODE_ID,
+  ITERATOR_ID_PREFIX,
+  TRANSFORM_CUSTOM_ACTOR_ID,
+} from '@/utils/workflowEditor/constants'
+
+/**
+ * A state's `custom_node_id` is the id of an actor in `custom_nodes`, whose own `custom_node_id`
+ * is the actor type. Falls back to the state value for actors named after their type.
+ */
+export const getCustomActorType = (
+  actorId: string | undefined,
+  customNodes?: CustomNodeConfiguration[]
+): string | undefined => customNodes?.find((node) => node.id === actorId)?.custom_node_id ?? actorId
+
+/** The transform actor a state points to, when `actorId` names one in `custom_nodes`. */
+export const findTransformActor = (
+  actorId: string | undefined,
+  customNodes?: CustomNodeConfiguration[]
+): CustomNodeConfiguration | undefined =>
+  customNodes?.find(
+    (node) => node.id === actorId && node.custom_node_id === TRANSFORM_CUSTOM_ACTOR_ID
+  )
 
 /**
  * Check if a node is an iterator node (by ID prefix)

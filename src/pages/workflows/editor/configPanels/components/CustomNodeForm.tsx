@@ -177,7 +177,7 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
       const currentConfig = getValues('config')
       if (currentConfig && Object.keys(currentConfig).length > 0) {
         const typedConfig = convertConfigToTypedValues(currentConfig, schema)
-        setValue('config', typedConfig as CustomNodeConfigurationValues, { shouldValidate: false })
+        setValue('config', typedConfig, { shouldValidate: false })
         isInitialLoad.current = false
       }
     }, [schema, setValue, getValues])
@@ -198,17 +198,15 @@ const CustomNodeForm = forwardRef<CustomNodeFormRef, CustomNodeFormProps>(
       setValue('custom_node_id', updatedConfig.custom_node_id!, { shouldValidate: true })
     }
 
-    const handleConfigChange = (value: Record<string, any>) => {
-      const configValues: CustomNodeConfigurationValues = {}
-      for (const key of Object.keys(value)) {
-        configValues[key] = String(value[key])
-      }
-      setValue('config', configValues, { shouldValidate: true })
+    const handleConfigChange = (value: Record<string, unknown>) => {
+      // Keep the parsed YAML types: arrays and objects (e.g. a `mappings` list) must reach the
+      // Check request and Save as structured values, not as `String(value)`.
+      setValue('config', value, { shouldValidate: true })
       yamlWasEdited.current = true
     }
 
     const handleDynamicFormChange = (value: Record<string, unknown>) => {
-      setValue('config', value as CustomNodeConfigurationValues, { shouldValidate: true })
+      setValue('config', value, { shouldValidate: true })
       setValidationErrors({})
     }
 

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import toaster from '@/utils/toaster'
+import { isContractWarning } from '@/utils/workflowEditor/helpers/contractProtocol'
 
 export interface ConsumerSlotWarning {
   kind: 'consumer_slot'
@@ -44,6 +45,9 @@ export interface FormattedWarning {
 }
 
 const MAX_LISTED_TOOLS = 3
+
+/** `script_step_owner_integration` is the legacy kind; the backend emits `tool_access_owner_integration`. */
+const OWNER_INTEGRATION_KINDS = ['script_step_owner_integration', 'tool_access_owner_integration']
 
 const isObject = (value: unknown): value is Record<string, any> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -110,13 +114,14 @@ export const notifyAboutWarnings = (
   body?: { warnings?: unknown[] },
   opts?: { prefixSaved?: boolean }
 ) => {
-  const warnings = normalizeWarnings(body?.warnings)
+  // Contract entries belong to the issues panel, so they never reach a toast here.
+  const warnings = normalizeWarnings(body?.warnings).filter((w) => !isContractWarning(w))
   if (!warnings.length) return
 
   const consumer = warnings.filter((w) => w.kind === 'consumer_slot')
-  const script = warnings.filter((w) => w.kind === 'script_step_owner_integration')
+  const script = warnings.filter((w) => OWNER_INTEGRATION_KINDS.includes(w.kind))
   const unknown = warnings.filter(
-    (w) => w.kind !== 'consumer_slot' && w.kind !== 'script_step_owner_integration'
+    (w) => w.kind !== 'consumer_slot' && !OWNER_INTEGRATION_KINDS.includes(w.kind)
   )
 
   if (consumer.length) notifyConsumerSlots(consumer, opts?.prefixSaved)

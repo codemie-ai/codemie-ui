@@ -17,26 +17,45 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createRef, createElement, forwardRef, useImperativeHandle } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { WorkflowIssue } from '@/types/entity'
+
 import WorkflowEditor, { type WorkflowEditorRef } from '../WorkflowEditor'
 
 const SERIALIZED_YAML = 'serialized-from-editor'
-const { mockUndo, mockDuplicateState, editorHookState } = vi.hoisted(() => ({
-  mockUndo: vi.fn(),
-  mockDuplicateState: vi.fn(),
-  editorHookState: { selectedNode: undefined as { id: string } | undefined },
-}))
+const { mockUndo, mockDuplicateState, mockOnNodesChange, editorHookState, flowState, panelState } =
+  vi.hoisted(() => ({
+    panelState: { dirty: false, showDialog: vi.fn() },
+    mockUndo: vi.fn(),
+    mockOnNodesChange: vi.fn(),
+    mockDuplicateState: vi.fn(),
+    editorHookState: {
+      selectedNode: undefined as { id: string } | undefined,
+      nodes: [] as unknown[],
+      config: { states: [] as unknown[], assistants: [] as unknown[] },
+    },
+    flowState: {
+      nodes: [] as Array<{ id: string; data: { outline?: string | null } }>,
+      onNodesChange: undefined as ((changes: unknown[]) => void) | undefined,
+    },
+  }))
 
 vi.mock('@xyflow/react', () => ({
   ReactFlow: ({
     children,
     id,
     deleteKeyCode,
+    nodes,
+    onNodesChange,
   }: {
     children?: unknown
     id?: string
     deleteKeyCode?: unknown
-  }) =>
-    createElement(
+    nodes?: Array<{ id: string; data: { outline?: string | null } }>
+    onNodesChange?: (changes: unknown[]) => void
+  }) => {
+    flowState.nodes = nodes ?? []
+    flowState.onNodesChange = onNodesChange
+    return createElement(
       'div',
       {
         'data-testid': 'react-flow',
@@ -44,7 +63,8 @@ vi.mock('@xyflow/react', () => ({
         'data-delete-key': JSON.stringify(deleteKeyCode ?? null),
       },
       children as never
-    ),
+    )
+  },
   ReactFlowProvider: ({ children }: { children?: unknown }) => children,
 }))
 
@@ -54,11 +74,11 @@ vi.mock('@/hooks/useReactFlowDnD', () => ({
 
 vi.mock('@/hooks/useWorkflowEditor', () => ({
   default: () => ({
-    nodes: [],
+    nodes: editorHookState.nodes,
     edges: [],
     selectedNode: editorHookState.selectedNode,
     selectedEdge: undefined,
-    onNodesChange: vi.fn(),
+    onNodesChange: mockOnNodesChange,
     onEdgesChange: vi.fn(),
     onNodeDrag: vi.fn(),
     onNodeDragStop: vi.fn(),
@@ -80,7 +100,7 @@ vi.mock('@/hooks/useWorkflowEditor', () => ({
     deleteNode: vi.fn(),
     deleteConnection: vi.fn(),
     selectNode: vi.fn(),
-    config: { states: [] },
+    config: editorHookState.config,
     onBeautify: vi.fn(),
     canUndo: true,
     undo: mockUndo,
@@ -105,8 +125,8 @@ vi.mock('../ConfigPanel', () => ({
     ) => {
       useImperativeHandle(ref, () => ({
         triggerGeneralConfigValidation: async () => undefined,
-        isDirty: () => false,
-        showUnsavedChangesDialog: vi.fn(),
+        isDirty: () => panelState.dirty,
+        showUnsavedChangesDialog: panelState.showDialog,
         save: async () => true,
         getWorkflowFields: () => null,
       }))
@@ -174,7 +194,10 @@ afterEach(() => {
   cleanup()
   mockUndo.mockClear()
   mockDuplicateState.mockClear()
+  mockOnNodesChange.mockClear()
   editorHookState.selectedNode = undefined
+  editorHookState.nodes = []
+  editorHookState.config = { states: [], assistants: [] }
 })
 
 describe('WorkflowEditor canvas shortcuts', () => {
@@ -275,6 +298,184 @@ describe('WorkflowEditor issues panel', () => {
       editorRef.current?.closeIssuesPanel()
     })
     expect(screen.queryByTestId('visible-tabs')).not.toBeInTheDocument()
+  })
+
+  describe('with unsaved edits in the open panel', () => {
+    afterEach(() => {
+      panelState.dirty = false
+      panelState.showDialog.mockClear()
+    })
+
+    const renderRef = () => {
+      const editorRef = createRef<WorkflowEditorRef>()
+      render(
+        <WorkflowEditor
+          yamlConfig="states: []"
+          onConfigurationUpdate={vi.fn()}
+          isFullscreen
+          ref={editorRef}
+        />
+      )
+      return editorRef
+    }
+
+    it('asks before the issues tab replaces a dirty panel', () => {
+      const editorRef = renderRef()
+      // A tab has to be open for the panel (and its dirty state) to exist.
+      act(() => {
+        editorRef.current?.openIssuesPanel()
+      })
+      act(() => {
+        editorRef.current?.closeIssuesPanel()
+      })
+      expect(screen.queryByTestId('visible-tabs')).not.toBeInTheDocument()
+      panelState.dirty = false
+
+      act(() => {
+        editorRef.current?.openIssuesPanel()
+      })
+      panelState.dirty = true
+      act(() => {
+        editorRef.current?.openIssuesPanel()
+      })
+
+      expect(panelState.showDialog).toHaveBeenCalledTimes(1)
+    })
+
+    describe('nodes changes', () => {
+      const dimensions = { id: 'a', type: 'dimensions', dimensions: { width: 10, height: 10 } }
+
+      const renderDirtyPanel = () => {
+        const editorRef = renderRef()
+        act(() => {
+          editorRef.current?.openIssuesPanel()
+        })
+        panelState.dirty = true
+        mockOnNodesChange.mockClear()
+      }
+
+      it('applies a ReactFlow measurement without opening Unsaved Changes', () => {
+        renderDirtyPanel()
+
+        act(() => {
+          flowState.onNodesChange?.([dimensions])
+        })
+
+        expect(panelState.showDialog).not.toHaveBeenCalled()
+        expect(mockOnNodesChange).toHaveBeenCalledWith([dimensions])
+      })
+
+      it.each([
+        ['position', { id: 'a', type: 'position', position: { x: 1, y: 2 } }],
+        ['select', { id: 'a', type: 'select', selected: true }],
+      ])('still asks before a %s change replaces a dirty panel', (_, change) => {
+        renderDirtyPanel()
+
+        act(() => {
+          flowState.onNodesChange?.([change])
+        })
+
+        expect(panelState.showDialog).toHaveBeenCalledTimes(1)
+        expect(mockOnNodesChange).not.toHaveBeenCalled()
+      })
+
+      it('applies the measurement of a mixed batch and holds back only the user change', () => {
+        renderDirtyPanel()
+        const select = { id: 'a', type: 'select', selected: true }
+
+        act(() => {
+          flowState.onNodesChange?.([dimensions, select])
+        })
+
+        expect(mockOnNodesChange).toHaveBeenCalledTimes(1)
+        expect(mockOnNodesChange).toHaveBeenCalledWith([dimensions])
+        expect(panelState.showDialog).toHaveBeenCalledTimes(1)
+      })
+
+      it('applies every change straight away when the panel is clean', () => {
+        const editorRef = renderRef()
+        act(() => {
+          editorRef.current?.openIssuesPanel()
+        })
+        const select = { id: 'a', type: 'select', selected: true }
+
+        act(() => {
+          flowState.onNodesChange?.([select])
+        })
+
+        expect(panelState.showDialog).not.toHaveBeenCalled()
+        expect(mockOnNodesChange).toHaveBeenCalledWith([select])
+      })
+    })
+
+    it('reports the open panel as dirty through isPanelDirty', () => {
+      const editorRef = renderRef()
+      act(() => {
+        editorRef.current?.openIssuesPanel()
+      })
+      expect(editorRef.current?.isPanelDirty()).toBe(false)
+
+      panelState.dirty = true
+      expect(editorRef.current?.isPanelDirty()).toBe(true)
+    })
+  })
+})
+
+describe('WorkflowEditor node outlines', () => {
+  const issue = (over: Record<string, unknown>) =>
+    ({
+      id: 'i1',
+      message: 'm',
+      path: 'config.contract.input',
+      configLine: 1,
+      stateId: 'n1',
+      outcome: 'WARNING',
+      error_type: 'contract_validation',
+      ...over,
+    } as unknown as WorkflowIssue)
+
+  const renderWithIssues = (issues: WorkflowIssue[]) => {
+    // Unchanged states, so revalidation leaves the issues unresolved.
+    const state = (id: string) => ({ id, assistant_id: 'a', _meta: { type: 'assistant' } })
+    editorHookState.config = { states: [state('n1'), state('n2')], assistants: [{ id: 'a' }] }
+    editorHookState.nodes = [
+      { id: 'n1', type: 'assistant', position: { x: 0, y: 0 }, data: {} },
+      { id: 'n2', type: 'assistant', position: { x: 0, y: 0 }, data: {} },
+    ]
+    render(
+      <WorkflowEditor
+        yamlConfig="states: []"
+        onConfigurationUpdate={vi.fn()}
+        isFullscreen
+        issues={issues}
+      />
+    )
+    return Object.fromEntries(flowState.nodes.map((n) => [n.id, n.data.outline]))
+  }
+
+  it('outlines a node amber for a contract warning even when the path has no control', () => {
+    expect(renderWithIssues([issue({ path: 'not.a.registered.path' })])).toEqual({
+      n1: 'warning',
+      n2: null,
+    })
+  })
+
+  it('does not outline a node for an UNVERIFIED issue', () => {
+    expect(renderWithIssues([issue({ outcome: 'UNVERIFIED' })])).toEqual({ n1: null, n2: null })
+  })
+
+  it('lets an error outrank a warning on the same node', () => {
+    expect(renderWithIssues([issue({ id: 'w' }), issue({ id: 'e', outcome: 'ERROR' })]).n1).toBe(
+      'error'
+    )
+  })
+
+  it('keeps filtering non-contract issues for unsupported paths', () => {
+    expect(
+      renderWithIssues([
+        issue({ error_type: 'other', outcome: 'ERROR', path: 'not.a.registered.path' }),
+      ]).n1
+    ).toBeNull()
   })
 })
 

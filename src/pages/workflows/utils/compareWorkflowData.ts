@@ -55,7 +55,9 @@ const hasWorkflowChanges = (current: any) => {
         parsed.enable_summarization_node !== undefined ||
         parsed.max_concurrency !== undefined ||
         parsed.recursion_limit !== undefined ||
-        parsed.tokens_limit_before_summarization !== undefined
+        parsed.tokens_limit_before_summarization !== undefined ||
+        parsed.save_validation !== undefined ||
+        parsed.require_input_contracts !== undefined
 
       // Check if user added nodes (they appear as disconnected in meta_states)
       const hasUserAddedNodes =
@@ -102,7 +104,21 @@ const cleanStateMetaFields = (state: any) => {
   return state
 }
 
-/** Processes meta_states and tracks disconnected nodes */
+const POSITIONS_KEY = '_positions'
+
+/** Node positions by id, rounded to whole pixels; selection and measured size are not changes. */
+const getNodePositions = (metaStates: any[]): Record<string, [number, number]> => {
+  const positions: Record<string, [number, number]> = {}
+  for (const node of metaStates) {
+    const { x, y } = node?.position ?? {}
+    if (node?.id && typeof x === 'number' && typeof y === 'number') {
+      positions[node.id] = [Math.round(x), Math.round(y)]
+    }
+  }
+  return positions
+}
+
+/** Processes meta_states: tracks disconnected nodes and keeps node positions for the layout check */
 const processMetaStates = (parsed: any) => {
   const disconnectedNodes = getDisconnectedNodes(parsed.meta_states)
 
@@ -111,7 +127,31 @@ const processMetaStates = (parsed: any) => {
     parsed._disconnected_nodes_count = disconnectedNodes.length
   }
 
+  if (Array.isArray(parsed.meta_states)) {
+    parsed[POSITIONS_KEY] = getNodePositions(parsed.meta_states)
+  }
+
   delete parsed.meta_states
+}
+
+/** A YAML that `normalizeYamlConfig` could parse; it returns the raw string otherwise. */
+const isParsed = (value: any) => value !== null && typeof value === 'object'
+
+/**
+ * Takes the node positions out of a normalized YAML and reports whether a node that had a position in
+ * the baseline was moved (drag, Beautify). A node without a baseline position is laid out by the editor
+ * on load, so its position alone is not an unsaved change; added and removed nodes change `states`.
+ */
+const takeLayoutChanged = (initialYaml: any, currentYaml: any): boolean => {
+  const initialPositions = isParsed(initialYaml) ? initialYaml[POSITIONS_KEY] : undefined
+  const currentPositions = isParsed(currentYaml) ? currentYaml[POSITIONS_KEY] : undefined
+  if (isParsed(initialYaml)) delete initialYaml[POSITIONS_KEY]
+  if (isParsed(currentYaml)) delete currentYaml[POSITIONS_KEY]
+  if (!initialPositions || !currentPositions) return false
+
+  return Object.entries(initialPositions).some(
+    ([id, position]) => id in currentPositions && !isEqual(position, currentPositions[id])
+  )
 }
 
 /** Removes UI metadata from YAML (meta fields, orphaned_states, empty tools) and tracks disconnected nodes */
@@ -172,6 +212,10 @@ export const compareWorkflowData = (initial: any, current: any) => {
   let normalizedCurrent = {
     ...current,
     yamlConfig: normalizeYamlConfig(current.yamlConfig || ''),
+  }
+
+  if (takeLayoutChanged(normalizedInitial.yamlConfig, normalizedCurrent.yamlConfig)) {
+    return true
   }
 
   normalizedInitial = normalizeWorkflowFields(normalizedInitial)

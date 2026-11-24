@@ -723,4 +723,12 @@ describe('diffWorkflowGraphs', () => {
       warnSpy.mockRestore()
     }
   })
+
+  it('(14) a state-level save validation change is classified as modified', () => {
+    const canvas = makeConfig([makeState({ id: 'state-v', task: 't', save_validation: 'strict' })])
+    const baseline = makeConfig([makeState({ id: 'state-v', task: 't', save_validation: 'warn' })])
+    const result = diffWorkflowGraphs(canvas, baseline)
+
+    expect(result.nodes[0]).toMatchObject({ id: 'state-v', status: 'modified' })
+  })
 })

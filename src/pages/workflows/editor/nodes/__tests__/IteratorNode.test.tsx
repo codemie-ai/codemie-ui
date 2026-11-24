@@ -233,6 +233,32 @@ describe('IteratorNode', () => {
     })
   })
 
+  describe('issue outline', () => {
+    const renderWithOutline = (outline?: 'error' | 'warning' | null, diffStatus?: 'added') => {
+      mockFindState.mockReturnValue({ id: 'iterator1', _meta: { type: 'iterator' } })
+      const props = createMockProps({
+        data: { ...createMockProps().data, outline },
+      })
+      return render(
+        <ReactFlowProvider>
+          <NodeRenderContext.Provider value={{ mode: NODE_RENDER_MODE.EDITOR, diffStatus }}>
+            <IteratorNode {...props} />
+          </NodeRenderContext.Provider>
+        </ReactFlowProvider>
+      ).container.querySelector('.relative.w-full.h-full') as HTMLElement
+    }
+
+    it('outlines a warning node amber and an error node red', () => {
+      expect(renderWithOutline('warning').className).toContain('outline-aborted-secondary')
+      expect(renderWithOutline('error').className).toContain('outline-failed-secondary')
+    })
+
+    it('adds no outline without an issue or under diff chrome', () => {
+      expect(renderWithOutline(null).className).not.toContain('outline-')
+      expect(renderWithOutline('error', 'added').className).not.toContain('outline-')
+    })
+  })
+
   describe('highlighted state', () => {
     it('applies highlighted background when highlighted', () => {
       const mockState: StateConfiguration = {

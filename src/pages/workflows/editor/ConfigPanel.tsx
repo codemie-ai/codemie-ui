@@ -525,11 +525,14 @@ const ConfigPanel = forwardRef<ConfigPanelRef, ConfigPanelProps>(
     ])
 
     const panelHeader = useMemo(() => {
+      // The visible tab decides the title: Issues content keeps its own title even while a node
+      // or connection stays selected (e.g. after Go to Issue).
+      if (activeTab === TAB_DATA.ISSUES.ID) return CONFIG_PANEL_HEADERS.ISSUES
       if (selectedNode) return CONFIG_PANEL_HEADERS.NODE
       if (selectedEdge) return CONFIG_PANEL_HEADERS.CONNECTION
       if (showIssuesPanel) return CONFIG_PANEL_HEADERS.ISSUES
       return CONFIG_PANEL_HEADERS.WORKFLOW
-    }, [selectedNode, selectedEdge, showIssuesPanel])
+    }, [activeTab, selectedNode, selectedEdge, showIssuesPanel])
 
     const showTabs = tabs.length > 1
 

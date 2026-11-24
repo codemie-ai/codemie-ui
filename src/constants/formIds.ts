@@ -18,6 +18,8 @@ export enum FormIDs {
   REMOTE_ASSISTANT_FORM = 'remote-assistant-form',
   DATA_SOURCE_FORM = 'data-source-form',
   WORKFLOW_FORM = 'workflow-form',
+  WORKFLOW_START_EXECUTION_POPUP = 'workflow-start-execution-popup',
+  WORKFLOW_CREATE_PAGE = 'workflow-create-page',
   WORKFLOW_CONFIG_PANEL = 'workflow-config-panel',
   DASHBOARD_FORM = 'dashboard-form',
   DASHBOARD_LIST_FORM = 'dashboard-list-form',

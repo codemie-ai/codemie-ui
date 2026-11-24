@@ -200,7 +200,7 @@ const CustomTab = forwardRef<CustomTabRef, CustomTabProps>(
           <CommonStateFields
             ref={commonStateFieldsRef}
             state={state}
-            showOutputSchema={false}
+            contractFields="full"
             showTask={
               liveCustomNodeId !== undefined && CUSTOM_NODE_TYPES_USING_TASK.has(liveCustomNodeId)
             }

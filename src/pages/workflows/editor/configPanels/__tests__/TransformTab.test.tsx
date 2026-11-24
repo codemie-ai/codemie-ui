@@ -13,13 +13,22 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
-import { forwardRef, useImperativeHandle } from 'react'
+import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { createRef, forwardRef, useImperativeHandle } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { CustomNodeType, type WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 
-import TransformTab from '../TransformTab'
+import TransformTab, { TransformTabRef } from '../TransformTab'
+import {
+  enableWorkflowContracts,
+  fillContract,
+  INPUT_CONTRACT_PLACEHOLDER,
+  INPUT_SCHEMA,
+  modeLabel,
+  OUTPUT_CONTRACT_PLACEHOLDER,
+} from './contractTestUtils'
 
 vi.mock('../../hooks/useWorkflowContext', () => ({
   useWorkflowContext: vi.fn().mockReturnValue({
@@ -99,5 +108,52 @@ describe('TransformTab — Task/Output Schema visibility (unchanged by this stor
     expect(screen.queryByText('Finish Iteration')).not.toBeInTheDocument()
     expect(screen.queryByText('Resolve Dynamic Values in Prompt')).not.toBeInTheDocument()
     expect(screen.queryByText('Result as Human Message')).not.toBeInTheDocument()
+  })
+})
+
+describe('TransformTab — contract fields', () => {
+  beforeEach(() => {
+    enableWorkflowContracts()
+    vi.clearAllMocks()
+  })
+
+  it('renders input contract and mode but no second output control', () => {
+    render(<TransformTab {...defaultProps} />)
+    expect(screen.getByPlaceholderText(INPUT_CONTRACT_PLACEHOLDER)).toBeInTheDocument()
+    expect(modeLabel()).toHaveTextContent('Use workflow default')
+    expect(screen.queryByPlaceholderText(OUTPUT_CONTRACT_PLACEHOLDER)).not.toBeInTheDocument()
+  })
+
+  it('saves and reloads input_schema and validation, with no state-level output control (AC1)', async () => {
+    const user = userEvent.setup()
+    const ref = createRef<TransformTabRef>()
+    render(<TransformTab {...defaultProps} ref={ref} />)
+
+    await fillContract(user, { input: INPUT_SCHEMA, mode: 'strict' })
+    expect(await ref.current!.save()).toBe(true)
+
+    const saved = defaultProps.onConfigChange.mock.calls[0][0].state.data
+    expect(saved).toEqual(
+      expect.objectContaining({ input_schema: INPUT_SCHEMA, save_validation: 'strict' })
+    )
+
+    cleanup()
+    render(
+      <TransformTab
+        {...defaultProps}
+        config={{ ...mockConfig, states: [{ ...saved, custom_node_id: 'custom-1' }] }}
+      />
+    )
+    expect(screen.getByPlaceholderText(INPUT_CONTRACT_PLACEHOLDER)).toHaveValue(INPUT_SCHEMA)
+    expect(modeLabel()).toHaveTextContent('strict')
+  })
+
+  it('omits the validation key when the mode is unset', async () => {
+    const ref = createRef<TransformTabRef>()
+    render(<TransformTab {...defaultProps} ref={ref} />)
+
+    expect(await ref.current!.save()).toBe(true)
+
+    expect(defaultProps.onConfigChange.mock.calls[0][0].state.data.save_validation).toBeUndefined()
   })
 })

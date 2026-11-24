@@ -16,14 +16,21 @@
 import React from 'react'
 
 import AIGenerateSVG from '@/assets/icons/ai-generate.svg?react'
+import CheckSvg from '@/assets/icons/check.svg?react'
 import RunSvg from '@/assets/icons/run-wf-small.svg?react'
 import Button from '@/components/Button'
 
 interface EditWorkflowHeaderActionsProps {
   workflowAIEnabled: boolean
-  visualEditorEnabled: boolean
   hasPreRefinement: boolean
   isBusy: boolean
+  /** A Check is in flight: Save is held back until it ends. */
+  isChecking?: boolean
+  /** A save is in flight: Save and Save and Run stay disabled until its outcome is known. */
+  isSaving?: boolean
+  /** Saved with warnings and unchanged since: Done, a disabled Saved and Run anyway replace the save buttons. */
+  isSavedWithWarnings?: boolean
+  onRunAnyway?: () => void
   onRevert: () => void
   onRefine: () => void
   onBack: () => void
@@ -33,9 +40,12 @@ interface EditWorkflowHeaderActionsProps {
 
 const EditWorkflowHeaderActions: React.FC<EditWorkflowHeaderActionsProps> = ({
   workflowAIEnabled,
-  visualEditorEnabled,
   hasPreRefinement,
   isBusy,
+  isChecking = false,
+  isSaving = false,
+  isSavedWithWarnings = false,
+  onRunAnyway,
   onRevert,
   onRefine,
   onBack,
@@ -53,17 +63,37 @@ const EditWorkflowHeaderActions: React.FC<EditWorkflowHeaderActionsProps> = ({
         <AIGenerateSVG /> Refine with AI
       </Button>
     )}
-    <Button type="secondary" className="min-w-20" onClick={onBack}>
-      Cancel
-    </Button>
-    <Button className="min-w-20" onClick={onSave} disabled={isBusy}>
-      Save
-    </Button>
-    {visualEditorEnabled && (
-      <Button className="min-w-20" onClick={onSaveAndRun} disabled={isBusy}>
-        <RunSvg />
-        Save and Run
-      </Button>
+    {isSavedWithWarnings ? (
+      <>
+        <Button type="secondary" className="min-w-20" onClick={onBack}>
+          Done
+        </Button>
+        <Button className="min-w-20" disabled>
+          <CheckSvg aria-hidden="true" />
+          Saved
+        </Button>
+        <Button className="min-w-20" onClick={onRunAnyway} disabled={isBusy}>
+          <RunSvg />
+          Run anyway
+        </Button>
+      </>
+    ) : (
+      <>
+        <Button type="secondary" className="min-w-20" onClick={onBack}>
+          Cancel
+        </Button>
+        <Button className="min-w-20" onClick={onSave} disabled={isBusy || isChecking || isSaving}>
+          Save
+        </Button>
+        <Button
+          className="min-w-20"
+          onClick={onSaveAndRun}
+          disabled={isBusy || isChecking || isSaving}
+        >
+          <RunSvg />
+          Save and Run
+        </Button>
+      </>
     )}
   </div>
 )

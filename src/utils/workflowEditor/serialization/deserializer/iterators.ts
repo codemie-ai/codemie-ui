@@ -58,6 +58,37 @@ const createIteratorState = (iterKey: string, states: StateConfiguration[]): Sta
 }
 
 /**
+ * The parent's executable `next.iter_key` is the source of truth. A saved iterator's metadata can
+ * hold an older key (e.g. after a YAML repair), so refresh the display key and keep the rest of
+ * the layout metadata untouched.
+ */
+const syncIteratorDisplayKey = (iteratorState: StateConfiguration, iterKey: string): void => {
+  const meta = iteratorState._meta
+  if (!meta || meta.data?.next?.iter_key === iterKey) return
+
+  meta.data = { ...meta.data, next: { ...meta.data?.next, iter_key: iterKey } }
+}
+
+/** Reuses the iterator the children already point to (refreshing its key) or creates a new one. */
+const resolveIteratorId = (
+  iterKey: string,
+  childIDs: string[],
+  states: StateConfiguration[]
+): string => {
+  const existingId = findExistingIteratorInChildren(childIDs, states)
+  const existingIterator = existingId ? states.find((s) => s.id === existingId) : undefined
+
+  if (existingIterator) {
+    syncIteratorDisplayKey(existingIterator, iterKey)
+    return existingIterator.id
+  }
+
+  const iteratorState = createIteratorState(iterKey, states)
+  states.push(iteratorState)
+  return iteratorState.id
+}
+
+/**
  * Adds iterator states for parents with iter_key.
  * Two-pass approach:
  * 1. Collect children grouped by iterKey + existing iterator (if any)
@@ -89,13 +120,7 @@ export const addIteratorStates = (loadedConfig: WorkflowConfiguration): void => 
 
   // Pass 2: Create iterators and assign to children
   for (const { iterKey, childIDs } of iteratorsToChildren.values()) {
-    let iteratorID = findExistingIteratorInChildren(childIDs, states)
-
-    if (!iteratorID || !states.some((s) => s.id === iteratorID)) {
-      const iteratorState = createIteratorState(iterKey, states)
-      iteratorID = iteratorState.id
-      states.push(iteratorState)
-    }
+    const iteratorID = resolveIteratorId(iterKey, childIDs, states)
 
     for (const childId of childIDs) {
       const childState = states.find((s) => s.id === childId)

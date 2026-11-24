@@ -17,13 +17,23 @@
 // the REAL CommonStateFields (SubWorkflowTab.test.tsx mocks CommonStateFields, so it
 // cannot cover this).
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { createRef, forwardRef, useEffect } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import type { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 
 import SubWorkflowTab, { SubWorkflowTabRef } from '../SubWorkflowTab'
+import {
+  enableWorkflowContracts,
+  fillContract,
+  INPUT_CONTRACT_PLACEHOLDER,
+  INPUT_SCHEMA,
+  modeLabel,
+  OUTPUT_CONTRACT_PLACEHOLDER,
+  OUTPUT_SCHEMA,
+} from './contractTestUtils'
 
 vi.mock('../../utils/visualEditorFieldRegistry', () => ({ registerFields: vi.fn() }))
 
@@ -71,7 +81,7 @@ describe('SubWorkflowTab — save/reopen with real CommonStateFields', () => {
     vi.clearAllMocks()
   })
 
-  it('preserves stored (but hidden) task/output_schema through edit -> save -> reopen', async () => {
+  it('preserves stored task/output_schema through edit -> save -> reopen', async () => {
     const configWithStoredValues: WorkflowConfiguration = {
       states: [
         {
@@ -86,11 +96,8 @@ describe('SubWorkflowTab — save/reopen with real CommonStateFields', () => {
     const ref = createRef<SubWorkflowTabRef>()
     render(<SubWorkflowTab {...defaultProps} config={configWithStoredValues} ref={ref} />)
 
-    // Confirm the fields are genuinely hidden here, with the real component
+    // Task is genuinely hidden here, with the real component
     expect(screen.queryByPlaceholderText('Describe the task for this node')).not.toBeInTheDocument()
-    expect(
-      screen.queryByPlaceholderText('Expected output format (JSON Schema)')
-    ).not.toBeInTheDocument()
 
     // Edit an unrelated field
     fireEvent.click(screen.getByText('Interrupt Before'))
@@ -130,5 +137,54 @@ describe('SubWorkflowTab — save/reopen with real CommonStateFields', () => {
         }),
       })
     )
+  })
+})
+
+describe('SubWorkflowTab — contract fields', () => {
+  beforeEach(() => {
+    enableWorkflowContracts()
+    vi.clearAllMocks()
+  })
+
+  const config: WorkflowConfiguration = {
+    states: [{ id: 'state-1', workflow_id: 'wf-abc' } as any],
+  }
+
+  it('saves and reloads input_schema, output_schema and validation (AC1)', async () => {
+    const user = userEvent.setup()
+    const ref = createRef<SubWorkflowTabRef>()
+    render(<SubWorkflowTab {...defaultProps} config={config} ref={ref} />)
+
+    await fillContract(user, { input: INPUT_SCHEMA, output: OUTPUT_SCHEMA, mode: 'warn' })
+    expect(await ref.current!.save()).toBe(true)
+
+    const saved = defaultProps.onConfigChange.mock.calls[0][0].state.data
+    expect(saved).toEqual(
+      expect.objectContaining({
+        input_schema: INPUT_SCHEMA,
+        output_schema: OUTPUT_SCHEMA,
+        save_validation: 'warn',
+      })
+    )
+
+    cleanup()
+    render(
+      <SubWorkflowTab
+        {...defaultProps}
+        config={{ states: [{ ...saved, workflow_id: 'wf-abc' }] }}
+      />
+    )
+    expect(screen.getByPlaceholderText(INPUT_CONTRACT_PLACEHOLDER)).toHaveValue(INPUT_SCHEMA)
+    expect(screen.getByPlaceholderText(OUTPUT_CONTRACT_PLACEHOLDER)).toHaveValue(OUTPUT_SCHEMA)
+    expect(modeLabel()).toHaveTextContent('warn')
+  })
+
+  it('omits the validation key when the mode is unset', async () => {
+    const ref = createRef<SubWorkflowTabRef>()
+    render(<SubWorkflowTab {...defaultProps} config={config} ref={ref} />)
+
+    expect(await ref.current!.save()).toBe(true)
+
+    expect(defaultProps.onConfigChange.mock.calls[0][0].state.data.save_validation).toBeUndefined()
   })
 })

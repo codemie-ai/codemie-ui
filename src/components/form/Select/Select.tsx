@@ -46,6 +46,8 @@ interface SelectProps<TValue extends string | number | null = string | number | 
   panelClassName?: string
   errorClassName?: string
   error?: string
+  /** Non-blocking amber message; ignored while `error` is set. */
+  warning?: string
   allowCustom?: boolean
   required?: boolean
   loading?: boolean
@@ -135,6 +137,7 @@ const Select = forwardRef(
       panelClassName,
       errorClassName,
       error,
+      warning,
       allowCustom = false,
       required = false,
       loading,
@@ -207,6 +210,8 @@ const Select = forwardRef(
           id={id}
           error={error}
           errorClassName={cn('text-failed-secondary text-sm mt-1', errorClassName)}
+          warning={warning}
+          warningClassName="mt-1"
         >
           {({ ariaInvalid, ariaDescribedBy }) => (
             <div className="flex flex-col gap-2">
@@ -253,6 +258,7 @@ const Select = forwardRef(
                   'h-8 gap-2 !px-2 text-sm flex text-text-primary justify-between items-center bg-surface-base-content border border-border-primary rounded-lg transition hover:border-border-secondary cursor-pointer',
                   !value && 'text-text-quaternary',
                   error && '!border-failed-secondary',
+                  !error && warning && '!border-aborted-secondary',
                   className
                 )}
                 panelClassName={cn(

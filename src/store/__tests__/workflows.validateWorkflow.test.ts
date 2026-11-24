@@ -15,7 +15,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ERROR_FORMAT_JSON, workflowsStore } from '../workflows'
+import { workflowsStore } from '../workflows'
 
 const mockPost = vi.fn()
 
@@ -42,7 +42,7 @@ vi.mock('react-syntax-highlighter/dist/esm/styles/prism', () => ({
   prism: {},
 }))
 
-describe('workflowsStore.validateWorkflow', () => {
+describe('workflowsStore.validateWorkflowConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockPost.mockResolvedValue({})
@@ -52,23 +52,63 @@ describe('workflowsStore.validateWorkflow', () => {
     vi.restoreAllMocks()
   })
 
-  it('posts to the validate endpoint with json error format and skipErrorHandling', async () => {
-    const values = { yaml_config: 'states: []' }
+  it('posts to the id validate endpoint with the full body, json format and skipErrorHandling', async () => {
+    const body = { yaml_config: 'states: []', yaml_config_history: [{ yaml_config: 'old' }] }
 
-    await workflowsStore.validateWorkflow('wf-1', values, ERROR_FORMAT_JSON)
+    await workflowsStore.validateWorkflowConfig({ id: 'wf-1', body })
 
-    expect(mockPost).toHaveBeenCalledWith('v1/workflows/wf-1/validate?error_format=json', values, {
+    expect(mockPost).toHaveBeenCalledWith('v1/workflows/wf-1/validate?error_format=json', body, {
       skipErrorHandling: true,
+      signal: undefined,
     })
   })
 
-  it('defaults skipErrorHandling to false when errorFormat is omitted', async () => {
-    const values = { yaml_config: 'states: []' }
+  it('posts to the id-less endpoint with project and without history', async () => {
+    const body = {
+      project: 'proj-1',
+      name: 'wf',
+      yaml_config: 'states: []',
+      yaml_config_history: [{ yaml_config: 'old' }],
+    }
 
-    await workflowsStore.validateWorkflow('wf-1', values)
+    await workflowsStore.validateWorkflowConfig({ body })
 
-    expect(mockPost).toHaveBeenCalledWith('v1/workflows/wf-1/validate', values, {
-      skipErrorHandling: false,
-    })
+    expect(mockPost).toHaveBeenCalledWith(
+      'v1/workflows/validate?error_format=json',
+      { project: 'proj-1', name: 'wf', yaml_config: 'states: []' },
+      { skipErrorHandling: true, signal: undefined }
+    )
+  })
+
+  it('does not mutate the caller body on the id-less endpoint', async () => {
+    const body = { project: 'p', yaml_config_history: [] }
+
+    await workflowsStore.validateWorkflowConfig({ body })
+
+    expect(body).toHaveProperty('yaml_config_history')
+  })
+
+  it('forwards the abort signal', async () => {
+    const { signal } = new AbortController()
+
+    await workflowsStore.validateWorkflowConfig({ id: 7, body: {}, signal })
+
+    expect(mockPost).toHaveBeenCalledWith(
+      'v1/workflows/7/validate?error_format=json',
+      {},
+      {
+        skipErrorHandling: true,
+        signal,
+      }
+    )
+  })
+
+  it('returns the raw response', async () => {
+    const response = { ok: true }
+    mockPost.mockResolvedValue(response)
+
+    await expect(workflowsStore.validateWorkflowConfig({ id: 'wf-1', body: {} })).resolves.toBe(
+      response
+    )
   })
 })

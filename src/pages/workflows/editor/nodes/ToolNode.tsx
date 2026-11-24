@@ -30,7 +30,7 @@ export const ToolNode = ({ data, selected, id }: CommonNodeProps) => {
     <BaseNode
       selected={selected}
       isConnected={isConnected}
-      hasError={data.hasError}
+      outline={data.outline}
       status={data.status}
       success={data.success}
       failures={data.failures}

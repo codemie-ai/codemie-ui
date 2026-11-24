@@ -123,8 +123,13 @@ export const shouldResolveIssue = (
   prevConfig: WorkflowConfiguration,
   nextConfig: WorkflowConfiguration
 ): boolean => {
+  // An issue with no field location (a contract finding about the whole state or workflow) has
+  // nothing to compare: an empty path would compare the whole object, editor metadata included, so
+  // selecting or moving a node would resolve it. Only a fresh validation, or removing the state, can.
+  const hasLocation = !!issue.path
+
   if (!issue.stateId || issue.stateId === '') {
-    return hasPathChanged(nextConfig, prevConfig, issue.path)
+    return hasLocation && hasPathChanged(nextConfig, prevConfig, issue.path)
   }
 
   const prevState = prevConfig.states.find((s) => s.id === issue.stateId)
@@ -132,6 +137,10 @@ export const shouldResolveIssue = (
 
   if (!nextState || !prevState) {
     return true
+  }
+
+  if (!hasLocation) {
+    return false
   }
 
   if (issue.path === 'states') {

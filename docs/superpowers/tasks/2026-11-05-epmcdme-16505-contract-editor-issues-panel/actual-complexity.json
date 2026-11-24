@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "generated": "2026-11-06T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 3, "label": "M" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 3, "label": "M" }
+  },
+  "total": 22,
+  "size": "L",
+  "band_range": "21-26",
+  "files_changed": 88,
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches many components across the workflow editor: IssuesPanel/IssueGroups, EditorActions, WorkflowEditor, all node types, all config panel tabs, shared form inputs (Input/Textarea/ExpandableTextarea), WorkflowForm, Edit/New workflow pages, and the workflows store. New abstractions include contractOutcome, contractProtocol and issueSeverity." },
+    { "dimension": "technical_risk", "reason": "Save-time contract protocol, with severity-based issues, backend error and warning handling, lock and restore rejection paths, and warnings kept out of toasts. There is no exact precedent, and the edge and error variants are covered by many dedicated test files. The shared form inputs and unsaved-changes hook changes carry some regression risk." },
+    { "dimension": "file_change_estimate", "reason": "88 files changed (6491 insertions, 337 deletions) across src/components, hooks, pages/workflows, store, types and utils. About half are test files." }
+  ],
+  "red_flags_applied": [
+    "Technical Risk at L: closest pattern (existing field issue validation and backendErrorHandler) does not cover save-time contract outcomes and warning severity, so this is a divergence",
+    "Component Scope held at XL: touches shared form components and core editor utilities"
+  ],
+  "split_recommendation": null
+}

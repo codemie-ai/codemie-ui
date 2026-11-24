@@ -36,7 +36,8 @@ function omitNonSemanticFields(obj: Record<string, unknown>): Record<string, unk
       }
       continue
     }
-    if (isAdvancedConfigField(key)) continue
+    // `save_validation` is also a per-state setting, so it stays semantic on a state
+    if (key !== 'save_validation' && isAdvancedConfigField(key)) continue
     result[key] = obj[key]
   }
   return result

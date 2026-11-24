@@ -15,11 +15,20 @@
 
 import { yupResolver } from '@hookform/resolvers/yup'
 import isEmpty from 'lodash/isEmpty'
-import { forwardRef, useImperativeHandle, useEffect, useRef, useState, useMemo } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+} from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useSnapshot } from 'valtio'
 import * as Yup from 'yup'
 
+import FieldAnnouncer from '@/components/form/FieldAnnouncer'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
 import YamlEditor from '@/components/form/YamlEditor/YamlEditor'
@@ -69,6 +78,9 @@ const TOOL_ARGS_MODE = {
 } as const
 
 type ToolArgsMode = (typeof TOOL_ARGS_MODE)[keyof typeof TOOL_ARGS_MODE]
+
+/** The argument a `tool_args.<key>` issue path names. */
+const getToolArgKey = (path: string): string | undefined => /^tool_args\.([^.]+)/.exec(path)?.[1]
 
 interface ToolFormProps {
   project: string
@@ -154,7 +166,8 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
   ({ toolConfig, project, isGlobal, isCreator, showNewIntegrationPopup }, ref) => {
     const { availableToolkits, getAssistantToolkits } = useSnapshot(assistantsStore)
     const { settings, indexSettings } = useSnapshot(settingsStore)
-    const { tempIssues, markIssueDirty, getIssueField, selectedStateId } = useWorkflowContext()
+    const { tempIssues, markIssueDirty, getIssueField, selectedStateId, activeIssue } =
+      useWorkflowContext()
     const [dynamicSchema, setDynamicSchema] = useState(() => getValidationSchema([]))
 
     const {
@@ -185,6 +198,8 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
     const yamlWasEdited = useRef(false)
     const [argsMode, setArgsMode] = useState<ToolArgsMode>(TOOL_ARGS_MODE.YAML)
     const [schemaRequiredFields, setSchemaRequiredFields] = useState<string[]>([])
+    // Arguments the loaded schema renders a control for; null until the schema has loaded.
+    const [schemaFieldNames, setSchemaFieldNames] = useState<string[] | null>(null)
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
     useImperativeHandle(
@@ -241,6 +256,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
     const resetToolArgs = () => {
       setValue('tool_args', {}, { shouldValidate: true, shouldDirty: true })
       setSchemaRequiredFields([])
+      setSchemaFieldNames(null)
       resolveToolArgsIssues()
     }
 
@@ -296,6 +312,33 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
       setSchemaRequiredFields([])
     }
 
+    const handleSchemaLoaded = useCallback((requiredFields: string[], fieldNames: string[]) => {
+      setSchemaRequiredFields(requiredFields)
+      setSchemaFieldNames(fieldNames)
+    }, [])
+
+    /**
+     * A `tool_args.<key>` issue on this state that no schema control can receive: the schema has no
+     * such argument, or the arguments are edited as YAML. It binds to the arguments YAML editor.
+     */
+    const isUnmatchedArgIssue = (issue: { path: string; stateId?: string }) => {
+      const key = getToolArgKey(issue.path)
+      if (!key || issue.stateId !== selectedStateId) return false
+      if (argsMode === TOOL_ARGS_MODE.YAML) return true
+      return schemaFieldNames !== null && !schemaFieldNames.includes(key)
+    }
+    const unmatchedArgIssuePath = tempIssues?.find(isUnmatchedArgIssue)?.path
+    const unmatchedArgField = unmatchedArgIssuePath
+      ? getIssueField<HTMLDivElement>(unmatchedArgIssuePath, { stateOnly: true })
+      : null
+
+    // Go to Issue on an argument the form cannot show switches to YAML, where the key can be edited.
+    const activeIssueIsUnmatchedArg =
+      !!activeIssue && argsMode === TOOL_ARGS_MODE.FORM && isUnmatchedArgIssue(activeIssue)
+    useEffect(() => {
+      if (activeIssueIsUnmatchedArg) setArgsMode(TOOL_ARGS_MODE.YAML)
+    }, [activeIssueIsUnmatchedArg])
+
     const getSelectedToolName = (): string | null => {
       if (mcpServers?.length && mcpServers[0]?.tools?.length) {
         return mcpServers[0].tools?.[0] ?? null
@@ -322,6 +365,7 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
       hasInitialized.current = false
       setArgsMode(TOOL_ARGS_MODE.FORM)
       setSchemaRequiredFields([])
+      setSchemaFieldNames(null)
     }, [toolConfig?.id])
 
     useEffect(() => {
@@ -471,19 +515,37 @@ const ToolForm = forwardRef<ToolFormRef, ToolFormProps>(
                       value={field.value as Record<string, unknown>}
                       onChange={handleDynamicFormChange}
                       onSchemaEmpty={handleSchemaEmpty}
-                      onSchemaLoaded={setSchemaRequiredFields}
+                      onSchemaLoaded={handleSchemaLoaded}
                       errors={validationErrors}
                     />
                   )}
 
                   {argsMode === TOOL_ARGS_MODE.YAML && (
-                    <YamlEditor
-                      value={field.value as Record<string, any>}
-                      onChange={handleToolArgsChange}
-                      onValidationChange={handleYamlError}
-                      helperText="Enter tool arguments as YAML key-value pairs."
-                      placeholder={`some_option: "value"`}
-                    />
+                    <FieldAnnouncer
+                      error={unmatchedArgField?.fieldError}
+                      warning={unmatchedArgField?.fieldWarning}
+                      errorClassName="text-sm text-failed-secondary"
+                    >
+                      {({ ariaDescribedBy }) => (
+                        <div
+                          ref={unmatchedArgField?.ref}
+                          tabIndex={-1}
+                          aria-describedby={ariaDescribedBy}
+                          className="outline-none"
+                        >
+                          <YamlEditor
+                            value={field.value as Record<string, any>}
+                            onChange={(value) => {
+                              handleToolArgsChange(value)
+                              unmatchedArgField?.onChange()
+                            }}
+                            onValidationChange={handleYamlError}
+                            helperText="Enter tool arguments as YAML key-value pairs."
+                            placeholder={`some_option: "value"`}
+                          />
+                        </div>
+                      )}
+                    </FieldAnnouncer>
                   )}
                 </>
               )}

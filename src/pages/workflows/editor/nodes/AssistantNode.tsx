@@ -30,7 +30,7 @@ export const AssistantNode = ({ id, selected, data }: CommonNodeProps) => {
     <BaseNode
       selected={selected}
       isConnected={isConnected}
-      hasError={data.hasError}
+      outline={data.outline}
       status={data.status}
       success={data.success}
       failures={data.failures}

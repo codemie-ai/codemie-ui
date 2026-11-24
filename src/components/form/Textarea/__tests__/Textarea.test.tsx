@@ -125,4 +125,27 @@ describe('Textarea', () => {
       expect(secondAlert).not.toBe(firstAlert)
     })
   })
+
+  describe('warning', () => {
+    it('renders the warning text in amber and an amber border', () => {
+      render(<Textarea id="body" name="body" value="" onChange={noop} warning="Looks suspicious" />)
+
+      const warningNode = screen.getByText('Looks suspicious')
+      const textarea = screen.getByRole('textbox')
+      expect(warningNode).toHaveClass('text-aborted-primary')
+      expect(textarea).toHaveAttribute('aria-describedby', warningNode.id)
+      expect(textarea).not.toHaveAttribute('aria-invalid', 'true')
+      expect(textarea).toHaveClass('border-aborted-secondary')
+    })
+
+    it('renders only the error when both error and warning are set', () => {
+      render(<Textarea id="body" name="body" value="" onChange={noop} error="Bad" warning="Hmm" />)
+
+      const textarea = screen.getByRole('textbox')
+      expect(screen.getByRole('alert')).toHaveTextContent('Bad')
+      expect(screen.queryByText('Hmm')).not.toBeInTheDocument()
+      expect(textarea).toHaveClass('border-border-error')
+      expect(textarea).not.toHaveClass('border-aborted-secondary')
+    })
+  })
 })

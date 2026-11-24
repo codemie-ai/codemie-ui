@@ -32,6 +32,8 @@ export const FEATURE_FLAGS = {
   VENDOR_INTEGRATION_AWS: 'vendorIntegrationAWS',
   PROJECT_CHARGEBACK: 'features:projectChargeback',
   SUB_WORKFLOW: 'features:subWorkflow',
+  // Mirrors the backend's WORKFLOW_CONTRACT_LINKING_ENABLED: off, contracts are not analysed.
+  WORKFLOW_CONTRACTS: 'features:workflowContracts',
   COST_CENTERS: 'features:costCenters',
   BUDGET_SOFT_LIMIT_NOTIFICATION: 'features:budgetSoftLimitNotification',
   BUDGET_SOFT_LIMIT_EMAIL: 'features:budgetSoftLimitEmail',

@@ -20,28 +20,33 @@ import RunSvg from '@/assets/icons/run-wf-small.svg?react'
 import Button from '@/components/Button'
 import PageLayout from '@/components/Layouts/Layout/PageLayout'
 import Sidebar from '@/components/Sidebar'
-import { WORKFLOWS_ALL, WORKFLOWS_MY } from '@/constants/routes'
+import { FormIDs } from '@/constants/formIds'
+import { EDIT_WORKFLOW, WORKFLOWS_ALL, WORKFLOWS_MY } from '@/constants/routes'
 import { history } from '@/hooks/appLevel/useHistoryStack'
 import { useWorkflowAIEnabled } from '@/hooks/useFeatureFlags'
+import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import { useVueRouter, useVueRoute } from '@/hooks/useVueRouter'
 import { appInfoStore } from '@/store/appInfo'
+import { applyOutcome, clearOutcome, handOverIssues } from '@/store/contractOutcome'
 import { projectsStore } from '@/store/projects'
 import { workflowsStore, ERROR_FORMAT_JSON } from '@/store/workflows'
 import { WorkflowIssue } from '@/types/entity'
-import { ConfigItem } from '@/types/entity/configuration'
 import { GenerateWorkflowResponse } from '@/types/entity/workflow'
-import API from '@/utils/api'
 import toaster from '@/utils/toaster'
-import { processBackendError } from '@/utils/workflowEditor/helpers/backendErrorHandler'
+import {
+  hasSaveWarnings,
+  parseContractOutcome,
+} from '@/utils/workflowEditor/helpers/contractProtocol'
 import { serialize } from '@/utils/workflowEditor/serialization'
-import { isVisualEditorEnabled } from '@/utils/workflows'
 import { notifyAboutWarnings } from '@/utils/workflowWarnings'
 
 import GenerateWorkflowPopup from './components/GenerateWorkflowPopup'
-import WorkflowForm, { WorkflowFormRef } from './components/WorkflowForm'
+import WorkflowForm, { WorkflowFormRef, WorkflowSubmitOutcome } from './components/WorkflowForm'
 import WorkflowPlaceholderValuesPopup from './components/WorkflowPlaceholderValuesPopup'
 import WorkflowsNavigation from './components/WorkflowsNavigation'
 import WorkflowStartExecutionPopup from './details/popups/WorkflowStartExecutionPopup'
+import { useContractCheck } from './editor/hooks/useContractCheck'
+import { readJsonBody, useIssuesOutcome } from './editor/hooks/useIssuesOutcome'
 import { goBackWorkflows } from './utils/goBackWorkflows'
 
 const DEFAULT_HEADLINE = 'Create Workflow'
@@ -50,6 +55,9 @@ const CLONE_HEADLINE = 'Clone Workflow'
 const CLONE_SUBMIT = 'Save'
 const FROM_TEMPLATE_HEADLINE = 'Create Workflow from Template'
 const FROM_TEMPLATE_ROUTE = 'new-workflow-from-template'
+const NEW_OUTCOME_KEY = 'new'
+const UNREADABLE_CREATE_RESULT_MESSAGE =
+  "Workflow created, but its validation result couldn't be read. Open it from the list and run Check."
 
 interface WorkflowTemplate {
   id?: string | null
@@ -75,10 +83,31 @@ const NewWorkflowPage: React.FC = () => {
   const [createdWorkflowId, setCreatedWorkflowId] = useState<string>('')
   const [issues, setIssues] = useState<WorkflowIssue[] | null>(null)
 
-  const { configs } = useSnapshot(appInfoStore)
-  const { selectedProject } = useSnapshot(projectsStore)
+  // Once a create has succeeded the page only waits to be left: Save stays locked until unmount.
+  const [isCreated, setIsCreated] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const createdRef = useRef(false)
+  // A create that answers after the page is gone is accepted by the server but shown nowhere.
+  const mountedRef = useRef(true)
+  const runStartedRef = useRef(false)
 
-  const visualEditorEnabled = isVisualEditorEnabled(configs as ConfigItem[])
+  const { unblockTransition, blockTransition } = useUnsavedChanges({
+    formId: FormIDs.WORKFLOW_CREATE_PAGE,
+  })
+
+  const { check, isChecking } = useContractCheck({
+    formRef,
+    outcomeKey: NEW_OUTCOME_KEY,
+    setIssues,
+  })
+
+  const { beginSave, showSaveFailure } = useIssuesOutcome({
+    formRef,
+    outcomeKey: NEW_OUTCOME_KEY,
+    setIssues,
+  })
+
+  const { selectedProject } = useSnapshot(projectsStore)
 
   const isFromTemplate =
     route.path.includes(FROM_TEMPLATE_ROUTE) || route.path.includes('from-template')
@@ -91,6 +120,14 @@ const NewWorkflowPage: React.FC = () => {
   const [headline, setHeadline] = useState(DEFAULT_HEADLINE)
   const [_submitName, setSubmitName] = useState(DEFAULT_SUBMIT)
   const materializeGenerationRef = useRef(0)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      clearOutcome(NEW_OUTCOME_KEY)
+    }
+  }, [])
 
   // Make /v1/llm_models project-aware for this page so backend applies project.default_model.
   useEffect(() => {
@@ -189,7 +226,7 @@ const NewWorkflowPage: React.FC = () => {
   }, [isCloning, isFromTemplate, id, slug])
 
   const handleSave = async () => {
-    if (!formRef.current) return
+    if (!formRef.current || createdRef.current) return
 
     const validation = formRef.current.validateWorkflow()
 
@@ -202,7 +239,7 @@ const NewWorkflowPage: React.FC = () => {
   }
 
   const handleSaveAndRun = async () => {
-    if (!formRef.current) return
+    if (!formRef.current || createdRef.current) return
 
     const validation = formRef.current.validateWorkflow()
 
@@ -265,42 +302,79 @@ const NewWorkflowPage: React.FC = () => {
     }
   }
 
-  const submit = async (values: any, shouldOpenExecution = false) => {
-    const errorFormat = visualEditorEnabled ? ERROR_FORMAT_JSON : undefined
+  // Leaves the finished create page for the created workflow's edit page, keeping the author's work.
+  const replaceWithEditPage = (workflowId: string) => {
+    unblockTransition()
+    router.replace({ name: EDIT_WORKFLOW, params: { id: workflowId } })
+    blockTransition()
+  }
 
+  const handleExecutionPopupHide = () => {
+    setShowExecutionPopup(false)
+    // Starting a run also hides the popup, and the popup moves the route on by itself; only a plain
+    // close is ours to handle. `onStart` follows `onHide` in the same tick.
+    queueMicrotask(() => {
+      if (runStartedRef.current || !mountedRef.current) return
+      replaceWithEditPage(createdWorkflowId)
+    })
+  }
+
+  const submit = async (
+    values: any,
+    shouldOpenExecution = false
+  ): Promise<WorkflowSubmitOutcome> => {
     try {
-      setIssues(null)
-      formRef.current?.clearAllResolvedFields()
+      beginSave()
 
-      const response = await workflowsStore.createWorkflow(values, errorFormat)
-      const workflow = await response.json()
+      const response = await workflowsStore.createWorkflow(values, ERROR_FORMAT_JSON, true)
+      if (!mountedRef.current) return 'navigated'
+
+      // Created on the server from here on: a second Save would make a duplicate, whatever the body says.
+      createdRef.current = true
+      setIsCreated(true)
+
+      const { readable, body } = await readJsonBody(response)
+      const createdId = (body as any)?.data?.id
+      const parsed = parseContractOutcome(body)
+      const hasWarnings = hasSaveWarnings(parsed)
+
+      if (createdId === undefined && (!readable || hasWarnings || shouldOpenExecution)) {
+        // Without the id there is no edit page to hand findings to and no workflow to run.
+        toaster.info(UNREADABLE_CREATE_RESULT_MESSAGE)
+        goBackWorkflows()
+        return 'navigated'
+      }
+
+      if (hasWarnings) {
+        // The edit page shows the single "saved with warnings" toast once it has taken the outcome over.
+        notifyAboutWarnings({ warnings: parsed.otherWarnings }, { prefixSaved: true })
+        applyOutcome(parsed, 'created', createdId)
+        handOverIssues(createdId, parsed.issues)
+        // Restores the unsaved-changes guard for the edit page after the replace.
+        replaceWithEditPage(createdId)
+        return 'navigated'
+      }
+
       toaster.info('Workflow has been created successfully!')
       // Slots whose integration is left to whoever runs the workflow do not block the save, but the
       // author should know they depend on each user's own setup — on creation as well as on update.
-      notifyAboutWarnings(workflow, { prefixSaved: true })
+      notifyAboutWarnings({ warnings: parsed.otherWarnings }, { prefixSaved: true })
 
       if (shouldOpenExecution) {
-        setCreatedWorkflowId(workflow.data.id)
+        setCreatedWorkflowId(createdId)
         setShowExecutionPopup(true)
-      } else if (isFromTemplate) {
+        return 'stayed'
+      }
+      if (isFromTemplate) {
         router.push({ name: WORKFLOWS_MY })
       } else {
         goBackWorkflows()
       }
+      return 'navigated'
     } catch (error: any) {
-      if (errorFormat !== ERROR_FORMAT_JSON) {
-        API.handleError({ error: error.parsedError })
-        return
-      }
-
-      const { issues: backendIssues, generalError } = processBackendError(error.parsedError)
-
-      if (backendIssues) {
-        setIssues(backendIssues)
-        formRef.current?.openIssuesPanel()
-      } else if (generalError) {
-        toaster.error(generalError)
-      }
+      if (!mountedRef.current) return 'navigated'
+      showSaveFailure(error)
+      return 'error'
     }
   }
 
@@ -322,12 +396,12 @@ const NewWorkflowPage: React.FC = () => {
             <Button type="secondary" onClick={onBack}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save</Button>
-            {visualEditorEnabled && (
-              <Button onClick={handleSaveAndRun}>
-                <RunSvg /> Save and Run
-              </Button>
-            )}
+            <Button onClick={handleSave} disabled={isChecking || isSaving || isCreated}>
+              Save
+            </Button>
+            <Button onClick={handleSaveAndRun} disabled={isChecking || isSaving || isCreated}>
+              <RunSvg /> Save and Run
+            </Button>
           </div>
         }
       >
@@ -337,7 +411,12 @@ const NewWorkflowPage: React.FC = () => {
             ref={formRef}
             issues={issues}
             setIssues={setIssues}
+            outcomeKey="new"
+            onCheck={check}
+            isChecking={isChecking}
+            isCheckLocked={isSaving || isCreated}
             onSubmit={submit}
+            onSavingChange={setIsSaving}
             workflow={template}
             isEditing={false}
           />
@@ -347,7 +426,10 @@ const NewWorkflowPage: React.FC = () => {
       {createdWorkflowId && (
         <WorkflowStartExecutionPopup
           isVisible={showExecutionPopup}
-          onHide={() => setShowExecutionPopup(false)}
+          onHide={handleExecutionPopupHide}
+          onStart={() => {
+            runStartedRef.current = true
+          }}
           workflowId={createdWorkflowId}
           startHint={formRef.current?.getFormValues()?.start_hint}
         />

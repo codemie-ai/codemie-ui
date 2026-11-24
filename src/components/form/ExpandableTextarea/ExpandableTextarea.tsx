@@ -100,7 +100,7 @@ interface TextareaWrapperProps extends TextareaProps {
 }
 
 const TextareaWrapper = forwardRef<TextareaRef, TextareaWrapperProps>(
-  ({ error, label, rootClass, className, onExpand, ...props }, ref) => {
+  ({ error, warning, label, rootClass, className, onExpand, ...props }, ref) => {
     const isInPopup = !onExpand
 
     const expandButton = (
@@ -114,6 +114,7 @@ const TextareaWrapper = forwardRef<TextareaRef, TextareaWrapperProps>(
       <Textarea
         ref={ref}
         error={isInPopup ? '' : error}
+        warning={isInPopup ? '' : warning}
         label={isInPopup ? undefined : label}
         rootClass={cn(isInPopup && 'h-full', rootClass)}
         className={cn(isInPopup && 'resize-none min-h-full', className)}

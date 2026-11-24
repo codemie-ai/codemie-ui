@@ -268,7 +268,7 @@ const ToolTab = forwardRef<ToolTabRef, ToolTabProps>(
             ref={commonStateFieldsRef}
             state={state}
             showTask={false}
-            showOutputSchema={false}
+            contractFields="full"
           />
         </form>
 

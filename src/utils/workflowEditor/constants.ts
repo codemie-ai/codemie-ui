@@ -19,13 +19,15 @@
  * Shared constants used across the workflow node editor.
  */
 
+import { CustomNodeType } from '@/types/workflowEditor/configuration'
+
 /* Node IDs and prefixes */
 export const START_NODE_ID = 'start'
 export const END_NODE_ID = 'end'
 
 export const ITERATOR_ID_PREFIX = 'iterator'
 
-export const TRANSFORM_CUSTOM_ACTOR_ID = 'transform_node'
+export const TRANSFORM_CUSTOM_ACTOR_ID = CustomNodeType.TRANSFORM
 /* Node Dimensions */
 export const DEFAULT_NODE_WIDTH = 260
 export const DEFAULT_NODE_HEIGHT = 75

@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import escape from 'lodash/escape'
 import Toastify from 'toastify-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -174,5 +175,39 @@ describe('toaster success action', () => {
     toaster.success('Plain')
     expect(lastOpts().text).toContain('Plain')
     expect(lastOpts().node).toBeUndefined()
+  })
+})
+
+describe('escaped backend text at the toast boundary (see formatErrorMessage literal tests in api.test)', () => {
+  const NAMES = ['<b>name</b>', '<img src=x onerror=alert(1)>', 'fish & chips', 'ünï "q" \'s\'']
+  const announcer = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setToasterAnnouncer(announcer)
+  })
+
+  afterEach(() => {
+    setToasterAnnouncer(null)
+  })
+
+  it.each(NAMES)('shows %s as typed, with no injected element', (name) => {
+    toaster.error(`Save failed<br> ${escape(name)}`)
+
+    const { text } = (Toastify as ReturnType<typeof vi.fn>).mock.calls[0][0] as { text: string }
+    const host = document.createElement('div')
+    host.innerHTML = text
+    const content = host.querySelector('.codemie-toast-content')
+
+    expect(content?.textContent?.trim()).toBe(name)
+    expect(content?.querySelector('b, img')).toBeNull()
+    expect(announcer).toHaveBeenCalledWith(expect.stringContaining(name))
+  })
+
+  it('still formats an unescaped message that opts out of the literal path', () => {
+    toaster.error('Save failed<br> <b>x</b>')
+
+    const { text } = (Toastify as ReturnType<typeof vi.fn>).mock.calls[0][0] as { text: string }
+    expect(text).toContain('<b>x</b>')
   })
 })

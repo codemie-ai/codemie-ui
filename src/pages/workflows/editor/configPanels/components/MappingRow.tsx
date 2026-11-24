@@ -26,6 +26,7 @@ import { WorkflowIssue } from '@/types/entity'
 import { TransformMapping, TransformMappingType } from '@/types/workflowEditor/configuration'
 import { cleanObject } from '@/utils/helpers'
 import { cn } from '@/utils/utils'
+import { worstSeverity } from '@/utils/workflowEditor/helpers/issueSeverity'
 
 import { useWorkflowContext } from '../../hooks/useWorkflowContext'
 import { FieldElement } from '../../hooks/useWorkflowFieldIssues'
@@ -91,10 +92,10 @@ const MappingRow: React.FC<MappingRowProps> = ({
 
   const isIssueBelongsToMapping = (issue: WorkflowIssue) => {
     const mappingPath = `config.mappings.${index}`
+    // Compare whole path segments: `config.mappings.1` must not match `config.mappings.10`.
     return (
       issue.stateId === selectedStateId &&
-      issue.path.startsWith(mappingPath) &&
-      !issue.path.startsWith(`config.mappings.${index + 1}`)
+      (issue.path === mappingPath || issue.path.startsWith(`${mappingPath}.`))
     )
   }
 
@@ -107,10 +108,12 @@ const MappingRow: React.FC<MappingRowProps> = ({
     })
   }
 
-  const hasMappingIssues = () => {
-    if (!tempIssues) return false
-    return tempIssues.some(
-      (issue) => isIssueBelongsToMapping(issue) && !isIssueDirty(issue) && !isIssueResolved(issue)
+  /** Worst unresolved outcome among this mapping's issues, so a warning never paints the row red. */
+  const getMappingIssueSeverity = () => {
+    if (!tempIssues) return null
+    return worstSeverity(
+      tempIssues.filter((issue) => isIssueBelongsToMapping(issue) && !isIssueDirty(issue)),
+      isIssueResolved
     )
   }
 
@@ -151,6 +154,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
               hint="JSONPath or dot notation to extract field"
               ref={sourcePathIssue.ref}
               error={errors?.source_path?.message || sourcePathIssue.fieldError}
+              warning={sourcePathIssue.fieldWarning}
               required
             />
             <Input
@@ -164,6 +168,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
               placeholder="Optional: fallback value if path not found"
               ref={defaultIssue.ref}
               error={defaultIssue.fieldError}
+              warning={defaultIssue.fieldWarning}
             />
           </>
         )
@@ -187,6 +192,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
               hint="Python expression that evaluates to boolean"
               ref={conditionIssue.ref}
               error={errors?.condition?.message || conditionIssue.fieldError}
+              warning={conditionIssue.fieldWarning}
               required
             />
             <Input
@@ -200,6 +206,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
               placeholder="Value if condition is true"
               ref={thenValueIssue.ref}
               error={errors?.then_value?.message || thenValueIssue.fieldError}
+              warning={thenValueIssue.fieldWarning}
               required
             />
             <Input
@@ -213,6 +220,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
               placeholder="Value if condition is false"
               ref={elseValueIssue.ref}
               error={errors?.else_value?.message || elseValueIssue.fieldError}
+              warning={elseValueIssue.fieldWarning}
               required
             />
           </>
@@ -235,6 +243,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
             hint="Jinja2 template syntax"
             ref={templateIssue.ref}
             error={errors?.template?.message || templateIssue.fieldError}
+            warning={templateIssue.fieldWarning}
             required
           />
         )
@@ -254,6 +263,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
             placeholder="e.g., high, active, 42"
             ref={valueIssue.ref}
             error={errors?.value?.message || valueIssue.fieldError}
+            warning={valueIssue.fieldWarning}
             required
           />
         )
@@ -275,6 +285,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
             hint="Python expression (safe eval with restricted namespace)"
             ref={scriptIssue.ref}
             error={errors?.script?.message || scriptIssue.fieldError}
+            warning={scriptIssue.fieldWarning}
             required
           />
         )
@@ -298,6 +309,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
               hint="Path to array in input data"
               ref={sourcePathIssue.ref}
               error={errors?.source_path?.message || sourcePathIssue.fieldError}
+              warning={sourcePathIssue.fieldWarning}
               required
             />
             <Input
@@ -312,6 +324,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
               hint="Field to extract from each array item"
               ref={itemFieldIssue.ref}
               error={errors?.item_field?.message || itemFieldIssue.fieldError}
+              warning={itemFieldIssue.fieldWarning}
               required
             />
             <Input
@@ -326,6 +339,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
               hint="Optional: filter items before extracting field"
               ref={filterConditionIssue.ref}
               error={filterConditionIssue.fieldError}
+              warning={filterConditionIssue.fieldWarning}
             />
           </>
         )
@@ -336,7 +350,10 @@ const MappingRow: React.FC<MappingRowProps> = ({
     }
   }
 
-  const hasErrors = (errors && Object.keys(errors).length > 0) || invalid || hasMappingIssues()
+  const issueSeverity = getMappingIssueSeverity()
+  const hasErrors =
+    (errors && Object.keys(errors).length > 0) || invalid || issueSeverity === 'ERROR'
+  const hasWarnings = !hasErrors && issueSeverity === 'WARNING'
 
   return (
     <div
@@ -344,6 +361,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
         'border rounded-lg overflow-hidden border-border-specific-panel-outline transition-colors',
         {
           '!border-failed-secondary': hasErrors,
+          '!border-aborted-secondary': hasWarnings,
         }
       )}
     >
@@ -401,6 +419,7 @@ const MappingRow: React.FC<MappingRowProps> = ({
                 required
                 ref={outputFieldIssue.ref}
                 error={errors?.output_field?.message || outputFieldIssue.fieldError}
+                warning={outputFieldIssue.fieldWarning}
               />
             )
           })()}

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "task": "Add contract editor controls, a severity-grouped issues panel with coverage summary, Check/dry-run, saved-with-warnings outcomes and Save-and-Run behavior to the workflow visual editor (EPMCDME-16505).",
+  "generated": "2026-11-05T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 5, "label": "XL" },
+    "requirements_clarity": { "score": 4, "label": "L" },
+    "technical_risk":       { "score": 4, "label": "L" },
+    "file_change_estimate": { "score": 6, "label": "XXL" },
+    "dependencies":         { "score": 2, "label": "S" },
+    "affected_layers":      { "score": 4, "label": "L" }
+  },
+  "total": 25,
+  "size": "L",
+  "size_legend": {
+    "XS": "6-9 — < half day — plan directly",
+    "S": "10-14 — 1 day — plan directly",
+    "M": "15-20 — 2-3 days — brainstorm first",
+    "L": "21-26 — 4-5 days — brainstorm first",
+    "XL": "27-31 — > 1 sprint — recommend splitting",
+    "XXL": "32-36 — > 1 sprint — must split"
+  },
+  "routing": "brainstorming",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Touches pages (EditWorkflowPage, NewWorkflowPage, EditWorkflowHeaderActions, useWorkflowHistoryRestore), editor shell (WorkflowEditor, EditorActions, IssuesPanel), issue machinery (useWorkflowIssues, useWorkflowFieldIssues, FieldController, visualEditorFieldRegistry, processBackendError), config panels (CommonStateFields, SubWorkflowTab, AdvancedConfigTab), nodes, store, and shared Input/Textarea. Severity is a new concept every issue consumer must learn; the shared form components are core utilities." },
+    { "dimension": "requirements_clarity", "reason": "31 acceptance criteria are detailed, but the backend contract from EPMCDME-16504 (error type string, severity field, coverage object, validate-before-save endpoint, whether warnings travel in success warnings[] or details.errors[]) is unverified in this repo, and the strict-mode tag source is unknown. The ticket reverses current behaviour (issues reset on save, restore closes panel), so rework risk is real." },
+    { "dimension": "technical_risk", "reason": "Closest pattern is the existing error-type whitelist, per-panel field registry and issue-to-field binding. It treats every issue as an error, so severity (FieldController, nodeHasError, Issues button, IssuesPanel) diverges from it. Saved-with-warnings state touches useUnsavedChanges baseline semantics (not inspected). Several touched pieces (IssuesPanel, useWorkflowFieldIssues, FieldController, EditWorkflowHeaderActions) have no tests. Registry and rendered controls already diverge." },
+    { "dimension": "file_change_estimate", "reason": "Technical analysis estimates roughly 25+ files across pages, editor, panels, hooks, utils, store, types and shared form components, plus new components (coverage summary, contract controls), which is XXL on file count." },
+    { "dimension": "affected_layers", "reason": "UI, store/API client, utils/service logic, and a new external backend contract (id-less validate endpoint, new issue shape). Severity is cross-cutting across several of these. No DB or infra." }
+  ],
+  "red_flags_applied": [
+    "Touches core shared utilities (Input, Textarea, 90 and 42 callers): reflected in Component Scope at XL",
+    "Affects multiple workflows (save, Save and Run, restore, Check, new-workflow page): reflected in Component Scope at XL",
+    "Vague/unverified acceptance dependencies on EPMCDME-16504 contract: reflected in Requirements Clarity at L"
+  ],
+  "split_recommendation": null
+}

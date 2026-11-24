@@ -13,52 +13,63 @@
 // limitations under the License.
 //
 
-import Button from '@/components/Button'
-import StatusBadge from '@/components/StatusBadge'
-import { cn } from '@/utils/utils'
+import { Component, ReactNode } from 'react'
+import { useSnapshot } from 'valtio'
+
+import { contractOutcomeStore, OutcomeContext } from '@/store/contractOutcome'
 
 import { useWorkflowContext } from './hooks/useWorkflowContext'
+import IssueGroups, { groupIssues } from './IssueGroups'
 
-const IssuesPanel = () => {
-  const { goToField, issues, isIssueResolved } = useWorkflowContext()
+const CONTEXT_NOTES: Record<OutcomeContext, string | null> = {
+  saved: 'Saved with warnings',
+  created: 'Workflow created with warnings',
+  'not-saved': 'Changes not saved yet',
+  rejected: null,
+}
+
+const STRICT_LINE = 'Blocked by the workflow-level save validation (strict)'
+
+class IssuesErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <p className="text-sm text-text-quaternary">Issues could not be displayed.</p>
+    }
+    return this.props.children
+  }
+}
+
+const IssuesPanelContent = () => {
+  const { goToField, issues, isIssueResolved, outcomeKey } = useWorkflowContext()
+  const { outcome: storedOutcome } = useSnapshot(contractOutcomeStore)
+  const outcome = storedOutcome && storedOutcome.key === outcomeKey ? storedOutcome : null
+
+  const allIssues = issues ?? []
+  const hasWorkflowStrict = allIssues.some((issue) => issue.meta?.strict_source === 'workflow')
 
   return (
-    <div className="flex flex-col gap-4 pb-4">
-      <ul className="flex flex-col gap-2">
-        {issues?.map((issue) => {
-          const isResolved = isIssueResolved(issue)
-
-          return (
-            <li
-              key={issue.id}
-              className={cn(
-                'flex flex-col gap-2 rounded-xl border p-3',
-                isResolved ? 'border-border-quaternary opacity-85' : 'border-border-error/50'
-              )}
-            >
-              <div className="flex items-center gap-2">
-                {isResolved ? (
-                  <StatusBadge status="not_started" text="Resolved" />
-                ) : (
-                  <StatusBadge status="error" text="Error" />
-                )}
-                <h4 className={cn('text-sm font-semibold')}>{issue.message}</h4>
-              </div>
-              {issue.details && <p className="text-xs text-text-quaternary">{issue.details}</p>}
-              <div className="mt-1 flex gap-2">
-                <Button type="secondary" className="text-xs" onClick={() => goToField(issue)}>
-                  Go to Issue
-                </Button>
-                {/* <Button type="secondary" className="text-xs">
-                  Fix Now
-                </Button> */}
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-    </div>
+    <IssueGroups
+      groups={groupIssues(allIssues)}
+      coverage={outcome?.coverage}
+      truncated={outcome?.truncated}
+      contextNote={outcome?.context ? CONTEXT_NOTES[outcome.context] : null}
+      strictLine={hasWorkflowStrict ? STRICT_LINE : null}
+      onGo={goToField}
+      isResolved={isIssueResolved}
+    />
   )
 }
+
+const IssuesPanel = () => (
+  <IssuesErrorBoundary>
+    <IssuesPanelContent />
+  </IssuesErrorBoundary>
+)
 
 export default IssuesPanel

@@ -13,28 +13,34 @@
 // limitations under the License.
 //
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { createRef } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import { selectDropdownOption } from '@/test-utils/component-interactions'
 import type { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
+import { updateAdvancedConfig } from '@/utils/workflowEditor/actions/config/updateAdvancedConfig'
 
 import AdvancedConfigTab, { AdvancedConfigTabRef } from '../AdvancedConfigTab'
 
 // --- Mocks ---
 
-const { mockUseSubWorkflowEnabled, mockWorkflowContextValue } = vi.hoisted(() => ({
-  mockUseSubWorkflowEnabled: vi.fn(),
-  mockWorkflowContextValue: {
-    activeIssue: null as { path: string } | null,
-    getIssueField: vi.fn().mockReturnValue(null),
-    getMcpIssue: vi.fn().mockReturnValue(null),
-    markIssueDirty: vi.fn(),
-  },
-}))
+const { mockUseSubWorkflowEnabled, mockUseWorkflowContractsEnabled, mockWorkflowContextValue } =
+  vi.hoisted(() => ({
+    mockUseSubWorkflowEnabled: vi.fn(),
+    mockUseWorkflowContractsEnabled: vi.fn(() => [true, true]),
+    mockWorkflowContextValue: {
+      activeIssue: null as { path: string } | null,
+      getIssueField: vi.fn().mockReturnValue(null),
+      getMcpIssue: vi.fn().mockReturnValue(null),
+      markIssueDirty: vi.fn(),
+    },
+  }))
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
   useSubWorkflowEnabled: mockUseSubWorkflowEnabled,
+  useWorkflowContractsEnabled: mockUseWorkflowContractsEnabled,
 }))
 
 vi.mock('../../hooks/useWorkflowContext', async (importOriginal) => {
@@ -154,4 +160,117 @@ describe('AdvancedConfigTab — Retry Policy Max Attempts default', () => {
     render(<AdvancedConfigTab {...defaultProps} />)
     expect(screen.getByText(WORKFLOW_MAX_ATTEMPTS_HINT)).toBeDefined()
   })
+})
+
+describe('AdvancedConfigTab — contract defaults', () => {
+  const lastSaved = () => {
+    const { calls } = defaultProps.onConfigChange.mock
+    return calls[calls.length - 1][0] as Partial<WorkflowConfiguration>
+  }
+  const modeLabel = () => document.querySelector<HTMLElement>('.p-dropdown-label')
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockWorkflowContextValue.activeIssue = null
+    mockUseSubWorkflowEnabled.mockReturnValue([false, true])
+    mockUseWorkflowContractsEnabled.mockReturnValue([true, true])
+  })
+
+  it('hides the Contracts accordion while workflow contracts are disabled', () => {
+    mockUseWorkflowContractsEnabled.mockReturnValue([false, true])
+
+    render(<AdvancedConfigTab {...defaultProps} />)
+
+    expect(screen.queryByTestId('accordion-Contracts')).not.toBeInTheDocument()
+    expect(screen.queryByText('Save validation')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('switch', { name: /require input contracts/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders the workflow-level mode select under its own id', () => {
+    render(<AdvancedConfigTab {...defaultProps} />)
+    expect(document.querySelector('#workflow_validation_mode_select')).not.toBeNull()
+  })
+
+  it('shows the unset mode as "Default (warn)" and the switch off', () => {
+    render(<AdvancedConfigTab {...defaultProps} />)
+    expect(modeLabel()?.textContent).toBe('Default (warn)')
+    expect(screen.getByRole('switch', { name: /require input contracts/i })).not.toBeChecked()
+  })
+
+  it('writes validation and require_input_contracts through the save', async () => {
+    const user = userEvent.setup()
+    const ref = createRef<AdvancedConfigTabRef>()
+    render(<AdvancedConfigTab {...defaultProps} ref={ref} />)
+
+    await selectDropdownOption('Save validation', 'strict', { user })
+    fireEvent.click(screen.getByRole('switch', { name: /require input contracts/i }))
+
+    expect(ref.current?.isDirty()).toBe(true)
+    await act(async () => {
+      await ref.current?.save()
+    })
+
+    const merged = updateAdvancedConfig(emptyConfig, lastSaved()).config
+    expect(merged.save_validation).toBe('strict')
+    expect(merged.require_input_contracts).toBe(true)
+  })
+
+  it('persists: a saved config reloads into the dropdown and the switch', () => {
+    const ref = createRef<AdvancedConfigTabRef>()
+    render(
+      <AdvancedConfigTab
+        {...defaultProps}
+        ref={ref}
+        config={{ states: [], save_validation: 'strict', require_input_contracts: true }}
+      />
+    )
+    expect(modeLabel()?.textContent).toBe('strict')
+    expect(screen.getByRole('switch', { name: /require input contracts/i })).toBeChecked()
+    expect(ref.current?.isDirty()).toBe(false)
+  })
+
+  it('removes both keys from the merged config when they are reset to unset', async () => {
+    const user = userEvent.setup()
+    const ref = createRef<AdvancedConfigTabRef>()
+    const config: WorkflowConfiguration = {
+      states: [],
+      save_validation: 'strict',
+      require_input_contracts: true,
+    }
+    render(<AdvancedConfigTab {...defaultProps} ref={ref} config={config} />)
+
+    await selectDropdownOption('Save validation', 'Default (warn)', { user })
+    fireEvent.click(screen.getByRole('switch', { name: /require input contracts/i }))
+    await act(async () => {
+      await ref.current?.save()
+    })
+
+    const merged = updateAdvancedConfig(config, lastSaved()).config
+    expect(merged).not.toHaveProperty('save_validation')
+    expect(merged).not.toHaveProperty('require_input_contracts')
+  })
+
+  it('leaves both keys out of an untouched save', async () => {
+    const ref = createRef<AdvancedConfigTabRef>()
+    render(<AdvancedConfigTab {...defaultProps} ref={ref} />)
+    await act(async () => {
+      await ref.current?.save()
+    })
+    const merged = updateAdvancedConfig(emptyConfig, lastSaved()).config
+    expect(merged).not.toHaveProperty('save_validation')
+    expect(merged).not.toHaveProperty('require_input_contracts')
+  })
+
+  it.each(['save_validation', 'require_input_contracts'])(
+    'auto-expands the contracts accordion when activeIssue path is %s',
+    async (path) => {
+      mockWorkflowContextValue.activeIssue = { path }
+      render(<AdvancedConfigTab {...defaultProps} />)
+      await waitFor(() => {
+        expect(screen.getByTestId('accordion-Contracts').getAttribute('data-expanded')).toBe('true')
+      })
+    }
+  )
 })

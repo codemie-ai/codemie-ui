@@ -24,7 +24,7 @@ import {
   ITERATOR_NODE_DEFAULT_HEIGHT,
 } from '@/utils/workflowEditor/constants'
 
-import { CommonNodeProps } from './common'
+import { CommonNodeProps, NODE_OUTLINE_CLASS } from './common'
 import { DIFF_ITERATOR_SVG_CLASS, useNodeRenderState } from './diffChromeContext'
 
 export const IteratorNode = ({ data, selected, id }: CommonNodeProps) => {
@@ -37,7 +37,7 @@ export const IteratorNode = ({ data, selected, id }: CommonNodeProps) => {
     <div
       className={cn(
         'relative w-full h-full rounded-lg',
-        data.hasError && !diffStatus && 'outline outline-offset-2 outline-failed-secondary'
+        !diffStatus && data.outline && NODE_OUTLINE_CLASS[data.outline]
       )}
     >
       <NodeIteratorBorderSvg

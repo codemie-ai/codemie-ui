@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16505_contract-editor-issues-panel",
+  "head": "34a06e7263205d251bb0a6a07267e2b146a325d4",
+  "runner": "npm",
+  "started_at": "2026-11-06T07:16:39Z",
+  "completed_at": "2026-11-06T07:25:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "command": "npm run lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 17071,
+      "exit_code": 0,
+      "notes": "npm ci run first"
+    },
+    {
+      "id": "typecheck",
+      "command": "npm run typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12000,
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "command": "npm run license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "Skip if: no dependency added/removed/moved (package.json and package-lock.json not in diff vs origin/main)"
+    },
+    {
+      "id": "secrets",
+      "command": "npm run secrets:check",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 12000,
+      "exit_code": 0,
+      "notes": "gitleaks: no leaks found"
+    },
+    {
+      "id": "unit",
+      "command": "npm run test:unit:slnt",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 141000,
+      "exit_code": 0,
+      "notes": "Test Files 847 passed (847); Tests 8724 passed | 1 skipped"
+    },
+    {
+      "id": "integration",
+      "command": "npm run test:integration:slnt",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 73000,
+      "exit_code": 0,
+      "notes": "Test Files 57 passed (57); Tests 675 passed | 1 skipped"
+    },
+    {
+      "id": "test-harness",
+      "command": "npm run test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "Needs running stack and ~/.codemie/test-harness.json (absent); unverified, owed before MR (bot-checked compliance section)"
+    },
+    {
+      "id": "lint-staged",
+      "command": "npx lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "exit_code": null,
+      "notes": "Nothing staged; lint covered by full npm run lint"
+    },
+    {
+      "id": "license-headers",
+      "command": "npm run license-headers:check",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1000,
+      "exit_code": 0,
+      "notes": "Checked 2622 files, 0 missing license headers"
+    },
+    {
+      "id": "sonar-local",
+      "command": "npm run sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "exit_code": 0,
+      "notes": "Self-skip: '[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN to enable locally; CI/Sonar will still run it"
+    }
+  ],
+  "failures": {}
+}

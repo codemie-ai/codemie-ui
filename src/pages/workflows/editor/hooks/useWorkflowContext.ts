@@ -32,6 +32,13 @@ type WorkflowContextType = {
   selectedStateId: string | null
 
   issues: WorkflowIssue[] | null
+  /** Workflow id on the edit page, 'new' on the new page; scopes the contract outcome shown. */
+  outcomeKey?: string
+  /** Dry-runs the workflow against the backend; supplied by the page, absent where Check does not apply. */
+  onCheck?: () => void
+  isChecking?: boolean
+  /** Check is also unavailable while a save is in flight or after a create. */
+  isCheckLocked?: boolean
   activeIssue: WorkflowIssue | null
   setActiveIssue: (issue: WorkflowIssue | null) => void
   getIssueField: GetIssueField

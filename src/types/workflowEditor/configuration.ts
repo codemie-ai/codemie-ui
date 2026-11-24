@@ -16,6 +16,7 @@
 import { DynamicFormFieldSchema } from '@/types/dynamicForm'
 import { AssistantPromptVariable, EffortLevel } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
+import type { ValidationMode } from '@/utils/workflowEditor/helpers/contractProtocol'
 
 export interface RetryPolicy {
   initial_interval?: number
@@ -72,7 +73,8 @@ export const TOOL_BASE_CONFIG_KEYS = [
   'input_key',
 ]
 
-export type CustomNodeConfigurationValues = Record<string, string>
+/** Custom node config as parsed from YAML or the dynamic form: strings, numbers, booleans, lists or objects. */
+export type CustomNodeConfigurationValues = Record<string, unknown>
 
 export enum CustomNodeType {
   GENERATE_DOCUMENT_TREE = 'generate_documents_tree',
@@ -197,7 +199,9 @@ export interface CommonStateConfiguration extends MinimalStateConfiguration {
   task?: string
   finish_iteration?: boolean
   next?: NextState
+  input_schema?: string
   output_schema?: string
+  save_validation?: ValidationMode
   retry_policy?: RetryPolicy
   wait_for_user_confirmation?: boolean
   interrupt_before?: boolean
@@ -302,4 +306,8 @@ export interface WorkflowConfiguration {
   retry_policy?: RetryPolicy
   pool_config?: WorkflowPoolConfig
   max_nesting_level?: number
+
+  // Workflow-level contract defaults
+  save_validation?: ValidationMode
+  require_input_contracts?: boolean
 }

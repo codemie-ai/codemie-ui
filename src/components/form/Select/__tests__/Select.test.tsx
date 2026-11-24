@@ -152,6 +152,48 @@ describe('Select', () => {
     })
   })
 
+  describe('warning', () => {
+    it('links the combobox to an amber warning without marking it invalid', () => {
+      render(
+        <Select
+          id="project"
+          label="Project"
+          value={null}
+          options={options}
+          onChange={noop}
+          warning="Looks suspicious"
+        />
+      )
+
+      const combobox = screen.getByLabelText('Project')
+      const warningNode = screen.getByText('Looks suspicious')
+
+      expect(warningNode).toHaveAttribute('id', 'project-warning')
+      expect(warningNode).toHaveClass('text-aborted-primary')
+      expect(combobox).toHaveAttribute('aria-describedby', 'project-warning')
+      expect(combobox).toHaveAttribute('aria-invalid', 'false')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('renders only the error when both error and warning are set', () => {
+      render(
+        <Select
+          id="project"
+          label="Project"
+          value={null}
+          options={options}
+          onChange={noop}
+          error="Required"
+          warning="Looks suspicious"
+        />
+      )
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Required')
+      expect(screen.queryByText('Looks suspicious')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Project')).toHaveAttribute('aria-describedby', 'project-error')
+    })
+  })
+
   describe('accessible name', () => {
     it('names the combobox from its visible label and repeats the name nowhere else', () => {
       render(<Select id="project" label="Project" value={null} options={options} onChange={noop} />)

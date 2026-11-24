@@ -33,11 +33,13 @@ interface FieldControllerProps<
 > extends Omit<ControllerProps<TFieldValues, TName>, 'render'> {
   render: (props: {
     field: ControllerRenderProps<TFieldValues, TName> & { markIssueDirty: () => void }
-    fieldState: ControllerFieldState
+    fieldState: ControllerFieldState & { warning?: string }
   }) => React.ReactElement
   issuePathPrefix?: WorkflowFieldPath
   configPath?: WorkflowFieldPath | WorkflowFieldPath[]
   mcpName?: string
+  /** Bind only issues of the selected state: the control repeats on every node. */
+  stateOnly?: boolean
 }
 
 function FieldController<
@@ -49,8 +51,9 @@ function FieldController<
   issuePathPrefix,
   configPath,
   mcpName,
+  stateOnly,
   ...controllerProps
-}: FieldControllerProps<TFieldValues, TName>) {
+}: Readonly<FieldControllerProps<TFieldValues, TName>>) {
   const workflowContext = useContext(WorkflowContext)
 
   if (!workflowContext) {
@@ -76,6 +79,7 @@ function FieldController<
   let issueField: {
     ref: Ref<HTMLInputElement>
     fieldError?: string
+    fieldWarning?: string
     issue?: WorkflowIssue
     onChange: () => void
   }
@@ -97,8 +101,8 @@ function FieldController<
         break
       }
     } else {
-      const result = getIssueField(finalIssuePath)
-      if (result.fieldError || result.issue) {
+      const result = getIssueField(finalIssuePath, { stateOnly })
+      if (result.fieldError || result.fieldWarning || result.issue) {
         issueField = result
         foundIssue = true
         break
@@ -137,6 +141,8 @@ function FieldController<
           error:
             fieldState.error ||
             (issueField.fieldError ? { type: 'issue', message: issueField.fieldError } : undefined),
+          // Select and Switch controls ignore it; Input and Textarea show it in amber.
+          warning: issueField.fieldWarning,
         }
 
         return render({

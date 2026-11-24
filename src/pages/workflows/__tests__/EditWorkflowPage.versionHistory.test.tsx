@@ -17,6 +17,9 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { mockRouterState } from '@/hooks/__mocks__/useVueRouter'
+import { CHECK_TIMEOUT_MS } from '@/pages/workflows/editor/hooks/useContractCheck'
+import { goBackFromWorkflowEdit } from '@/pages/workflows/utils/goBackWorkflows'
+import { contractOutcomeStore } from '@/store/contractOutcome'
 import { workflowsStore } from '@/store/workflows'
 import type { Workflow } from '@/types/entity/workflow'
 import toaster from '@/utils/toaster'
@@ -35,6 +38,10 @@ const {
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
   useWorkflowAIEnabled: () => [true],
+}))
+
+vi.mock('@/pages/workflows/utils/goBackWorkflows', () => ({
+  goBackFromWorkflowEdit: vi.fn(),
 }))
 
 vi.mock('../components/WorkflowsNavigation', () => ({
@@ -204,12 +211,47 @@ const resourceValidationError = {
   },
 }
 
+// A 200 validation that found nothing.
+const cleanResponse = () => ({ json: async () => ({ message: 'valid', warnings: [] }) })
+
+const UNREADABLE_RESTORE_MESSAGE =
+  "The restored workflow's validation result couldn't be read. Run Check to review it."
+
+const warningsResponse = {
+  json: async () => ({
+    message: 'Workflow configuration is valid',
+    warnings: [
+      { kind: 'consumer_slot', assistant_ref: 'a1', tool_name: 'Jira', credential_type: 'Jira' },
+      {
+        id: 'w1',
+        kind: 'contract_validation',
+        outcome: 'WARNING',
+        state_id: 'c1',
+        path: 'x',
+        message: 'x may be missing',
+        config_path: 'task',
+        config_section: 'states',
+        config_line: 14,
+        meta: { label: 'not guaranteed by the contracts' },
+      },
+    ],
+    coverage: {
+      validated_states: 3,
+      total_states: 3,
+      uncovered_state_ids: [],
+      analysed: true,
+      cap_reached: false,
+    },
+  }),
+}
+
 describe('EditWorkflowPage version history restore', () => {
   beforeEach(() => {
     mockReplaceYamlConfig.mockClear()
     mockOpenIssuesPanel.mockClear()
     mockCloseIssuesPanel.mockClear()
     mockClearAllResolvedFields.mockClear()
+    vi.mocked(goBackFromWorkflowEdit).mockClear()
     ;(mockRouterState as { params: Record<string, string> }).params = { id: 'wf-edit-1' }
     workflowsStore.currentWorkflow = workflowFixture
     workflowsStore.currentWorkflowLoading = false
@@ -218,11 +260,12 @@ describe('EditWorkflowPage version history restore', () => {
       .fn()
       .mockResolvedValue(workflowFixture) as typeof workflowsStore.fetchWorkflow
     workflowsStore.clearCurrentWorkflow = vi.fn() as typeof workflowsStore.clearCurrentWorkflow
-    workflowsStore.validateWorkflow = vi.fn().mockResolvedValue(undefined) as any
+    workflowsStore.validateWorkflowConfig = vi.fn().mockResolvedValue(cleanResponse()) as any
     workflowsStore.updateWorkflow = vi.fn() as any
     vi.mocked(toaster.info).mockClear()
     vi.mocked(toaster.success).mockClear()
     vi.mocked(toaster.error).mockClear()
+    vi.mocked(toaster.warning).mockClear()
   })
 
   it('writes selected history YAML into the form without a server rollback', async () => {
@@ -260,16 +303,17 @@ describe('EditWorkflowPage version history restore', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
     await waitFor(() =>
-      expect(workflowsStore.validateWorkflow).toHaveBeenCalledWith(
-        'wf-edit-1',
-        expect.objectContaining({ yaml_config: 'states: []\n# v1' }),
-        'json'
+      expect(workflowsStore.validateWorkflowConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'wf-edit-1',
+          body: expect.objectContaining({ yaml_config: 'states: []\n# v1' }),
+        })
       )
     )
   })
 
   it('opens issues panel when validateWorkflow returns 400', async () => {
-    ;(workflowsStore.validateWorkflow as ReturnType<typeof vi.fn>).mockRejectedValue(
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockRejectedValue(
       resourceValidationError
     )
     const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
@@ -284,9 +328,9 @@ describe('EditWorkflowPage version history restore', () => {
   })
 
   it('clears prior issues when restore validate returns 200', async () => {
-    ;(workflowsStore.validateWorkflow as ReturnType<typeof vi.fn>)
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>)
       .mockRejectedValueOnce(resourceValidationError)
-      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(cleanResponse())
     const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
     render(<EditWorkflowPage />)
 
@@ -300,11 +344,196 @@ describe('EditWorkflowPage version history restore', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
-    await waitFor(() => expect(workflowsStore.validateWorkflow).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(workflowsStore.validateWorkflowConfig).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(screen.queryByTestId('workflow-issue')).not.toBeInTheDocument())
     expect(mockOpenIssuesPanel).not.toHaveBeenCalled()
     expect(mockCloseIssuesPanel).toHaveBeenCalled()
     expect(workflowsStore.updateWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('routes contract warnings from a restore to the panel as not saved yet and keeps it open', async () => {
+    ;(contractOutcomeStore as { outcome: unknown }).outcome = null
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockResolvedValue(
+      warningsResponse
+    )
+    const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
+    render(<EditWorkflowPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+
+    await waitFor(() => expect(mockOpenIssuesPanel).toHaveBeenCalled())
+    expect(screen.getByTestId('workflow-issue')).toHaveTextContent('x may be missing')
+    expect(contractOutcomeStore.outcome).toMatchObject({ key: 'wf-edit-1', context: 'not-saved' })
+    // the reset at the start of the restore closes the panel; nothing closes it after the warnings land
+    const lastClose = Math.max(...mockCloseIssuesPanel.mock.invocationCallOrder)
+    expect(lastClose).toBeLessThan(mockOpenIssuesPanel.mock.invocationCallOrder[0])
+    // consumer_slot is not a contract warning and still toasts
+    expect(toaster.warning).toHaveBeenCalledWith(expect.stringContaining('Jira (Jira)'))
+    expect(toaster.warning).not.toHaveBeenCalledWith(expect.stringContaining('x may be missing'))
+  })
+
+  it('routes a strict contract rejection from a restore to the panel with its warnings as not saved yet', async () => {
+    ;(contractOutcomeStore as { outcome: unknown }).outcome = null
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockRejectedValue({
+      status: 400,
+      parsedError: {
+        message: 'Workflow Configuration error',
+        details: {
+          error_type: 'contract_validation',
+          message: 'Workflow contracts are not satisfied',
+          errors: [
+            {
+              id: 'e1',
+              outcome: 'ERROR',
+              state_id: 's1',
+              path: 'task',
+              message: 'strict break',
+              config_section: 'states',
+              config_line: 3,
+            },
+          ],
+          warnings: [
+            {
+              id: 'w1',
+              kind: 'contract_validation',
+              outcome: 'WARNING',
+              state_id: 's2',
+              path: 'x',
+              message: 'also risky',
+              config_section: 'states',
+              config_line: 9,
+            },
+          ],
+          coverage: {
+            validated_states: 2,
+            total_states: 2,
+            uncovered_state_ids: [],
+            analysed: true,
+            cap_reached: false,
+          },
+        },
+      },
+    })
+    const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
+    render(<EditWorkflowPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+
+    await waitFor(() => expect(mockOpenIssuesPanel).toHaveBeenCalled())
+    const messages = screen.getAllByTestId('workflow-issue').map((node) => node.textContent)
+    expect(messages).toEqual(expect.arrayContaining(['strict break', 'also risky']))
+    expect(contractOutcomeStore.outcome).toMatchObject({ key: 'wf-edit-1', context: 'not-saved' })
+    expect(contractOutcomeStore.outcome?.coverage).toMatchObject({ total_states: 2 })
+    expect(workflowsStore.updateWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('drops a restore validation that finishes after a save started', async () => {
+    ;(contractOutcomeStore as { outcome: unknown }).outcome = null
+    let resolveValidation: (value: unknown) => void = () => {}
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockReturnValue(
+      new Promise((resolve) => {
+        resolveValidation = resolve
+      })
+    )
+    const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
+    render(<EditWorkflowPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+    await waitFor(() => expect(workflowsStore.validateWorkflowConfig).toHaveBeenCalled())
+
+    // A save starts, so the restore validation is older than the save result.
+    ;(workflowsStore.updateWorkflow as ReturnType<typeof vi.fn>).mockResolvedValue({
+      json: async () => ({ message: 'ok', warnings: [] }),
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    })
+    await waitFor(() => expect(workflowsStore.updateWorkflow).toHaveBeenCalled())
+    expect(goBackFromWorkflowEdit).toHaveBeenCalledWith({ workflowId: 'wf-edit-1' })
+    mockOpenIssuesPanel.mockClear()
+    await act(async () => {
+      resolveValidation(warningsResponse)
+    })
+
+    expect(mockOpenIssuesPanel).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('workflow-issue')).not.toBeInTheDocument()
+    expect(contractOutcomeStore.outcome).toBeNull()
+  })
+
+  it('clears a stale not-saved outcome when a later restore validates clean', async () => {
+    contractOutcomeStore.outcome = {
+      key: 'wf-edit-1',
+      context: 'not-saved',
+    }
+    const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
+    render(<EditWorkflowPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+    await waitFor(() => expect(mockCloseIssuesPanel).toHaveBeenCalled())
+    await waitFor(() => expect(contractOutcomeStore.outcome).toBeNull())
+  })
+
+  it('toasts a clean restore validation as success', async () => {
+    const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
+    render(<EditWorkflowPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+
+    await waitFor(() =>
+      expect(toaster.success).toHaveBeenCalledWith('No issues found in the restored workflow')
+    )
+    expect(toaster.error).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['a body that is not JSON', { json: () => Promise.reject(new SyntaxError('bad json')) }],
+    ['no response', undefined],
+  ])('treats %s as an unknown result, not a clean one', async (_, response) => {
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockResolvedValue(response)
+    const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
+    render(<EditWorkflowPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+
+    await waitFor(() => expect(toaster.error).toHaveBeenCalledWith(UNREADABLE_RESTORE_MESSAGE))
+    expect(toaster.success).not.toHaveBeenCalled()
+    expect(mockOpenIssuesPanel).not.toHaveBeenCalled()
+  })
+
+  it('passes an abort signal and reports a restore validation that does not answer in time', async () => {
+    vi.useFakeTimers()
+    try {
+      ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockImplementation(
+        ({ signal }: { signal: AbortSignal }) =>
+          new Promise((_, reject) => {
+            signal.addEventListener('abort', () =>
+              reject(new DOMException('aborted', 'AbortError'))
+            )
+          })
+      )
+      const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
+      render(<EditWorkflowPage />)
+      fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
+      fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+
+      expect(workflowsStore.validateWorkflowConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      )
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(CHECK_TIMEOUT_MS - 1)
+      })
+      expect(toaster.error).not.toHaveBeenCalled()
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1)
+      })
+      expect(toaster.error).toHaveBeenCalledWith(
+        'Validation of the restored workflow timed out. Run Check to review it.'
+      )
+      expect(mockOpenIssuesPanel).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does not open issues panel or PUT on 200 validate', async () => {
@@ -312,7 +541,7 @@ describe('EditWorkflowPage version history restore', () => {
     render(<EditWorkflowPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
-    await waitFor(() => expect(workflowsStore.validateWorkflow).toHaveBeenCalled())
+    await waitFor(() => expect(workflowsStore.validateWorkflowConfig).toHaveBeenCalled())
     expect(mockOpenIssuesPanel).not.toHaveBeenCalled()
     expect(mockClearAllResolvedFields).toHaveBeenCalled()
     expect(mockCloseIssuesPanel).toHaveBeenCalled()
@@ -320,7 +549,7 @@ describe('EditWorkflowPage version history restore', () => {
   })
 
   it('shows error toast and restore toast when validateWorkflow returns 400 with empty errors', async () => {
-    ;(workflowsStore.validateWorkflow as ReturnType<typeof vi.fn>).mockRejectedValue({
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockRejectedValue({
       parsedError: {
         message: 'fail',
         details: { error_type: 'resource_validation', message: '', errors: [] },
@@ -330,15 +559,14 @@ describe('EditWorkflowPage version history restore', () => {
     render(<EditWorkflowPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
-    await waitFor(() =>
-      expect(toaster.error).toHaveBeenCalledWith('Validation returned no issue details')
-    )
+    // A structured rejection without issues shows its own message.
+    await waitFor(() => expect(toaster.error).toHaveBeenCalledWith('fail'))
     expect(toaster.info).toHaveBeenCalledWith('Workflow YAML restored — checking for issues…')
     expect(mockOpenIssuesPanel).not.toHaveBeenCalled()
   })
 
   it('shows restore-validation error toast when validateWorkflow rejects without parsedError', async () => {
-    ;(workflowsStore.validateWorkflow as ReturnType<typeof vi.fn>).mockRejectedValue(
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockRejectedValue(
       new Error('network')
     )
     const { default: EditWorkflowPage } = await import('../EditWorkflowPage')
@@ -368,7 +596,7 @@ describe('EditWorkflowPage version history restore', () => {
 
   it('does not apply restore validation issues after the editor YAML has changed', async () => {
     let rejectValidate!: (reason: unknown) => void
-    ;(workflowsStore.validateWorkflow as ReturnType<typeof vi.fn>).mockImplementation(
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockImplementation(
       () =>
         new Promise((_, reject) => {
           rejectValidate = reject
@@ -378,7 +606,7 @@ describe('EditWorkflowPage version history restore', () => {
     render(<EditWorkflowPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
-    await waitFor(() => expect(workflowsStore.validateWorkflow).toHaveBeenCalled())
+    await waitFor(() => expect(workflowsStore.validateWorkflowConfig).toHaveBeenCalled())
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit YAML' }))
     await act(async () => {
@@ -395,7 +623,7 @@ describe('EditWorkflowPage version history restore', () => {
       resolve: (value?: unknown) => void
       reject: (reason?: unknown) => void
     }> = []
-    ;(workflowsStore.validateWorkflow as ReturnType<typeof vi.fn>).mockImplementation(
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockImplementation(
       () =>
         new Promise((resolve, reject) => {
           validateCalls.push({ resolve, reject })
@@ -413,7 +641,7 @@ describe('EditWorkflowPage version history restore', () => {
     await waitFor(() => expect(validateCalls).toHaveLength(2))
 
     await act(async () => {
-      validateCalls[1].resolve()
+      validateCalls[1].resolve(cleanResponse())
     })
     await waitFor(() => expect(screen.queryByTestId('workflow-issue')).not.toBeInTheDocument())
 
@@ -435,10 +663,11 @@ describe('EditWorkflowPage version history restore', () => {
 
     expect(mockReplaceYamlConfig).toHaveBeenCalledWith('states: []\n# v1')
     await waitFor(() =>
-      expect(workflowsStore.validateWorkflow).toHaveBeenCalledWith(
-        'wf-edit-1',
-        expect.objectContaining({ yaml_config: 'states: []\n# v1' }),
-        'json'
+      expect(workflowsStore.validateWorkflowConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'wf-edit-1',
+          body: expect.objectContaining({ yaml_config: 'states: []\n# v1' }),
+        })
       )
     )
   })
@@ -456,7 +685,7 @@ describe('EditWorkflowPage version history restore', () => {
 
   it('does not apply a stale 400 after the user edits away and back to the restored YAML', async () => {
     let rejectValidate!: (reason: unknown) => void
-    ;(workflowsStore.validateWorkflow as ReturnType<typeof vi.fn>).mockImplementation(
+    ;(workflowsStore.validateWorkflowConfig as ReturnType<typeof vi.fn>).mockImplementation(
       () =>
         new Promise((_, reject) => {
           rejectValidate = reject
@@ -466,7 +695,7 @@ describe('EditWorkflowPage version history restore', () => {
     render(<EditWorkflowPage />)
     fireEvent.click(screen.getByRole('button', { name: 'Open YAML History' }))
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
-    await waitFor(() => expect(workflowsStore.validateWorkflow).toHaveBeenCalled())
+    await waitFor(() => expect(workflowsStore.validateWorkflowConfig).toHaveBeenCalled())
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit YAML' }))
     await act(async () => {

@@ -34,6 +34,7 @@ import isObject from 'lodash/isObject'
 
 import { NodeTypes, MetaNodeTypes } from '@/types/workflowEditor/base'
 import {
+  CustomNodeConfiguration,
   WorkflowConfiguration,
   StateConfiguration,
   StateMeta,
@@ -43,6 +44,7 @@ import toaster from '@/utils/toaster'
 import { addIteratorStates } from './iterators'
 import { START_NODE_ID, END_NODE_ID, TRANSFORM_CUSTOM_ACTOR_ID } from '../../constants'
 import { findEntryState, findOrphanedStates } from '../../helpers/connections'
+import { getCustomActorType } from '../../helpers/nodes/nodeTypeCheckers'
 import { generateStateID, findDirectChildren, findChildren } from '../../helpers/states'
 import { SerializedWorkflowConfig, SerializedState, SerializedMetaState } from '../types'
 
@@ -64,11 +66,14 @@ const parseYaml = (yamlString: string): SerializedWorkflowConfig => {
   }
 }
 
+const isTransformActor = (state: SerializedState, customNodes?: CustomNodeConfiguration[]) =>
+  getCustomActorType(state.custom_node_id, customNodes) === TRANSFORM_CUSTOM_ACTOR_ID
+
 /** Infers node type from state properties */
-const inferNodeType = (state: SerializedState): string => {
+const inferNodeType = (state: SerializedState, customNodes?: CustomNodeConfiguration[]): string => {
   if (state.assistant_id) return NodeTypes.ASSISTANT
   if (state.tool_id) return NodeTypes.TOOL
-  if (state.custom_node_id === TRANSFORM_CUSTOM_ACTOR_ID) return NodeTypes.TRANSFORM
+  if (isTransformActor(state, customNodes)) return NodeTypes.TRANSFORM
   if (state.workflow_id !== undefined) return NodeTypes.SUB_WORKFLOW
   if (state.custom_node_id) return NodeTypes.CUSTOM
   return NodeTypes.CUSTOM
@@ -78,10 +83,11 @@ const inferNodeType = (state: SerializedState): string => {
 const createStateMeta = (
   metaStates: SerializedMetaState[],
   state: SerializedState,
-  isConnected: boolean
+  isConnected: boolean,
+  customNodes?: CustomNodeConfiguration[]
 ): StateMeta => {
   const metaState = metaStates.find((meta) => meta.id === state.id) ?? {
-    type: inferNodeType(state),
+    type: inferNodeType(state, customNodes),
   }
 
   return {
@@ -181,7 +187,7 @@ const processStates = (
   for (const state of states) {
     const loadedState: StateConfiguration = {
       ...state,
-      _meta: createStateMeta(metaStates, state, isConnected),
+      _meta: createStateMeta(metaStates, state, isConnected, config.custom_nodes),
     }
 
     // Handle branch states (condition/switch)

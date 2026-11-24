@@ -42,7 +42,7 @@ const getRequiredFields = (configSchema: Record<string, any>) => {
     .map(([fieldName]) => fieldName)
 }
 
-const convertFieldValue = (fieldValue: string, fieldType: string): unknown => {
+const convertFieldValue = (fieldValue: unknown, fieldType: string): unknown => {
   const stringValue = String(fieldValue)
 
   switch (fieldType) {

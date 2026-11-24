@@ -493,6 +493,41 @@ describe('addIteratorStates', () => {
       const child = baseConfig.states.find((s) => s.id === 'child')
       expect(child?.next?.meta_iter_state_id).toBe(existingIteratorId)
     })
+
+    it('refreshes a stale display key from the executable transition and keeps layout metadata', () => {
+      const existingIteratorId = 'iterator_existing'
+
+      baseConfig.states = [
+        {
+          id: 'parent',
+          assistant_id: 'assistant1',
+          next: { state_id: 'child', iter_key: 'requirements' },
+          _meta: { type: NodeTypes.ASSISTANT, is_connected: true, data: {} },
+        },
+        {
+          id: 'child',
+          assistant_id: 'assistant2',
+          next: { state_id: '', meta_iter_state_id: existingIteratorId },
+          _meta: { type: NodeTypes.ASSISTANT, is_connected: true, data: {} },
+        },
+        {
+          id: existingIteratorId,
+          _meta: {
+            type: NodeTypes.ITERATOR,
+            is_connected: false,
+            position: { x: 10, y: 20 },
+            data: { next: { iter_key: 'items' }, other: 'kept' },
+          },
+        } as StateConfiguration,
+      ]
+
+      addIteratorStates(baseConfig)
+
+      const iterator = baseConfig.states.find((s) => s.id === existingIteratorId)
+      expect(iterator?._meta?.data?.next?.iter_key).toBe('requirements')
+      expect(iterator?._meta?.data?.other).toBe('kept')
+      expect(iterator?._meta?.position).toEqual({ x: 10, y: 20 })
+    })
   })
 
   describe('edge cases', () => {

@@ -26,6 +26,8 @@ import {
   TransformConfig,
   TransformInputSource,
   TransformErrorStrategy,
+  TransformMapping,
+  TransformMappingType,
 } from '@/types/workflowEditor/configuration'
 
 import FieldController from './FieldController'
@@ -40,6 +42,7 @@ registerFields(
     'on_error',
     'default_output',
     'output_schema',
+    'config.output_schema',
     /^config\.mappings\./,
   ],
   NodeTypes.TRANSFORM
@@ -51,6 +54,13 @@ export interface TransformFormRef {
   isDirty: () => boolean
   reset: () => void
 }
+
+/**
+ * The backend runs a mapping without `type` as an extract mapping, so the form shows it as one: its
+ * Source Path control then exists for issues that point at it.
+ */
+const withDefaultMappingType = (mapping: TransformMapping): TransformMapping =>
+  mapping.type ? mapping : { ...mapping, type: TransformMappingType.EXTRACT }
 
 interface TransformFormProps {
   stateId: string
@@ -67,7 +77,7 @@ const TransformForm = forwardRef<TransformFormRef, TransformFormProps>(
           input_source: transformConfig.input_source ?? TransformInputSource.CONTEXT_STORE,
           input_key: transformConfig.input_key ?? '',
           on_error: transformConfig.on_error ?? TransformErrorStrategy.FAIL,
-          mappings: transformConfig.mappings ?? [],
+          mappings: (transformConfig.mappings ?? []).map(withDefaultMappingType),
           output_schema: transformConfig.output_schema
             ? JSON.stringify(transformConfig.output_schema, null, 2)
             : '',
@@ -202,6 +212,7 @@ const TransformForm = forwardRef<TransformFormRef, TransformFormProps>(
         />
         <FieldController
           name="output_schema"
+          configPath={['output_schema', 'config.output_schema']}
           control={control}
           render={({ field, fieldState }) => (
             <Textarea

@@ -25,6 +25,10 @@ export const buildCommonStateConfig = (
     id: commonValues.id,
     task: commonValues.task,
     output_schema: commonValues.output_schema,
+    // Unset values are explicit undefined, not '': the state update spreads this over the stored
+    // state (so a cleared mode drops the old one) and the YAML dump then omits the key.
+    input_schema: commonValues.input_schema || undefined,
+    save_validation: commonValues.save_validation || undefined,
     interrupt_before: commonValues.interrupt_before,
     retry_policy: commonValues.retry_policy,
     finish_iteration: commonValues.finish_iteration,

@@ -129,3 +129,45 @@ describe('MappingRow — toggle button accessibility', () => {
     expect(screen.getByTestId('chevron-up-icon')).toHaveAttribute('aria-hidden', 'true')
   })
 })
+
+describe('MappingRow — finding ownership by mapping index', () => {
+  const STATE_ID = 'transform_1'
+  const warning = {
+    id: 'issue-10',
+    stateId: STATE_ID,
+    path: 'config.mappings.10.source_path',
+    outcome: 'WARNING',
+    message: 'Unknown source path',
+  }
+
+  const renderWithIssues = (index: number) => {
+    const context = { ...workflowContext, selectedStateId: STATE_ID, tempIssues: [warning] }
+    const { container } = render(
+      <WorkflowContext.Provider value={context as any}>
+        <MappingRow
+          mapping={defaultMapping}
+          index={index}
+          isExpanded={false}
+          onToggle={vi.fn()}
+          onUpdate={vi.fn()}
+          onDelete={vi.fn()}
+          invalid={false}
+        />
+      </WorkflowContext.Provider>
+    )
+    return container.firstElementChild as HTMLElement
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it.each([
+    [1, false],
+    [10, true],
+    [11, false],
+  ])('index %i %s a warning on mapping 10', (index, marked) => {
+    const row = renderWithIssues(index)
+    expect(row.className.includes('!border-aborted-secondary')).toBe(marked)
+  })
+})

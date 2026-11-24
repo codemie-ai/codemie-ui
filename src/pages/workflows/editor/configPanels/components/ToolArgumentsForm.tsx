@@ -32,7 +32,8 @@ interface ToolArgumentsFormProps {
   value: Record<string, unknown>
   onChange: (value: Record<string, unknown>) => void
   onSchemaEmpty?: () => void
-  onSchemaLoaded?: (requiredFields: string[]) => void
+  /** `fieldNames` lists every argument the schema renders a control for. */
+  onSchemaLoaded?: (requiredFields: string[], fieldNames: string[]) => void
   errors?: Record<string, string>
   issuePathPrefix?: string
 }
@@ -68,11 +69,11 @@ const ToolArgumentsForm: React.FC<ToolArgumentsFormProps> = ({
           .filter(([_, fieldSchema]) => (fieldSchema as DynamicFormFieldSchema).required)
           .map(([fieldName]) => fieldName)
 
-        onSchemaLoaded?.(requiredFields)
+        onSchemaLoaded?.(requiredFields, Object.keys(schemaResponse?.args_schema || {}))
       } catch (err) {
         console.error('Failed to fetch schema for tool:', toolName, err)
         setSchema(null)
-        onSchemaLoaded?.([])
+        onSchemaLoaded?.([], [])
       } finally {
         setLoading(false)
         setHasFetched(true)

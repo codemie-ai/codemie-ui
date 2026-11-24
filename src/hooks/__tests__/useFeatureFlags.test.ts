@@ -19,7 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FEATURE_FLAGS } from '@/constants'
 import { appInfoStore } from '@/store/appInfo'
 
-import { useMermaidEnabled } from '../useFeatureFlags'
+import { useMermaidEnabled, useWorkflowContractsEnabled } from '../useFeatureFlags'
 
 // Return the store as-is so the hook reads the mocked appInfoStore directly.
 vi.mock('valtio', async (importOriginal) => ({
@@ -68,6 +68,33 @@ describe('useMermaidEnabled', () => {
     vi.mocked(appInfoStore).isConfigFetched = true
 
     const { result } = renderHook(() => useMermaidEnabled())
+
+    expect(result.current).toEqual([true, true])
+  })
+})
+
+describe('useWorkflowContractsEnabled', () => {
+  beforeEach(() => {
+    vi.mocked(appInfoStore).configs = []
+    vi.mocked(appInfoStore).isConfigFetched = true
+  })
+
+  it('reads the features:workflowContracts flag', () => {
+    expect(FEATURE_FLAGS.WORKFLOW_CONTRACTS).toBe('features:workflowContracts')
+  })
+
+  it('is off when the flag is absent', () => {
+    const { result } = renderHook(() => useWorkflowContractsEnabled())
+
+    expect(result.current).toEqual([false, true])
+  })
+
+  it('is on when the flag is enabled', () => {
+    vi.mocked(appInfoStore).configs = [
+      { id: FEATURE_FLAGS.WORKFLOW_CONTRACTS, settings: { enabled: true } },
+    ]
+
+    const { result } = renderHook(() => useWorkflowContractsEnabled())
 
     expect(result.current).toEqual([true, true])
   })

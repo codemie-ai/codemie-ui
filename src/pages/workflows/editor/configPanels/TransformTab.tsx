@@ -27,6 +27,7 @@ import {
 } from '@/types/workflowEditor/configuration'
 import { cleanObject } from '@/utils/helpers'
 import { ConfigurationUpdate } from '@/utils/workflowEditor'
+import { findTransformActor } from '@/utils/workflowEditor/helpers/nodes/nodeTypeCheckers'
 import { generateActorID, shouldReuseActorId } from '@/utils/workflowEditor/helpers/states'
 
 import CommonStateFields, { CommonStateFieldsRef } from './CommonStateFields'
@@ -56,9 +57,7 @@ const getTransformActorConfig = (
   config: WorkflowConfiguration,
   state: TransformStateConfiguration
 ): CustomNodeConfiguration => {
-  const result = config.custom_nodes?.find(
-    (cn) => cn.id === state?.custom_node_id && cn.custom_node_id === CustomNodeType.TRANSFORM
-  )
+  const result = findTransformActor(state?.custom_node_id, config.custom_nodes)
   if (!result) {
     return {
       id: state.id,
@@ -197,7 +196,12 @@ const TransformTab = forwardRef<TransformTabRef, TransformTabProps>(
             />
           </ConfigAccordion>
 
-          <CommonStateFields ref={commonStateFieldsRef} state={state} showAllFields={false} />
+          <CommonStateFields
+            ref={commonStateFieldsRef}
+            state={state}
+            showAllFields={false}
+            contractFields="input"
+          />
         </form>
 
         <TabFooter

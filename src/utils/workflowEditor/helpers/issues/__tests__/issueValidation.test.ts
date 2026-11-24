@@ -175,9 +175,73 @@ describe('getEntityForState', () => {
 })
 
 describe('shouldResolveIssue', () => {
+  describe('issue without a field location (empty path)', () => {
+    const state = (meta: Record<string, unknown>) => ({
+      id: 'join',
+      assistant_id: 'a1',
+      _meta: { type: NodeTypes.ASSISTANT, ...meta },
+    })
+    const config = (states: unknown[]) => ({ states } as unknown as WorkflowConfiguration)
+    const issue = (stateId?: string) =>
+      ({ id: 'i', message: 'm', path: '', stateId, configLine: 1 } as WorkflowIssue)
+
+    it('stays unresolved when the node is selected or moved', () => {
+      const prev = config([state({ selected: false, position: { x: 0, y: 0 } })])
+      const next = config([state({ selected: true, position: { x: 90, y: 40 } })])
+      expect(shouldResolveIssue(issue('join'), prev, next)).toBe(false)
+    })
+
+    it('resolves when its state is removed', () => {
+      const prev = config([state({})])
+      expect(shouldResolveIssue(issue('join'), prev, config([]))).toBe(true)
+    })
+
+    it('stays unresolved for a workflow-level issue when the config changes', () => {
+      const prev = config([state({ selected: false })])
+      const next = config([state({ selected: true })])
+      expect(shouldResolveIssue(issue(), prev, next)).toBe(false)
+    })
+  })
+
+  describe('workflow-level contract defaults (SR-005a)', () => {
+    it.each(['save_validation', 'require_input_contracts'])(
+      'resolves a stateless %s issue when that key changes',
+      (path) => {
+        const issue: WorkflowIssue = {
+          outcome: 'ERROR',
+          id: 'issue1',
+          message: 'Test issue',
+          path,
+          configLine: 3,
+        }
+        const prevConfig: any = { states: [] }
+        const nextConfig: any = { states: [], [path]: path === 'save_validation' ? 'strict' : true }
+
+        expect(shouldResolveIssue(issue, prevConfig, nextConfig)).toBe(true)
+      }
+    )
+
+    it.each(['save_validation', 'require_input_contracts'])(
+      'keeps a stateless %s issue when that key is unchanged',
+      (path) => {
+        const issue: WorkflowIssue = {
+          outcome: 'ERROR',
+          id: 'issue1',
+          message: 'Test issue',
+          path,
+          configLine: 3,
+        }
+        const config: any = { states: [], [path]: path === 'save_validation' ? 'warn' : true }
+
+        expect(shouldResolveIssue(issue, config, { ...config })).toBe(false)
+      }
+    )
+  })
+
   describe('top-level config changes', () => {
     it('resolves issue when top-level config property changes (no stateId)', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         path: 'messages_limit_before_summarization',
@@ -199,6 +263,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves issue when top-level config property changes (empty stateId)', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         stateId: '',
@@ -221,6 +286,7 @@ describe('shouldResolveIssue', () => {
 
     it('does not resolve when top-level config property stays same', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         path: 'max_concurrency',
@@ -242,6 +308,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves issue when nested top-level config property changes', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         path: 'retry_policy.max_attempts',
@@ -273,6 +340,7 @@ describe('shouldResolveIssue', () => {
 
     it('does not resolve when nested top-level config property stays same', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         path: 'retry_policy.backoff_factor',
@@ -300,6 +368,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves issue when top-level config property is added', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         path: 'enable_summarization_node',
@@ -321,6 +390,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves issue when top-level config property is removed', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         path: 'tokens_limit_before_summarization',
@@ -344,6 +414,7 @@ describe('shouldResolveIssue', () => {
   describe('missing entity ID issues (path="states")', () => {
     it('resolves issue when state now has entity ID assigned', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'b9d145d5-4631-4c8f-937c-e694dd860224',
         message: 'Invalid value',
         path: 'states',
@@ -379,6 +450,7 @@ describe('shouldResolveIssue', () => {
 
     it('does not resolve when state still has no entity ID', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'b9d145d5-4631-4c8f-937c-e694dd860224',
         message: 'Invalid value',
         path: 'states',
@@ -411,6 +483,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves when state with missing entity ID is removed', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'b9d145d5-4631-4c8f-937c-e694dd860224',
         message: 'Invalid value',
         path: 'states',
@@ -436,6 +509,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves when tool state gets tool_id assigned', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Invalid value',
         path: 'states',
@@ -467,6 +541,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves when transform state gets custom_node_id assigned', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Invalid value',
         path: 'states',
@@ -498,6 +573,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves when ANY entity ID is added regardless of state type', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Invalid value',
         path: 'states',
@@ -552,6 +628,7 @@ describe('shouldResolveIssue', () => {
 
     it('does not resolve when no entity ID keys are present', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Invalid value',
         path: 'states',
@@ -586,6 +663,7 @@ describe('shouldResolveIssue', () => {
     describe('assistant entities (path="assistants")', () => {
       it('resolves when assistant gets assistant_id field', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: '9050fe7e-64d6-4164-a7b5-70b07e37fb72',
           message: 'Invalid value',
           path: 'assistants',
@@ -621,6 +699,7 @@ describe('shouldResolveIssue', () => {
 
       it('resolves when assistant gets system_prompt field', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Invalid value',
           path: 'assistants',
@@ -655,6 +734,7 @@ describe('shouldResolveIssue', () => {
 
       it('does not resolve when assistant still has no required fields', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Invalid value',
           path: 'assistants',
@@ -689,6 +769,7 @@ describe('shouldResolveIssue', () => {
 
       it('resolves when assistant is removed', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Invalid value',
           path: 'assistants',
@@ -723,6 +804,7 @@ describe('shouldResolveIssue', () => {
 
       it('does not resolve when state has no assistant_id', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Invalid value',
           path: 'assistants',
@@ -757,6 +839,7 @@ describe('shouldResolveIssue', () => {
     describe('tool entities (path="tools")', () => {
       it('resolves when tool gets required fields', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: '89a5f18c-4ff3-48cd-9917-21598a8f99e0',
           message: 'Missing required field',
           path: 'tools',
@@ -792,6 +875,7 @@ describe('shouldResolveIssue', () => {
 
       it('does not resolve when tool still has only id', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Missing required field',
           path: 'tools',
@@ -826,6 +910,7 @@ describe('shouldResolveIssue', () => {
 
       it('resolves when tool is removed', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Missing required field',
           path: 'tools',
@@ -860,6 +945,7 @@ describe('shouldResolveIssue', () => {
 
       it('does not resolve when state has no tool_id', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Missing required field',
           path: 'tools',
@@ -895,6 +981,7 @@ describe('shouldResolveIssue', () => {
   describe('state-level changes', () => {
     it('resolves issue when state is removed', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         stateId: 'state1',
@@ -915,6 +1002,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves issue when state path value changes', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         stateId: 'state1',
@@ -935,6 +1023,7 @@ describe('shouldResolveIssue', () => {
 
     it('does not resolve when state path value stays same', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         stateId: 'state1',
@@ -971,6 +1060,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves issue when state type changes', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         stateId: 'state1',
@@ -994,6 +1084,7 @@ describe('shouldResolveIssue', () => {
     describe('entity ID field errors', () => {
       it('does not resolve when custom_node_id value type is wrong but unchanged', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'iss-1',
           message: 'Invalid type (expected string)',
           path: 'custom_node_id',
@@ -1026,6 +1117,7 @@ describe('shouldResolveIssue', () => {
 
       it('resolves when custom_node_id value changes', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'iss-1',
           message: 'Invalid type (expected string)',
           path: 'custom_node_id',
@@ -1058,6 +1150,7 @@ describe('shouldResolveIssue', () => {
 
       it('does not resolve when assistant_id is invalid but unchanged', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'iss-5',
           message: 'Invalid type (expected string)',
           path: 'assistant_id',
@@ -1090,6 +1183,7 @@ describe('shouldResolveIssue', () => {
 
       it('does not resolve when tool_id is invalid but unchanged', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'iss-6',
           message: 'Invalid type (expected string)',
           path: 'tool_id',
@@ -1124,6 +1218,7 @@ describe('shouldResolveIssue', () => {
     describe('other state field errors', () => {
       it('does not resolve when task field is invalid but unchanged', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'iss-2',
           message: 'Invalid type (expected string)',
           path: 'task',
@@ -1156,6 +1251,7 @@ describe('shouldResolveIssue', () => {
 
       it('resolves when task field value changes', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'iss-2',
           message: 'Invalid type (expected string)',
           path: 'task',
@@ -1188,6 +1284,7 @@ describe('shouldResolveIssue', () => {
 
       it('does not resolve when finish_iteration is invalid but unchanged', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'iss-3',
           message: 'Invalid type (expected boolean)',
           path: 'finish_iteration',
@@ -1220,6 +1317,7 @@ describe('shouldResolveIssue', () => {
 
       it('does not resolve when next.state_id is invalid but unchanged', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'iss-4',
           message: 'Invalid reference',
           path: 'next.state_id',
@@ -1252,6 +1350,7 @@ describe('shouldResolveIssue', () => {
 
       it('resolves when next.state_id value changes', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'iss-4',
           message: 'Invalid reference',
           path: 'next.state_id',
@@ -1288,6 +1387,7 @@ describe('shouldResolveIssue', () => {
     describe('assistant entities', () => {
       it('resolves issue when entity is removed', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Test issue',
           stateId: 'state1',
@@ -1314,6 +1414,7 @@ describe('shouldResolveIssue', () => {
 
       it('resolves issue when entity path value changes', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Test issue',
           stateId: 'state1',
@@ -1340,6 +1441,7 @@ describe('shouldResolveIssue', () => {
 
       it('does not resolve when entity path value stays same', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Test issue',
           stateId: 'state1',
@@ -1366,6 +1468,7 @@ describe('shouldResolveIssue', () => {
 
       it('resolves issue when nested entity path changes', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Test issue',
           stateId: 'state1',
@@ -1394,6 +1497,7 @@ describe('shouldResolveIssue', () => {
     describe('tool entities', () => {
       it('resolves issue when tool entity changes', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Test issue',
           stateId: 'state1',
@@ -1418,6 +1522,7 @@ describe('shouldResolveIssue', () => {
     describe('custom_node entities', () => {
       it('resolves issue when custom_node entity changes', () => {
         const issue: WorkflowIssue = {
+          outcome: 'ERROR',
           id: 'issue1',
           message: 'Test issue',
           stateId: 'state1',
@@ -1447,6 +1552,7 @@ describe('shouldResolveIssue', () => {
   describe('edge cases', () => {
     it('returns false when state has no entity (meta state)', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         stateId: 'state1',
@@ -1467,6 +1573,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves issue when entity ID is missing (treats as entity removed)', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         stateId: 'state1',
@@ -1493,6 +1600,7 @@ describe('shouldResolveIssue', () => {
 
     it('resolves issue when state is missing _meta', () => {
       const issue: WorkflowIssue = {
+        outcome: 'ERROR',
         id: 'issue1',
         message: 'Test issue',
         stateId: 'state1',

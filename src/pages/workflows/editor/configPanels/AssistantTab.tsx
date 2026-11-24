@@ -385,7 +385,7 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
             </div>
           </ConfigAccordion>
 
-          <CommonStateFields ref={commonStateFieldsRef} state={state} />
+          <CommonStateFields ref={commonStateFieldsRef} state={state} contractFields="full" />
         </form>
 
         <TabFooter

@@ -56,7 +56,8 @@ const WorkflowStartExecutionPopup: FC<WorkflowStartExecutionPopupProps> = ({
   const editorRootId = useId()
   const router = useVueRouter()
   const { unblockTransition, blockTransition } = useUnsavedChanges({
-    formId: FormIDs.WORKFLOW_FORM,
+    // Its own id: sharing WORKFLOW_FORM let this popup's always-false check replace the form's.
+    formId: FormIDs.WORKFLOW_START_EXECUTION_POPUP,
   })
 
   const initialPromptState = {

@@ -20,6 +20,7 @@ import { WorkflowConfiguration, StateConfiguration } from '@/types/workflowEdito
 import { cn } from '@/utils/utils'
 import { ConfigurationUpdate } from '@/utils/workflowEditor/actions'
 import { NodeHandlesStatus } from '@/utils/workflowEditor/helpers/executions/common'
+import type { NodeOutline } from '@/utils/workflowEditor/helpers/issueSeverity'
 
 export interface CommonNodeProps extends NodeProps {
   id: string
@@ -31,7 +32,7 @@ export interface CommonNodeProps extends NodeProps {
     removeState: (nodeID: string) => void
     onNodesChange: (changes: NodeChange[]) => void
     isFullscreen?: boolean
-    hasError: boolean
+    outline?: NodeOutline
     status?: WorkflowExecutionStatus
     success?: number
     failures?: number
@@ -66,4 +67,17 @@ export const getEdgeStatusClass = (status?: WorkflowExecutionStatus) => {
   }
 
   return statusMap[status] ?? ''
+}
+
+/** Outline classes for a node flagged by issues: red for errors, amber for warnings. */
+export const NODE_OUTLINE_CLASS = {
+  error: 'outline outline-offset-2 outline-failed-secondary',
+  warning: 'outline outline-offset-2 outline-aborted-secondary',
+} as const
+
+export const HIGHLIGHT_OUTLINE_CLASS = 'outline outline-offset-2 outline-border-accent'
+
+export const getNodeOutlineClass = (outline: NodeOutline | undefined, highlighted: boolean) => {
+  if (outline) return NODE_OUTLINE_CLASS[outline]
+  return highlighted ? HIGHLIGHT_OUTLINE_CLASS : ''
 }

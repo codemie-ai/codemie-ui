@@ -15,6 +15,8 @@
 
 import { ReactNode, useId } from 'react'
 
+import { cn } from '@/utils/utils'
+
 export interface FieldAnnouncerRenderProps {
   ariaInvalid: boolean
   ariaDescribedBy: string | undefined
@@ -24,27 +26,38 @@ export interface FieldAnnouncerProps {
   id?: string
   error?: string
   errorClassName?: string
-  /** Caller-supplied description ids (e.g. a hint); the error id is appended to them. */
+  /** Non-blocking amber message; ignored while `error` is set. */
+  warning?: string
+  /** Extra classes for the warning node, added to the shared amber styling. */
+  warningClassName?: string
+  /** Caller-supplied description ids (e.g. a hint); the error or warning id is appended to them. */
   describedBy?: string
   children: (props: FieldAnnouncerRenderProps) => ReactNode
 }
 
 /**
- * Owns the a11y contract for a form field's validation error: computes `aria-invalid` /
- * `aria-describedby` and renders the `role="alert"` error node. The primitive decides where
- * the aria props land (the element itself or a PrimeReact `pt.input`).
+ * Owns the a11y contract for a form field's validation error and warning: computes
+ * `aria-invalid` / `aria-describedby` and renders the `role="alert"` error node or the amber
+ * warning node. The primitive decides where the aria props land (the element itself or a
+ * PrimeReact `pt.input`).
  */
 const FieldAnnouncer = ({
   id,
   error,
   errorClassName,
+  warning,
+  warningClassName,
   describedBy,
   children,
 }: FieldAnnouncerProps) => {
   const reactId = useId()
   const errorId = `${id ?? reactId}-error`
+  const warningId = `${id ?? reactId}-warning`
+  const activeWarning = error ? undefined : warning
   const ariaDescribedBy =
-    [describedBy, error ? errorId : undefined].filter(Boolean).join(' ') || undefined
+    [describedBy, error ? errorId : undefined, activeWarning ? warningId : undefined]
+      .filter(Boolean)
+      .join(' ') || undefined
 
   return (
     <>
@@ -53,6 +66,11 @@ const FieldAnnouncer = ({
         // role="alert" fires only on DOM insertion, so re-mount the node when the text changes
         <div key={error} id={errorId} role="alert" className={errorClassName}>
           {error}
+        </div>
+      )}
+      {activeWarning && (
+        <div id={warningId} className={cn('text-sm text-aborted-primary', warningClassName)}>
+          {activeWarning}
         </div>
       )}
     </>

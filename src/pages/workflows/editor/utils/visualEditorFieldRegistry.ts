@@ -140,6 +140,8 @@ const ADVANCED_CONFIG_FIELDS = [
   'retry_policy.initial_interval',
   'retry_policy.max_interval',
   'retry_policy.backoff_factor',
+  'save_validation',
+  'require_input_contracts',
 ] as const
 
 /** Check if a field path is a top-level advanced config field */

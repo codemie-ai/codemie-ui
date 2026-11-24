@@ -186,5 +186,15 @@ export const useUnsavedChanges = <T = any,>({
     }, 100)
   }, [isNavigatingAwayRef])
 
-  return { attemptFormClose, unblockTransition, blockTransition }
+  // Re-baselines the dirty check to `values` (clones them, so later mutation cannot alias).
+  // Pass the exact payload that was saved, not the live form values, so edits made while the
+  // request was in flight stay dirty.
+  const resetBaseline = useCallback(
+    (values: T) => {
+      setInitialValues(cloneValues(values))
+    },
+    [cloneValues]
+  )
+
+  return { attemptFormClose, unblockTransition, blockTransition, resetBaseline, checkDirty }
 }

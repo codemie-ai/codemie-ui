@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 
+import { useMemo } from 'react'
 import { useSnapshot } from 'valtio'
 
 import CodeSVG from '@/assets/icons/code.svg?react'
@@ -24,8 +25,14 @@ import StatusFailedSvg from '@/assets/icons/status-failed.svg?react'
 import WorkflowSVG from '@/assets/icons/workflow.svg?react'
 import Button from '@/components/Button'
 import { ButtonType } from '@/constants'
+import { useWorkflowContractsEnabled } from '@/hooks/useFeatureFlags'
 import { appInfoStore } from '@/store/appInfo'
 import { isConfigItemEnabled, getConfigItemSettings } from '@/utils/settings'
+import {
+  ISSUE_SEVERITY,
+  IssueSeverityConfig,
+  worstSeverity,
+} from '@/utils/workflowEditor/helpers/issueSeverity'
 
 import { PanelTabId, TAB_DATA } from './constants'
 import { useWorkflowContext } from './hooks/useWorkflowContext'
@@ -48,6 +55,21 @@ const BUTTON_LABELS = {
   WORKFLOW_CONFIG: 'Workflow Config',
   UNDO: 'Undo',
   ISSUES: 'Issues',
+  CHECK: 'Check',
+}
+
+// Red keeps the delete look; amber reuses the warning (`aborted`) tokens, grey stays neutral.
+const ISSUES_BUTTON_STYLE: Record<
+  IssueSeverityConfig['buttonColor'],
+  { variant?: ButtonType; className?: string }
+> = {
+  red: { variant: ButtonType.DELETE },
+  amber: {
+    variant: ButtonType.SECONDARY,
+    className:
+      'border-aborted-secondary text-aborted-secondary bg-aborted-secondary/10 hover:bg-aborted-secondary/20 hover:border-aborted-secondary',
+  },
+  grey: { variant: ButtonType.SECONDARY },
 }
 
 const EditorActions = ({
@@ -61,7 +83,18 @@ const EditorActions = ({
   tabs,
   toggleTabs,
 }: EditorActionsProps) => {
-  const { issues } = useWorkflowContext()
+  const { issues, isIssueResolved, onCheck, isChecking, isCheckLocked } = useWorkflowContext()
+  // Check exists for contract findings; without contract analysis it would report a false clean.
+  const [contractsEnabled] = useWorkflowContractsEnabled()
+  const { unresolvedCount, buttonColor } = useMemo(() => {
+    const list = issues ?? []
+    const worst = worstSeverity(list, isIssueResolved)
+    return {
+      unresolvedCount: list.filter((issue) => !isIssueResolved(issue)).length,
+      buttonColor: worst ? ISSUE_SEVERITY[worst].buttonColor : 'grey',
+    } as const
+  }, [issues, isIssueResolved])
+  const issuesButtonStyle = ISSUES_BUTTON_STYLE[buttonColor]
   const { configs } = useSnapshot(appInfoStore)
   const isYamlTabVisible = tabs.includes(TAB_DATA.YAML.ID)
   const isConfigTabVisible = tabs[0] === TAB_DATA.CONFIGURATION.ID
@@ -73,15 +106,27 @@ const EditorActions = ({
     // Below lg the toolbar spans the editor and scrolls sideways when the buttons do not fit;
     // the auto margin keeps them right-aligned whenever they do.
     <div className="absolute top-4 right-4 z-10 flex gap-4 max-lg:left-4 max-lg:gap-2 max-lg:overflow-x-auto max-lg:[&>*]:shrink-0 max-lg:[&>:first-child]:ml-auto">
+      {onCheck && contractsEnabled && (
+        <Button
+          type={ButtonType.SECONDARY}
+          onClick={onCheck}
+          disabled={isChecking || isCheckLocked}
+        >
+          {BUTTON_LABELS.CHECK}
+        </Button>
+      )}
+
       {issues !== null && (
         <Button
-          variant="delete"
+          variant={issuesButtonStyle.variant}
+          className={issuesButtonStyle.className}
+          data-severity={buttonColor}
           onClick={() => toggleTabs([TAB_DATA.ISSUES.ID])}
-          aria-label={BUTTON_LABELS.ISSUES}
           type={tabs.includes(TAB_DATA.ISSUES.ID) ? ButtonType.PRIMARY : ButtonType.SECONDARY}
         >
           <StatusFailedSvg />
           {BUTTON_LABELS.ISSUES}
+          {unresolvedCount > 0 && <span>{unresolvedCount}</span>}
         </Button>
       )}
 

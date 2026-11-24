@@ -15,24 +15,28 @@
 
 import { Dispatch, Ref, SetStateAction, useCallback, useEffect, useRef } from 'react'
 
+import { useWorkflowContractsEnabled } from '@/hooks/useFeatureFlags'
 import {
   WorkflowIssue,
   isWorkflowAssistantToolIssue,
   isWorkflowAssistantMcpIssue,
 } from '@/types/entity'
 import { StateConfiguration } from '@/types/workflowEditor'
+import { NodeType, NodeTypes } from '@/types/workflowEditor/base'
+import {
+  CustomNodeConfiguration,
+  CustomNodeType,
+  ToolStateConfiguration,
+} from '@/types/workflowEditor/configuration'
+import {
+  CONTRACT_ERROR_TYPE,
+  isHiddenControlPath,
+} from '@/utils/workflowEditor/helpers/contractProtocol'
+import { ISSUE_SEVERITY } from '@/utils/workflowEditor/helpers/issueSeverity'
+import { getCustomActorType } from '@/utils/workflowEditor/helpers/nodes/nodeTypeCheckers'
 
+import { CUSTOM_NODE_TYPES_USING_TASK } from '../configPanels/components/CustomNodeSelector'
 import { isFieldSupported, isAdvancedConfigField } from '../utils/visualEditorFieldRegistry'
-
-export const findLastNumberSegment = (str: string): number | null => {
-  const segments = str.split('.')
-  for (let i = segments.length - 1; i >= 0; i -= 1) {
-    const segment = Number(segments[i])
-    if (segments[i] && !Number.isNaN(segment)) return segment
-  }
-
-  return null
-}
 
 const getStateById = (
   stateId: string,
@@ -40,6 +44,64 @@ const getStateById = (
 ): StateConfiguration | null => {
   return configStates.find((state) => state.id === stateId) ?? null
 }
+
+/** Rank of an issue's outcome; an unknown outcome is treated as ERROR (fail closed). */
+const severityRank = (issue: WorkflowIssue): number =>
+  (ISSUE_SEVERITY[issue.outcome] ?? ISSUE_SEVERITY.ERROR).rank
+
+/** Assistants always show Task; a custom node shows it for the actor types that read it (CustomTab). */
+const hasTaskField = (state: StateConfiguration, customNodes?: CustomNodeConfiguration[]) => {
+  if (state._meta?.type === NodeTypes.ASSISTANT) return true
+  if (state._meta?.type !== NodeTypes.CUSTOM) return false
+  const actorType = getCustomActorType(
+    (state as { custom_node_id?: string }).custom_node_id,
+    customNodes
+  )
+  return CUSTOM_NODE_TYPES_USING_TASK.has(actorType as CustomNodeType)
+}
+
+/** An issue whose path would open a missing or different control on this state's node type. */
+const isHiddenControlIssue = (
+  issue: WorkflowIssue,
+  state: StateConfiguration | null,
+  customNodes?: CustomNodeConfiguration[]
+): boolean =>
+  !!state?._meta?.type &&
+  isHiddenControlPath(issue.path, state._meta.type as NodeType, hasTaskField(state, customNodes))
+
+/**
+ * `tool_args.<key>` set on the state itself overrides the tool definition. The Tool form only edits
+ * the shared definition, so it cannot repair this binding without touching other states.
+ */
+const isStateOwnedToolArg = (issue: WorkflowIssue, state: StateConfiguration | null): boolean => {
+  if (state?._meta?.type !== NodeTypes.TOOL) return false
+
+  const key = /^tool_args\.([^.]+)/.exec(issue.path)?.[1]
+  const stateToolArgs = (state as ToolStateConfiguration).tool_args
+  return !!key && !!stateToolArgs && Object.hasOwn(stateToolArgs, key)
+}
+
+/** Contract keys of a state and of the workflow; their controls are hidden while the contracts flag is off. */
+const STATE_CONTRACT_KEYS = ['input_schema', 'save_validation']
+const WORKFLOW_CONTRACT_KEYS = ['save_validation', 'require_input_contracts']
+
+const isContractKeyPath = (path: string, keys: string[]) =>
+  keys.some((key) => path === key || path.startsWith(`${key}.`))
+
+/**
+ * No visual control can receive this issue, so it is shown and opened in the YAML editor. With the
+ * contracts flag off the backend still rejects a malformed contract key (a schema check that does not
+ * depend on the flag), and its control is hidden, so the issue goes to YAML where the value was typed.
+ */
+const isYamlOnlyIssue = (
+  issue: WorkflowIssue,
+  state: StateConfiguration | null,
+  customNodes: CustomNodeConfiguration[] | undefined,
+  contractsEnabled: boolean
+): boolean =>
+  (!contractsEnabled && isContractKeyPath(issue.path, STATE_CONTRACT_KEYS)) ||
+  isHiddenControlIssue(issue, state, customNodes) ||
+  isStateOwnedToolArg(issue, state)
 
 export type FieldElement = {
   focus: () => void
@@ -56,10 +118,13 @@ export type RemoveArrayIssue = (removedIndex: number, stateId: string, pathPrefi
 
 export type GoToField = (issue: WorkflowIssue) => void
 export type GetIssueField = <TElem extends FieldElement = HTMLInputElement>(
-  path: string
+  path: string,
+  /** `stateOnly` ignores workflow-level issues (no `stateId`), for controls that exist once per node. */
+  options?: { stateOnly?: boolean }
 ) => {
   ref: Ref<TElem>
   fieldError?: string
+  fieldWarning?: string
   issue?: WorkflowIssue
   onChange: () => void
 }
@@ -78,6 +143,8 @@ export type GetMcpIssue = (params: { mcpName: string; path: string | RegExp }) =
 
 interface UseWorkflowFieldsParams {
   configStates: StateConfiguration[]
+  /** Actors of custom nodes, to tell which custom nodes show a Task field. */
+  customNodes?: CustomNodeConfiguration[]
   activeIssue: WorkflowIssue | null
   selectedStateId: string | null
   openNodeTab: (issue: WorkflowIssue) => void
@@ -95,6 +162,7 @@ interface UseWorkflowFieldsParams {
 
 const useWorkflowFieldIssues = ({
   configStates,
+  customNodes,
   activeIssue,
   selectedStateId,
   openNodeTab,
@@ -110,6 +178,7 @@ const useWorkflowFieldIssues = ({
   setDirtyIssues,
 }: UseWorkflowFieldsParams) => {
   const fieldRefs = useRef<WorkflowFields>(new Map())
+  const [contractsEnabled] = useWorkflowContractsEnabled()
 
   const clearAllDirtyMcpIssues = useCallback(
     (mcpName: string) => {
@@ -163,7 +232,9 @@ const useWorkflowFieldIssues = ({
   const goToField: GoToField = useCallback(
     (issue) => {
       if (!issue.stateId) {
-        if (isAdvancedConfigField(issue.path)) {
+        const isHiddenContractKey =
+          !contractsEnabled && isContractKeyPath(issue.path, WORKFLOW_CONTRACT_KEYS)
+        if (isAdvancedConfigField(issue.path) && !isHiddenContractKey) {
           openAdvancedConfigTab(issue)
           return
         }
@@ -182,7 +253,11 @@ const useWorkflowFieldIssues = ({
       }
 
       const state = getStateById(issue.stateId, configStates)
-      if (state && isFieldSupported(issue.path, state._meta?.type, issue.error_type)) {
+      if (
+        state &&
+        !isYamlOnlyIssue(issue, state, customNodes, contractsEnabled) &&
+        isFieldSupported(issue.path, state._meta?.type, issue.error_type)
+      ) {
         openNodeTab(issue)
         openState(state.id)
         return
@@ -191,38 +266,89 @@ const useWorkflowFieldIssues = ({
       openYamlTab(issue)
     },
 
-    [configStates, openNodeTab, openYamlTab, openAdvancedConfigTab, openState]
+    [
+      configStates,
+      customNodes,
+      contractsEnabled,
+      openNodeTab,
+      openYamlTab,
+      openAdvancedConfigTab,
+      openState,
+    ]
   )
 
   const getIssueField: GetIssueField = useCallback(
-    (path) => {
+    (path, options) => {
       const matchingIssues =
         tempIssues?.filter((issue) => {
-          const stateMatches = issue.stateId === selectedStateId || !issue.stateId
+          const stateMatches =
+            issue.stateId === selectedStateId || (!issue.stateId && !options?.stateOnly)
 
-          return stateMatches && issue.path === path
+          if (!stateMatches || issue.path !== path) return false
+
+          return !isYamlOnlyIssue(
+            issue,
+            getStateById(issue.stateId ?? '', configStates),
+            customNodes,
+            contractsEnabled
+          )
         }) ?? []
       const selectedIssues = selectedStateId
         ? matchingIssues.filter((issue) => !issue.stateId || issue.stateId === selectedStateId)
         : matchingIssues
 
-      const issue = selectedIssues[0] as WorkflowIssue | undefined
-      if ((issue && (isIssueResolved(issue) || isIssueDirty(issue))) || !issue) {
+      const isActive = (candidate: WorkflowIssue) =>
+        !isIssueResolved(candidate) && !isIssueDirty(candidate)
+
+      // The worst unresolved issue wins; with none left, the first match still binds the field ref.
+      const unresolvedIssue = selectedIssues.reduce<WorkflowIssue | undefined>(
+        (worst, candidate) =>
+          isActive(candidate) && (!worst || severityRank(candidate) > severityRank(worst))
+            ? candidate
+            : worst,
+        undefined
+      )
+      const issue = (unresolvedIssue ?? selectedIssues[0]) as WorkflowIssue | undefined
+      // Several issues can share one control: focus follows the one Go to Issue selected, while the
+      // inline message and severity come from the worst unresolved one.
+      const focusIssue =
+        selectedIssues.find((candidate) => candidate.id === activeIssue?.id) ?? issue
+
+      if (!issue || !unresolvedIssue) {
         return {
           onChange: () => {},
-          ref: (node) => setFieldRef({ issue, node }),
+          ref: (node) => setFieldRef({ issue: focusIssue, node }),
           issue,
         }
       }
 
+      // Contract `details` holds provenance (producers), `message` the finding itself.
+      const message =
+        issue.error_type === CONTRACT_ERROR_TYPE
+          ? issue.message || issue.details
+          : issue.details ?? issue.message
+      const outcome = ISSUE_SEVERITY[issue.outcome] ? issue.outcome : 'ERROR'
+
       return {
-        fieldError: issue?.details ?? issue.message,
-        ref: (node) => setFieldRef({ issue, node }),
+        fieldError: outcome === 'ERROR' ? message : undefined,
+        fieldWarning: outcome === 'WARNING' ? message : undefined,
+        ref: (node) => setFieldRef({ issue: focusIssue, node }),
         onChange: () => markIssueDirty(issue),
         issue,
       }
     },
-    [isIssueResolved, isIssueDirty, tempIssues, selectedStateId, setFieldRef, markIssueDirty]
+    [
+      activeIssue,
+      isIssueResolved,
+      isIssueDirty,
+      tempIssues,
+      selectedStateId,
+      configStates,
+      customNodes,
+      contractsEnabled,
+      setFieldRef,
+      markIssueDirty,
+    ]
   )
 
   const getToolIssue: GetToolIssue = useCallback(
@@ -284,54 +410,39 @@ const useWorkflowFieldIssues = ({
     [isIssueDirty, isIssueResolved, tempIssues, selectedStateId, markIssueDirty]
   )
 
-  function replaceLastNumberSegment(str: string, newValue: number): string | null {
-    const segments = str.split('.')
-    for (let i = segments.length - 1; i >= 0; i -= 1) {
-      const segment = Number(segments[i])
-      if (segments[i] && !Number.isNaN(segment)) {
-        segments[i] = String(newValue)
-        return segments.join('.')
-      }
-    }
-
-    return null
-  }
-
   const removeArrayIssue: RemoveArrayIssue = useCallback(
     (removedIndex, stateId, pathPrefix) => {
-      const arrayIssues =
-        issues?.filter((issue) => issue.stateId === stateId && issue.path.startsWith(pathPrefix)) ??
-        []
+      const base = tempIssues ?? issues
+      if (!base) return
 
-      const removedIssueIndex = arrayIssues.findIndex((issue) => {
-        return findLastNumberSegment(issue.path) === removedIndex
+      const prefixWithDot = `${pathPrefix}.`
+      // Index of the array element an issue path points at, e.g. `config.mappings.10.x` -> 10.
+      const getElementIndex = (issue: WorkflowIssue): number | null => {
+        if (issue.stateId !== stateId || !issue.path.startsWith(prefixWithDot)) return null
+        const [segment] = issue.path.slice(prefixWithDot.length).split('.')
+        return /^\d+$/.test(segment) ? Number(segment) : null
+      }
+
+      let changed = false
+      const nextIssues = base.map((issue) => {
+        const elementIndex = getElementIndex(issue)
+        if (elementIndex === null || elementIndex < removedIndex) return issue
+
+        changed = true
+        // Findings on the deleted element are resolved; only later elements shift down by one.
+        if (elementIndex === removedIndex) {
+          markIssueDirty(issue)
+          return issue
+        }
+
+        const rest = issue.path.slice(prefixWithDot.length).split('.').slice(1).join('.')
+        const restSuffix = rest ? `.${rest}` : ''
+        return { ...issue, path: `${prefixWithDot}${elementIndex - 1}${restSuffix}` }
       })
-      const removedIssue = arrayIssues[removedIssueIndex]
 
-      if (!removedIssue) return
-      markIssueDirty(removedIssue)
-
-      const newArrayIssues = arrayIssues.map((issue) => {
-        const issueIndex = findLastNumberSegment(issue.path)
-        if (issueIndex === null) return issue
-
-        let newIndex = issueIndex
-        if (issueIndex === removedIssueIndex) newIndex = NaN
-        else if (issueIndex > removedIssueIndex) newIndex -= 1
-
-        return { ...issue, path: replaceLastNumberSegment(issue.path, newIndex) ?? '' }
-      })
-
-      const newIssues =
-        issues?.map((issue) => {
-          const updatedIssue = newArrayIssues.find((arrayIssue) => arrayIssue.id === issue.id)
-          if (!updatedIssue) return issue
-          return { ...issue, ...updatedIssue }
-        }) ?? []
-
-      setTempIssues(newIssues)
+      if (changed) setTempIssues(nextIssues)
     },
-    [issues, setTempIssues, markIssueDirty]
+    [issues, tempIssues, setTempIssues, markIssueDirty]
   )
 
   return {

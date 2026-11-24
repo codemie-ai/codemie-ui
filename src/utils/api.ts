@@ -14,6 +14,7 @@
 //
 
 import { saveAs } from 'file-saver'
+import escape from 'lodash/escape'
 
 import { ENV, HTTP_STATUS } from '@/constants'
 import { isConfluenceConnectRequired } from '@/utils/confluenceAuth'
@@ -134,9 +135,17 @@ interface ResponseWithParsedError extends Response {
   }
 }
 
-export function formatErrorMessage(body: ErrorBody, includeHelp = true): string {
+const formatDetails = (details: string, literal: boolean): string =>
+  literal ? escape(details.trim()) : details.replaceAll('<br>', '').trim()
+
+/**
+ * `literal` keeps the backend's message, details and help character for character: only the `<br>` and
+ * `<i>` layout is ours. Use `literal` where the text can carry names the user typed (contract and field names).
+ */
+export function formatErrorMessage(body: ErrorBody, includeHelp = true, literal = false): string {
   try {
     const { message, details, help } = body.error
+    const text = literal ? escape : (value: string) => value
     let strDetails: string
 
     if (details !== null && typeof details === 'object') {
@@ -145,14 +154,15 @@ export function formatErrorMessage(body: ErrorBody, includeHelp = true): string 
       strDetails = details ?? ''
     }
 
-    let formattedError = message
+    let formattedError = text(message)
 
     if (strDetails) {
-      formattedError += `<br> ${strDetails.replaceAll('<br>', '').trim()}`
+      const shown = formatDetails(strDetails, literal)
+      formattedError += `<br> ${shown}`
     }
 
     if (includeHelp && help) {
-      formattedError += `<br><i>${help}</i>`
+      formattedError += `<br><i>${text(help)}</i>`
     }
 
     return formattedError
@@ -560,8 +570,8 @@ class API {
     return getMode() === ENV.LOCAL && !getIsLocalAuth() ? { 'user-id': DEV_USER_ID } : {}
   }
 
-  handleError(body: ErrorBody, includeHelp = true): void {
-    toaster.error(formatErrorMessage(body, includeHelp))
+  handleError(body: ErrorBody, includeHelp = true, literal = false): void {
+    toaster.error(formatErrorMessage(body, includeHelp, literal))
   }
 }
 

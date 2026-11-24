@@ -21,6 +21,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { DEFAULT_RETRY_MAX_ATTEMPTS } from '@/utils/workflowEditor/constants'
 
 import CommonStateFields, { ResetKeysInput } from '../CommonStateFields'
+import {
+  enableWorkflowContracts,
+  INPUT_CONTRACT_PLACEHOLDER,
+  OUTPUT_CONTRACT_PLACEHOLDER,
+} from './contractTestUtils'
 
 import type { CommonStateFieldsRef } from '../CommonStateFields'
 
@@ -38,7 +43,9 @@ vi.mock('../../hooks/useWorkflowContext', () => ({
 
 // Always render accordion children so the Transition Settings fields are visible
 vi.mock('../components/ConfigAccordion', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  default: ({ children, title }: { children: React.ReactNode; title: string }) => (
+    <div data-testid={`accordion-${title}`}>{children}</div>
+  ),
 }))
 
 const PLACEHOLDER = 'e.g.: user_data,analysis_result'
@@ -88,21 +95,21 @@ describe('CommonStateFields — Reset Context Keys input', () => {
   })
 })
 
-describe('CommonStateFields — Task/Output Schema visibility', () => {
-  it('renders Task and Output Schema by default', () => {
-    render(<CommonStateFields state={{ id: 's' }} />)
+describe('CommonStateFields — Task/Output contract visibility', () => {
+  it('renders Task and the output contract with the full contract section', () => {
+    render(<CommonStateFields state={{ id: 's' }} contractFields="full" />)
     expect(screen.getByPlaceholderText('Describe the task for this node')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Expected output format (JSON Schema)')).toBeInTheDocument()
   })
 
-  it('hides Task independently of Output Schema', () => {
-    render(<CommonStateFields state={{ id: 's' }} showTask={false} />)
+  it('hides Task independently of the output contract', () => {
+    render(<CommonStateFields state={{ id: 's' }} showTask={false} contractFields="full" />)
     expect(screen.queryByPlaceholderText('Describe the task for this node')).not.toBeInTheDocument()
     expect(screen.getByPlaceholderText('Expected output format (JSON Schema)')).toBeInTheDocument()
   })
 
-  it('hides Output Schema independently of Task', () => {
-    render(<CommonStateFields state={{ id: 's' }} showOutputSchema={false} />)
+  it('renders no output field without the contract section (the legacy Output Schema is gone)', () => {
+    render(<CommonStateFields state={{ id: 's' }} />)
     expect(screen.getByPlaceholderText('Describe the task for this node')).toBeInTheDocument()
     expect(
       screen.queryByPlaceholderText('Expected output format (JSON Schema)')
@@ -110,7 +117,7 @@ describe('CommonStateFields — Task/Output Schema visibility', () => {
   })
 
   it('keeps every other State Settings field visible when only Task/Output Schema are hidden', () => {
-    render(<CommonStateFields state={{ id: 's' }} showTask={false} showOutputSchema={false} />)
+    render(<CommonStateFields state={{ id: 's' }} showTask={false} />)
 
     // State Settings accordion (besides Task/Output Schema)
     expect(screen.getByPlaceholderText('e.g., analyze_code')).toBeInTheDocument()
@@ -151,7 +158,6 @@ describe('CommonStateFields — Task/Output Schema visibility', () => {
         ref={ref}
         state={{ id: 'test-state', task: 'existing task', output_schema: '{"type":"object"}' }}
         showTask={false}
-        showOutputSchema={false}
       />
     )
 
@@ -164,6 +170,44 @@ describe('CommonStateFields — Task/Output Schema visibility', () => {
 
     expect(ref.current!.getValues().task).toBe('existing task')
     expect(ref.current!.getValues().output_schema).toBe('{"type":"object"}')
+  })
+})
+
+describe('CommonStateFields — workflow contracts flag', () => {
+  it('flag off: the full section keeps only the output contract', () => {
+    render(<CommonStateFields state={{ id: 's' }} contractFields="full" />)
+
+    expect(screen.getByTestId('accordion-Contracts')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(OUTPUT_CONTRACT_PLACEHOLDER)).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(INPUT_CONTRACT_PLACEHOLDER)).not.toBeInTheDocument()
+    expect(screen.queryByText('Save validation')).not.toBeInTheDocument()
+  })
+
+  it('flag off: transform (input only) shows no Contracts section', () => {
+    render(<CommonStateFields state={{ id: 's' }} contractFields="input" />)
+
+    expect(screen.queryByTestId('accordion-Contracts')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(INPUT_CONTRACT_PLACEHOLDER)).not.toBeInTheDocument()
+    expect(screen.queryByText('Save validation')).not.toBeInTheDocument()
+  })
+
+  it('flag on: the full section shows input, output and save validation', () => {
+    enableWorkflowContracts()
+    render(<CommonStateFields state={{ id: 's' }} contractFields="full" />)
+
+    expect(screen.getByPlaceholderText(INPUT_CONTRACT_PLACEHOLDER)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(OUTPUT_CONTRACT_PLACEHOLDER)).toBeInTheDocument()
+    expect(document.querySelector('#node_validation_mode_select')).not.toBeNull()
+  })
+
+  it('flag on: transform (input only) shows the input contract and save validation', () => {
+    enableWorkflowContracts()
+    render(<CommonStateFields state={{ id: 's' }} contractFields="input" />)
+
+    expect(screen.getByTestId('accordion-Contracts')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(INPUT_CONTRACT_PLACEHOLDER)).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(OUTPUT_CONTRACT_PLACEHOLDER)).not.toBeInTheDocument()
+    expect(document.querySelector('#node_validation_mode_select')).not.toBeNull()
   })
 })
 

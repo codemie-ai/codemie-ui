@@ -1,0 +1,478 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "Check round approved: CR-001..CR-009 all resolved, 0 new findings. Caveats accepted: new tests' RED unproven; useContractCheck staleness guard vs meta_states re-serialisation left as-is."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User chose the one fix-up round for all 9 blocking findings CR-001..CR-009"
+    },
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "Check round approved: CR-001..CR-009 all resolved, 0 new findings. Caveats accepted: new tests' RED unproven; useContractCheck staleness guard vs meta_states re-serialisation left as-is."
+    }
+  ],
+  "reviewed_head": "34a06e7263205d251bb0a6a07267e2b146a325d4",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "All nine prior blocking findings (CR-001..CR-009) are resolved on current-source and test inspection of the fix-up; none unresolved or superseded. Tests were read, not executed (Stage 7 owns that). business_review and standards_review are carried forward unchanged, so the earlier partial rows for the criteria fixed here are stale.",
+  "confidence": "low",
+  "check_confidence": "high",
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 9,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowHeaderActions.tsx",
+      "line": 64,
+      "title": "No test that Save is locked during save or Check",
+      "problem": "Save and Save and Run are disabled while isChecking or isSaving (and isCreated on the new page), but no test asserts it. The only disabled assertion in the edit integration test is the post-save 'Saved' button, and EditWorkflowHeaderActions has no test file.",
+      "impact": "Dropping isChecking || isSaving from the disabled expression would allow a double save, or a save racing a Check, and no test would fail. On the new page that means two createWorkflow calls and a duplicate workflow.",
+      "recommendation": "With a never-resolving updateWorkflow, click Save and assert Save and Save and Run are disabled and no second PUT is sent; with a Check in flight assert both are disabled. Repeat for NewWorkflowPage (isChecking/isSaving, plus the existing isCreated case).",
+      "status": "resolved",
+      "check_notes": "Edit and new page tests assert Save/Save and Run disabled while saving or checking and a single PUT/create; header disabled expression includes isChecking and isSaving",
+      "fix": {
+        "change": "Tests only: Save, Save and Run and Check lock during save/Check on both pages",
+        "test": "EditWorkflowPage.integration.test.tsx 'locks Save ...'; NewWorkflowPage.test.tsx 'locks and Check wiring'"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 123,
+      "title": "No page-level test wires the Check button",
+      "problem": "useContractCheck is wired in and passed down as onCheck/isChecking/outcomeKey through WorkflowForm and WorkflowEditor, but no page, form or editor test clicks Check. useContractCheck is tested with a hand-built formRef and EditorActions with a mocked context.",
+      "impact": "If a page drops onCheck, passes the wrong workflowId (the edit page would hit the id-less endpoint) or a mismatched outcomeKey, the Check button disappears or validates the wrong endpoint, and every existing test still passes.",
+      "recommendation": "In EditWorkflowPage.integration.test.tsx and NewWorkflowPage.test.tsx render the page, click Check, and assert a POST to v1/workflows/<id>/validate?error_format=json on the edit page and to v1/workflows/validate on the new page, and that returned findings open the issues panel.",
+      "status": "resolved",
+      "check_notes": "Edit integration test clicks Check and asserts POST v1/workflows/wf-edit-1/validate?error_format=json and panel; new page test asserts id-less call and key 'new'",
+      "fix": {
+        "change": "Tests only: page-level Check click asserts validate endpoint, panel and outcome key on both pages",
+        "test": "EditWorkflowPage.integration.test.tsx 'wires Check ...'; NewWorkflowPage.test.tsx 'wires Check to the id-less validation'"
+      }
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 183,
+      "title": "No test covers history refresh after warned save",
+      "problem": "After a warned save the page calls refreshHistory(), which refetches via workflowsStore.getWorkflow(id, true) and merges only yaml_config_history into currentWorkflow. No test asserts the refresh happens, that it avoids fetchWorkflow's loading flip, or that the stale-id guard holds.",
+      "impact": "If refreshHistory is dropped or broken, the page stays open with stale yaml_config_history and the next Save sends that stale history in its payload (WorkflowForm reads it from the workflow prop).",
+      "recommendation": "After a warned save, assert getWorkflow was called with (id, true), that currentWorkflow.yaml_config_history equals the refetched history, that fetchWorkflow was not called, and that a getWorkflow response arriving after an id change is ignored.",
+      "status": "resolved",
+      "check_notes": "Tests assert getWorkflow(id, true), refreshed yaml_config_history, no fetchWorkflow, and a late refresh after leaving the page is ignored",
+      "fix": {
+        "change": "Tests only: warned-save history refresh uses getWorkflow(id, true), no fetchWorkflow, stale response ignored",
+        "test": "EditWorkflowPage.integration.test.tsx 'refreshes the history ...' and 'ignores a history refresh ...'"
+      }
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "critical",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 240,
+      "title": "Stale contract outcome survives the next save",
+      "problem": "EditWorkflowPage.submit and NewWorkflowPage.submit (line 358) call setIssues(null) but never clear the contractOutcomeStore slot. IssuesPanel merges the stored outcome's issues (deduplicated by id only) with the page issues. After a Check ('not-saved') or a warned save ('saved'), a later save rejected with non-contract errors, or a clean Save and Run that opens the popup, shows the old contract issues beside the new ones.",
+      "impact": "The panel shows contract findings from an earlier check under a wrong 'Changes not saved yet' or 'Saved with warnings' note, mixed with the new result. This leaves the spec requirement 'issues cleared at save start' only partly met.",
+      "recommendation": "Call clearOutcome(submittedId) next to setIssues(null) at the start of EditWorkflowPage.submit, and clearOutcome(NEW_OUTCOME_KEY) in NewWorkflowPage.submit; applyOutcome re-sets the slot for contract results. Add a test: Check with findings, then a save rejected with non-contract errors shows only the new errors.",
+      "status": "resolved",
+      "check_notes": "clearOutcome(submittedId) and clearOutcome(NEW_OUTCOME_KEY) now run at save start next to setIssues(null); tests cover Check then non-contract rejection on both pages",
+      "fix": {
+        "change": "submit clears the contract outcome slot (clearOutcome) at save start on both pages",
+        "test": "'drops the contract findings of an earlier Check when the next save starts' on both pages"
+      }
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/EditWorkflowPage.tsx",
+      "line": 258,
+      "title": "YAML-only summary toast counts UNVERIFIED as warnings",
+      "problem": "In YAML-only mode notifyContractSummary(parsed.issues, parsed.truncated) is given every parsed contract entry, UNVERIFIED included, on both pages (NewWorkflowPage.tsx line 387). Visual mode counts only WARNING and treats an UNVERIFIED-only save as clean. The unit tests pass objects with no outcome and the page tests use WARNING-only fixtures.",
+      "impact": "A YAML-only author whose save produced only UNVERIFIED entries is told 'Workflow saved with N warnings', contradicting the visual-mode rule and the spec decision to count WARNING entries only.",
+      "recommendation": "Pass only WARNING entries: notifyContractSummary(parsed.issues.filter((i) => i.outcome === 'WARNING'), parsed.truncated), on both pages. Add YAML-only tests with UNVERIFIED-only and mixed fixtures.",
+      "status": "resolved",
+      "check_notes": "notifyContractSummary receives only WARNING entries on both pages; WARNING-only and UNVERIFIED-only tests added",
+      "fix": {
+        "change": "YAML-only summary toast gets only WARNING entries on both pages",
+        "test": "'counts only WARNING entries' and UNVERIFIED-only tests on both pages"
+      }
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/EditorActions.tsx",
+      "line": 107,
+      "title": "Check button not locked during save or after create",
+      "problem": "The Check button is disabled only by isChecking. The spec says Check and Save are locked while either is in flight, but Check stays enabled during an in-flight save, after a warned save with unchanged values, and on NewWorkflowPage after the create succeeded (isCreated).",
+      "impact": "A Check response can overwrite the 'saved' outcome with a 'not-saved' note for content already saved. On the new page a Check after create runs against the id-less endpoint and writes an outcome under key 'new' for a workflow that now exists.",
+      "recommendation": "Expose isSaving (and isCreated on the new page) through the workflow context and disable Check on isChecking || isSaving || isCreated; do not write a 'not-saved' outcome for a response that lands while or after a save.",
+      "status": "resolved",
+      "check_notes": "isCheckLocked (isSaving on edit, isSaving||isCreated on new) flows page, form, editor, context to EditorActions and disables Check; tests added",
+      "fix": {
+        "change": "New isCheckLocked prop/context value (isSaving, plus isCreated on new page) disables Check",
+        "test": "EditorActions.test.tsx 'is disabled while a save is in flight or after a create'; NewWorkflowPage 'locks Check once the workflow has been created'"
+      }
+    },
+    {
+      "id": "CR-007",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/hooks/useContractCheck.ts",
+      "line": 87,
+      "title": "Check keeps resolved flags for returning issues",
+      "problem": "showIssues applies the outcome and sets issues but never calls clearAllResolvedFields; the save and restore paths do. The resolved set is keyed by issue id, so an issue the user edited (marked resolved) that the next Check reports again keeps its Resolved state. Whether backend ids are stable across calls was not confirmed.",
+      "impact": "A still-failing issue can show as Resolved with no node outline and be left out of the Issues button count after a Check. Reachability depends on stable ids and is unconfirmed.",
+      "recommendation": "Add 'clearAllResolvedFields' to the CheckForm pick and call formRef.current?.clearAllResolvedFields() before setIssues(parsed.issues) in showIssues. Add a test: edit a flagged field, click Check, the same issue id returns and is shown unresolved.",
+      "status": "resolved",
+      "check_notes": "showIssues calls clearAllResolvedFields before setIssues; ref type picks it; ordering test added",
+      "fix": {
+        "change": "useContractCheck calls clearAllResolvedFields before showing findings",
+        "test": "useContractCheck.test.ts 'clears resolved flags before it shows the findings'"
+      }
+    },
+    {
+      "id": "CR-008",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/nodes/common.ts",
+      "line": 80,
+      "title": "Node outline class has no render test",
+      "problem": "The node outline changed from a boolean hasError red outline to an error/warning class chosen from data.outline (getNodeOutlineClass, BaseNode, IteratorNode). The only outline test asserts n.data.outline on a mocked ReactFlow; no test references getNodeOutlineClass or the outline classes.",
+      "impact": "A regression that drops outline from BaseNode, breaks the warning-to-amber mapping, or lets the highlight win over an issue outline would ship unnoticed: contract-warning nodes would show no amber outline on the canvas.",
+      "recommendation": "Unit-test getNodeOutlineClass or render BaseNode and IteratorNode with outline 'warning', 'error', null with highlighted=true, and a diffStatus; assert the amber outline-aborted-secondary class, the red outline-failed-secondary class, the highlight class only when there is no outline, and no outline under diff chrome.",
+      "status": "resolved",
+      "check_notes": "nodeOutline.test.tsx covers getNodeOutlineClass and BaseNode; IteratorNode outline tests added; BaseNode uses getNodeOutlineClass",
+      "fix": {
+        "change": "Tests only: outline class mapping, BaseNode and IteratorNode render under error/warning/highlight/diff chrome",
+        "test": "nodes/__tests__/nodeOutline.test.tsx; IteratorNode.test.tsx 'issue outline'"
+      }
+    },
+    {
+      "id": "CR-009",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/useWorkflowHistoryRestore.ts",
+      "line": 108,
+      "title": "Restore contract rejection drops warnings and outcome",
+      "problem": "A contract rejection (HTTP 400) from the restore validation takes the catch path to applyWorkflowBackendValidationError. The rejection's warnings and coverage are dropped, input_schema.* paths are not collapsed, and no 'not-saved' outcome is written. The 2xx path and the save-reject path (showRejection) do record one. No test covers it.",
+      "impact": "A restore whose YAML is rejected in strict mode shows errors only, with no warnings, coverage or 'not saved yet' note, which falls short of the spec's restore requirement that contract findings go to the panel.",
+      "recommendation": "In the catch, when error.parsedError.details?.error_type === CONTRACT_ERROR_TYPE, run parseContractOutcome({ error: error.parsedError }); if it has issues, applyOutcome(p, 'not-saved', workflowId), setIssues(p.issues), openIssuesPanel() and return; otherwise fall through to applyWorkflowBackendValidationError. Add a test for a strict 400 on restore.",
+      "status": "resolved",
+      "check_notes": "catch routes contract_validation rejections with issues through applyOutcome 'not-saved', setIssues and openIssuesPanel; strict 400 restore test added",
+      "fix": {
+        "change": "Restore catch routes a contract_validation rejection to the panel as a not-saved outcome with warnings and coverage",
+        "test": "EditWorkflowPage.versionHistory.test.tsx 'routes a strict contract rejection from a restore ...'"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [
+    {
+      "kind": "spec",
+      "item": "Backend flag off: coverage, warnings_truncated and contract warnings optional and hidden when missing",
+      "status": "pass",
+      "notes": "parseContractOutcome omits absent fields; IssueGroups hides coverage and truncation lines"
+    },
+    {
+      "kind": "spec",
+      "item": "contract_validation added to errorTypes; outcome/config_section/config_path mapped",
+      "status": "pass",
+      "notes": "backendErrorHandler.ts and its tests"
+    },
+    {
+      "kind": "spec",
+      "item": "Unknown outcome treated as ERROR (fail closed)",
+      "status": "pass",
+      "notes": "toOutcome in contractProtocol.ts, with a parser test"
+    },
+    {
+      "kind": "spec",
+      "item": "error_format=json on visual-editor save, Check and restore; YAML-only keeps today's request",
+      "status": "pass",
+      "notes": "validateWorkflowConfig always sends json; pages use it only when visualEditorEnabled"
+    },
+    {
+      "kind": "spec",
+      "item": "Validate endpoints: /{id}/validate on edit and restore, /validate on new page without history",
+      "status": "pass",
+      "notes": "store validateWorkflowConfig strips yaml_config_history for the id-less call"
+    },
+    {
+      "kind": "spec",
+      "item": "One contractProtocol module used by errorTypes, workflowWarnings, store and registerFields",
+      "status": "pass",
+      "notes": "contractProtocol.ts imported by all listed consumers"
+    },
+    {
+      "kind": "spec",
+      "item": "ContractFields: assistant, custom, tool, sub-workflow show input/output/mode",
+      "status": "pass",
+      "notes": "contractFields=\"full\" on the four tabs"
+    },
+    {
+      "kind": "spec",
+      "item": "Transform shows input contract and mode only; output stays TransformForm config.output_schema",
+      "status": "pass",
+      "notes": "TransformTab contractFields=\"input\"; TransformTab.test.tsx"
+    },
+    {
+      "kind": "spec",
+      "item": "Mode dropdown: 'Use workflow default' first, key omitted when unset, then warn/strict",
+      "status": "pass",
+      "notes": "ContractFields MODE_OPTIONS; buildCommonStateConfig"
+    },
+    {
+      "kind": "spec",
+      "item": "Save wiring: three keys in getDefaultValues, Yup schema and buildCommonStateConfig",
+      "status": "pass",
+      "notes": "CommonStateFields.tsx, formUtils.ts and their tests"
+    },
+    {
+      "kind": "spec",
+      "item": "Workflow defaults in AdvancedConfigTab, ADVANCED_CONFIG_FIELDS and new-page change detection",
+      "status": "pass",
+      "notes": "AdvancedConfigTab Contracts accordion; visualEditorFieldRegistry.ts; compareWorkflowData.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "AC2 scope: no contract or mode control on conditional, switch, iterator",
+      "status": "pass",
+      "notes": "Meta tabs unchanged; MetaTabs.noContract.test.tsx"
+    },
+    {
+      "kind": "spec",
+      "item": "Registration Group A paths navigate to a control without error-type restriction",
+      "status": "pass",
+      "notes": "registerFields in CommonStateFields.tsx; contractRegistration.test.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Group B paths fall back to YAML via config_line",
+      "status": "pass",
+      "notes": "isContractYamlFallback in useWorkflowFieldIssues.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "output_schema entries not narrowed to contract-only",
+      "status": "pass",
+      "notes": "No error-type argument on the new registerFields; test present"
+    },
+    {
+      "kind": "spec",
+      "item": "Single issueSeverity table read by panel, Issues button, node outline and Check toast",
+      "status": "pass",
+      "notes": "issueSeverity.ts read by IssueGroups, EditorActions, WorkflowEditor, useWorkflowFieldIssues"
+    },
+    {
+      "kind": "spec",
+      "item": "Issues button counts unresolved issues; red/amber/grey by worst unresolved severity",
+      "status": "pass",
+      "notes": "EditorActions.tsx; EditorActions.test.tsx"
+    },
+    {
+      "kind": "spec",
+      "item": "Node outlines red/amber/none; Group B contract issue still outlines its node",
+      "status": "pass",
+      "notes": "getNodeOutline; WorkflowEditor.test.tsx (outline class itself untested, see CR-008)"
+    },
+    {
+      "kind": "spec",
+      "item": "Field highlight: highest-rank unresolved issue; warning prop on Input/Textarea; error wins",
+      "status": "pass",
+      "notes": "useWorkflowFieldIssues.ts, FieldController.tsx, Input.tsx, Textarea.tsx"
+    },
+    {
+      "kind": "spec",
+      "item": "Re-render fix: tempIssues refreshes when issues change, not only length",
+      "status": "pass",
+      "notes": "WorkflowEditor.tsx effect deps"
+    },
+    {
+      "kind": "spec",
+      "item": "Issues panel: container plus IssueGroups in an error boundary; Unverified collapsed",
+      "status": "pass",
+      "notes": "IssuesPanel.tsx, IssueGroups.tsx and tests"
+    },
+    {
+      "kind": "spec",
+      "item": "Coverage summary, 'Contracts not analysed', cap note, 'N more warnings not shown'",
+      "status": "pass",
+      "notes": "IssueGroups.tsx Coverage component and truncated line"
+    },
+    {
+      "kind": "spec",
+      "item": "Context note: saved banner, created wording, not saved yet",
+      "status": "pass",
+      "notes": "IssuesPanel.tsx CONTEXT_NOTES"
+    },
+    {
+      "kind": "spec",
+      "item": "Strict (AC19): workflow-level mode line and 'node strict' tag from meta.strict_source",
+      "status": "pass",
+      "notes": "IssuesPanel.tsx STRICT_LINE; IssueGroups.tsx tag"
+    },
+    {
+      "kind": "spec",
+      "item": "Go to Issue keeps its flow and falls back to YAML line",
+      "status": "pass",
+      "notes": "goToField ends in openYamlTab; contractRegistration.test.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "contractOutcomeStore: one slot keyed by id or 'new'; panel shows only the matching key",
+      "status": "pass",
+      "notes": "store/contractOutcome.ts; IssuesPanel.tsx key comparison"
+    },
+    {
+      "kind": "spec",
+      "item": "Hand-off ordering: created-id before replace, clear on leave only if own key",
+      "status": "pass",
+      "notes": "NewWorkflowPage submit; EditWorkflowPage mount/unmount effects"
+    },
+    {
+      "kind": "spec",
+      "item": "Request token for Check and restore only; stale or config-changed responses dropped",
+      "status": "pass",
+      "notes": "nextRequestToken/isTokenCurrent in useContractCheck.ts and useWorkflowHistoryRestore.ts"
+    },
+    {
+      "kind": "spec",
+      "item": "Save responses never dropped; late response after unmount shows nothing",
+      "status": "pass",
+      "notes": "isCurrent()/mountedRef guards on both pages; unmount tests"
+    },
+    {
+      "kind": "spec",
+      "item": "Save contract: resetBaseline on 'stayed', blockTransition on stay paths, Save/Check locked in flight",
+      "status": "partial",
+      "notes": "Save is locked while saving or checking; Check is not locked while saving (CR-006)"
+    },
+    {
+      "kind": "spec",
+      "item": "Edit page: issues cleared at save start for the in-flight state and set from the response",
+      "status": "partial",
+      "notes": "submit calls setIssues(null) but not clearOutcome, so a stale outcome stays in the panel (CR-004)"
+    },
+    {
+      "kind": "spec",
+      "item": "Edit page: clean or UNVERIFIED-only save toasts and navigates; Save and Run opens popup",
+      "status": "pass",
+      "notes": "warningCount === 0 branch; test 'treats an UNVERIFIED-only save as clean'"
+    },
+    {
+      "kind": "spec",
+      "item": "Edit page: WARNING save stays, baseline reset, panel, one toast, Done / Saved / Run anyway header",
+      "status": "pass",
+      "notes": "finishWarnedSave, EditWorkflowHeaderActions; integration tests"
+    },
+    {
+      "kind": "spec",
+      "item": "Edit page: rejection opens panel with every group, no banner, no run",
+      "status": "pass",
+      "notes": "showRejection applies 'rejected' context; test present"
+    },
+    {
+      "kind": "spec",
+      "item": "New page: WARNING create hands the outcome to the edit page; locked after any create",
+      "status": "pass",
+      "notes": "NewWorkflowPage submit hasWarnings branch; createdRef/isCreated"
+    },
+    {
+      "kind": "spec",
+      "item": "New page: contract or non-contract rejection shows only the current result",
+      "status": "partial",
+      "notes": "A 'not-saved' outcome left by Check stays in the store and merges into the panel (CR-004)"
+    },
+    {
+      "kind": "spec",
+      "item": "Toasts: contract entries out of notifyAboutWarnings; both integration kinds matched",
+      "status": "pass",
+      "notes": "workflowWarnings.ts and tests"
+    },
+    {
+      "kind": "spec",
+      "item": "YAML-only: 2xx with contract warnings navigates with one summary toast",
+      "status": "partial",
+      "notes": "UNVERIFIED-only entries are counted as warnings in the toast, unlike visual mode (CR-005)"
+    },
+    {
+      "kind": "spec",
+      "item": "Check: button on both pages, flush via saveCurrentTab, 30 s timeout, abort on new Check/unmount",
+      "status": "pass",
+      "notes": "useContractCheck.ts, EditorActions Check button"
+    },
+    {
+      "kind": "spec",
+      "item": "Check results and failures: panel, toasts, whitelisted 400 to panel, silent on abort",
+      "status": "pass",
+      "notes": "useContractCheck showResult/showFailure and tests"
+    },
+    {
+      "kind": "spec",
+      "item": "Restore: contract warnings from /{id}/validate go to the panel as not saved yet",
+      "status": "partial",
+      "notes": "2xx path done; a strict contract rejection drops warnings and coverage and stores no outcome (CR-009)"
+    }
+  ],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "17 subjects in the review range all match the documented EPMCDME-XXXX: Capital sentence format (non-zero ticket, capitalised first word, no trailing period)"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard, not a gap"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "checked non-test changed files against security-patterns.md: no dangerouslySetInnerHTML/innerHTML, no window.open or location redirects built from input, no postMessage, no VITE_/_env_ config reads, no added nosonar suppressions; no concrete security issue found"
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "All four lenses and the standards audit ran, but the diff is oversized (8619 lines), so confidence is low and only lens-flagged hot spots were read in source. Nine blocking findings survive (one stale-outcome defect, a YAML-only toast miscount, a restore-rejection gap, two Check-button defects, four test gaps); about 23 lens candidates were dismissed as handled, theoretical or below the emission floor, and nothing was deferred, so no deferred backlog was written. The fix pack is at code-review-fix-pack.local.md.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

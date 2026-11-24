@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { forwardRef, useImperativeHandle, createRef } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -21,6 +21,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 
 import AssistantTab, { AssistantTabRef } from '../AssistantTab'
+import {
+  enableWorkflowContracts,
+  fillContract,
+  INPUT_CONTRACT_PLACEHOLDER,
+  INPUT_SCHEMA,
+  modeLabel,
+  OUTPUT_CONTRACT_PLACEHOLDER,
+  OUTPUT_SCHEMA,
+} from './contractTestUtils'
 
 vi.mock('../../hooks/useWorkflowContext', () => ({
   useWorkflowContext: vi.fn().mockReturnValue({
@@ -84,6 +93,7 @@ const defaultProps = {
 
 describe('AssistantTab', () => {
   beforeEach(() => {
+    enableWorkflowContracts()
     vi.clearAllMocks()
   })
 
@@ -120,5 +130,40 @@ describe('AssistantTab', () => {
         }),
       })
     )
+  })
+
+  it('saves and reloads input_schema, output_schema and validation (AC1)', async () => {
+    const user = userEvent.setup()
+    const ref = createRef<AssistantTabRef>()
+    render(<AssistantTab {...defaultProps} ref={ref} />)
+
+    await fillContract(user, { input: INPUT_SCHEMA, output: OUTPUT_SCHEMA, mode: 'strict' })
+    expect(await ref.current!.save()).toBe(true)
+
+    const saved = defaultProps.onConfigChange.mock.calls[0][0].state.data
+    expect(saved).toEqual(
+      expect.objectContaining({
+        input_schema: INPUT_SCHEMA,
+        output_schema: OUTPUT_SCHEMA,
+        save_validation: 'strict',
+      })
+    )
+
+    cleanup()
+    render(<AssistantTab {...defaultProps} config={{ states: [saved] }} />)
+    expect(screen.getByPlaceholderText(INPUT_CONTRACT_PLACEHOLDER)).toHaveValue(INPUT_SCHEMA)
+    expect(screen.getByPlaceholderText(OUTPUT_CONTRACT_PLACEHOLDER)).toHaveValue(OUTPUT_SCHEMA)
+    expect(modeLabel()).toHaveTextContent('strict')
+  })
+
+  it('omits the validation key when the mode is unset', async () => {
+    const ref = createRef<AssistantTabRef>()
+    render(<AssistantTab {...defaultProps} ref={ref} />)
+
+    expect(await ref.current!.save()).toBe(true)
+
+    const saved = defaultProps.onConfigChange.mock.calls[0][0].state.data
+    expect(saved.save_validation).toBeUndefined()
+    expect(modeLabel()).toHaveTextContent('Use workflow default')
   })
 })

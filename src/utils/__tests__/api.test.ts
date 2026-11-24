@@ -492,3 +492,33 @@ describe('artifactFileName', () => {
     }
   )
 })
+
+describe('formatErrorMessage — literal text', () => {
+  it('escapes message, details and help but keeps the layout tags', () => {
+    const result = formatErrorMessage(
+      {
+        error: {
+          message: 'Bad <b>name</b>',
+          details: 'a & b <img src=x onerror=alert(1)>',
+          help: 'use "quotes"',
+        },
+      },
+      true,
+      true
+    )
+
+    expect(result).toBe(
+      'Bad &lt;b&gt;name&lt;/b&gt;<br> a &amp; b &lt;img src=x onerror=alert(1)&gt;<br><i>use &quot;quotes&quot;</i>'
+    )
+  })
+
+  it('does not strip a literal <br> from the details', () => {
+    expect(
+      formatErrorMessage({ error: { message: 'Error', details: 'one<br>two' } }, true, true)
+    ).toBe('Error<br> one&lt;br&gt;two')
+  })
+
+  it('keeps the default behaviour without the flag', () => {
+    expect(formatErrorMessage({ error: { message: '<b>x</b>' } })).toBe('<b>x</b>')
+  })
+})

@@ -23,6 +23,8 @@ import { cn } from '@/utils/utils'
 interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value'> {
   name?: string
   error?: string
+  /** Non-blocking amber message; ignored while `error` is set. */
+  warning?: string
   label?: string
   sideLabel?: string
   hint?: string
@@ -54,6 +56,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     {
       name,
       error,
+      warning,
       label,
       sideLabel,
       hint,
@@ -98,15 +101,15 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const inputType = getInputType()
 
-    const callerDescribedBy = (rest as { 'aria-describedby'?: string })['aria-describedby']
-
     return (
       <div className={cn('flex flex-col gap-y-2 w-full min-w-0 input-field-wrapper', rootClass)}>
         <FieldAnnouncer
           id={inputId}
           error={error}
-          describedBy={callerDescribedBy}
+          warning={warning}
+          describedBy={rest['aria-describedby']}
           errorClassName={cn('text-sm text-failed-secondary input-error-message', errorClassName)}
+          warningClassName="input-warning-message"
         >
           {({ ariaInvalid, ariaDescribedBy }) => (
             <div
@@ -142,7 +145,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 className={cn(
                   'flex rounded-lg min-h-8 max-h-8 border bg-surface-base-content input-block-container transition',
                   error && 'border-failed-secondary input-block-error',
+                  !error && warning && 'border-aborted-secondary input-block-warning',
                   !error &&
+                    !warning &&
                     'border-border-primary hover:border-border-secondary focus-within:border-border-secondary',
                   disabled && 'hover:border-border-primary opacity-60',
                   filled && 'bg-border-primary',

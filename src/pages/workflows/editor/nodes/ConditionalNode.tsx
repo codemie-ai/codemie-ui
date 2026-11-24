@@ -38,7 +38,7 @@ export const ConditionalNode = ({ data, selected, id }: CommonNodeProps) => {
     <BaseNode
       selected={selected}
       isConnected={isConnected}
-      hasError={data.hasError}
+      outline={data.outline}
       status={data.status}
       active={data.active}
     >

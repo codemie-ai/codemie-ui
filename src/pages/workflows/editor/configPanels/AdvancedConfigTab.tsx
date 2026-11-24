@@ -22,21 +22,34 @@ import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 
 import Input from '@/components/form/Input'
+import Select from '@/components/form/Select'
 import Switch from '@/components/form/Switch'
 import TooltipButton from '@/components/TooltipButton'
-import { useSubWorkflowEnabled } from '@/hooks/useFeatureFlags'
+import { useSubWorkflowEnabled, useWorkflowContractsEnabled } from '@/hooks/useFeatureFlags'
 import { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 import { cleanObject } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
 import { DEFAULT_RETRY_MAX_ATTEMPTS } from '@/utils/workflowEditor/constants'
+import { VALIDATION_MODES } from '@/utils/workflowEditor/helpers/contractProtocol'
 
 import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import ConfigAccordion from './components/ConfigAccordion'
 import FieldController from './components/FieldController'
 import TabFooter from './components/TabFooter'
+import {
+  buildModeOptions,
+  REQUIRE_INPUT_CONTRACTS_HINT,
+  SKIP_WHEN_CONTRACTS_OFF,
+  WORKFLOW_MODE_HINT,
+  WORKFLOW_MODE_SELECT_ID,
+} from './utils/contractModes'
 
 const MSG_POSITIVE = 'Must be a positive number'
 const MSG_INTEGER = 'Must be an integer'
+
+const DEFAULT_MODE_LABEL = 'Default (warn)'
+
+const MODE_OPTIONS = buildModeOptions(DEFAULT_MODE_LABEL)
 
 const transformToInteger = (_value: any, originalValue: any) => {
   if (originalValue === '' || originalValue == null) return null
@@ -50,6 +63,15 @@ const transformToNumber = (_value: any, originalValue: any) => {
 
 const schema = yup.object().shape({
   enable_summarization_node: yup.boolean().optional(),
+  save_validation: yup
+    .string()
+    .oneOf(['', ...VALIDATION_MODES])
+    .optional()
+    .when('$contractsEnabled', SKIP_WHEN_CONTRACTS_OFF),
+  require_input_contracts: yup
+    .boolean()
+    .optional()
+    .when('$contractsEnabled', SKIP_WHEN_CONTRACTS_OFF),
   tokens_limit_before_summarization: yup
     .number()
     .nullable()
@@ -166,6 +188,9 @@ const getDefaultValues = (
     max_concurrency: config?.max_concurrency ?? workflow?.max_concurrency ?? undefined,
     recursion_limit: config?.recursion_limit ?? workflow?.recursion_limit ?? undefined,
     max_nesting_level: config?.max_nesting_level ?? workflow?.max_nesting_level ?? undefined,
+    save_validation: config?.save_validation ?? workflow?.save_validation ?? undefined,
+    require_input_contracts:
+      config?.require_input_contracts ?? workflow?.require_input_contracts ?? false,
   }
 
   // Only include retry_policy if it has at least one non-null value
@@ -202,24 +227,40 @@ const cleanFormValues = (values: any) => {
     delete cleaned.retry_policy
   }
 
+  // An off switch means "not required": the key is omitted rather than written as false
+  if (!cleaned.require_input_contracts) {
+    delete cleaned.require_input_contracts
+  }
+
   return cleaned
 }
+
+// updateAdvancedConfig keeps the old value of a key that is absent from the update, so the
+// two contract defaults are always sent, as undefined when unset, to be able to clear them.
+const withContractDefaults = (data: Partial<WorkflowConfiguration>) => ({
+  ...data,
+  save_validation: data.save_validation,
+  require_input_contracts: data.require_input_contracts,
+})
 
 const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProps>(
   ({ config, workflow, onConfigChange, onClose }, ref) => {
     const defaultValuesRef = useRef(getDefaultValues(config, workflow))
     const { activeIssue } = useWorkflowContext()
+    const [contractsEnabled] = useWorkflowContractsEnabled()
 
     const { control, reset, trigger, getValues } = useForm<Partial<WorkflowConfiguration>>({
       resolver: yupResolver(schema) as any,
       mode: 'onChange',
       defaultValues: defaultValuesRef.current,
+      context: { contractsEnabled },
     })
 
     const [summarizationExpanded, setSummarizationExpanded] = useState(true)
     const [performanceExpanded, setPerformanceExpanded] = useState(false)
     const [retryPolicyExpanded, setRetryPolicyExpanded] = useState(false)
     const [subWorkflowExpanded, setSubWorkflowExpanded] = useState(false)
+    const [contractsExpanded, setContractsExpanded] = useState(false)
     const [isSubWorkflowEnabled, isSubWorkflowLoaded] = useSubWorkflowEnabled()
 
     const activeIssueAccordion = useMemo(() => {
@@ -242,6 +283,9 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
       if (path === 'max_nesting_level') {
         return 'subWorkflow'
       }
+      if (path === 'save_validation' || path === 'require_input_contracts') {
+        return 'contracts'
+      }
       return null
     }, [activeIssue?.path])
 
@@ -254,6 +298,8 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
         setRetryPolicyExpanded(true)
       } else if (activeIssueAccordion === 'subWorkflow' && !subWorkflowExpanded) {
         setSubWorkflowExpanded(true)
+      } else if (activeIssueAccordion === 'contracts' && !contractsExpanded) {
+        setContractsExpanded(true)
       }
     }, [
       activeIssueAccordion,
@@ -261,6 +307,7 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
       performanceExpanded,
       retryPolicyExpanded,
       subWorkflowExpanded,
+      contractsExpanded,
     ])
 
     const saveData = async (): Promise<boolean> => {
@@ -268,7 +315,7 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
       if (isValid) {
         const data = cleanFormValues(schema.cast(getValues()) as Partial<WorkflowConfiguration>)
         reset(data)
-        onConfigChange(data)
+        onConfigChange(withContractDefaults(data))
         return true
       }
       return false
@@ -504,6 +551,50 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
               />
             </div>
           </ConfigAccordion>
+
+          {contractsEnabled && (
+            <ConfigAccordion
+              title="Contracts"
+              expanded={contractsExpanded}
+              onExpandedChange={setContractsExpanded}
+            >
+              <div className="flex flex-col gap-4">
+                <FieldController
+                  name="save_validation"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Select
+                      id={WORKFLOW_MODE_SELECT_ID}
+                      label="Save validation"
+                      hint={WORKFLOW_MODE_HINT}
+                      value={field.value || null}
+                      placeholder={DEFAULT_MODE_LABEL}
+                      inputRef={field.ref}
+                      error={fieldState.error?.message}
+                      options={MODE_OPTIONS}
+                      onChangeValue={(value) => field.onChange(value ?? '')}
+                    />
+                  )}
+                />
+
+                <FieldController
+                  name="require_input_contracts"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Switch
+                      id="require_input_contracts"
+                      label="Require input contracts"
+                      hint={REQUIRE_INPUT_CONTRACTS_HINT}
+                      value={field.value || false}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      error={fieldState.error?.message}
+                      ref={field.ref}
+                    />
+                  )}
+                />
+              </div>
+            </ConfigAccordion>
+          )}
 
           {isSubWorkflowEnabled && isSubWorkflowLoaded && (
             <ConfigAccordion

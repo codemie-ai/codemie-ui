@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createRef, forwardRef, useEffect, useImperativeHandle } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -21,6 +21,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { CustomNodeType, WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 
 import CustomTab, { CustomTabRef } from '../CustomTab'
+import {
+  enableWorkflowContracts,
+  fillContract,
+  INPUT_CONTRACT_PLACEHOLDER,
+  INPUT_SCHEMA,
+  modeLabel,
+  OUTPUT_CONTRACT_PLACEHOLDER,
+  OUTPUT_SCHEMA,
+} from './contractTestUtils'
 
 vi.mock('../../hooks/useWorkflowContext', () => ({
   useWorkflowContext: vi.fn().mockReturnValue({
@@ -87,7 +96,7 @@ const defaultProps = {
   onDelete: vi.fn(),
 }
 
-describe('CustomTab — Task/Output Schema visibility', () => {
+describe('CustomTab — Task/Output contract visibility', () => {
   let user: ReturnType<typeof userEvent.setup>
 
   beforeEach(() => {
@@ -95,12 +104,10 @@ describe('CustomTab — Task/Output Schema visibility', () => {
     vi.clearAllMocks()
   })
 
-  it('shows Output Schema hidden and Task visible for state_processor', () => {
+  it('shows Output contract and Task for state_processor', () => {
     render(<CustomTab {...defaultProps} config={buildConfig(CustomNodeType.STATE_PROCESSOR)} />)
     expect(screen.getByPlaceholderText('Describe the task for this node')).toBeInTheDocument()
-    expect(
-      screen.queryByPlaceholderText('Expected output format (JSON Schema)')
-    ).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Expected output format (JSON Schema)')).toBeInTheDocument()
   })
 
   it('hides Task for generate_documents_tree', () => {
@@ -133,11 +140,9 @@ describe('CustomTab — Task/Output Schema visibility', () => {
     CustomNodeType.RESULT_FINALIZER,
     CustomNodeType.SUPERVISOR,
     CustomNodeType.SUMMARIZE_CONVERSATION,
-  ])('hides Output Schema for %s', (customNodeType) => {
+  ])('shows Output contract for %s', (customNodeType) => {
     render(<CustomTab {...defaultProps} config={buildConfig(customNodeType)} />)
-    expect(
-      screen.queryByPlaceholderText('Expected output format (JSON Schema)')
-    ).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Expected output format (JSON Schema)')).toBeInTheDocument()
   })
 
   it('hides Task when the Custom node has no custom_node_id yet', () => {
@@ -169,7 +174,7 @@ describe('CustomTab — Task/Output Schema visibility', () => {
     expect(screen.getByPlaceholderText('Describe the task for this node')).toBeInTheDocument()
   })
 
-  it('preserves stored (but hidden) task/output_schema through edit -> save -> reopen', async () => {
+  it('preserves stored task/output_schema through edit -> save -> reopen', async () => {
     const configWithStoredValues: WorkflowConfiguration = {
       states: [
         {
@@ -230,5 +235,58 @@ describe('CustomTab — Task/Output Schema visibility', () => {
         }),
       })
     )
+  })
+})
+
+describe('CustomTab — contract fields', () => {
+  beforeEach(() => {
+    enableWorkflowContracts()
+    vi.clearAllMocks()
+  })
+
+  it('saves and reloads input_schema, output_schema and validation (AC1)', async () => {
+    const user = userEvent.setup()
+    const ref = createRef<CustomTabRef>()
+    render(
+      <CustomTab {...defaultProps} config={buildConfig(CustomNodeType.STATE_PROCESSOR)} ref={ref} />
+    )
+
+    await fillContract(user, { input: INPUT_SCHEMA, output: OUTPUT_SCHEMA, mode: 'strict' })
+    expect(await ref.current!.save()).toBe(true)
+
+    const saved = defaultProps.onConfigChange.mock.calls[0][0].state.data
+    expect(saved).toEqual(
+      expect.objectContaining({
+        input_schema: INPUT_SCHEMA,
+        output_schema: OUTPUT_SCHEMA,
+        save_validation: 'strict',
+      })
+    )
+
+    cleanup()
+    render(
+      <CustomTab
+        {...defaultProps}
+        config={{
+          ...buildConfig(CustomNodeType.STATE_PROCESSOR),
+          states: [{ ...saved, custom_node_id: 'custom-1' }],
+        }}
+      />
+    )
+    expect(screen.getByPlaceholderText(INPUT_CONTRACT_PLACEHOLDER)).toHaveValue(INPUT_SCHEMA)
+    expect(screen.getByPlaceholderText(OUTPUT_CONTRACT_PLACEHOLDER)).toHaveValue(OUTPUT_SCHEMA)
+    expect(modeLabel()).toHaveTextContent('strict')
+  })
+
+  it('omits the validation key when the mode is unset', async () => {
+    const ref = createRef<CustomTabRef>()
+    render(
+      <CustomTab {...defaultProps} config={buildConfig(CustomNodeType.STATE_PROCESSOR)} ref={ref} />
+    )
+
+    expect(await ref.current!.save()).toBe(true)
+
+    const saved = defaultProps.onConfigChange.mock.calls[0][0].state.data
+    expect(saved.save_validation).toBeUndefined()
   })
 })

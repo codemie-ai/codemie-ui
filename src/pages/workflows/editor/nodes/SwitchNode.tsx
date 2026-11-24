@@ -40,7 +40,7 @@ export const SwitchNode = ({ id, data, selected }: CommonNodeProps) => {
     <BaseNode
       selected={selected}
       isConnected={isConnected}
-      hasError={data.hasError}
+      outline={data.outline}
       status={data.status}
       active={data.active}
     >
