@@ -28,6 +28,7 @@ vi.mock('ace-builds/src-noconflict/mode-yaml', () => ({}))
 vi.mock('ace-builds/src-noconflict/mode-json', () => ({}))
 vi.mock('ace-builds/src-noconflict/theme-tomorrow_night', () => ({}))
 vi.mock('ace-builds/src-noconflict/theme-tomorrow', () => ({}))
+vi.mock('ace-builds/src-noconflict/ext-language_tools', () => ({}))
 vi.mock('@/hooks/useTheme', () => ({ useTheme: () => ({ isDark: false }) }))
 
 const Pair = ({ initial }: { initial: string }) => {

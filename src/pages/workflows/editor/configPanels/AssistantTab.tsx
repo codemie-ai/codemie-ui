@@ -14,6 +14,7 @@
 //
 
 import { yupResolver } from '@hookform/resolvers/yup'
+import isEqual from 'lodash/isEqual'
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from 'react'
 import { useForm } from 'react-hook-form'
 import * as Yup from 'yup'
@@ -21,10 +22,15 @@ import * as Yup from 'yup'
 import Button from '@/components/Button'
 import Input from '@/components/form/Input'
 import Switch from '@/components/form/Switch'
+import { useHeadroomEnabled } from '@/hooks/useFeatureFlags'
 import { useNewIntegrationPopup } from '@/hooks/useNewIntegrationPopup'
 import FormGenAIPopup from '@/pages/assistants/components/AssistantForm/components/FormGenAIPopup'
 import NewIntegrationPopup from '@/pages/integrations/components/NewIntegrationPopup'
-import { AssistantAIGeneratedFields } from '@/types/entity/assistant'
+import {
+  AssistantAIGeneratedFields,
+  HeadroomOverride,
+  HeadroomScope,
+} from '@/types/entity/assistant'
 import { ActorTypes, NodeTypes } from '@/types/workflowEditor/base'
 import {
   AssistantConfiguration,
@@ -33,6 +39,7 @@ import {
 } from '@/types/workflowEditor/configuration'
 import { withoutDefaultTools } from '@/utils/defaultDatasourceTools'
 import { ConfigurationUpdate } from '@/utils/workflowEditor'
+import { buildHeadroom } from '@/utils/workflowEditor/headroom/headroomYaml'
 import { generateActorID, shouldReuseActorId } from '@/utils/workflowEditor/helpers/states'
 import { getToolsFromToolkits } from '@/utils/workflows'
 
@@ -45,6 +52,7 @@ import VirtualAssistantForm, { VirtualAssistantFormRef } from './components/Virt
 import { buildCommonStateConfig } from './utils/formUtils'
 import { registerFields } from '../utils/visualEditorFieldRegistry'
 import FieldController from './components/FieldController'
+import HeadroomPanel from './HeadroomPanel'
 import { useWorkflowContext } from '../hooks/useWorkflowContext'
 
 registerFields(['limit_tool_output_tokens'], NodeTypes.ASSISTANT)
@@ -144,6 +152,12 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
       },
     })
 
+    const isHeadroomEnabled = useHeadroomEnabled()
+    const initialHeadroomRef = useRef<HeadroomOverride | undefined>(assistantActorConfig?.headroom)
+    const [headroom, setHeadroom] = useState<HeadroomOverride | undefined>(
+      assistantActorConfig?.headroom
+    )
+
     const commonStateFieldsRef = useRef<CommonStateFieldsRef>(null)
     const virtualAssistantFormRef = useRef<VirtualAssistantFormRef>(null)
     const [showGenAIPopup, setShowGenAIPopup] = useState(false)
@@ -162,6 +176,8 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
       if (!assistantActorConfig) return
 
       setAssistantActorConfig(assistantActorConfig)
+      setHeadroom(assistantActorConfig.headroom)
+      initialHeadroomRef.current = assistantActorConfig.headroom
       reset({
         limit_tool_output_tokens: assistantActorConfig.limit_tool_output_tokens,
       })
@@ -242,6 +258,13 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
         }
       }
 
+      // Without the flag, keep whatever block the YAML already carries (never silently drop it).
+      finalAssistantConfig = {
+        ...finalAssistantConfig,
+        headroom: buildHeadroom(isHeadroomEnabled ? headroom : assistantActorConfig?.headroom),
+      }
+      initialHeadroomRef.current = headroom
+
       const updatedStateConfig: AssistantStateConfiguration = {
         ...buildCommonStateConfig(commonValues, state),
         assistant_id: finalAssistantConfig?.id,
@@ -282,7 +305,8 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
             virtualAssistantDirty ||
             virtualAssistantToggleChanged ||
             assistantChanged ||
-            isLimitTokensDirty
+            isLimitTokensDirty ||
+            (isHeadroomEnabled && !isEqual(initialHeadroomRef.current, headroom))
           )
         },
         save: saveData,
@@ -291,6 +315,8 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
         useVirtualAssistant,
         assistantActorConfig?.assistant_id,
         isLimitTokensDirty,
+        headroom,
+        isHeadroomEnabled,
         state,
         stateId,
         config,
@@ -384,6 +410,17 @@ const AssistantTab = forwardRef<AssistantTabRef, AssistantTabProps>(
               />
             </div>
           </ConfigAccordion>
+
+          {isHeadroomEnabled && (
+            <ConfigAccordion title="Context compression (Headroom)" defaultExpanded={false}>
+              <HeadroomPanel
+                scope={HeadroomScope.Node}
+                value={headroom}
+                inherited={config.headroom}
+                onChange={setHeadroom}
+              />
+            </ConfigAccordion>
+          )}
 
           <CommonStateFields ref={commonStateFieldsRef} state={state} contractFields="full" />
         </form>

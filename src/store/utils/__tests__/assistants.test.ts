@@ -16,8 +16,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { AssistantType } from '@/constants/assistants'
-import { transformAssistantToCreateDTO } from '@/store/utils/assistants'
-import { Assistant, ContextType, HedgingConfig } from '@/types/entity/assistant'
+import { extractHeadroomFieldErrors, transformAssistantToCreateDTO } from '@/store/utils/assistants'
+import { Assistant, ContextType, HeadroomConfig, HedgingConfig } from '@/types/entity/assistant'
 
 const baseAssistant: Partial<Assistant> = {
   name: 'Test Assistant',
@@ -324,6 +324,67 @@ describe('transformAssistantToCreateDTO', () => {
       } as Assistant)
 
       expect(dto.effort).toBeUndefined()
+    })
+  })
+
+  describe('headroom_config', () => {
+    const cfg: HeadroomConfig = {
+      enabled: true,
+      compress_user_messages: false,
+      compress_tool_outputs: true,
+      strategy: 'lossless',
+    }
+
+    it('sends the whole object when present', () => {
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        headroom_config: cfg,
+      } as Assistant)
+      expect(dto.headroom_config).toEqual(cfg)
+    })
+
+    it('sends null when undefined', () => {
+      const dto = transformAssistantToCreateDTO(baseAssistant as Assistant)
+      expect(dto.headroom_config).toBeNull()
+    })
+
+    it('sends enabled:false object unchanged', () => {
+      const off = { ...cfg, enabled: false }
+      const dto = transformAssistantToCreateDTO({
+        ...baseAssistant,
+        headroom_config: off,
+      } as Assistant)
+      expect(dto.headroom_config).toEqual(off)
+    })
+  })
+
+  describe('extractHeadroomFieldErrors', () => {
+    it('maps FastAPI-style loc arrays', () => {
+      const err = {
+        parsedError: {
+          message: 'Validation error',
+          details: [{ loc: ['body', 'headroom_config', 'strategy'], msg: 'bad strategy' }],
+        },
+      }
+      expect(extractHeadroomFieldErrors(err)).toEqual({
+        'headroom_config.strategy': 'bad strategy',
+      })
+    })
+
+    it('maps a details string mentioning the field', () => {
+      const err = {
+        parsedError: { message: 'Invalid', details: 'headroom_config.strategy: unsupported' },
+      }
+      expect(extractHeadroomFieldErrors(err)).toEqual({
+        'headroom_config.strategy': 'headroom_config.strategy: unsupported',
+      })
+    })
+
+    it('returns undefined for unrelated errors', () => {
+      expect(
+        extractHeadroomFieldErrors({ parsedError: { message: 'x', details: 'other' } })
+      ).toBeUndefined()
+      expect(extractHeadroomFieldErrors(new Error('x'))).toBeUndefined()
     })
   })
 })

@@ -1,0 +1,137 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved the check round: CR-002..CR-006 resolved and verified; CR-001 and CR-007 waived by the user as accepted exceptions (wont-fix)."
+  },
+  "gates": [
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved the check round: CR-002..CR-006 resolved and verified; CR-001 and CR-007 waived by the user as accepted exceptions (wont-fix)."
+    }
+  ],
+  "reviewed_head": "0f19ee461ffbfe475ab7147ac416fc1b85a82271",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "CR-002..CR-006 are resolved (tests added for forceOpen, analytics gate/wiring, chat Tokens saved row and AssistantTab headroom save; HeadroomPanel null guard fixed). CR-001 and CR-007 stay unresolved: the mapped proof is only a user-recorded accepted exception (wont-fix) decision, which does not match their code/evidence kinds and no source or evidence change addresses them, so they need an explicit waiver by the caller.",
+  "confidence": "low",
+  "check_confidence": "medium",
+  "risk_flags": [
+    "breaking-change"
+  ],
+  "open": 0,
+  "closed": {
+    "fixed": 5,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 2
+  },
+  "findings": [
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/components/Accordion/Accordion.tsx",
+      "line": 39,
+      "title": "forceOpen on Accordion has no test",
+      "problem": "The new forceOpen prop opens the accordion via useEffect and is used at AssistantForm (forceOpen={!!errors.headroom_config}). No test sets forceOpen; the integration test for a server strategy error clicks the Context accordion open itself before saving, so it cannot observe the behavior.",
+      "impact": "If the effect is removed or not wired, the server strategy error stays hidden inside a collapsed accordion and the user sees only a toast, with every test still passing.",
+      "recommendation": "In Accordion.test.tsx render with defaultOpen={false} forceOpen={false}, assert content hidden, rerender with forceOpen={true}, assert visible. In HeadroomSection.integration.test do not click the Context accordion before Save in the server-error case.",
+      "status": "resolved",
+      "check_notes": "Accordion.test.tsx now rerenders defaultOpen=false forceOpen false->true and asserts aria-expanded and grid-rows change; Accordion.tsx effect at line 48 confirmed; integration test no longer opens Context accordion before Save."
+    },
+    {
+      "id": "CR-003",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/analytics/components/InsightsTab.tsx",
+      "line": 152,
+      "title": "Headroom analytics gate and wiring untested",
+      "problem": "The Context Compression section is gated by the HEADROOM flag and renders HeadroomAnalyticsSection, which calls v1/analytics/headroom/*. InsightsTab.test.tsx mocks useFeatureFlag with one return value for every flag and asserts only the routing section; no test covers HeadroomAnalyticsSection or its widget props.",
+      "impact": "Gating on the wrong flag, or removing the gate, would make requests to a 404-ing endpoint with the flag off and go unnoticed; the endpoint and metric wiring is unverified.",
+      "recommendation": "In InsightsTab.test.tsx mock useFeatureFlag per flag name, mock HeadroomAnalyticsSection with a testid, assert absent when only the routing flag is on and present when only the headroom flag is on. Add a HeadroomAnalyticsSection test asserting HEADROOM_SUMMARY, the timeseries labelField/series and HEADROOM_BY_STRATEGY table wiring.",
+      "status": "resolved",
+      "check_notes": "InsightsTab.test.tsx mocks useFeatureFlag per flag name and asserts the Headroom section shown only for FEATURE_FLAGS.HEADROOM; new HeadroomAnalyticsSection.test.tsx asserts summary, timeseries and strategy-table wiring. InsightsTab.tsx gate at line 153 confirmed."
+    },
+    {
+      "id": "CR-004",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/chat/components/ChatHeader/ChatHeader.tsx",
+      "line": 185,
+      "title": "Chat usage Tokens saved row untested",
+      "problem": "The Usage details overlay gained a 'Tokens saved (Headroom)' row shown when headroom_tokens_saved > 0, with a percentage of headroom_tokens_original. No test supplies headroom fields; existing Usage details tests assert only Money spent markers.",
+      "impact": "The row can be dropped, the percentage inverted, the > 0 guard removed, or the missing-original branch broken with ChatHeader.test.tsx still passing.",
+      "recommendation": "In ChatHeader.test.tsx return headroom_tokens_saved 12345 and headroom_tokens_original 32500 from getMetrics, open Usage details, assert the Tokens saved (Headroom) row with '12,345 (38%)'. Add cases for absent/0 saved (no row) and missing original (no percentage).",
+      "status": "resolved",
+      "check_notes": "ChatHeader.test.tsx covers 12,345 (38%) row, missing original (no percentage), and absent/zero saved (no row); ChatHeader.tsx logic at line 185 confirmed."
+    },
+    {
+      "id": "CR-005",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/AssistantTab.tsx",
+      "line": 258,
+      "title": "Node-level headroom save path in AssistantTab untested",
+      "problem": "AssistantTab writes headroom into the assistant actor config via buildHeadroom on save and compares it with initialHeadroomRef for isDirty. AssistantTab.test.tsx has no headroom coverage, and HeadroomPanel/AdvancedConfigTab tests never exercise this path.",
+      "impact": "Dropping the headroom spread, inverting the flag-off preservation branch (silently dropping a YAML-authored block) or removing the isDirty comparison would pass all tests.",
+      "recommendation": "In AssistantTab.test.tsx with useHeadroomEnabled true, toggle Enable context compression, assert isDirty() true, save, and assert onConfigChange gets assistants[i].headroom equal to { enabled: true }. Add a flag-off case asserting an existing YAML headroom block is preserved, and an inherited={config.headroom} case.",
+      "status": "resolved",
+      "check_notes": "AssistantTab.test.tsx covers flag-off hidden panel, isDirty and save writing headroom {enabled:true}, inherited workflow block, and flag-off preservation of YAML block; matches AssistantTab.tsx lines 261 and 306."
+    },
+    {
+      "id": "CR-006",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/workflows/editor/configPanels/HeadroomPanel.tsx",
+      "line": 72,
+      "title": "Headroom panel crashes on null headroom block",
+      "problem": "hasOverride is computed as value !== undefined && Object.keys(value).length > 0. A workflow YAML with a bare `headroom:` key parses to null, YamlPanel.validateYaml performs no headroom shape check, and the headroom completer itself inserts a bare `headroom:`. The null reaches HeadroomPanel through config.headroom in AdvancedConfigTab and AssistantTab, and Object.keys(null) throws.",
+      "impact": "Opening the workflow or node config panel with the flag on throws during render after a user saves YAML containing a bare headroom key; the panel (potentially the editor) crashes.",
+      "recommendation": "const hasOverride = !!value && Object.keys(value).length > 0, and consider coercing a non-object config.headroom to undefined where AdvancedConfigTab and AssistantTab read it.",
+      "status": "resolved",
+      "check_notes": "HeadroomPanel.tsx hasOverride now uses !!value && Object.keys(value).length > 0; regression test renders with null value without throwing."
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "fail",
+      "notes": "git-workflow.md R1 requires EPMCDME-<n>: <Capitalised summary>; 15 of 16 subjects conform, but commit 8217f5260 uses 'headroom-context-compression-ui: add planning artifacts' with no ticket key, lowercase summary"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard, not a gap. Range commits docs/superpowers/tasks/.../code-review-final.json and gate-run.json (see CR-001)"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "checked changed src files against security/README.md and development/security-patterns.md: no HTML sinks, redirects, postMessage, VITE_/window._env_ secrets, credentials or logging introduced; no package.json, lock file or Dockerfile changes"
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "No spec was supplied (acceptance skipped), so confidence is low; all other lenses and the standards audit ran. 7 blocking findings: a null-headroom render crash, four untested new behaviors, and two repo-policy violations (committed validation reports, a commit subject without a ticket key). 0 deferred, 24 candidates dismissed as noise or already handled.",
+    "confidence": "low",
+    "risk_flags": [
+      "breaking-change"
+    ]
+  }
+}

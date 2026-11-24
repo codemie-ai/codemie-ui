@@ -42,7 +42,11 @@ import { ASSISTANT_INDEX_SCOPES, AssistantType } from '@/constants/assistants'
 import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { FormIDs } from '@/constants/formIds'
 import { MAX_SKILLS_PER_ASSISTANT } from '@/constants/skills'
-import { useFeatureFlag, useRequestHedgingEnabled } from '@/hooks/useFeatureFlags'
+import {
+  useFeatureFlag,
+  useHeadroomEnabled,
+  useRequestHedgingEnabled,
+} from '@/hooks/useFeatureFlags'
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 import { useUnsavedChanges } from '@/hooks/useUnsavedChangesWarning'
 import MissingIntegrationsModal from '@/pages/assistants/components/MissingIntegrationsModal'
@@ -60,6 +64,7 @@ import {
   AssistantAIRefineFields,
   AssistantAIFieldMarkers,
   AssistantToolkit,
+  HeadroomConfig as HeadroomConfigType,
   AssistantContext,
   ContextType,
 } from '@/types/entity/assistant'
@@ -80,6 +85,7 @@ import RefineAssistantModal from '../RefineAssistantModal/RefineAssistantModal'
 import { AssistantSetupSection } from './components/AssistantSetup'
 import { isBackendFileUrl } from './components/AssistantSetup/utils/getFileNameFromUrl'
 import ContextSelector from './components/ContextSelector'
+import HeadroomConfigField, { DEFAULT_HEADROOM_CONFIG } from './components/HeadroomConfig'
 import HedgingConfigField from './components/HedgingConfig'
 import InteractiveFeaturesAccordion from './components/InteractiveFeaturesAccordion'
 import RefineWithAIPromptPopup from './components/RefineWithAIPromptPopup'
@@ -183,6 +189,15 @@ const formSchema = Yup.object()
     })
       .nullable()
       .default(null),
+    headroom_config: Yup.object({
+      enabled: Yup.boolean().required(),
+      compress_user_messages: Yup.boolean().required(),
+      compress_tool_outputs: Yup.boolean().required(),
+      strategy: Yup.string().oneOf(['lossless', 'balanced', 'aggressive']).required(),
+    })
+      .nullable()
+      .optional()
+      .default(undefined),
     interactive_enabled: Yup.boolean().default(false),
     hide_tool_outputs: Yup.boolean().default(false),
     skill_ids: Yup.array()
@@ -235,6 +250,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
     ref
   ) => {
     const [isRequestHedgingEnabled] = useRequestHedgingEnabled()
+    const isHeadroomEnabled = useHeadroomEnabled()
     const isMobileLayout = useIsMobileLayout()
     const isCodemieAssistant = !assistant?.type || assistant.type === AssistantType.CODEMIE
     const { builtinSubagentsCatalog, getBuiltinSubagentsCatalog } = useSnapshot(assistantsStore)
@@ -284,45 +300,57 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
         .replace(/-+/g, '-')
         .replace(/(?:^-)|(?:-$)/g, '')
 
-    const { control, formState, watch, handleSubmit, setValue, getValues, trigger } =
-      useForm<AssistantFormSchema>({
-        mode: 'all',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        resolver: yupResolver(formSchema) as any,
-        defaultValues: {
-          project: assistant?.project ?? '',
-          name: assistant?.name ?? '',
-          description: assistant?.description ?? '',
-          categories: getCategoryIds(assistant?.categories),
-          conversation_starters: assistant?.conversation_starters ?? [''],
-          system_prompt: assistant?.system_prompt ?? '',
-          icon_url: assistant?.icon_url ?? '',
-          shared: assistant?.shared ?? false,
-          is_global: assistant?.is_global ?? false,
-          llm_model_type: resolveInitialLlmModelType(assistant),
-          enable_image_generation: assistant?.enable_image_generation ?? false,
-          image_generation_model: assistant?.image_generation_model ?? '',
-          file_attachment_enabled: assistant?.file_attachment_enabled ?? true,
-          slug: assistant?.slug?.length ? assistant.slug : getSlugFromName(assistant?.name),
-          temperature: assistant?.temperature ?? undefined,
-          effort: assistant?.effort ?? undefined,
-          top_p: assistant?.top_p ?? undefined,
-          tools_tokens_size_limit: assistant?.tools_tokens_size_limit ?? undefined,
-          context: assistant?.context ?? [],
-          nestedAssistants: assistant?.nestedAssistants ?? [],
-          prompt_variables: assistant?.prompt_variables ?? [],
-          smart_tool_selection_enabled: assistant?.smart_tool_selection_enabled ?? false,
-          hedging_config: assistant?.hedging_config ?? null,
-          interactive_enabled: assistant?.interactive_enabled ?? false,
-          hide_tool_outputs: assistant?.hide_tool_outputs ?? false,
-          guardrail_assignments: assistant?.guardrail_assignments ?? [],
-          skill_ids: assistant?.skills?.map((s) => s.id) ?? [],
-          enabled_builtin_subagents: assistant?.enabled_builtin_subagents ?? [],
-          tool_call_policy:
-            assistant?.tool_permissions?.tool_call_policy ?? ToolCallPolicy.AUTO_APPROVE,
-          allow_override: assistant?.tool_permissions?.allow_override ?? false,
-        },
-      })
+    const {
+      control,
+      formState,
+      watch,
+      handleSubmit,
+      setValue,
+      getValues,
+      trigger,
+      setError,
+      clearErrors,
+    } = useForm<AssistantFormSchema>({
+      mode: 'all',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      resolver: yupResolver(formSchema) as any,
+      defaultValues: {
+        project: assistant?.project ?? '',
+        name: assistant?.name ?? '',
+        description: assistant?.description ?? '',
+        categories: getCategoryIds(assistant?.categories),
+        conversation_starters: assistant?.conversation_starters ?? [''],
+        system_prompt: assistant?.system_prompt ?? '',
+        icon_url: assistant?.icon_url ?? '',
+        shared: assistant?.shared ?? false,
+        is_global: assistant?.is_global ?? false,
+        llm_model_type: resolveInitialLlmModelType(assistant),
+        enable_image_generation: assistant?.enable_image_generation ?? false,
+        image_generation_model: assistant?.image_generation_model ?? '',
+        file_attachment_enabled: assistant?.file_attachment_enabled ?? true,
+        slug: assistant?.slug?.length ? assistant.slug : getSlugFromName(assistant?.name),
+        temperature: assistant?.temperature ?? undefined,
+        effort: assistant?.effort ?? undefined,
+        top_p: assistant?.top_p ?? undefined,
+        tools_tokens_size_limit: assistant?.tools_tokens_size_limit ?? undefined,
+        context: assistant?.context ?? [],
+        nestedAssistants: assistant?.nestedAssistants ?? [],
+        prompt_variables: assistant?.prompt_variables ?? [],
+        smart_tool_selection_enabled: assistant?.smart_tool_selection_enabled ?? false,
+        hedging_config: assistant?.hedging_config ?? null,
+        headroom_config: assistant?.headroom_config
+          ? { ...DEFAULT_HEADROOM_CONFIG, ...assistant.headroom_config }
+          : undefined,
+        interactive_enabled: assistant?.interactive_enabled ?? false,
+        hide_tool_outputs: assistant?.hide_tool_outputs ?? false,
+        guardrail_assignments: assistant?.guardrail_assignments ?? [],
+        skill_ids: assistant?.skills?.map((s) => s.id) ?? [],
+        enabled_builtin_subagents: assistant?.enabled_builtin_subagents ?? [],
+        tool_call_policy:
+          assistant?.tool_permissions?.tool_call_policy ?? ToolCallPolicy.AUTO_APPROVE,
+        allow_override: assistant?.tool_permissions?.allow_override ?? false,
+      },
+    })
     const { errors } = formState
 
     const formId = FormIDs.ASSISTANT_FORM
@@ -447,6 +475,12 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
 
       const values = prepareFormData()
       const result = await handleMissingIntegrationsSubmit(values)
+      if (result?.fieldErrors?.['headroom_config.strategy']) {
+        setError('headroom_config.strategy', {
+          type: 'server',
+          message: result.fieldErrors['headroom_config.strategy'],
+        })
+      }
       if (result?.error) {
         toaster.error(result.error)
         setFormSubmitError(result.message ?? result.error)
@@ -708,6 +742,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
                   : 'Connect your assistant to supporting agents.'
               }
               defaultOpen={false}
+              forceOpen={!!errors.headroom_config}
             >
               <div className="px-4 pb-4 flex flex-col gap-6">
                 <div data-onboarding="assistant-datasource-context-field">
@@ -778,6 +813,27 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
                     />
                   </div>
                 </div>
+                {isHeadroomEnabled && (
+                  <div className="flex flex-col gap-4">
+                    <div className="text-sm leading-6 text-white">
+                      Context compression (Headroom)
+                    </div>
+                    <Controller
+                      name="headroom_config"
+                      control={control}
+                      render={({ field }) => (
+                        <HeadroomConfigField
+                          value={field.value as HeadroomConfigType | null | undefined}
+                          onChange={(next) => {
+                            clearErrors('headroom_config')
+                            field.onChange(next)
+                          }}
+                          error={(errors.headroom_config as any)?.strategy?.message}
+                        />
+                      )}
+                    />
+                  </div>
+                )}
                 <GuardrailAssignmentPanel
                   project={project}
                   entityType={GuardrailEntity.ASSISTANT}

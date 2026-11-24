@@ -54,6 +54,11 @@ vi.mock('@/assets/icons/collapse.svg?react', () => ({
   default: () => null,
 }))
 
+const { headroomFlag } = vi.hoisted(() => ({ headroomFlag: { enabled: false } }))
+vi.mock('@/hooks/useFeatureFlags', () => ({ useHeadroomEnabled: () => headroomFlag.enabled }))
+
+vi.mock('@/router', () => ({ router: {} }))
+
 vi.mock('valtio', async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -250,5 +255,15 @@ describe('YamlPanel expand', () => {
     expect(onClose).toHaveBeenCalledWith(true)
     expect(screen.getByTestId('ace-editor')).toHaveValue(originalYaml)
     expect(ref.current?.isDirty()).toBe(false)
+  })
+})
+
+describe('YamlPanel headroom', () => {
+  it('leaves headroom blocks to the backend validation and keeps Save enabled', () => {
+    headroomFlag.enabled = true
+    renderPanel('assistants:\n  - id: a\n    headroom:\n      strategy: fast')
+
+    expect(screen.queryByText(/Headroom:/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
   })
 })

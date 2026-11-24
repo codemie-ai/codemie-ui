@@ -20,3 +20,4 @@
  */
 
 export { updateAdvancedConfig } from './updateAdvancedConfig'
+export { updateHeadroom } from './updateHeadroom'

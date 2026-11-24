@@ -14,7 +14,7 @@
 //
 
 import { DynamicFormFieldSchema } from '@/types/dynamicForm'
-import { AssistantPromptVariable, EffortLevel } from '@/types/entity/assistant'
+import { AssistantPromptVariable, EffortLevel, HeadroomOverride } from '@/types/entity/assistant'
 import { MCPServerDetails } from '@/types/entity/mcp'
 import type { ValidationMode } from '@/utils/workflowEditor/helpers/contractProtocol'
 
@@ -46,6 +46,7 @@ export interface AssistantConfiguration {
   exclude_extra_context_tools?: boolean
   skill_ids?: string[]
   prompt_variables?: AssistantPromptVariable[]
+  headroom?: HeadroomOverride
 }
 
 export interface ToolConfiguration {
@@ -310,4 +311,6 @@ export interface WorkflowConfiguration {
   // Workflow-level contract defaults
   save_validation?: ValidationMode
   require_input_contracts?: boolean
+
+  headroom?: HeadroomOverride
 }

@@ -53,6 +53,25 @@ export interface HedgingConfig {
   output_field?: string | null
 }
 
+export type HeadroomStrategy = 'lossless' | 'balanced' | 'aggressive'
+
+/** Headroom context compression settings for an assistant (all fields always sent). */
+export interface HeadroomConfig {
+  enabled: boolean
+  compress_user_messages: boolean
+  compress_tool_outputs: boolean
+  strategy: HeadroomStrategy
+}
+
+/** Partial Headroom settings used by workflow-level and node-level overrides. */
+export type HeadroomOverride = Partial<HeadroomConfig>
+
+/** Where a Headroom override is edited in the workflow editor. */
+export enum HeadroomScope {
+  Workflow = 'workflow',
+  Node = 'node',
+}
+
 // Agent mode enum
 export enum AgentMode {
   GENERAL = 'general',
@@ -148,6 +167,7 @@ export interface Assistant {
   prompt_variables?: AssistantPromptVariable[]
   smart_tool_selection_enabled?: boolean
   hedging_config?: HedgingConfig | null
+  headroom_config?: HeadroomConfig | null
   /** Single switch enabling the A2UI interactive catalog for this assistant. */
   interactive_enabled?: boolean
   effective_llm_model?: string | null
@@ -455,6 +475,7 @@ export interface AssistantValidationResponse {
 export interface AssistantCreateResponse extends AssistantValidationResponse {
   id?: string
   error?: string
+  fieldErrors?: Record<string, string>
 }
 
 // Tool details for creating/updating assistants
@@ -509,6 +530,7 @@ export interface CreateAssistantDto {
   categories?: AssistantCategory[]
   smart_tool_selection_enabled?: boolean
   hedging_config?: HedgingConfig | null
+  headroom_config?: HeadroomConfig | null
   /** Single switch enabling the A2UI interactive catalog for this assistant. */
   interactive_enabled?: boolean
   /** When true the backend serves only the final response to end users. */

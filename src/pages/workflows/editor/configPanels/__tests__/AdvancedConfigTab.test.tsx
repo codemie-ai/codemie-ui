@@ -26,21 +26,27 @@ import AdvancedConfigTab, { AdvancedConfigTabRef } from '../AdvancedConfigTab'
 
 // --- Mocks ---
 
-const { mockUseSubWorkflowEnabled, mockUseWorkflowContractsEnabled, mockWorkflowContextValue } =
-  vi.hoisted(() => ({
-    mockUseSubWorkflowEnabled: vi.fn(),
-    mockUseWorkflowContractsEnabled: vi.fn(() => [true, true]),
-    mockWorkflowContextValue: {
-      activeIssue: null as { path: string } | null,
-      getIssueField: vi.fn().mockReturnValue(null),
-      getMcpIssue: vi.fn().mockReturnValue(null),
-      markIssueDirty: vi.fn(),
-    },
-  }))
+const {
+  mockUseSubWorkflowEnabled,
+  mockUseWorkflowContractsEnabled,
+  mockWorkflowContextValue,
+  headroomFlag,
+} = vi.hoisted(() => ({
+  headroomFlag: { enabled: false },
+  mockUseSubWorkflowEnabled: vi.fn(),
+  mockUseWorkflowContractsEnabled: vi.fn(() => [true, true]),
+  mockWorkflowContextValue: {
+    activeIssue: null as { path: string } | null,
+    getIssueField: vi.fn().mockReturnValue(null),
+    getMcpIssue: vi.fn().mockReturnValue(null),
+    markIssueDirty: vi.fn(),
+  },
+}))
 
 vi.mock('@/hooks/useFeatureFlags', () => ({
   useSubWorkflowEnabled: mockUseSubWorkflowEnabled,
   useWorkflowContractsEnabled: mockUseWorkflowContractsEnabled,
+  useHeadroomEnabled: () => headroomFlag.enabled,
 }))
 
 vi.mock('../../hooks/useWorkflowContext', async (importOriginal) => {
@@ -273,4 +279,50 @@ describe('AdvancedConfigTab — contract defaults', () => {
       })
     }
   )
+})
+
+describe('AdvancedConfigTab — Headroom save and dirty paths', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockWorkflowContextValue.activeIssue = null
+    mockUseSubWorkflowEnabled.mockReturnValue([false, true])
+    mockUseWorkflowContractsEnabled.mockReturnValue([true, true])
+  })
+
+  it('carries headroom in onConfigChange and tracks dirty state when the flag is on', async () => {
+    headroomFlag.enabled = true
+    const onConfigChange = vi.fn()
+    const ref = createRef<AdvancedConfigTabRef>()
+    render(<AdvancedConfigTab {...defaultProps} onConfigChange={onConfigChange} ref={ref} />)
+    expect(ref.current?.isDirty()).toBe(false)
+
+    fireEvent.click(screen.getByLabelText('Enable context compression'))
+
+    await waitFor(() => expect(ref.current?.isDirty()).toBe(true))
+    await ref.current?.save()
+    expect(onConfigChange).toHaveBeenCalledWith(
+      expect.objectContaining({ headroom: expect.objectContaining({ enabled: true }) })
+    )
+  })
+
+  it('preserves an existing headroom block when the flag is off', async () => {
+    headroomFlag.enabled = false
+    const onConfigChange = vi.fn()
+    const ref = createRef<AdvancedConfigTabRef>()
+    const config = { states: [], headroom: { enabled: true } } as WorkflowConfiguration
+    render(
+      <AdvancedConfigTab
+        {...defaultProps}
+        config={config}
+        onConfigChange={onConfigChange}
+        ref={ref}
+      />
+    )
+
+    expect(ref.current?.isDirty()).toBe(false)
+    await ref.current?.save()
+    expect(onConfigChange).toHaveBeenCalledWith(
+      expect.objectContaining({ headroom: { enabled: true } })
+    )
+  })
 })

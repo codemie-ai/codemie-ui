@@ -31,6 +31,8 @@ const mockEditor = vi.hoisted(() => ({
   moveCursorToPosition: vi.fn(),
   getSelectedText: vi.fn(() => ''),
   focus: vi.fn(),
+  setOptions: vi.fn(),
+  completers: undefined as unknown,
   gotoLine: vi.fn(),
   scrollToLine: vi.fn(),
   renderer: { scroller: { setAttribute: vi.fn() } },
@@ -46,6 +48,7 @@ vi.mock('ace-builds/src-noconflict/mode-yaml', () => ({}))
 vi.mock('ace-builds/src-noconflict/mode-json', () => ({}))
 vi.mock('ace-builds/src-noconflict/theme-tomorrow_night', () => ({}))
 vi.mock('ace-builds/src-noconflict/theme-tomorrow', () => ({}))
+vi.mock('ace-builds/src-noconflict/ext-language_tools', () => ({}))
 
 vi.mock('@/hooks/useTheme', () => ({
   useTheme: () => ({ isDark: false }),
@@ -116,5 +119,23 @@ describe('AceEditor keyboard focus trap fix', () => {
     const { container } = render(<AceEditor value="" />)
 
     expect(container.firstChild).not.toHaveClass('ace-show-tabs')
+  })
+})
+
+describe('AceEditor completers', () => {
+  it('enables live autocompletion and installs the given completers', () => {
+    const completer = { getCompletions: vi.fn() }
+    render(<AceEditor value="" completers={[completer]} />)
+
+    expect(mockEditor.setOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ enableLiveAutocompletion: true })
+    )
+    expect(mockEditor.completers).toEqual([completer])
+  })
+
+  it('leaves autocompletion untouched without completers', () => {
+    mockEditor.setOptions.mockClear()
+    render(<AceEditor value="" />)
+    expect(mockEditor.setOptions).not.toHaveBeenCalled()
   })
 })

@@ -15,6 +15,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { FEATURE_FLAGS } from '@/constants/featureFlags'
 import { useFeatureFlag } from '@/hooks/useFeatureFlags'
 
 import InsightsTab from '../InsightsTab'
@@ -47,7 +48,14 @@ vi.mock('../RoutingAnalyticsSection', () => ({
   default: () => <div data-testid="routing-analytics-section" />,
 }))
 
+vi.mock('../HeadroomAnalyticsSection', () => ({
+  default: () => <div data-testid="headroom-analytics-section" />,
+}))
+
 afterEach(cleanup)
+
+const enableOnly = (enabledFlag: string) =>
+  vi.mocked(useFeatureFlag).mockImplementation((name: string) => [name === enabledFlag, true])
 
 describe('InsightsTab', () => {
   it('hides routing analytics when its feature flag is disabled', () => {
@@ -64,5 +72,25 @@ describe('InsightsTab', () => {
     render(<InsightsTab filters={{}} />)
 
     expect(screen.getByTestId('routing-analytics-section')).toBeInTheDocument()
+  })
+
+  it('shows Context Compression only when the Headroom flag is on', () => {
+    enableOnly(FEATURE_FLAGS.HEADROOM)
+
+    render(<InsightsTab filters={{}} />)
+
+    expect(screen.getByText('Context Compression')).toBeInTheDocument()
+    expect(screen.getByTestId('headroom-analytics-section')).toBeInTheDocument()
+    expect(screen.queryByTestId('routing-analytics-section')).not.toBeInTheDocument()
+  })
+
+  it('hides Context Compression when only the routing flag is on', () => {
+    enableOnly(FEATURE_FLAGS.ROUTING_ANALYTICS)
+
+    render(<InsightsTab filters={{}} />)
+
+    expect(screen.getByTestId('routing-analytics-section')).toBeInTheDocument()
+    expect(screen.queryByText('Context Compression')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('headroom-analytics-section')).not.toBeInTheDocument()
   })
 })

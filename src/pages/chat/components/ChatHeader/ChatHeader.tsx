@@ -182,6 +182,12 @@ const ChatHeader: FC = () => {
                     if (classifierCost) {
                       rows['Classifier cost'] = `$${classifierCost.toFixed(4)}`
                     }
+                    const { headroom_tokens_saved: saved, headroom_tokens_original: original } =
+                      data
+                    if (saved && saved > 0) {
+                      const share = original ? ` (${Math.round((saved * 100) / original)}%)` : ''
+                      rows['Tokens saved (Headroom)'] = `${saved.toLocaleString()}${share}`
+                    }
                     return rows
                   }}
                 />

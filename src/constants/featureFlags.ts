@@ -26,6 +26,7 @@ export const FEATURE_FLAGS = {
   MCP_CONNECT: 'mcpConnect',
   SHOW_ALL_PROJECTS: 'features:showAllProjects',
   REQUEST_HEDGING: 'features:requestHedging',
+  HEADROOM: 'features:headroom',
   TEAMS_BOT_INTEGRATION: 'features:teamsBotIntegration',
   WORKFLOW_AI: 'features:workflowAI',
   CHAT_CONTEXTUAL_NAMING: 'features:chatContextualNaming',

@@ -79,6 +79,10 @@ export const isRequestHedgingEnabled = (): boolean => {
   return isFeatureEnabled(FEATURE_FLAGS.REQUEST_HEDGING)
 }
 
+export const isHeadroomEnabled = (): boolean => {
+  return isFeatureEnabled(FEATURE_FLAGS.HEADROOM)
+}
+
 export const isInteractiveElementsEnabled = (): boolean => {
   return isFeatureEnabled('features:interactiveElements')
 }

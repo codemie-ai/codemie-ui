@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-15645_headroom-context-compression-ui",
+  "head": "45e5b1c28f49252aec7b03023ff9f90e208ef84e",
+  "runner": "npm",
+  "started_at": "2026-10-12T15:50:00Z",
+  "completed_at": "2026-10-12T16:05:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 26000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 20000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 341000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 694 passed (694); Tests 6974 passed | 1 skipped"
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 112000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Tests 563 passed | 1 skipped"
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "notes": "No dependency added/removed/moved (guide Skip if)"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13000,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "no leaks found"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 1000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "0 missing of 2348"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 1000,
+      "command": "npm run sonar-local",
+      "exit_code": 0,
+      "notes": "'[sonar-local] Skipping Sonar scan because SONAR_TOKEN is not set.' Set SONAR_TOKEN to run locally; CI will settle it."
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "notes": "Needs the stack up; not run. MR compliance gate still owed."
+    }
+  ],
+  "failures": {}
+}

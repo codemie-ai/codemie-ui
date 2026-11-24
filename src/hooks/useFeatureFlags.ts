@@ -91,6 +91,11 @@ export const useRequestHedgingEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.REQUEST_HEDGING)
 }
 
+export const useHeadroomEnabled = (): boolean => {
+  const [isEnabled] = useFeatureFlag(FEATURE_FLAGS.HEADROOM)
+  return isEnabled
+}
+
 export const useUserManagementEnabled = (): FeatureFlagResult => {
   return useFeatureFlag(FEATURE_FLAGS.USER_MANAGEMENT)
 }

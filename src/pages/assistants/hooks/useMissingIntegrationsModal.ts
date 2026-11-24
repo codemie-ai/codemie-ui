@@ -25,6 +25,7 @@ export interface SubmitResponse {
   success?: boolean
   /** Plain-text form of `error` for inline display (`error` may carry toast HTML). */
   message?: string
+  fieldErrors?: Record<string, string>
   validation?: {
     has_missing_integrations: boolean
     missing_by_credential_type: MissingIntegrationByCredentialType[]
@@ -74,7 +75,12 @@ export const useMissingIntegrationsModal = <T = any>({
         const response = await onSubmit(values, skipValidation)
 
         if (response.error) {
-          return { success: false, error: response.error, message: response.message }
+          return {
+            success: false,
+            error: response.error,
+            message: response.message,
+            fieldErrors: response.fieldErrors,
+          }
         }
 
         if (response.success === false) {

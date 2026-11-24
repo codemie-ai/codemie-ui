@@ -99,6 +99,7 @@ export function transformAssistantToCreateDTO(
     prompt_variables: assistant.prompt_variables,
     smart_tool_selection_enabled: assistant.smart_tool_selection_enabled,
     hedging_config: assistant.hedging_config ?? null,
+    headroom_config: assistant.headroom_config ?? null,
     // Plain boolean switch enabling the A2UI catalog for this assistant.
     interactive_enabled: readInteractiveEnabled(assistant),
     hide_tool_outputs: assistant.hide_tool_outputs ?? false,
@@ -112,4 +113,30 @@ export function transformAssistantToCreateDTO(
 
     tool_permissions: assistant.tool_permissions ?? undefined,
   }
+}
+
+const HEADROOM_STRATEGY_FIELD = 'headroom_config.strategy'
+
+/**
+ * Best-effort mapping of a backend validation error onto the Headroom strategy field.
+ * Supports FastAPI-style `loc` arrays and plain `details` strings naming the field.
+ */
+export const extractHeadroomFieldErrors = (error: any): Record<string, string> | undefined => {
+  const parsed = error?.parsedError
+  const details = parsed?.details
+  let message: string | undefined
+
+  if (Array.isArray(details)) {
+    const hit = details.find(
+      (d) => Array.isArray(d?.loc) && d.loc.join('.').includes(HEADROOM_STRATEGY_FIELD)
+    )
+    message = hit ? String(hit.msg ?? parsed.message) : undefined
+  } else if (typeof details === 'string') {
+    message = details.includes(HEADROOM_STRATEGY_FIELD) ? details : undefined
+  } else if (details && typeof details === 'object') {
+    const text = JSON.stringify(details)
+    message = text.includes(HEADROOM_STRATEGY_FIELD) ? text : undefined
+  }
+
+  return message ? { [HEADROOM_STRATEGY_FIELD]: message } : undefined
 }

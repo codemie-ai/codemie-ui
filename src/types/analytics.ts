@@ -249,6 +249,8 @@ export enum TabularMetricType {
   ROUTING_REQUESTED_MODELS = 'routing/requested-model-distribution',
   ROUTING_ROUTED_MODELS = 'routing/routed-model-distribution',
   ROUTING_TIERS = 'routing/tier-distribution',
+  HEADROOM_BY_STRATEGY = 'headroom/by-strategy',
+  HEADROOM_TIMESERIES = 'headroom/timeseries',
 }
 
 export enum OverviewMetricType {
@@ -259,6 +261,7 @@ export enum OverviewMetricType {
   CLI_INSIGHTS_TEAM_SUMMARY = 'cli-insights-team-summary',
   LEADERBOARD_SUMMARY = 'leaderboard/summary',
   ROUTING_SUMMARY = 'routing/summary',
+  HEADROOM_SUMMARY = 'headroom/summary',
 }
 
 export type AnalyticsDashboardItem = {

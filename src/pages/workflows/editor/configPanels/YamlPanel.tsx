@@ -14,15 +14,17 @@
 //
 
 import * as jsYaml from 'js-yaml'
-import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useRef } from 'react'
 import { useSnapshot } from 'valtio'
 
 import AceEditor, { AceEditorRef } from '@/components/AceEditor/AceEditor'
+import { useHeadroomEnabled } from '@/hooks/useFeatureFlags'
 import { appInfoStore } from '@/store/appInfo'
 import { findLeadingTabLine } from '@/utils/helpers'
 import { isConfigItemEnabled, getConfigItemSettings } from '@/utils/settings'
 import toaster from '@/utils/toaster'
 import { cn } from '@/utils/utils'
+import { headroomCompleter } from '@/utils/workflowEditor/headroom/headroomCompleter'
 
 import WorkflowYamlHeaderActions from '../../components/WorkflowYamlHeaderActions'
 import { useWorkflowContext } from '../hooks/useWorkflowContext'
@@ -50,6 +52,11 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
     const aceEditorRef = useRef<AceEditorRef>(null)
     const [value, setValue] = useState(yaml)
     const [validationError, setValidationError] = useState<string | null>(null)
+    const isHeadroomEnabled = useHeadroomEnabled()
+    const completers = useMemo(
+      () => (isHeadroomEnabled ? [headroomCompleter] : undefined),
+      [isHeadroomEnabled]
+    )
     // ConfigPanel remounts YamlPanel on a committed YAML change, which also closes this modal.
     const [isExpanded, setIsExpanded] = useState(false)
 
@@ -193,6 +200,7 @@ const YamlPanel = forwardRef<YamlPanelRef, YamlPanelProps>(
                 lang="yaml"
                 name="yaml_config"
                 showInvisibles
+                completers={completers}
               />
             </div>
           </div>

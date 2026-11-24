@@ -14,7 +14,7 @@
 //
 
 import { Accordion as PrimeAccordion, AccordionTab } from 'primereact/accordion'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 
 import AIFieldSvg from '@/assets/icons/ai-field.svg?react'
 import ChevronDownSvg from '@/assets/icons/chevron-down.svg?react'
@@ -25,6 +25,8 @@ interface AccordionProps {
   description?: ReactNode
   children: ReactNode
   defaultOpen?: boolean
+  /** Opens the accordion whenever this becomes true (e.g. to reveal a field error). */
+  forceOpen?: boolean
   className?: string
   isAIGenerated?: boolean
 }
@@ -34,12 +36,17 @@ const Accordion = ({
   description,
   children,
   defaultOpen = true,
+  forceOpen = false,
   className,
   isAIGenerated = false,
 }: AccordionProps) => {
   const [activeTabIndex, setActiveTabIndex] = useState<number | number[] | null>(
     defaultOpen ? 0 : null
   )
+
+  useEffect(() => {
+    if (forceOpen) setActiveTabIndex(0)
+  }, [forceOpen])
 
   return (
     <PrimeAccordion

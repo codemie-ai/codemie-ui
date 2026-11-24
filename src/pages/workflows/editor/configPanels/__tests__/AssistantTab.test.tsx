@@ -31,6 +31,12 @@ import {
   OUTPUT_SCHEMA,
 } from './contractTestUtils'
 
+const { headroomFlag } = vi.hoisted(() => ({ headroomFlag: { enabled: false } }))
+vi.mock('@/hooks/useFeatureFlags', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/hooks/useFeatureFlags')>()),
+  useHeadroomEnabled: () => headroomFlag.enabled,
+}))
+
 vi.mock('../../hooks/useWorkflowContext', () => ({
   useWorkflowContext: vi.fn().mockReturnValue({
     activeIssue: null,
@@ -95,6 +101,7 @@ describe('AssistantTab', () => {
   beforeEach(() => {
     enableWorkflowContracts()
     vi.clearAllMocks()
+    headroomFlag.enabled = false
   })
 
   it('keeps Task and Output Schema visible', () => {
@@ -165,5 +172,83 @@ describe('AssistantTab', () => {
     const saved = defaultProps.onConfigChange.mock.calls[0][0].state.data
     expect(saved.save_validation).toBeUndefined()
     expect(modeLabel()).toHaveTextContent('Use workflow default')
+  })
+
+  describe('Headroom (context compression)', () => {
+    const headroomConfig: WorkflowConfiguration = {
+      states: [{ id: 'state-1', assistant_id: 'actor-1' } as any],
+      assistants: [
+        {
+          id: 'actor-1',
+          assistant_id: 'catalog-assistant',
+          headroom: { enabled: true, strategy: 'lossless' },
+        } as any,
+      ],
+    }
+
+    const openHeadroomAccordion = async (user: ReturnType<typeof userEvent.setup>) =>
+      user.click(screen.getByText('Context compression (Headroom)'))
+
+    it('hides the panel when the flag is off', () => {
+      render(<AssistantTab {...defaultProps} />)
+      expect(screen.queryByText('Context compression (Headroom)')).not.toBeInTheDocument()
+    })
+
+    it('marks the tab dirty and saves the node-level block when the flag is on', async () => {
+      headroomFlag.enabled = true
+      const user = userEvent.setup()
+      const ref = createRef<AssistantTabRef>()
+      render(<AssistantTab {...defaultProps} ref={ref} />)
+
+      expect(ref.current!.isDirty()).toBe(false)
+
+      await openHeadroomAccordion(user)
+      await user.click(screen.getByLabelText('Enable context compression'))
+
+      expect(ref.current!.isDirty()).toBe(true)
+
+      const result = await ref.current!.save()
+
+      expect(result).toBe(true)
+      expect(defaultProps.onConfigChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actors: {
+            assistants: [expect.objectContaining({ headroom: { enabled: true } })],
+          },
+        })
+      )
+    })
+
+    it('shows the workflow-level block as the inherited value for the node', async () => {
+      headroomFlag.enabled = true
+      const user = userEvent.setup()
+      render(
+        <AssistantTab {...defaultProps} config={{ ...mockConfig, headroom: { enabled: true } }} />
+      )
+
+      await openHeadroomAccordion(user)
+
+      expect(screen.getByLabelText('Enable context compression')).toBeChecked()
+      expect(screen.getByLabelText('Compress tool outputs')).not.toBeDisabled()
+      expect(screen.queryByText('Reset to workflow settings')).not.toBeInTheDocument()
+    })
+
+    it('keeps an existing YAML headroom block on save when the flag is off', async () => {
+      const ref = createRef<AssistantTabRef>()
+      render(<AssistantTab {...defaultProps} config={headroomConfig} ref={ref} />)
+
+      const result = await ref.current!.save()
+
+      expect(result).toBe(true)
+      expect(defaultProps.onConfigChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actors: {
+            assistants: [
+              expect.objectContaining({ headroom: { enabled: true, strategy: 'lossless' } }),
+            ],
+          },
+        })
+      )
+    })
   })
 })

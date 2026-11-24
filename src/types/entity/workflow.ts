@@ -16,6 +16,7 @@
 import { NodeType } from '../workflowEditor'
 import { WorkflowConfiguration, WorkflowPoolConfig } from '../workflowEditor/configuration'
 
+import type { HeadroomOverride } from './assistant'
 import type { Thought } from './conversation'
 import type { CreatedBy } from '../common'
 
@@ -46,6 +47,7 @@ export interface Workflow {
   pool_config?: WorkflowPoolConfig
   max_nesting_level?: number
   categories?: string[]
+  headroom_config?: HeadroomOverride | null
   [key: string]: any
 }
 

@@ -20,6 +20,7 @@ import 'ace-builds/src-noconflict/mode-yaml'
 import 'ace-builds/src-noconflict/mode-json'
 import 'ace-builds/src-noconflict/theme-tomorrow_night'
 import 'ace-builds/src-noconflict/theme-tomorrow'
+import 'ace-builds/src-noconflict/ext-language_tools'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/utils/utils'
 
@@ -35,6 +36,8 @@ interface AceEditorProps {
   placeholder?: string
   showInvisibles?: boolean
   wrap?: boolean
+  /** Custom autocompletion sources; enables live autocompletion when provided. */
+  completers?: ace.Ace.Completer[]
 }
 
 export interface AceEditorRef {
@@ -54,6 +57,7 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
       placeholder,
       showInvisibles = false,
       wrap = false,
+      completers,
     },
     ref
   ) => {
@@ -114,6 +118,26 @@ const AceEditor = forwardRef<AceEditorRef, AceEditorProps>(
         editor.destroy()
       }
     }, [])
+
+    useEffect(() => {
+      const editor = editorRef.current
+      if (!editor || !completers?.length) return () => {}
+
+      const previousCompleters = editor.completers
+      editor.setOptions({
+        enableBasicAutocompletion: true,
+        enableLiveAutocompletion: true,
+      })
+      editor.completers = completers
+
+      return () => {
+        editor.setOptions({
+          enableBasicAutocompletion: false,
+          enableLiveAutocompletion: false,
+        })
+        editor.completers = previousCompleters
+      }
+    }, [completers])
 
     useEffect(() => {
       if (editorRef.current) {

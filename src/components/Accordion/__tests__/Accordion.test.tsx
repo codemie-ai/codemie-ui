@@ -50,4 +50,23 @@ describe('Accordion Focus Contrast', () => {
     expect(headerButton.className).toContain('focus-visible:ring-2')
     expect(headerButton.className).toContain('focus-visible:ring-border-accent')
   })
+  it('opens a closed accordion when forceOpen becomes true', () => {
+    const { rerender } = render(
+      <Accordion title="Context" defaultOpen={false} forceOpen={false}>
+        <div>Hidden content</div>
+      </Accordion>
+    )
+    const grid = () => screen.getByText('Hidden content').closest('.grid')!
+    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'false')
+    expect(grid().className).toContain('grid-rows-[0fr]')
+
+    rerender(
+      <Accordion title="Context" defaultOpen={false} forceOpen={true}>
+        <div>Hidden content</div>
+      </Accordion>
+    )
+
+    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'true')
+    expect(grid().className).toContain('grid-rows-[1fr]')
+  })
 })

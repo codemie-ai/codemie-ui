@@ -283,6 +283,8 @@ export interface ChatMetrics {
   // for this record. A flagged record renders the absent marker, not total_money_spent.
   money_spent_pending?: boolean
   money_spent_unavailable?: boolean
+  headroom_tokens_saved?: number
+  headroom_tokens_original?: number
 }
 
 export interface ChatShareResult {

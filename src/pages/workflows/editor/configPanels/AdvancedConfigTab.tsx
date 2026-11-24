@@ -25,7 +25,12 @@ import Input from '@/components/form/Input'
 import Select from '@/components/form/Select'
 import Switch from '@/components/form/Switch'
 import TooltipButton from '@/components/TooltipButton'
-import { useSubWorkflowEnabled, useWorkflowContractsEnabled } from '@/hooks/useFeatureFlags'
+import {
+  useHeadroomEnabled,
+  useSubWorkflowEnabled,
+  useWorkflowContractsEnabled,
+} from '@/hooks/useFeatureFlags'
+import { HeadroomOverride, HeadroomScope } from '@/types/entity/assistant'
 import { WorkflowConfiguration } from '@/types/workflowEditor/configuration'
 import { cleanObject } from '@/utils/helpers'
 import toaster from '@/utils/toaster'
@@ -36,6 +41,7 @@ import { useWorkflowContext } from '../hooks/useWorkflowContext'
 import ConfigAccordion from './components/ConfigAccordion'
 import FieldController from './components/FieldController'
 import TabFooter from './components/TabFooter'
+import HeadroomPanel from './HeadroomPanel'
 import {
   buildModeOptions,
   REQUIRE_INPUT_CONTRACTS_HINT,
@@ -261,6 +267,11 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
     const [retryPolicyExpanded, setRetryPolicyExpanded] = useState(false)
     const [subWorkflowExpanded, setSubWorkflowExpanded] = useState(false)
     const [contractsExpanded, setContractsExpanded] = useState(false)
+    const [headroomExpanded, setHeadroomExpanded] = useState(false)
+    const isHeadroomEnabled = useHeadroomEnabled()
+    // Headroom lives outside the form: it is a nested optional block that must stay absent when unset.
+    const savedHeadroomRef = useRef<HeadroomOverride | undefined>(config?.headroom)
+    const [headroom, setHeadroom] = useState<HeadroomOverride | undefined>(config?.headroom)
     const [isSubWorkflowEnabled, isSubWorkflowLoaded] = useSubWorkflowEnabled()
 
     const activeIssueAccordion = useMemo(() => {
@@ -315,7 +326,12 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
       if (isValid) {
         const data = cleanFormValues(schema.cast(getValues()) as Partial<WorkflowConfiguration>)
         reset(data)
-        onConfigChange(withContractDefaults(data))
+        // Explicit key so an unset block is removed from the merged config.
+        onConfigChange({
+          ...withContractDefaults(data),
+          headroom: isHeadroomEnabled ? headroom : config?.headroom,
+        })
+        savedHeadroomRef.current = headroom
         return true
       }
       return false
@@ -327,11 +343,14 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
         isDirty: () => {
           const cleanDefaults = cleanFormValues(defaultValuesRef.current)
           const cleanCurrent = cleanFormValues(getValues())
-          return !isEqual(cleanDefaults, cleanCurrent)
+          return (
+            !isEqual(cleanDefaults, cleanCurrent) ||
+            (isHeadroomEnabled && !isEqual(savedHeadroomRef.current, headroom))
+          )
         },
         save: saveData,
       }),
-      [getValues, trigger, onConfigChange, reset]
+      [getValues, trigger, onConfigChange, reset, headroom, isHeadroomEnabled, config?.headroom]
     )
 
     useEffect(() => {
@@ -341,6 +360,13 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
         reset(newDefaults)
       }
     }, [config, workflow, reset])
+
+    useEffect(() => {
+      // Skip when the config merely re-emits what we already hold, so unsaved edits survive.
+      if (isEqual(savedHeadroomRef.current, config?.headroom)) return
+      savedHeadroomRef.current = config?.headroom
+      setHeadroom(config?.headroom)
+    }, [config?.headroom])
 
     const handleSave = async () => {
       const success = await saveData()
@@ -593,6 +619,20 @@ const AdvancedConfigTab = forwardRef<AdvancedConfigTabRef, AdvancedConfigTabProp
                   )}
                 />
               </div>
+            </ConfigAccordion>
+          )}
+
+          {isHeadroomEnabled && (
+            <ConfigAccordion
+              title="Context compression (Headroom)"
+              expanded={headroomExpanded}
+              onExpandedChange={setHeadroomExpanded}
+            >
+              <HeadroomPanel
+                scope={HeadroomScope.Workflow}
+                value={headroom}
+                onChange={setHeadroom}
+              />
             </ConfigAccordion>
           )}
 

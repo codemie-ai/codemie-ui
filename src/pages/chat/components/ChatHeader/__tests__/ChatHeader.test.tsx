@@ -443,4 +443,56 @@ describe('ChatHeader', () => {
       expect(screen.queryByText(/awaiting final cost/)).not.toBeInTheDocument()
     })
   })
+  describe('Tokens saved (Headroom) row', () => {
+    beforeEach(() => {
+      mockChatsStore.currentChat = mockChat
+    })
+
+    it('shows the saved count with its share of the original tokens', async () => {
+      mockChatsStore.getMetrics.mockResolvedValueOnce({
+        total_input_tokens: 10,
+        total_output_tokens: 20,
+        headroom_tokens_saved: 12345,
+        headroom_tokens_original: 32500,
+      })
+      render(<ChatHeader />)
+
+      await user.click(screen.getByLabelText('Usage details'))
+
+      expect(await screen.findByText('Tokens saved (Headroom):')).toBeInTheDocument()
+      expect(screen.getByText('12,345 (38%)')).toBeInTheDocument()
+    })
+
+    it('omits the percentage when the original token count is missing', async () => {
+      mockChatsStore.getMetrics.mockResolvedValueOnce({
+        total_input_tokens: 10,
+        total_output_tokens: 20,
+        headroom_tokens_saved: 12345,
+      })
+      render(<ChatHeader />)
+
+      await user.click(screen.getByLabelText('Usage details'))
+
+      expect(await screen.findByText('Tokens saved (Headroom):')).toBeInTheDocument()
+      expect(screen.getByText('12,345')).toBeInTheDocument()
+      expect(screen.queryByText(/%\)/)).not.toBeInTheDocument()
+    })
+
+    it.each([
+      ['absent', {}],
+      ['zero', { headroom_tokens_saved: 0, headroom_tokens_original: 32500 }],
+    ])('hides the row when the saved count is %s', async (_label, headroomMetrics) => {
+      mockChatsStore.getMetrics.mockResolvedValueOnce({
+        total_input_tokens: 10,
+        total_output_tokens: 20,
+        ...headroomMetrics,
+      })
+      render(<ChatHeader />)
+
+      await user.click(screen.getByLabelText('Usage details'))
+
+      expect(await screen.findByText('Money spent:')).toBeInTheDocument()
+      expect(screen.queryByText('Tokens saved (Headroom):')).not.toBeInTheDocument()
+    })
+  })
 })

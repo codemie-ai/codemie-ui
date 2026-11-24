@@ -25,6 +25,7 @@ import TableWidget from '@/pages/analytics/components/widgets/TableWidget'
 import { OverviewMetricType, TabularMetricType } from '@/types/analytics'
 import type { AnalyticsQueryParams } from '@/types/analytics'
 
+import HeadroomAnalyticsSection from './HeadroomAnalyticsSection'
 import RoutingAnalyticsSection from './RoutingAnalyticsSection'
 import { TopNFilter, TOP_N_OPTIONS, toTopN, toPerPage, type TopN } from './utils/topNFilter'
 
@@ -36,6 +37,7 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
   const [topLlmsTopN, setTopLlmsTopN] = useState<TopN>(TopNFilter.TEN)
   const [topCliLlmsTopN, setTopCliLlmsTopN] = useState<TopN>(TopNFilter.TEN)
   const [isRoutingAnalyticsEnabled] = useFeatureFlag(FEATURE_FLAGS.ROUTING_ANALYTICS)
+  const [isHeadroomEnabled] = useFeatureFlag(FEATURE_FLAGS.HEADROOM)
 
   const topLlmsExtraParams = useMemo(() => ({ per_page: toPerPage(topLlmsTopN) }), [topLlmsTopN])
 
@@ -146,6 +148,14 @@ const InsightsTab: FC<InsightsTabProps> = ({ filters }) => {
           </div>
         )}
       </section>
+
+      {/* ===== CONTEXT COMPRESSION SECTION ===== */}
+      {isHeadroomEnabled && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4 text-text-primary">Context Compression</h2>
+          <HeadroomAnalyticsSection filters={filters} />
+        </section>
+      )}
 
       {/* ===== PLATFORM ACTIVITY SECTION ===== */}
       <section>

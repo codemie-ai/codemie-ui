@@ -52,7 +52,7 @@ import { appInfoStore } from './appInfo'
 import { preferencesStore } from './preferences'
 import { userStore } from './user'
 import { profileSettingsStore } from './userProfileSettings'
-import { transformAssistantToCreateDTO } from './utils/assistants'
+import { extractHeadroomFieldErrors, transformAssistantToCreateDTO } from './utils/assistants'
 
 const RECENT_ASSISTANTS_STORAGE_KEY = 'recentAssistants'
 const RECENT_ASSISTANTS_FETCH_BATCH_SIZE = 50
@@ -795,10 +795,12 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       const response = await api.post('v1/assistants', assistantData)
       return await response.json()
     } catch (error: any) {
+      const fieldErrors = extractHeadroomFieldErrors(error)
       return {
         error: error.message ?? 'Failed to create assistant',
         message: error.message ?? 'Failed to create assistant',
         assistantId: null,
+        ...(fieldErrors ? { fieldErrors } : {}),
       }
     }
   },
@@ -920,11 +922,13 @@ export const assistantsStore = proxy<AssistantsStoreType>({
       }
       // The backend wraps most update failures as a generic message with the reason in `details`.
       const { message, details } = parsedError
+      const fieldErrors = extractHeadroomFieldErrors(error)
       return {
         // `error` feeds the toast (sanitized HTML); `message` is plain text for the inline form error.
         error: formatErrorMessage({ error: parsedError }),
         message: typeof details === 'string' && details ? `${message}. ${details}` : message,
         assistantId: null,
+        ...(fieldErrors ? { fieldErrors } : {}),
       }
     }
   },
