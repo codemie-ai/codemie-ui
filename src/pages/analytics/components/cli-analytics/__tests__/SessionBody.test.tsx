@@ -98,7 +98,7 @@ describe('SessionBody cost cards (EPMCDME-16522)', () => {
     renderSession({ cost_available: true, unpriced_models: ['mai-code-1.1-flash'] })
 
     expect(card('Est. Cost')).toHaveTextContent('$0.02')
-    expect(card('Cache Re-Read Cost')).toHaveTextContent('$0.004')
+    expect(card('Cache Re-Read Cost')).toHaveTextContent('$0.00')
     for (const label of ['Est. Cost', 'Cache Re-Read Cost']) {
       expect(card(label).querySelector('[data-testid="unpriced-cost-marker"]')).toHaveAttribute(
         'data-tooltip-content',
@@ -121,7 +121,7 @@ describe('SessionBody cost cards (EPMCDME-16522)', () => {
     renderSession({ cost_available: true, unpriced_models: [] })
 
     expect(card('Est. Cost')).toHaveTextContent('$0.02')
-    expect(card('Cache Re-Read Cost')).toHaveTextContent('$0.004')
+    expect(card('Cache Re-Read Cost')).toHaveTextContent('$0.00')
     expect(screen.queryByTestId('unpriced-cost-marker')).not.toBeInTheDocument()
   })
 

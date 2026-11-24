@@ -31,8 +31,9 @@ describe('analyticsFormatters', () => {
       expect(formatMetricValue(1234.5, MetricFormat.CURRENCY)).toBe('$1,234.50')
     })
 
-    it('renders sub-cent spend with significant digits, never as $0.00', () => {
-      expect(formatMetricValue(0.0042, MetricFormat.CURRENCY)).toBe('$0.0042')
+    it('rounds sub-cent spend to two decimals', () => {
+      expect(formatMetricValue(0.0042, MetricFormat.CURRENCY)).toBe('$0.00')
+      expect(formatMetricValue(0.0075, MetricFormat.CURRENCY)).toBe('$0.01')
     })
 
     it('formats percentage values with two decimal places', () => {

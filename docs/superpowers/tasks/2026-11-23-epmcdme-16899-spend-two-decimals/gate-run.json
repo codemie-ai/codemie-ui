@@ -1,0 +1,85 @@
+{
+ "schema": 1,
+ "branch": "EPMCDME-16899_spend-two-decimals",
+ "head": "7b0f8bf05d0edf5bbc584251386dba5cab11ba1a",
+ "runner": "npm",
+ "started_at": "2026-11-23T15:00:00Z",
+ "completed_at": "2026-11-23T15:56:07.437Z",
+ "status": "PASSED",
+ "drift_detected": false,
+ "gates": [
+  {
+   "id": "lint",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 105369,
+   "command": "npm run lint",
+   "exit_code": 0,
+   "notes": " Result carried forward from the earlier run at the same HEAD (working tree unchanged); not re-executed in this run."
+  },
+  {
+   "id": "typecheck",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 60850,
+   "command": "npm run typecheck",
+   "exit_code": 0,
+   "notes": " Result carried forward from the earlier run at the same HEAD (working tree unchanged); not re-executed in this run."
+  },
+  {
+   "id": "unit-tests",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 603333,
+   "command": "npm run test:unit:slnt",
+   "exit_code": 0,
+   "notes": "Test Files 972 passed (972); Tests 10400 passed | 1 skipped Result carried forward from the earlier run at the same HEAD (working tree unchanged); not re-executed in this run."
+  },
+  {
+   "id": "integration-tests",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 389216,
+   "command": "npm run test:integration:slnt",
+   "exit_code": 0,
+   "notes": "Test Files 91 passed (91); Tests 1067 passed | 1 skipped Result carried forward from the earlier run at the same HEAD (working tree unchanged); not re-executed in this run."
+  },
+  {
+   "id": "secrets",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 22416,
+   "command": "npm run secrets:check",
+   "exit_code": 0,
+   "notes": "no leaks found Result carried forward from the earlier run at the same HEAD (working tree unchanged); not re-executed in this run."
+  },
+  {
+   "id": "license",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 7280,
+   "command": "npm run license-check",
+   "exit_code": 0,
+   "notes": "Run with npm_config_script_shell=Git Bash bash.exe (repo command unchanged). Exit 0, licence summary printed, no Found error on stderr."
+  },
+  {
+   "id": "sonar",
+   "source": "guide",
+   "status": "SKIPPED",
+   "duration_ms": 0,
+   "command": "npm run sonar-local",
+   "exit_code": null,
+   "notes": "SONAR_TOKEN unset; not run locally, the MR pipeline runs it"
+  },
+  {
+   "id": "license-headers",
+   "source": "hook",
+   "status": "PASS",
+   "duration_ms": 1757,
+   "command": "npm run license-headers:check",
+   "exit_code": 0,
+   "notes": "0 missing headers of 2905 Result carried forward from the earlier run at the same HEAD (working tree unchanged); not re-executed in this run."
+  }
+ ],
+ "failures": {}
+}

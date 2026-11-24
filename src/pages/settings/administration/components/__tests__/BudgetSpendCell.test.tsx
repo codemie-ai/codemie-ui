@@ -82,6 +82,22 @@ describe('BudgetSpendCell', () => {
     expect(screen.getByText('$5.00 / $50.00')).toBeInTheDocument()
   })
 
+  it('renders every category spend with exactly two decimals', () => {
+    render(
+      <BudgetSpendCell
+        items={[
+          item({ category: 'platform', current_spending: 12.3456, max_budget: 100 }),
+          item({ category: 'cli', current_spending: 0.0067, max_budget: 100 }),
+          item({ category: 'premium_models', current_spending: 0.0017, max_budget: 100 }),
+        ]}
+      />
+    )
+
+    expect(screen.getByText('$12.35 / $100.00')).toBeInTheDocument()
+    expect(screen.getByText('$0.01 / $100.00')).toBeInTheDocument()
+    expect(screen.getByText('$0.00 / $100.00')).toBeInTheDocument()
+  })
+
   it('renders a measured zero as $0.00 rather than a dash', () => {
     render(
       <BudgetSpendCell

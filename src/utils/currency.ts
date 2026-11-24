@@ -15,19 +15,13 @@
 
 import { ABSENT_VALUE_MARKER } from '@/constants'
 
-const ONE_CENT = 0.01
-
 /**
- * Formats a number as USD with thousands separators and two decimals - except a positive amount
- * below one cent, which keeps two significant digits. Real spend must never read as `$0.00`: an LLM
- * call commonly costs a fraction of a cent, and a reader takes `$0.00` for "nothing spent" - the
- * same failure as rendering an absent figure as zero (EPMCDME-15204). Significant digits rather
- * than fixed four decimals, so an embedding-sized cost (0.0000026) does not read `$0.0000` either.
+ * Formats a number as USD with thousands separators and always exactly two decimals (EPMCDME-16899).
+ * Sub-cent amounts round like any other value (0.0067 -> `$0.01`, 0.0017 -> `$0.00`). An absent
+ * figure is never formatted here - see `formatSpend`, which renders it as the absent marker.
  */
 export const formatCurrency = (value: number): string =>
-  value > 0 && value < ONE_CENT
-    ? `$${value.toLocaleString('en-US', { maximumSignificantDigits: 2 })}`
-    : `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 /**
  * Formats a possibly-absent spend value.

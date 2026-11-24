@@ -32,6 +32,11 @@ describe('SpendingAmount', () => {
     expect(screen.getByText('$120.50 / $500.00')).toBeInTheDocument()
   })
 
+  it('rounds sub-cent spend to two decimals', () => {
+    render(<SpendingAmount spend={0.0067} limit={300} />)
+    expect(screen.getByText('$0.01 / $300.00')).toBeInTheDocument()
+  })
+
   it('renders zero spend rather than a dash', () => {
     render(<SpendingAmount spend={0} limit={500} />)
     expect(screen.getByText('$0.00 / $500.00')).toBeInTheDocument()

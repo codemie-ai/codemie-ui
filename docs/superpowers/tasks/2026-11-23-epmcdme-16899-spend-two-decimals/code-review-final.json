@@ -1,0 +1,61 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "No findings; user approved. Confidence low (no spec in sdlc-light)."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "No findings; user approved. Confidence low (no spec in sdlc-light)."
+    }
+  ],
+  "reviewed_head": "7b0f8bf05d0edf5bbc584251386dba5cab11ba1a",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case lens returned no findings and standards found no blocking items; no spec/story was available so acceptance did not run (confidence low). 0 deferred, 0 advisory, 0 dismissed; the deferred backlog was not written because nothing was deferred.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "4 subjects in range all match EPMCDME-<n>: Capitalised sentence with non-zero ticket number"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "guide .ai-run/guides/standards/code-quality.md is absent from the repo and no ref was passed"
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "guide .ai-run/guides/security/security-practices.md is absent; no concrete security issue seen in the change"
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case lens returned no findings and standards found no blocking items; no spec/story was available so acceptance did not run (confidence low). 0 deferred, 0 advisory, 0 dismissed; the deferred backlog was not written because nothing was deferred.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

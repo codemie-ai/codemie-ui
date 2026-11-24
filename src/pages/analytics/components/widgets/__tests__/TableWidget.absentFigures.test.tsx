@@ -72,6 +72,18 @@ describe('TableWidget absent figures', () => {
     expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 
+  it('renders money figures with exactly two decimals, rounding sub-cent amounts', () => {
+    renderWidget(
+      buildResponse([
+        { user: 'alice', cost: 0.0075 },
+        { user: 'bob', cost: 12.3456 },
+      ])
+    )
+
+    expect(screen.getByText('$0.01')).toBeInTheDocument()
+    expect(screen.getByText('$12.35')).toBeInTheDocument()
+  })
+
   it('renders a measured zero as $0.00', () => {
     renderWidget(buildResponse([{ user: 'alice', cost: 0 }]))
 

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-23T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 4, "label": "L" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 11,
+  "size": "S",
+  "band_range": "10-14",
+  "files_changed": 9,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "9 files by diffstat (7-10 maps to L), but only one is production code (src/utils/currency.ts, +4/-10); the other eight are test updates." },
+    { "dimension": "technical_risk", "reason": "Single shared formatter (formatCurrency) simplified to fixed 2-decimal toLocaleString. Established pattern, trivially reversible. Sub-cent amounts now round to $0.00 or $0.01, a deliberate display change." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
