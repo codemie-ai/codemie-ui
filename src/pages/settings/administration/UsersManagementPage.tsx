@@ -527,6 +527,7 @@ const UsersManagementPage: FC = () => {
               pagination={pagination}
               onPaginationChange={handlePageChange}
               perPageOptions={DECIMAL_PAGINATION_OPTIONS}
+              alwaysShowPerPage
               tableClassName="table-fixed"
               expandedRowIds={canManageBudgets ? expandedRowIds : undefined}
               onToggleExpand={canManageBudgets ? handleToggleExpand : undefined}

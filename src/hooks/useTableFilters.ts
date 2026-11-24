@@ -77,8 +77,6 @@ export const useTableFilters = ({
             newSortOrder = secondOrder
           } else if (prevSort.sortOrder === secondOrder) {
             newSortOrder = undefined
-          } else {
-            newSortOrder = firstOrder
           }
         }
 

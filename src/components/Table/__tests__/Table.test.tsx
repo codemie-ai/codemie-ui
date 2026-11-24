@@ -174,6 +174,37 @@ describe('Table row click', () => {
   })
 })
 
+describe('Table alwaysShowPerPage', () => {
+  const pagination = { page: 0, perPage: 10, totalPages: 1, totalCount: 3 }
+
+  afterEach(() => cleanup())
+
+  it('shows the per-page selector on a single page when alwaysShowPerPage is set', () => {
+    render(
+      <Table
+        items={[]}
+        columnDefinitions={[]}
+        pagination={pagination}
+        onPaginationChange={vi.fn()}
+        alwaysShowPerPage
+      />
+    )
+    expect(screen.getByText('Show:')).toBeInTheDocument()
+  })
+
+  it('hides the per-page selector on a single page by default', () => {
+    render(
+      <Table
+        items={[]}
+        columnDefinitions={[]}
+        pagination={pagination}
+        onPaginationChange={vi.fn()}
+      />
+    )
+    expect(screen.queryByText('Show:')).not.toBeInTheDocument()
+  })
+})
+
 const selectionItems = [
   { id: 'plain', name: 'Plain model' },
   { id: 'router', name: 'Router' },

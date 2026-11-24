@@ -208,6 +208,7 @@ export interface TableProps<T = TableItem> {
   innerPagination?: boolean
   onPaginationChange?: PaginationProps['setPage']
   perPageOptions?: PaginationProps['perPageOptions']
+  alwaysShowPerPage?: PaginationProps['alwaysShowPerPage']
   paginationVariant?: PaginationProps['variant']
   pagination?: { page: number; totalPages: number; perPage: number; totalCount?: number }
   embedded?: boolean
@@ -253,6 +254,7 @@ const Table = <T,>({
   loading = false,
   pagination,
   perPageOptions,
+  alwaysShowPerPage,
   paginationVariant,
   customRenderColumns = {},
   onSort,
@@ -321,6 +323,7 @@ const Table = <T,>({
 
   const paginationProps = {
     perPageOptions,
+    alwaysShowPerPage,
     setPage: onPaginationChange!,
     currentPage: pagination?.page ?? 0,
     totalPages: pagination?.totalPages ?? 0,

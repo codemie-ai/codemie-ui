@@ -1,0 +1,45 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "decision": "approve",
+  "reviewed_head": "bb7e35fcc23be1b00d08b0921bdcc588ae3e6b25",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Edge-case lens returned no findings; the change threads the existing Pagination alwaysShowPerPage prop through Table to UsersManagementPage, matching ProjectMembersManager. Acceptance did not run (no spec), so confidence is low; 0 deferred, 0 dismissed.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Edge-case lens returned no findings; the change threads the existing Pagination alwaysShowPerPage prop through Table to UsersManagementPage, matching ProjectMembersManager. Acceptance did not run (no spec), so confidence is low; 0 deferred, 0 dismissed.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

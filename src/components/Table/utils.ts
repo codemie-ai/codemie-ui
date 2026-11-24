@@ -50,6 +50,7 @@ const referenceKeys = [
   'innerPagination',
   'loading',
   'perPageOptions',
+  'alwaysShowPerPage',
   'paginationVariant',
   'idPath',
   'customRenderColumns',
