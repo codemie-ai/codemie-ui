@@ -37,7 +37,6 @@ import { buildRepoMetrics } from '../format'
 import { useCliAnalyticsApiSpend } from '../hooks/useCliAnalyticsApiSpend'
 import { useCliAnalyticsOverview } from '../hooks/useCliAnalyticsOverview'
 import { useCliAnalyticsRepositories } from '../hooks/useCliAnalyticsRepositories'
-import { useCliAnalyticsUserCount } from '../hooks/useCliAnalyticsUserCount'
 import { buildOverviewSummaryGroups, type OverviewMetricGroup } from '../overviewMetrics'
 
 interface OverviewViewProps {
@@ -83,14 +82,13 @@ const OverviewView: FC<OverviewViewProps> = ({ filters, repositories }) => {
     setSearch: setRepoSearch,
   } = useCliAnalyticsRepositories(filters, repositories, false, 10)
 
-  const { userCount, loading: userCountLoading } = useCliAnalyticsUserCount(filters, repositories)
   const { apiSpend, loading: apiSpendLoading } = useCliAnalyticsApiSpend(filters, repositories)
-  // The cards mix the three answers, so they wait for all of them rather than show figures of two periods.
-  const summaryLoading = loading || userCountLoading || apiSpendLoading
+  // The cards mix the two answers, so they wait for all of them rather than show figures of two periods.
+  const summaryLoading = loading || apiSpendLoading
 
   const summaryGroups: OverviewMetricGroup[] = useMemo(
-    () => (kpis ? buildOverviewSummaryGroups(kpis, userCount, apiSpend, personalBilledCost) : []),
-    [kpis, userCount, apiSpend, personalBilledCost]
+    () => (kpis ? buildOverviewSummaryGroups(kpis, apiSpend, personalBilledCost) : []),
+    [kpis, apiSpend, personalBilledCost]
   )
 
   const activityTimelineData: TabularResponse = useMemo(

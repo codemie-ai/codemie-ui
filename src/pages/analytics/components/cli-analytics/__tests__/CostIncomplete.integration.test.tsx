@@ -121,7 +121,6 @@ const resetStore = () => {
     projects: null,
     repositories: null,
     sessions: null,
-    userCount: null,
     apiSpend: null,
     efficiency: null,
     loading: {},

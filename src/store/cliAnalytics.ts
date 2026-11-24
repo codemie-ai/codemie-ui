@@ -68,7 +68,6 @@ interface CliAnalyticsState {
   cost: CliAnalyticsCostData | null
   efficiency: CliAnalyticsEfficiencyData | null
   frameworks: string[] | null
-  userCount: number | null
   apiSpend: number | null
   sessionDetail: Record<string, SessionDetail>
   loading: Record<string, boolean>
@@ -87,7 +86,6 @@ interface CliAnalyticsState {
   fetchEfficiency: (params: Record<string, unknown>) => Promise<void>
   fetchSessionDetail: (traceId: string) => Promise<void>
   fetchFrameworks: (params: Record<string, unknown>) => Promise<void>
-  fetchUserCount: (params: Record<string, unknown>) => Promise<void>
   fetchApiSpend: (params: Record<string, unknown>) => Promise<void>
 }
 
@@ -195,7 +193,6 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
   cost: null,
   efficiency: null,
   frameworks: null,
-  userCount: null,
   apiSpend: null,
   sessionDetail: {},
   loading: {},
@@ -217,7 +214,8 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       cliAnalyticsStore,
       'tools',
       'v1/analytics/cli-analytics/tools',
-      params,
+      // The Tools tab reads no subscription or origin list; false skips the three statements that build them.
+      { ...params, include_class_lists: false },
       'Failed to fetch local analytics tools'
     )
     if (data) cliAnalyticsStore.tools = data.data
@@ -238,29 +236,8 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
     }
   },
 
-  // Own slot: the Users tab owns `users`, and a one-row request must not replace its table.
-  // Cleared first, so a failed or pending request never leaves the count of other filters on screen.
-  async fetchUserCount(params) {
-    cliAnalyticsStore.userCount = null
-    const data = await fetchWithState<{ data: CliAnalyticsUserTableData }>(
-      cliAnalyticsStore,
-      'userCount',
-      'v1/analytics/cli-analytics/users',
-      // Only total_count is read: skip the daily-activity and avg-duration statements.
-      {
-        ...params,
-        page: 0,
-        per_page: 1,
-        include_daily_activity: false,
-        include_avg_duration: false,
-      },
-      'Failed to fetch user count'
-    )
-    if (data) cliAnalyticsStore.userCount = data.data?.total_count ?? null
-  },
-
   // Est. Cost of sessions routed through the CodeMie proxy (billed per token). Own slot, so the
-  // filtered request never replaces the Overview data. Cleared first, like the user count.
+  // filtered request never replaces the Overview data. Cleared first, so a failed or pending request never leaves the value of other filters on screen.
   async fetchApiSpend(params) {
     cliAnalyticsStore.apiSpend = null
     const data = await fetchWithState<{ data: CliAnalyticsOverviewData }>(
@@ -297,7 +274,8 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       'overview',
       'v1/analytics/cli-analytics/overview',
       // The Overview tab reads neither part; false keeps the request on the start-day rollup.
-      { ...params, include_class_lists: false, include_buckets: false },
+      // `include_total_users` adds `kpis.total_users` (the Users card), so no `/users` request is needed.
+      { ...params, include_class_lists: false, include_buckets: false, include_total_users: true },
       'Failed to fetch local analytics overview'
     )
     if (data) cliAnalyticsStore.overview = withCostMetadata(data.data, data.metadata)
@@ -372,7 +350,8 @@ export const cliAnalyticsStore = proxy<CliAnalyticsState>({
       cliAnalyticsStore,
       'efficiency',
       'v1/analytics/cli-analytics/efficiency',
-      params,
+      // The Efficiency tab reads no class lists. include_buckets stays on: session_depth is a bucketed series it renders.
+      { ...params, include_class_lists: false },
       'Failed to fetch local analytics efficiency'
     )
     if (data) cliAnalyticsStore.efficiency = withCostMetadata(data.data, data.metadata)

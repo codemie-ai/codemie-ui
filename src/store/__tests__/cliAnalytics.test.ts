@@ -155,45 +155,6 @@ describe('cliAnalyticsStore session pricing', () => {
   })
 })
 
-describe('cliAnalyticsStore.fetchUserCount', () => {
-  beforeEach(() => {
-    mockApi.get.mockReset()
-    cliAnalyticsStore.userCount = null
-    cliAnalyticsStore.users = null
-  })
-
-  it('asks the users endpoint for one row and keeps only total_count in its own slot', async () => {
-    respondWith({ data: { rows: [], total_count: 212, avg_session_duration_ms: null } })
-
-    await cliAnalyticsStore.fetchUserCount({ time_period: 'last_30_days' })
-
-    expect(mockApi.get).toHaveBeenCalledWith(
-      'v1/analytics/cli-analytics/users',
-      expect.objectContaining({
-        params: expect.objectContaining({
-          time_period: 'last_30_days',
-          page: 0,
-          per_page: 1,
-          include_daily_activity: false,
-          include_avg_duration: false,
-        }),
-      })
-    )
-    expect(cliAnalyticsStore.userCount).toBe(212)
-    // The Users tab owns the `users` slot; the count must not overwrite its table.
-    expect(cliAnalyticsStore.users).toBeNull()
-  })
-
-  it('drops the previous count when the next request fails', async () => {
-    cliAnalyticsStore.userCount = 12
-    mockApi.get.mockRejectedValueOnce(new Error('boom'))
-
-    await cliAnalyticsStore.fetchUserCount({ time_period: 'last_7_days' })
-
-    expect(cliAnalyticsStore.userCount).toBeNull()
-  })
-})
-
 describe('cliAnalyticsStore.fetchApiSpend', () => {
   beforeEach(() => {
     mockApi.get.mockReset()
@@ -336,6 +297,52 @@ describe('cliAnalyticsStore.fetchOverview', () => {
           time_period: 'last_30_days',
           include_class_lists: false,
           include_buckets: false,
+          include_total_users: true,
+        }),
+      })
+    )
+  })
+})
+
+describe('cliAnalyticsStore.fetchEfficiency', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset()
+  })
+
+  it('turns off the class lists but keeps the buckets behind the session depth chart', async () => {
+    respondWith({ data: { kpis: null } })
+
+    await cliAnalyticsStore.fetchEfficiency({ time_period: 'last_30_days' })
+
+    expect(mockApi.get).toHaveBeenCalledWith(
+      'v1/analytics/cli-analytics/efficiency',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          time_period: 'last_30_days',
+          include_class_lists: false,
+        }),
+      })
+    )
+    expect(mockApi.get.mock.calls[0][1].params).not.toHaveProperty('include_buckets')
+  })
+})
+
+describe('cliAnalyticsStore.fetchTools', () => {
+  beforeEach(() => {
+    mockApi.get.mockReset()
+  })
+
+  it('turns off the class lists the Tools tab does not read', async () => {
+    respondWith({ data: { tool_usage: [] } })
+
+    await cliAnalyticsStore.fetchTools({ time_period: 'last_30_days' })
+
+    expect(mockApi.get).toHaveBeenCalledWith(
+      'v1/analytics/cli-analytics/tools',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          time_period: 'last_30_days',
+          include_class_lists: false,
         }),
       })
     )

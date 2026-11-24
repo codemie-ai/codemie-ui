@@ -56,11 +56,10 @@ const integer = (
 // Three rows of five (cost, tokens, sessions). API Spend / Subscription Usage are left out while their source is missing.
 export function buildOverviewSummaryGroups(
   kpis: OverviewKPIs,
-  userCount: number | null,
   apiSpend: number | null = null,
   personalBilledCost: number | null = null
 ): OverviewMetricGroup[] {
-  const users = kpis.total_users ?? userCount
+  const users = kpis.total_users ?? null
   // Backend split when it ships (Ticket B). Until then API Spend is the CodeMie-proxy sessions, and
   // Subscription Usage is corporate + unknown (the rest of Est. Cost) plus personal, which the backend
   // keeps out of Est. Cost and reports apart.

@@ -21,6 +21,7 @@ import { buildOverviewSummaryGroups } from '../overviewMetrics'
 
 const KPIS: OverviewKPIs = {
   total_sessions: 200,
+  total_users: 40,
   total_cost_usd: 100,
   duration_ms: 3_600_000,
   total_turns: 300,
@@ -41,10 +42,9 @@ const KPIS: OverviewKPIs = {
 
 const groups = (
   kpis: OverviewKPIs,
-  users: number | null = 40,
   apiSpend: number | null = null,
   personal: number | null = null
-) => buildOverviewSummaryGroups(kpis, users, apiSpend, personal)
+) => buildOverviewSummaryGroups(kpis, apiSpend, personal)
 
 const byId = (...args: Parameters<typeof groups>) =>
   Object.fromEntries(
@@ -58,7 +58,7 @@ const ids = (...args: Parameters<typeof groups>) =>
 
 describe('buildOverviewSummaryGroups', () => {
   it('builds the cost, tokens and sessions rows in the agreed order', () => {
-    expect(ids(KPIS, 40, 35, 20)).toEqual([
+    expect(ids(KPIS, 35, 20)).toEqual([
       [
         'cost',
         [
@@ -87,7 +87,7 @@ describe('buildOverviewSummaryGroups', () => {
   })
 
   it('uses the agreed titles and captions', () => {
-    const m = byId(KPIS, 40, 35, 20)
+    const m = byId(KPIS, 35, 20)
     const text = (id: string) => [m[id].label, m[id].description]
     expect(text('total_cost_usd')).toEqual(['Est. Cost', 'All usage at API rates'])
     expect(text('api_cost_usd')).toEqual(['API Spend', 'Billed per token'])
@@ -124,26 +124,25 @@ describe('buildOverviewSummaryGroups', () => {
   })
 
   it('splits Est. Cost into API Spend and Subscription Usage, adding the personal cost back', () => {
-    const m = byId(KPIS, 40, 35, 20)
+    const m = byId(KPIS, 35, 20)
     expect(m.api_cost_usd.value).toBe(35)
     // Est. Cost 100 - API 35 + personal 20
     expect(m.subscription_cost_usd.value).toBe(85)
-    expect(byId(KPIS, 40, 35).subscription_cost_usd.value).toBe(65)
+    expect(byId(KPIS, 35).subscription_cost_usd.value).toBe(65)
   })
 
   it('prefers the backend split over the CodeMie-proxy spend', () => {
-    const m = byId({ ...KPIS, api_cost_usd: 40, subscription_cost_usd: 60 }, 40, 35, 20)
+    const m = byId({ ...KPIS, api_cost_usd: 40, subscription_cost_usd: 60 }, 35, 20)
     expect(m.api_cost_usd.value).toBe(40)
     expect(m.subscription_cost_usd.value).toBe(60)
   })
 
-  it('prefers the backend total_users and falls back to the fetched count', () => {
-    expect(byId({ ...KPIS, total_users: 50 }, 40).total_users.value).toBe(50)
-    expect(byId(KPIS, 40).total_users.value).toBe(40)
+  it('reads the Users value from the backend total_users', () => {
+    expect(byId({ ...KPIS, total_users: 50 }).total_users.value).toBe(50)
   })
 
-  it('shows no per-user caption and an absent value until the user count loads', () => {
-    const m = byId(KPIS, null)
+  it('shows no per-user caption and an absent value when the backend sends no total_users', () => {
+    const m = byId({ ...KPIS, total_users: null })
     expect(m.total_users.value).toBeNull()
     expect(m.total_sessions.description).toBeUndefined()
   })

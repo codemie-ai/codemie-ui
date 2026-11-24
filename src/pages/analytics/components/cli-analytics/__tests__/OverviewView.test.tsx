@@ -55,10 +55,6 @@ vi.mock('../hooks/useCliAnalyticsOverview', () => ({
   })),
 }))
 
-vi.mock('../hooks/useCliAnalyticsUserCount', () => ({
-  useCliAnalyticsUserCount: vi.fn(() => ({ userCount: 40, loading: false, error: null })),
-}))
-
 vi.mock('../hooks/useCliAnalyticsApiSpend', () => ({
   useCliAnalyticsApiSpend: vi.fn(() => ({ apiSpend: null, loading: false, error: null })),
 }))

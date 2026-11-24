@@ -28,7 +28,6 @@ export type CliAnalyticsSliceKey =
   | 'efficiency'
   | 'overview'
   | 'tools'
-  | 'userCount'
 
 const SLICE_FETCHER_NAMES = {
   activity: 'fetchActivity',
@@ -37,7 +36,6 @@ const SLICE_FETCHER_NAMES = {
   efficiency: 'fetchEfficiency',
   overview: 'fetchOverview',
   tools: 'fetchTools',
-  userCount: 'fetchUserCount',
 } as const satisfies Record<CliAnalyticsSliceKey, keyof typeof cliAnalyticsStore>
 
 export interface UseCliAnalyticsSliceResult<T> {

@@ -1,0 +1,82 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.check",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "CR-001 fixed in 48ffa3213 (include_buckets:false removed from /efficiency); targeted check round approved with high confidence; user asked to fix the finding and commit the review artifacts"
+  },
+  "gates": [
+    {
+      "gate": "code-review.check",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "CR-001 fixed in 48ffa3213 (include_buckets:false removed from /efficiency); targeted check round approved with high confidence; user asked to fix the finding and commit the review artifacts"
+    }
+  ],
+  "reviewed_head": "48ffa3213652aaa43c2838c7d84e82893f105ed2",
+  "rounds": [
+    "final",
+    "check"
+  ],
+  "rationale": "CR-001 resolved: fetchEfficiency at HEAD sends only include_class_lists:false and no longer sends include_buckets:false, so session_depth is kept. No new findings discovered; standards and business review carried forward.",
+  "confidence": "low",
+  "check_confidence": "high",
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 1,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/store/cliAnalytics.ts",
+      "line": 354,
+      "title": "Efficiency drops buckets while session_depth is read",
+      "problem": "fetchEfficiency sends include_buckets:false, but useCliAnalyticsEfficiency.ts:51 reads data.session_depth, a series bucketed by turns. If the backend omits it under include_buckets:false, the chart is empty.",
+      "impact": "Session depth chart may render empty on the Efficiency tab. Backend contract unconfirmed, so reachability is uncertain and severity is capped at major.",
+      "recommendation": "Confirm backend include_buckets does not cover session_depth; if it does, drop include_buckets:false from fetchEfficiency.",
+      "status": "resolved",
+      "check_notes": "cliAnalytics.ts:354 now passes { ...params, include_class_lists: false } only; include_buckets:false removed from fetchEfficiency.",
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-now"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "5 subjects in range all match EPMCDME-<n>: <Capitalised summary> with non-zero ticket number"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard"
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "no .ai-run/guides/security/security-practices.md in the repo and no ref passed; no concrete security issue seen from changed-file list"
+    }
+  ],
+  "final_round": {
+    "decision": "request-changes",
+    "rationale": "Acceptance skipped (no spec) so confidence is low; blind and verification-gap are not in the balanced profile. One blocking finding: efficiency sends include_buckets:false while session_depth is read (backend contract unconfirmed). 0 deferred, 0 advisory, 2 dismissed (see code-review-dismissed.local.md).",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

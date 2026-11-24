@@ -328,7 +328,7 @@ describe('useCliAnalyticsSessions', () => {
     )
 
     await waitFor(() => {
-      const arg = fetchSessions.mock.calls[0][0]
+      const arg = fetchSessions.mock.calls[0][0] as { projects?: unknown }
       expect(arg).toEqual(expect.objectContaining({ is_project_unattributed: true }))
       expect(arg.projects).toBeUndefined()
     })
