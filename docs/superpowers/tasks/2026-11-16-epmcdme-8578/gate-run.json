@@ -1,0 +1,12 @@
+{"schema":1,"branch":"EPMCDME-8578_fix-delete-all-converstaions-hover-contrast","head":"01198d9141c4c78fa4bf7aba74d8dfbece1b12dd","runner":"npm","started_at":"2026-11-16T16:43:31Z","completed_at":"2026-11-16T17:00:00Z","status":"BLOCKED","drift_detected":false,
+"gates":[
+{"id":"lint","source":"guide","status":"PASS","duration_ms":45896,"command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":23613,"command":"npm run typecheck","exit_code":0},
+{"id":"unit-tests","source":"guide","status":"PASS","duration_ms":463800,"command":"npm run test:unit:slnt","exit_code":0,"notes":"Test Files 915 passed (915); Tests 9620 passed | 1 skipped"},
+{"id":"integration-tests","source":"guide","status":"PASS","duration_ms":245457,"command":"npm run test:integration:slnt","exit_code":0,"notes":"Test Files 84 passed (84); Tests 905 passed | 1 skipped"},
+{"id":"secrets","source":"guide","status":"PASS","duration_ms":14287,"command":"npm run secrets:check","exit_code":0,"notes":"no leaks found"},
+{"id":"license","source":"guide","status":"FAIL","duration_ms":9276,"command":"npm run license-check","exit_code":1,"notes":"Reported MIT as not permitted, which is inconsistent with the allow list; likely the single-quoted --onlyAllow arg is not parsed on this Windows shell (npm runs scripts via cmd). Likely environmental, but not verified as pass."},
+{"id":"sonar","source":"guide","status":"SKIPPED","duration_ms":0,"command":"npm run sonar-local","exit_code":null,"notes":"SONAR_TOKEN unset; also a pre-commit hook gate. Set SONAR_TOKEN to run locally."},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":1635,"command":"npm run license-headers:check","exit_code":0,"notes":"2815 files, 0 missing"}
+],
+"failures":{"license":"Package \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted by the --onlyAllow flag. Exiting."}}

@@ -1,0 +1,3 @@
+{"ts":"2026-11-16T16:22:46Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved plan","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-11-16T16:42:46Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved review","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-11-16T17:02:38Z","gate_id":"feature.verification","mode":"hitl","verdict":{"decision":"approve","rationale":"license gate failure is cmd quoting artifact; passes under bash (exit 0); other gates pass; sonar skipped (no token)","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
