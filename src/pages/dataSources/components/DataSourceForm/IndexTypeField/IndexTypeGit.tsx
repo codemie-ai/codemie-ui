@@ -106,7 +106,7 @@ const IndexTypeGit: FC<Props> = ({
             className="w-full"
             label="Repository Link"
             error={errors.repoLink?.message}
-            placeholder="https://gitlab.example.com/codemie"
+            placeholder="https://gitlab.example.com/codemie.git"
           />
         )}
       />
