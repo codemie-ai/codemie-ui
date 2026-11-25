@@ -815,7 +815,7 @@ const AssistantForm = forwardRef<AssistantFormRef, AssistantFormProps>(
                 </div>
                 {isHeadroomEnabled && (
                   <div className="flex flex-col gap-4">
-                    <div className="text-sm leading-6 text-white">
+                    <div className="text-sm leading-6 text-text-primary">
                       Context compression (Headroom)
                     </div>
                     <Controller

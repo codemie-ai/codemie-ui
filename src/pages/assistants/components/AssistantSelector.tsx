@@ -307,7 +307,9 @@ const AssistantSelector: React.FC<AssistantSelectorProps> = forwardRef<
           <>
             <div
               className={cn(
-                enlargedLabel ? 'text-sm leading-6 text-white' : 'text-xs text-text-quaternary'
+                enlargedLabel
+                  ? 'text-sm leading-6 text-text-primary'
+                  : 'text-xs text-text-quaternary'
               )}
             >
               Sub-Assistants

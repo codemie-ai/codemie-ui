@@ -291,7 +291,9 @@ const ContextSelector = forwardRef<
               <div
                 className={cn(
                   'flex items-center gap-2',
-                  enlargedLabel ? 'text-sm leading-6 text-white' : 'text-xs text-text-quaternary'
+                  enlargedLabel
+                    ? 'text-sm leading-6 text-text-primary'
+                    : 'text-xs text-text-quaternary'
                 )}
               >
                 Datasource Context
