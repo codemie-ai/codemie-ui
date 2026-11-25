@@ -125,6 +125,27 @@ describe('ReadOnlyModelsCatalogPage model metadata', () => {
     ).toHaveTextContent('—')
   })
 
+  it('hides disabled models, shows them again when re-enabled, and keeps others', () => {
+    store.llmCatalogModels[0] = {
+      ...store.llmCatalogModels[0],
+      status: 'disabled',
+      isPremium: true,
+      provider: 'hidden_provider',
+    }
+    store.llmCatalogModels[1].status = 'deprecated'
+    const { rerender } = render(<ReadOnlyModelsCatalogPage />)
+    expect(screen.queryByText('New Default')).not.toBeInTheDocument()
+    expect(screen.getByText('Legacy Global')).toBeInTheDocument()
+    expect(screen.getByText('Legacy CLI')).toBeInTheDocument()
+    expect(screen.getByText('2 models · 0 premium')).toBeInTheDocument()
+    store.llmCatalogModels = store.llmCatalogModels.map((model, index) =>
+      index === 0 ? { ...model, status: 'enabled' } : model
+    )
+    rerender(<ReadOnlyModelsCatalogPage />)
+    expect(screen.getByText('New Default')).toBeInTheDocument()
+    expect(screen.getByText('3 models · 1 premium')).toBeInTheDocument()
+  })
+
   it('keeps deprecated flags attached to the matching rows when searching', () => {
     store.llmCatalogModels[1].status = 'deprecated'
     render(<ReadOnlyModelsCatalogPage />)

@@ -1,0 +1,80 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "CR-001 accepted: routers out of ticket scope"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "CR-001 accepted: routers out of ticket scope"
+    }
+  ],
+  "reviewed_head": "97d44b29b9c86e3bef3802999b6e434dced69504",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "CR-001 fixed: disabled routers are now filtered on the Help page. Compact profile, edge-case lens ran; acceptance not run (no spec) so confidence is low. One blocking finding: disabled routers are not filtered (reachability unconfirmed whether the backend returns disabled routers). 1 dismissed (provider filter staleness unreachable); 0 deferred; briefs in code-review-brief.local.md.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 1,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/help/ModelsCatalog/ReadOnlyModelsCatalogPage.tsx",
+      "line": 64,
+      "title": "Disabled routers still shown on Help page",
+      "problem": "Only llmCatalogModels are filtered by status !== 'disabled'; llmCatalogRouters (which carry status via mapLlmRouter, fetched with include_all=true) are passed unfiltered to RoutersSection.",
+      "impact": "A router disabled in Model Management may still be displayed on the Help page, contradicting the acceptance criterion. Reachability unconfirmed: whether the backend returns disabled routers was not established.",
+      "recommendation": "Pass routers={llmRouters.filter((r) => r.status !== 'disabled')} to RoutersSection.",
+      "status": "fixed",
+      "disposition": {
+        "rationale": "Disabled routers filtered via visibleRouters in ReadOnlyModelsCatalogPage.tsx",
+        "source": "hitl",
+        "action": "fix"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards not expected for this profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards not expected for this profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards not expected for this profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Compact profile, edge-case lens ran; acceptance not run (no spec) so confidence is low. One blocking finding: disabled routers are not filtered (reachability unconfirmed whether the backend returns disabled routers). 1 dismissed (provider filter staleness unreachable); 0 deferred; briefs in code-review-brief.local.md.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

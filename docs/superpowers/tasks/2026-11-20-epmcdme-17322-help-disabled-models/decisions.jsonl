@@ -1,0 +1,3 @@
+{"ts":"2026-11-20T14:17:35Z","gate_id":"plan.approved","mode":"hitl","verdict":{"decision":"approve","rationale":"User approved plan via ask","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-11-20T20:47:31Z","gate_id":"code-review.final","mode":"hitl","verdict":{"decision":"approve","rationale":"CR-001 accepted: routers out of ticket scope","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}
+{"ts":"2026-11-20T21:08:20Z","gate_id":"feature.verification","mode":"hitl","verdict":{"decision":"approve","rationale":"qa-gates passed; browser verification skipped by user (no browser tooling/backend available)","follow_ups":[],"confidence":"high","source":"hitl"},"escalated":false}

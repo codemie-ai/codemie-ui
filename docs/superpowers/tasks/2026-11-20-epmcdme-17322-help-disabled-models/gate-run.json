@@ -1,0 +1,81 @@
+{
+ "schema": 1,
+ "branch": "EPMCDME-17322_stop-displaying-disabled-models-on-help-page",
+ "head": "97d44b29b9c86e3bef3802999b6e434dced69504",
+ "runner": "npm",
+ "started_at": "2026-11-20T20:48:45Z",
+ "completed_at": "2026-11-20T21:05:51.791Z",
+ "status": "PASSED",
+ "drift_detected": false,
+ "gates": [
+  {
+   "id": "lint",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 45424,
+   "command": "npm run lint",
+   "exit_code": 0
+  },
+  {
+   "id": "typecheck",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 22955,
+   "command": "npm run typecheck",
+   "exit_code": 0
+  },
+  {
+   "id": "unit-tests",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 502432,
+   "command": "npm run test:unit:slnt",
+   "exit_code": 0,
+   "notes": "Test Files 965 passed (965); Tests 10318 passed | 1 skipped"
+  },
+  {
+   "id": "integration-tests",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 282349,
+   "command": "npm run test:integration:slnt",
+   "exit_code": 0,
+   "notes": "Test Files 91 passed (91); Tests 1066 passed | 1 skipped"
+  },
+  {
+   "id": "secrets",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 14568,
+   "command": "npm run secrets:check",
+   "exit_code": 0,
+   "notes": "no leaks found"
+  },
+  {
+   "id": "license",
+   "source": "guide",
+   "status": "PASS",
+   "duration_ms": 2581,
+   "command": "npm run license-check",
+   "exit_code": 0,
+   "notes": "Run via Git Bash (bash -c) with the exact license-check script text from package.json; exit 0 with licence summary, no Found error. The earlier npm/cmd.exe run failed because single quotes were literal there."
+  },
+  {
+   "id": "license-headers",
+   "source": "hook",
+   "status": "PASS",
+   "duration_ms": 1457,
+   "command": "npm run license-headers:check",
+   "exit_code": 0,
+   "notes": "2894 files, 0 missing"
+  },
+  {
+   "id": "sonar",
+   "source": "guide",
+   "status": "N/A",
+   "command": "npm run sonar-local",
+   "notes": "Not run: uploads analysis to the Sonar host and reruns full coverage suites; CI/hook settles it."
+  }
+ ],
+ "failures": {}
+}

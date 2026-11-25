@@ -30,22 +30,29 @@ const ReadOnlyModelsCatalogPage: FC = () => {
     getLLMCatalog()
   }, [getLLMCatalog])
 
+  const visibleModels = useMemo(() => llmModels.filter((m) => m.status !== 'disabled'), [llmModels])
+
+  const visibleRouters = useMemo(
+    () => llmRouters.filter((r) => r.status !== 'disabled'),
+    [llmRouters]
+  )
+
   const providers = useMemo(
-    () => [...new Set(llmModels.map((m) => m.provider).filter(Boolean))] as string[],
-    [llmModels]
+    () => [...new Set(visibleModels.map((m) => m.provider).filter(Boolean))] as string[],
+    [visibleModels]
   )
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return llmModels.filter(
+    return visibleModels.filter(
       (m) =>
         (!q || m.label.toLowerCase().includes(q)) &&
         (provider === 'all' || m.provider === provider) &&
         (!premiumOnly || m.isPremium)
     )
-  }, [llmModels, search, provider, premiumOnly])
+  }, [visibleModels, search, provider, premiumOnly])
 
-  const premiumCount = llmModels.filter((m) => m.isPremium).length
+  const premiumCount = visibleModels.filter((m) => m.isPremium).length
 
   return (
     <PageLayout>
@@ -59,7 +66,7 @@ const ReadOnlyModelsCatalogPage: FC = () => {
           chat; use them through CodeMie CLI and the apps it connects, such as Claude Desktop.
         </p>
 
-        <RoutersSection routers={[...llmRouters]} />
+        <RoutersSection routers={visibleRouters} />
 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
