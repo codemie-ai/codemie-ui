@@ -1,0 +1,26 @@
+{
+  "decision": "request-changes",
+  "rationale": "Acceptance did not run (no spec) and only the edge-case lens ran under the compact profile, so confidence is low. One edge finding survived: the effect no longer touches setting_id for Git, so a value left over from another index type can persist. Reachability was only partly confirmed, so severity is capped at major. 0 deferred, 0 dismissed.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "na", "notes": "Standards audit not part of this profile." },
+    { "kind": "code-quality", "status": "na", "notes": "Standards audit not part of this profile." },
+    { "kind": "security", "status": "na", "notes": "Standards audit not part of this profile." }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "major",
+      "triage": "patch",
+      "file": "src/pages/dataSources/components/DataSourceForm/hooks/useEditPopup.ts",
+      "line": 130,
+      "title": "Stale setting_id persists for Git datasource",
+      "problem": "Git was removed from the single-option auto-select list, and nothing clears setting_id for Git. If the form switches from an auto-selected type (e.g. Jira) to Git with exactly one Git option, the old setting_id stays. The else-branch compares projectName with getValues('projectName'), which is normally equal, so it does not clear it either. No other code in the datasource form resets setting_id on type change.",
+      "impact": "Git creation may not start empty (the acceptance criterion) and may submit an integration id from another type. Before this change the Git auto-select overwrote it. Reachability was not fully confirmed: it depends on the type-switch flow.",
+      "recommendation": "For Git, explicitly clear setting_id in this effect when it is not a valid Git option, e.g. if (indexType === INDEX_TYPES.GIT && !newSettingOptions.some(o => o.id === getValues('setting_id'))) setValue('setting_id', undefined)."
+    }
+  ]
+}

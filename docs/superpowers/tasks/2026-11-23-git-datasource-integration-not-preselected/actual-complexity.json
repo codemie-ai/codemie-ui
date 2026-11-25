@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-23",
+  "dimensions": {
+    "component_scope":      { "score": 2, "label": "S" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "component_scope", "reason": "Single hook (useEditPopup) gained a clearStaleGitSettingId helper wired into its existing effect; no layer boundary crossed." },
+    { "dimension": "technical_risk", "reason": "Form-state clearing logic with edit-mode and project-change edge cases, but follows the existing setValue/ref pattern in the same effect and is easily reversible." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

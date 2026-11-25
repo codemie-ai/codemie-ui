@@ -30,6 +30,13 @@ const jiraSetting = {
 }
 
 const otherProjectJiraSetting = { ...jiraSetting, id: 'other-id', project_name: 'other' }
+const gitSetting = {
+  ...jiraSetting,
+  id: 'git-id',
+  alias: 'My Git',
+  setting_type: 'Git',
+  credential_type: 'git',
+}
 
 vi.mock('@/store/userSettings', () => ({
   userSettingsStore: { settings: {} },
@@ -42,15 +49,19 @@ vi.mock('@/store/appInfo', () => ({
 vi.mock('valtio', async (importOriginal) => ({
   ...(await importOriginal<typeof import('valtio')>()),
   useSnapshot: () => ({
-    settings: { [INDEX_TYPES.JIRA]: [jiraSetting, otherProjectJiraSetting] },
+    settings: {
+      [INDEX_TYPES.JIRA]: [jiraSetting, otherProjectJiraSetting],
+      [INDEX_TYPES.GIT]: [gitSetting],
+    },
   }),
 }))
 
-const renderUseEditPopup = (isEditing: boolean) => {
+const renderUseEditPopup = (isEditing: boolean, indexType?: string, settingId?: string) => {
   const values: Record<string, unknown> = {
     projectName: 'demo',
-    indexType: INDEX_TYPES.JIRA,
+    indexType: indexType ?? INDEX_TYPES.JIRA,
     isEditing,
+    setting_id: settingId,
   }
   const getValues = vi.fn((name: string) => values[name])
   const watch = vi.fn((name: string) => values[name])
@@ -87,5 +98,23 @@ describe('useEditPopup — single-integration auto-select', () => {
     const { setValue } = renderUseEditPopup(false)
 
     expect(setValue).toHaveBeenCalledWith('setting_id', 'only-id')
+  })
+
+  it('does not auto-select the integration for Git on create', () => {
+    const { setValue } = renderUseEditPopup(false, INDEX_TYPES.GIT)
+
+    expect(setValue).not.toHaveBeenCalledWith('setting_id', expect.anything())
+  })
+
+  it('clears a stale setting_id left from another type when switching to Git', () => {
+    const { setValue } = renderUseEditPopup(false, INDEX_TYPES.GIT, 'only-id')
+
+    expect(setValue).toHaveBeenCalledWith('setting_id', undefined)
+  })
+
+  it('keeps a valid Git setting_id', () => {
+    const { setValue } = renderUseEditPopup(false, INDEX_TYPES.GIT, gitSetting.id)
+
+    expect(setValue).not.toHaveBeenCalled()
   })
 })

@@ -108,6 +108,18 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
     return filteredSettings[indexType] && filteredSettings[indexType].length > 0
   }
 
+  const clearStaleGitSettingId = (options: { id: string }[]) => {
+    const currentSettingId = getValues('setting_id')
+    const isEditUnchanged = getValues('isEditing') && !projectChangedOnEdit.current
+    if (
+      currentSettingId &&
+      !isEditUnchanged &&
+      !options.some((option) => option.id === currentSettingId)
+    ) {
+      setValue('setting_id', undefined)
+    }
+  }
+
   useEffect(() => {
     const sharepointAuthType = getValues('sharepointAuthType')
     if (
@@ -127,6 +139,8 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
       if (projectName !== loadedProjectName.current) projectChangedOnEdit.current = true
     }
 
+    if (indexType === INDEX_TYPES.GIT) clearStaleGitSettingId(newSettingOptions)
+
     if (newSettingOptions.length === 1) {
       if (getValues('isEditing') && !projectChangedOnEdit.current) return
       if (
@@ -134,7 +148,6 @@ export const useEditPopup = ({ getValues, setValue, watch }: UseEditPopupProps) 
         indexType === INDEX_TYPES.XRAY ||
         indexType === INDEX_TYPES.CONFLUENCE ||
         indexType === INDEX_TYPES.XWIKI ||
-        indexType === INDEX_TYPES.GIT ||
         indexType === INDEX_TYPES.SVN ||
         indexType === INDEX_TYPES.AZURE_DEVOPS_WIKI ||
         indexType === INDEX_TYPES.AZURE_DEVOPS_WORK_ITEM ||

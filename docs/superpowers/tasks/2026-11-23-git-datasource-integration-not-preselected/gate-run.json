@@ -1,0 +1,11 @@
+{"schema":1,"branch":"EPMCDME-17166-git-int-do-not-preselect","head":"58b33e7580bd4228bdcd80c633393ffd202d0d70","runner":"npm","started_at":"2026-11-23T14:23:06Z","completed_at":"2026-11-23T14:50:00Z","status":"PASSED","drift_detected":false,
+"gates":[
+{"id":"lint","source":"guide","status":"PASS","duration_ms":30000,"command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":22000,"command":"npm run typecheck","exit_code":0},
+{"id":"unit-tests","source":"guide","status":"PASS","duration_ms":255000,"command":"npm run test:unit:slnt","exit_code":0,"notes":"Test Files 970 passed (970)"},
+{"id":"integration-tests","source":"guide","status":"PASS","duration_ms":154000,"command":"npm run test:integration:slnt","exit_code":0,"notes":"Test Files 91 passed (91)"},
+{"id":"secrets","source":"guide","status":"PASS","duration_ms":39000,"command":"npm run secrets:check","exit_code":0,"notes":"no leaks found"},
+{"id":"license","source":"guide","status":"PASS","duration_ms":3000,"command":"npm run license-check","exit_code":0},
+{"id":"sonar","source":"guide","status":"PASS","duration_ms":220000,"command":"npm run sonar-local","exit_code":0,"notes":"QUALITY GATE STATUS: PASSED"},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":1000,"command":"npm run license-headers:check","exit_code":0,"notes":"0 missing license headers"}
+],"failures":{}}
