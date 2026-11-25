@@ -27,6 +27,7 @@ import {
 import { type FC, useMemo } from 'react'
 import { Line } from 'react-chartjs-2'
 
+import { NOT_REPORTED_LABEL } from '@/constants/cliAnalytics'
 import { ColumnType, type Metric, type TabularResponse } from '@/types/analytics'
 import type { SessionDetail } from '@/types/cliAnalytics'
 import { formatMetricValue, formatTokens } from '@/utils/analyticsFormatters'
@@ -110,6 +111,12 @@ function m(id: string, label: string, value: string, description?: string): Metr
 const countMetric = (id: string, label: string, c: SessionCount, caption: string): Metric =>
   m(id, label, c.value, c.note || caption)
 
+// formatDuration renders 0 as "—"; for active time a reported zero must stay distinct from unreported.
+function formatActive(ms: number | null | undefined): string {
+  if (ms == null) return NOT_REPORTED_LABEL
+  return ms === 0 ? '0 ms' : formatDuration(ms)
+}
+
 interface SessionBodyProps {
   session: SessionDetail
 }
@@ -130,12 +137,7 @@ const SessionBody: FC<SessionBodyProps> = ({ session }) => {
       'spend on context re-reads'
     ),
     m('duration', 'Duration', formatDuration(session.duration_ms), 'wall-clock'),
-    m(
-      'active',
-      'Active',
-      session.active_ms != null ? formatDuration(session.active_ms) : '—',
-      'excludes idle'
-    ),
+    m('active', 'Active', formatActive(session.active_ms), 'excludes idle'),
     m('started', 'Started', formatDateTime(session.start_time, 'short'), 'first event'),
   ]
 

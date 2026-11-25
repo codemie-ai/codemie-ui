@@ -29,6 +29,7 @@ const BASE: SessionDetail = {
   branch: null,
   start_time: '2026-07-01T09:00:00Z',
   duration_ms: 45000,
+  active_ms: 30000,
   model_name: 'claude',
   input_tokens: 10,
   output_tokens: 10,

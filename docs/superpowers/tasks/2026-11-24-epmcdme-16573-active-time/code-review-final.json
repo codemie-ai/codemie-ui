@@ -1,0 +1,26 @@
+{
+  "decision": "approve",
+  "rationale": "Edge-case lens only (compact profile, no spec so acceptance skipped); confidence low because no spec existed. 2 candidates dismissed as noise: negative/NaN active_ms is a pre-existing formatDuration contract outside the null/0/positive requirement, and '0 ms' is the specified output. 0 deferred.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "1 commit subject in range matches EPMCDME-<n>: <Capitalised summary> with non-zero ticket number"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md in the repo and no ref passed; absent standard"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "security/README.md is remediation-process guidance with no code rules applicable to this change; changed SessionBody.tsx has no HTML sinks, eval, window.open, logging or storage use"
+    }
+  ],
+  "findings": [],
+  "deferred": []
+}

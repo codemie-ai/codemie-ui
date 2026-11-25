@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "generated": "2026-11-24T00:00:00Z",
+  "dimensions": {
+    "component_scope": {
+      "score": 2,
+      "label": "S"
+    },
+    "requirements_clarity": {
+      "score": 1,
+      "label": "XS"
+    },
+    "technical_risk": {
+      "score": 1,
+      "label": "XS"
+    },
+    "file_change_estimate": {
+      "score": 3,
+      "label": "M"
+    },
+    "dependencies": {
+      "score": 1,
+      "label": "XS"
+    },
+    "affected_layers": {
+      "score": 1,
+      "label": "XS"
+    }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 4,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    {
+      "dimension": "file_change_estimate",
+      "reason": "4 files (SessionBody.tsx, cliAnalytics.ts, one new test, one fixture line) maps to M per diffstat rule, though all in one feature directory."
+    },
+    {
+      "dimension": "component_scope",
+      "reason": "Single UI component (SessionBody formatActive helper) plus a type change; no layer boundary crossed."
+    }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

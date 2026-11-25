@@ -123,7 +123,7 @@ export interface DispatchRow {
 export interface SessionDetail extends SessionRow {
   events: SessionEvent[]
   harness_name: string
-  active_ms?: number
+  active_ms?: number | null
   agent_count?: number | null
   skill_count?: number | null
   cache_read_cost_usd?: number
