@@ -22,3 +22,11 @@ import { User } from '@/types/entity/user'
  */
 export const canAccessUsersTab = (user: User | null | undefined): boolean =>
   !!(user?.isAdmin || user?.isMaintainer || user?.isAuditor)
+
+/**
+ * Whether the current user can follow the cost-center link to Project Management and use its
+ * cost-center filter — platform admins, maintainers and auditors. Read-only: it does not grant
+ * any cost-center write access, and callers check the cost-centers feature flag themselves.
+ */
+export const canFilterProjectsByCostCenter = (user: User | null | undefined): boolean =>
+  !!(user?.isAdmin || user?.isMaintainer || user?.isAuditor)

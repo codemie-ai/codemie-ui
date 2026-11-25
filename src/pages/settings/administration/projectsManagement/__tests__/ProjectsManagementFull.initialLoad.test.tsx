@@ -190,6 +190,7 @@ describe('ProjectsManagementFull — cost-center filter access', () => {
   it.each([
     [{ platform_role: 'admin', isAdmin: true }, true],
     [{ platform_role: 'maintainer', isMaintainer: true }, true],
+    [{ platform_role: 'auditor', isAuditor: true }, true],
     [{ platform_role: 'user', isAdmin: false }, false],
   ])('renders the filter for permitted roles: %s', async (user, visible) => {
     userStore.user = user as typeof userStore.user

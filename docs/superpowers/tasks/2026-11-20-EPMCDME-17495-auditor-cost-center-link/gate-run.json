@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-17495_auditor-project-count-link",
+  "head": "03d6e33cafb9a99944f556175838d3474cecb239",
+  "runner": "npm",
+  "started_at": "2026-11-20T09:11:24.432652+00:00",
+  "completed_at": "2026-11-20T09:11:24.432652+00:00",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 950 passed (950); Tests 10160 passed | 1 skipped"
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0,
+      "notes": "Test Files 90 passed (90); Tests 1032 passed | 1 skipped"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "no leaks found"
+    },
+    {
+      "id": "license",
+      "source": "guide",
+      "status": "PASS",
+      "command": "npm run license-check",
+      "exit_code": 0,
+      "notes": "no 'Found error' in output"
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "0 missing headers of 2875"
+    },
+    {
+      "id": "sonar",
+      "source": "hook",
+      "status": "SKIPPED",
+      "command": "npm run sonar-local",
+      "notes": "SONAR_TOKEN unset; hook exits 0 without scanning. Set SONAR_TOKEN and reach the Sonar host to run locally; CI/Sonar still owed."
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "command": "npx lint-staged",
+      "notes": "Operates on staged files; eslint and tsc covered by lint/typecheck gates."
+    },
+    {
+      "id": "mr-pipeline",
+      "source": "ci",
+      "status": "N/A",
+      "command": "external pre-ci-guard",
+      "notes": "External pipeline contexts unreachable locally."
+    }
+  ],
+  "failures": {}
+}

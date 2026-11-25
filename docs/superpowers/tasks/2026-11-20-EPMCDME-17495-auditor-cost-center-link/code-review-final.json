@@ -1,0 +1,65 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; review returned approve with 0 findings (full profile, auth risk flag)"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; review returned approve with 0 findings (full profile, auth risk flag)"
+    }
+  ],
+  "reviewed_head": "03d6e33cafb9a99944f556175838d3474cecb239",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "No blocking findings: edge-case and verification-gap lenses returned empty, standards passed, and 6 blind-lens concerns were dismissed (backend acceptance and read-only auditor behavior are stated in the task; remainder test nits). Confidence is low because no spec/story existed so acceptance did not run.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [
+    "auth"
+  ],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "pass",
+      "notes": "2 subjects match the documented EPMCDME-<n>: <Capitalised summary> format with a non-zero ticket key"
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "no .ai-run/guides/standards/code-quality.md exists in the repo and no ref was passed; absent standard"
+    },
+    {
+      "kind": "security",
+      "status": "pass",
+      "notes": "adjudicated against security-patterns.md; no HTML sinks, redirects, secrets or suppressions. Helper is a client-side UI gate; backend remains the authority"
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "No blocking findings: edge-case and verification-gap lenses returned empty, standards passed, and 6 blind-lens concerns were dismissed (backend acceptance and read-only auditor behavior are stated in the task; remainder test nits). Confidence is low because no spec/story existed so acceptance did not run.",
+    "confidence": "low",
+    "risk_flags": [
+      "auth"
+    ]
+  }
+}

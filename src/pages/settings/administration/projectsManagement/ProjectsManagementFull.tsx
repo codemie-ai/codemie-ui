@@ -53,6 +53,7 @@ import { Project, ProjectCounters, ProjectType } from '@/types/entity/project'
 import { ProjectDetail } from '@/types/entity/projectManagement'
 import { ColumnDefinition, DefinitionTypes, SortState } from '@/types/table'
 import { formatCurrency, formatSpend } from '@/utils/currency'
+import { canFilterProjectsByCostCenter } from '@/utils/permissions'
 import { getProjectDisplayName } from '@/utils/projectDisplayName'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
@@ -242,8 +243,7 @@ const ProjectsManagementFull: FC = () => {
     FEATURE_FLAG_PROJECT_CREATION
   )
   const [isCostCentersEnabled] = useFeatureFlag(FEATURE_FLAG_COST_CENTERS)
-  const canFilterByCostCenter =
-    isCostCentersEnabled && !!(currentUser?.isAdmin || currentUser?.isMaintainer)
+  const canFilterByCostCenter = isCostCentersEnabled && canFilterProjectsByCostCenter(currentUser)
   const effectiveCostCenterIds = useMemo(
     () => (canFilterByCostCenter ? costCenterIds : []),
     [canFilterByCostCenter, costCenterIds]

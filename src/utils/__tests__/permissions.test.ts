@@ -16,7 +16,7 @@
 import { describe, it, expect } from 'vitest'
 
 import { User } from '@/types/entity/user'
-import { canAccessUsersTab } from '@/utils/permissions'
+import { canAccessUsersTab, canFilterProjectsByCostCenter } from '@/utils/permissions'
 
 const baseUser: User = {
   userId: 'u1',
@@ -49,5 +49,28 @@ describe('canAccessUsersTab', () => {
 
   it('returns false for a project admin without a platform role', () => {
     expect(canAccessUsersTab({ ...baseUser, applicationsAdmin: ['some-project'] })).toBe(false)
+  })
+})
+
+describe('canFilterProjectsByCostCenter', () => {
+  it('returns false for null or undefined', () => {
+    expect(canFilterProjectsByCostCenter(null)).toBe(false)
+    expect(canFilterProjectsByCostCenter(undefined)).toBe(false)
+  })
+
+  it('returns false for a plain user with no platform role', () => {
+    expect(canFilterProjectsByCostCenter(baseUser)).toBe(false)
+  })
+
+  it('returns true for an admin', () => {
+    expect(canFilterProjectsByCostCenter({ ...baseUser, isAdmin: true })).toBe(true)
+  })
+
+  it('returns true for a maintainer', () => {
+    expect(canFilterProjectsByCostCenter({ ...baseUser, isMaintainer: true })).toBe(true)
+  })
+
+  it('returns true for an auditor', () => {
+    expect(canFilterProjectsByCostCenter({ ...baseUser, isAuditor: true })).toBe(true)
   })
 })

@@ -145,8 +145,33 @@ describe('CostCentersManagementPage — project-count badge navigation (EPMCDME-
     expect(href).toContain('cost_center_ids=cc-1')
   })
 
+  it('renders a link for an auditor', async () => {
+    userStore.user = { userId: 'auditor-1', isAdmin: false, isAuditor: true } as never
+    render(
+      <MemoryRouter>
+        <CostCentersManagementPage />
+      </MemoryRouter>
+    )
+
+    const row = await screen.findByTestId('row-cc-1')
+    const href = within(row).getByRole('link', { name: 'Projects' }).getAttribute('href') ?? ''
+    expect(href).toContain('cost_center_ids=cc-1')
+  })
+
+  it('keeps an auditor read-only: no Create button', async () => {
+    userStore.user = { userId: 'auditor-1', isAdmin: false, isAuditor: true } as never
+    render(
+      <MemoryRouter>
+        <CostCentersManagementPage />
+      </MemoryRouter>
+    )
+
+    await screen.findByTestId('row-cc-1')
+    expect(screen.queryByRole('button', { name: /create/i })).not.toBeInTheDocument()
+  })
+
   it('renders a plain count without a link when the viewer cannot filter by cost center', async () => {
-    userStore.user = { userId: 'user-1', isAdmin: false, isAuditor: true } as never
+    userStore.user = { userId: 'user-1', isAdmin: false } as never
     render(
       <MemoryRouter>
         <CostCentersManagementPage />

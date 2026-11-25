@@ -38,6 +38,7 @@ import { userStore } from '@/store/user'
 import { PaginatedResponse } from '@/types/common'
 import { CostCenterListItem } from '@/types/entity/costCenter'
 import { ColumnDefinition, DefinitionTypes } from '@/types/table'
+import { canFilterProjectsByCostCenter } from '@/utils/permissions'
 import toaster from '@/utils/toaster'
 import { displayValue } from '@/utils/utils'
 
@@ -101,7 +102,7 @@ const CostCentersManagementPage = () => {
   const { user: currentUser } = useSnapshot(userStore)
   // Auditors get read-only access: the backend refuses create/edit/delete for them (403)
   const canManageCostCenters = !!(currentUser?.isAdmin || currentUser?.isMaintainer)
-  const canLinkToFilteredProjects = canManageCostCenters
+  const canLinkToFilteredProjects = canFilterProjectsByCostCenter(currentUser)
   const [response, setResponse] = useState(initialResponse)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
