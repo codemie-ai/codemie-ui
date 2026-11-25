@@ -227,6 +227,30 @@ describe('CREDENTIAL_UI_MAPPING non-url string defaults', () => {
   )
 })
 
+describe('CREDENTIAL_UI_MAPPING email oauth_authority default', () => {
+  const field = () => CREDENTIAL_UI_MAPPING.email.fields.oauth_authority
+
+  beforeEach(clearMocks)
+
+  it('defaultValue is a function', () => {
+    expect(typeof field().defaultValue).toBe('function')
+  })
+
+  it('defaultValue is empty when the backend returned no default', () => {
+    expect((field().defaultValue as () => string)()).toBe('')
+  })
+
+  it('defaultValue returns the backend default, so the field shows it', () => {
+    mockToolFieldDefaults['email.oauth_authority'] = 'https://login.microsoftonline.com'
+    expect((field().defaultValue as () => string)()).toBe('https://login.microsoftonline.com')
+  })
+
+  it('defaultValue returns a customer-configured authority instead of the public cloud', () => {
+    mockToolFieldDefaults['email.oauth_authority'] = 'https://login.microsoftonline.cn'
+    expect((field().defaultValue as () => string)()).toBe('https://login.microsoftonline.cn')
+  })
+})
+
 describe('getSettingCredsURL', () => {
   beforeEach(clearMocks)
 

@@ -38,7 +38,7 @@ const TOOL_CONFIG_FIELD_MAP: Record<string, { credentialType: string; fields: st
   confluenceconfig: { credentialType: 'confluence', fields: ['url', 'cloud'] },
   genericgitconfig: { credentialType: 'git', fields: ['url', 'auth_type'] },
   genericazuredevopsconfig: { credentialType: 'azuredevops', fields: ['url', 'auth_type'] },
-  emailtoolconfig: { credentialType: 'email', fields: ['url', 'auth_type'] },
+  emailtoolconfig: { credentialType: 'email', fields: ['url', 'auth_type', 'oauth_authority'] },
   xwikiconfig: { credentialType: 'xwiki', fields: ['url', 'use_bearer'] },
   keycloakconfig: { credentialType: 'keycloak', fields: ['base_url'] },
   xrayconfig: { credentialType: 'xray', fields: ['base_url'] },

@@ -278,6 +278,30 @@ describe('appInfoStore.fetchToolConfigs', () => {
     expect(appInfoStore.toolFieldDefaults['xray.base_url']).toBe('https://xray.mycompany.com')
   })
 
+  it('reads the oauth_authority default for the email tool', async () => {
+    mockGet.mockResolvedValue(
+      okResponse([
+        { emailtoolconfig: { oauth_authority: { default: 'https://login.microsoftonline.com' } } },
+      ])
+    )
+
+    await appInfoStore.fetchToolConfigs()
+
+    expect(appInfoStore.toolFieldDefaults['email.oauth_authority']).toBe(
+      'https://login.microsoftonline.com'
+    )
+  })
+
+  it('does not store an empty oauth_authority default for the email tool', async () => {
+    mockGet.mockResolvedValue(
+      okResponse([{ emailtoolconfig: { oauth_authority: { default: '' } } }])
+    )
+
+    await appInfoStore.fetchToolConfigs()
+
+    expect(appInfoStore.toolFieldDefaults['email.oauth_authority']).toBeUndefined()
+  })
+
   it('extracts boolean fields: cloud and use_bearer', async () => {
     mockGet.mockResolvedValue(
       okResponse([

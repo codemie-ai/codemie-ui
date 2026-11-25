@@ -520,6 +520,7 @@ export const CREDENTIAL_UI_MAPPING: CredentialUIMap = {
       oauth_authority: {
         label: 'Microsoft Entra ID Authority',
         placeholder: 'Optional, e.g. https://login.microsoftonline.com',
+        defaultValue: dynDefault('email', 'oauth_authority'),
         shouldShow: isOAuthAzureAuth,
       },
       oauth_scope: {

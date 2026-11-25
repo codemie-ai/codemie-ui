@@ -1,0 +1,29 @@
+{
+  "decision": "approve",
+  "rationale": "No spec was supplied (acceptance n/a), so confidence is low; the edge-case lens ran and standards had no gap. 1 advisory finding (intent question on pinning the default when editing a blank saved authority), 0 deferred, 1 dismissed (load-order race already handled by the reset() effect in SettingsForm). Brief and dismissed sidecars written.",
+  "confidence": "low",
+  "risk_flags": [],
+  "business_review": [],
+  "standards_review": [
+    { "kind": "commit-format", "status": "pass", "notes": "1 subject in range matches the documented EPMCDME-<n>: <Capitalised summary> format with a non-zero ticket number" },
+    { "kind": "code-quality", "status": "na", "notes": "no .ai-run/guides/standards/code-quality.md in this repo and no ref passed; absent standard, not a gap" },
+    { "kind": "security", "status": "na", "notes": "no .ai-run/guides/security/security-practices.md in this repo and no ref passed; absent standard, not a gap. Changed source inspected: no concrete security issue found" }
+  ],
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "type": "question",
+      "file": "src/pages/integrations/components/SettingsForm/SettingsForm.tsx",
+      "line": 384,
+      "title": "Blank stored authority gets default pinned on edit",
+      "problem": "In getInitialCredentialValues, stored values that are blank are filtered out before merging over the defaults. With oauth_authority now carrying a dynDefault, editing a saved oauth_azure email credential whose authority is blank pre-fills the backend default, and saving persists it.",
+      "impact": "Narrow trigger: only editing a previously saved Email OAuth credential with a blank authority. The pinned value equals the backend's own fallback today, so behavior is unchanged until the default changes; the user can clear the field. Same merge behavior already applies to other dynDefault fields such as url.",
+      "recommendation": "Confirm that showing and persisting the default when editing a blank saved authority is intended; if not, skip dynamic defaults for fields stored blank when editing."
+    }
+  ],
+  "deferred": [],
+  "advisory_status": []
+}
