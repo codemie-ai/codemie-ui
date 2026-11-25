@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-10-29T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 2, "label": "S" },
+    "technical_risk":       { "score": 2, "label": "S" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 9,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "technical_risk", "reason": "compareFormData.ts gained a default-LLM-model normalization (reading appInfoStore) mirroring LLMSelector's resolution; small shared-util change with unit tests, no security or performance impact." },
+    { "dimension": "file_change_estimate", "reason": "One util modified plus its test file, 59 insertions, one directory tree." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}

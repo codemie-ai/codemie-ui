@@ -1,0 +1,11 @@
+{"schema":1,"branch":"EPMCDME-16413_fix-assistant-create-unsaved-dialog","head":"dff0d7229e903603bafdde18d2cb304e270bea18","runner":"npm","started_at":"2026-11-24T11:57:00Z","completed_at":"2026-11-24T12:35:00Z","status":"PASSED","drift_detected":false,
+"gates":[
+{"id":"lint","source":"guide","status":"PASS","duration_ms":56596,"command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","duration_ms":27388,"command":"npm run typecheck","exit_code":0},
+{"id":"unit-tests","source":"guide","status":"PASS","duration_ms":772525,"command":"npm run test:unit:slnt","exit_code":0,"notes":"Test Files 989 passed (989); Tests 10776 passed | 1 skipped"},
+{"id":"integration-tests","source":"guide","status":"SKIPPED","command":"npm run test:integration:slnt","notes":"Guide Skip-if: diff is only a standalone util (compareFormData.ts) plus its unit test, no component or store change."},
+{"id":"license-headers","source":"hook","status":"PASS","duration_ms":2216,"command":"npm run license-headers:check","exit_code":0,"notes":"Checked 2930 files, 0 missing"},
+{"id":"secrets","source":"hook","status":"PASS","duration_ms":35744,"command":"npm run secrets:check","exit_code":0,"notes":"no leaks found"},
+{"id":"sonar","source":"hook","status":"N/A","command":"npm run sonar-local","notes":"Uploads analysis for the branch and reruns full coverage; fails on Windows per project notes. Still owed to CI/pre-commit."},
+{"id":"wait-ci-init","source":"ci","status":"N/A","command":"external pre-ci-guard","notes":"Needs GitLab MR pipeline; cannot run locally."}],
+"failures":{}}

@@ -1,0 +1,98 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "user accepted all recommended"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "user accepted all recommended"
+    }
+  ],
+  "reviewed_head": "dff0d7229e903603bafdde18d2cb304e270bea18",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "Only edge-case lens ran (compact profile, no spec, so confidence is low); reachability checked by grep, not exhaustively. 2 advisory findings (inside the total), 0 deferred, 1 dismissed as pre-existing-minor (numeric ''/NaN normalization).",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [
+    {
+      "id": "CR-001",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/assistants/utils/compareFormData.ts",
+      "line": 76,
+      "title": "Empty-string effort treated as changed",
+      "problem": "effort is normalized with ?? null, so '' is not equal to null. Form schema is nullable and submit uses toEffortOrNull, so the select may emit '' when cleared.",
+      "impact": "Trigger: user clears the effort select on a model with no saved effort; false unsaved dialog. Whether the select emits '' was not confirmed; workaround is to discard.",
+      "recommendation": "Normalize with `|| null` for effort on both sides.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-later"
+      }
+    },
+    {
+      "id": "CR-002",
+      "kind": "code",
+      "severity": "minor",
+      "triage": "advisory",
+      "file": "src/pages/assistants/utils/compareFormData.ts",
+      "line": 77,
+      "title": "Empty tool_permissions object differs from null",
+      "problem": "tool_permissions is normalized with ?? null, so {} is not equal to null/undefined.",
+      "impact": "Narrow trigger: one side holds {} and the other null; the form flattens tool_permissions, so this is unlikely today. Reachability unconfirmed.",
+      "recommendation": "Treat an empty object as null via lodash isEmpty on both sides.",
+      "status": "wont-fix",
+      "disposition": {
+        "rationale": "recommended action accepted",
+        "source": "hitl",
+        "action": "fix-later"
+      }
+    }
+  ],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not run for this profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not run for this profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not run for this profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "Only edge-case lens ran (compact profile, no spec, so confidence is low); reachability checked by grep, not exhaustively. 2 advisory findings (inside the total), 0 deferred, 1 dismissed as pre-existing-minor (numeric ''/NaN normalization).",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

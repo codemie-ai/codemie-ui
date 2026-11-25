@@ -33,6 +33,10 @@ const normalizeDefaultTrueBooleanField = (value: boolean | null | undefined): bo
   return value !== false
 }
 
+const normalizeNumberField = (value: number | null | undefined): number | null => {
+  return value ?? null
+}
+
 const normalizeStringArrayField = (value: string[] | null | undefined): string[] => {
   return Array.isArray(value) ? value : []
 }
@@ -66,6 +70,12 @@ export const compareFormData = (initial: any, current: any) => {
     mcp_servers: normalizeMcpServersForComparison(initial.mcp_servers || []),
     llm_model_type: normalizeLlmModelField(initial.llm_model_type),
     enabled_builtin_subagents: normalizeStringArrayField(initial.enabled_builtin_subagents),
+    temperature: normalizeNumberField(initial.temperature),
+    top_p: normalizeNumberField(initial.top_p),
+    tools_tokens_size_limit: normalizeNumberField(initial.tools_tokens_size_limit),
+    effort: initial.effort ?? null,
+    tool_permissions: initial.tool_permissions ?? null,
+    headroom_config: initial.headroom_config ?? null,
   }
   const normalizedCurrent = {
     ...current,
@@ -79,6 +89,12 @@ export const compareFormData = (initial: any, current: any) => {
     mcp_servers: normalizeMcpServersForComparison(current.mcp_servers || []),
     llm_model_type: normalizeLlmModelField(current.llm_model_type),
     enabled_builtin_subagents: normalizeStringArrayField(current.enabled_builtin_subagents),
+    temperature: normalizeNumberField(current.temperature),
+    top_p: normalizeNumberField(current.top_p),
+    tools_tokens_size_limit: normalizeNumberField(current.tools_tokens_size_limit),
+    effort: current.effort ?? null,
+    tool_permissions: current.tool_permissions ?? null,
+    headroom_config: current.headroom_config ?? null,
   }
 
   if (!initial.project || initial.project === '') {

@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16413_fix-assistant-create-unsaved-dialog",
+  "head": "0ceb2969a2fc267af5076998887338ffb513cb7c",
+  "runner": "npm",
+  "started_at": "2026-10-29T15:40:23.843Z",
+  "completed_at": "2026-10-29T15:55:23.844Z",
+  "status": "BLOCKED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 39526,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 19315,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "license-check",
+      "source": "guide",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run license-check",
+      "exit_code": null,
+      "notes": "Skip if: no dependency added/removed/moved (diff touches 2 src files only)"
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 13307,
+      "command": "npm run secrets:check",
+      "exit_code": 0,
+      "notes": "gitleaks: no leaks found"
+    },
+    {
+      "id": "unit",
+      "source": "guide",
+      "status": "FAIL",
+      "duration_ms": 466519,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 1,
+      "notes": "26 tests in 9 files failed, none in diff-touched files; appear to be locale-formatting expectations (got \"$1 234,50\" vs \"$1,234.50\"). compareFormData tests passed."
+    },
+    {
+      "id": "integration",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 223310,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 30000,
+      "command": "npm run license-headers:check",
+      "exit_code": 0,
+      "notes": "2451 files, 0 missing"
+    },
+    {
+      "id": "lint-staged",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npx lint-staged",
+      "exit_code": null,
+      "notes": "Nothing staged; lint gate covers all files"
+    },
+    {
+      "id": "sonar-local",
+      "source": "hook",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "exit_code": null,
+      "notes": "Needs local SonarQube infrastructure; only CI can settle"
+    },
+    {
+      "id": "test-harness",
+      "source": "guide",
+      "status": "N/A",
+      "duration_ms": 0,
+      "command": "npm run test-harness",
+      "exit_code": null,
+      "notes": "Needs running stack and ~/.codemie/test-harness.json; unverified, owed before MR"
+    }
+  ],
+  "failures": {
+    "unit": "       |           ^\n    171|       expect(screen.getByText('-')).toBeInTheDocument()\n    172|       expect(screen.getByText('$0.00')).toBeInTheDocument()\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/52]⎯\n\n FAIL  |unit| src/utils/__tests__/analyticsFormatters.test.ts > analyticsFormatters > formatMetricValue > formats currency values with two decimal places\n FAIL  |unit| src/utils/__tests__/analyticsFormatters.test.ts > analyticsFormatters > formatMetricValue > formats currency values with two decimal places\nAssertionError: expected '$1 234,50' to be '$1,234.50' // Object.is equality\n\nExpected: \"$1,234.50\"\nReceived: \"$1 234,50\"\n\n ❯ src/utils/__tests__/analyticsFormatters.test.ts:30:64\n     28|\n     29|     it('formats currency values with two decimal places', () => {\n     30|       expect(formatMetricValue(1234.5, MetricFormat.CURRENCY)).toBe('$…\n       |                                                                ^\n     31|     })\n     32|\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/52]⎯\n\n FAIL  |unit| src/utils/__tests__/analyticsFormatters.test.ts > analyticsFormatters > formatMetricValue > formats numbers with locale separators when no explicit format is provided\n FAIL  |unit| src/utils/__tests__/analyticsFormatters.test.ts > analyticsFormatters > formatMetricValue > formats numbers with locale separators when no explicit format is provided\nAssertionError: expected '12 500' to be '12,500' // Object.is equality\n\nExpected: \"12,500\"\nReceived: \"12 500\"\n\n ❯ src/utils/__tests__/analyticsFormatters.test.ts:56:40\n     54|\n     55|     it('formats numbers with locale separators when no explicit format…\n     56|       expect(formatMetricValue(12500)).toBe('12,500')\n       |                                        ^\n     57|     })\n     58|\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/52]⎯\n\n\n Test Files  9 failed | 743 passed (752)\n      Tests  26 failed | 7652 passed | 1 skipped (7679)\n   Start at  17:42:58\n   Duration  456.90s (environment 33%, tests 26%, import 17%, setup 15%, transform 9%, worker 1%)\n\nEnvironment  |unit| jsdom was created 752 times · 350.91s total, 33% of tracked time\n             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)\n             learn more: https://vitest.dev/guide/improving-performance#test-environments\n\n"
+  }
+}
