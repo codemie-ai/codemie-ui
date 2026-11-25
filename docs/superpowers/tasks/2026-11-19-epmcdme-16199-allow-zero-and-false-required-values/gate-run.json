@@ -1,0 +1,12 @@
+{"schema":1,"branch":"EPMCDME-16199_allow-zero-and-false-required-values","head":"b5e6915a903997d8f4483e8c68a132db0a5858c4","runner":"npm","started_at":"2026-11-19T15:00:52Z","completed_at":"2026-11-19T16:05:00Z","status":"BLOCKED","drift_detected":false,
+"gates":[
+{"id":"lint","source":"guide","status":"PASS","command":"npm run lint","exit_code":0},
+{"id":"typecheck","source":"guide","status":"PASS","command":"npm run typecheck","exit_code":0},
+{"id":"unit-tests","source":"guide","status":"PASS","command":"npm run test:unit:slnt","exit_code":0,"notes":"Test Files 944 passed (944); Tests 10023 passed | 1 skipped"},
+{"id":"integration-tests","source":"guide","status":"PASS","command":"npm run test:integration:slnt","exit_code":0,"notes":"Test Files 89 passed (89); Tests 1026 passed | 1 skipped"},
+{"id":"secrets","source":"guide","status":"PASS","command":"npm run secrets:check","exit_code":0,"notes":"gitleaks: no leaks found"},
+{"id":"license","source":"guide","status":"FAIL","command":"npm run license-check","exit_code":1,"notes":"Flagged MIT as not permitted although MIT is in the allow list; likely the single-quoted --onlyAllow list is passed literally by cmd.exe on Windows, so the gate may not have evaluated correctly. Unverified, not a confirmed licence violation."},
+{"id":"license-headers","source":"hook","status":"PASS","command":"npm run license-headers:check","exit_code":0,"notes":"Checked 2861 files, 0 missing license headers"},
+{"id":"sonar","source":"guide","status":"SKIPPED","command":"npm run sonar-local","notes":"SONAR_TOKEN unset; guide Skip-if condition met"}
+],
+"failures":{"license":"Package \"@adobe/css-tools@4.5.0\" is licensed under \"MIT\" which is not permitted by the --onlyAllow flag. Exiting."}}

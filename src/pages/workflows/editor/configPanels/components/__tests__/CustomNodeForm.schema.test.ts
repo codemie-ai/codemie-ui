@@ -19,7 +19,7 @@ import { getValidationSchema } from '../CustomNodeForm'
 
 describe('CustomNodeForm validation schema — required list arguments', () => {
   it.each([[[]], [['']], [['  ', '']]])(
-    'blocks save when a required list argument is empty or blank: %j',
+    'blocks save when a required list  argument is empty or blank: %j',
     async (items) => {
       const schema = getValidationSchema(['items'])
       await expect(schema.validate({ custom_node_id: 'node', config: { items } })).rejects.toThrow(
@@ -33,5 +33,21 @@ describe('CustomNodeForm validation schema — required list arguments', () => {
     await expect(
       schema.validate({ custom_node_id: 'node', config: { items: ['a', ''] } })
     ).resolves.toBeTruthy()
+  })
+})
+
+describe('CustomNodeForm validation schema � required 0 and false values', () => {
+  it.each([[0], [0.0], [false]])('accepts required value %j', async (start) => {
+    const schema = getValidationSchema(['start'])
+    await expect(
+      schema.validate({ custom_node_id: 'node', config: { start } })
+    ).resolves.toBeTruthy()
+  })
+
+  it.each([[undefined], [null], [''], [[]]])('rejects missing required value %j', async (start) => {
+    const schema = getValidationSchema(['start'])
+    await expect(schema.validate({ custom_node_id: 'node', config: { start } })).rejects.toThrow(
+      /Required fields: start/
+    )
   })
 })

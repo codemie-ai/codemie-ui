@@ -49,3 +49,19 @@ describe('ToolForm validation schema — required list arguments (AC5)', () => {
     ).resolves.toBeTruthy()
   })
 })
+
+describe('ToolForm validation schema � required 0 and false values', () => {
+  it.each([[0], [0.0], [false]])('accepts required value %j', async (start) => {
+    const schema = getValidationSchema(['start'])
+    await expect(
+      schema.validate({ toolkits: [], mcpServers: [], tool_args: { start } })
+    ).resolves.toBeTruthy()
+  })
+
+  it.each([[undefined], [null], [''], [[]]])('rejects missing required value %j', async (start) => {
+    const schema = getValidationSchema(['start'])
+    await expect(
+      schema.validate({ toolkits: [], mcpServers: [], tool_args: { start } })
+    ).rejects.toThrow(/Required fields: start/)
+  })
+})

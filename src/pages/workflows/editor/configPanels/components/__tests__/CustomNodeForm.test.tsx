@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createRef } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -24,9 +24,11 @@ import CustomNodeForm, { CustomNodeFormRef } from '../CustomNodeForm'
 
 vi.mock('../../../utils/visualEditorFieldRegistry', () => ({ registerFields: vi.fn() }))
 
+const mockGetCustomNodeSchema = vi.fn()
+
 vi.mock('@/store/workflows', () => ({
   workflowsStore: {
-    getCustomNodeSchema: vi.fn().mockResolvedValue({ config_schema: {} }),
+    getCustomNodeSchema: (...args: unknown[]) => mockGetCustomNodeSchema(...args),
   },
 }))
 
@@ -61,6 +63,7 @@ describe('CustomNodeForm — onCustomNodeIdChange', () => {
   beforeEach(() => {
     user = userEvent.setup()
     vi.clearAllMocks()
+    mockGetCustomNodeSchema.mockResolvedValue({ config_schema: {} })
   })
 
   it('reports the current custom_node_id on mount and on change', async () => {
@@ -80,5 +83,48 @@ describe('CustomNodeForm — onCustomNodeIdChange', () => {
     await user.click(screen.getByTestId('custom-node-selector'))
 
     expect(onCustomNodeIdChange).toHaveBeenLastCalledWith(CustomNodeType.GENERATE_DOCUMENT_TREE)
+  })
+})
+
+describe('CustomNodeForm.validate � required 0 and false values', () => {
+  const renderWithConfig = async (config: Record<string, unknown>) => {
+    mockGetCustomNodeSchema.mockResolvedValue({
+      config_schema: {
+        start: { type: 'int', required: true },
+        enabled: { type: 'bool', required: true },
+      },
+    })
+    const ref = createRef<CustomNodeFormRef>()
+    render(
+      <CustomNodeForm
+        ref={ref}
+        project="test-project"
+        customNodeConfig={{ ...customNodeConfig, config: config as any }}
+      />
+    )
+    await screen.findByText('Start')
+    return ref
+  }
+
+  it('accepts required integer 0 and boolean false', async () => {
+    const ref = await renderWithConfig({ start: 0, enabled: false })
+
+    let result: boolean | undefined
+    await act(async () => {
+      result = await ref.current!.validate()
+    })
+
+    expect(result).toBe(true)
+    expect(screen.queryByText('Field is required')).not.toBeInTheDocument()
+  })
+
+  it('shows the required error for missing values', async () => {
+    const ref = await renderWithConfig({})
+
+    await act(async () => {
+      await ref.current!.validate()
+    })
+
+    await waitFor(() => expect(screen.getAllByText('Field is required').length).toBeGreaterThan(0))
   })
 })
