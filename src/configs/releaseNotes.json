@@ -1,5 +1,265 @@
 [
   {
+    "version": "2.71.0",
+    "date": "2026-11-25",
+    "sections": [
+      {
+        "code": "highlights",
+        "items": [
+          {
+            "title": "Headroom integration and configuration",
+            "description": "Added Headroom SDK integration with configuration options for individual assistants and workflows.",
+            "issues": [
+              {
+                "key": "EPMCDME-15645",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15645"
+              }
+            ]
+          },
+          {
+            "title": "User-level model overrides",
+            "description": "Added support for configuring model availability and overrides at the user level.",
+            "issues": [
+              {
+                "key": "EPMCDME-15082",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-15082"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "features",
+        "items": [
+          {
+            "title": "GitHub Copilot CLI session analytics",
+            "description": "Added complete analytics coverage for managed and native GitHub Copilot CLI sessions.",
+            "issues": [
+              {
+                "key": "EPMCDME-16457",
+                "type": "STORY",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16457"
+              }
+            ]
+          },
+          {
+            "title": "Marketplace creator visibility",
+            "description": "Marketplace Cleanup now displays each assistant’s actual creator.",
+            "issues": []
+          },
+          {
+            "title": "Container-image compatibility improvements",
+            "description": "Improved image compatibility with CRI-O and OpenShift environments.",
+            "issues": []
+          }
+        ]
+      },
+      {
+        "code": "fixes",
+        "items": [
+          {
+            "title": "Security hardening and dependency remediation",
+            "description": "Strengthened access controls, improved error handling, and remediated security-related dependencies across the platform.",
+            "issues": []
+          },
+          {
+            "title": "Git datasource setup",
+            "description": "Corrected Git integration selection and clarified repository-link guidance in datasource forms.",
+            "issues": [
+              {
+                "key": "EPMCDME-17166",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17166"
+              },
+              {
+                "key": "EPMCDME-16324",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16324"
+              }
+            ]
+          },
+          {
+            "title": "Analytics accuracy and performance",
+            "description": "Improved dashboard performance, cost KPI accuracy, and session-detail reporting.",
+            "issues": [
+              {
+                "key": "EPMCDME-17301",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17301"
+              },
+              {
+                "key": "EPMCDME-17152",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17152"
+              },
+              {
+                "key": "EPMCDME-16573",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16573"
+              }
+            ]
+          },
+          {
+            "title": "Model-label visibility",
+            "description": "Restored label visibility in the white theme.",
+            "issues": [
+              {
+                "key": "EPMCDME-17873",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17873"
+              }
+            ]
+          },
+          {
+            "title": "Cost Center project navigation",
+            "description": "Fixed project-count navigation for auditor users.",
+            "issues": [
+              {
+                "key": "EPMCDME-17495",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17495"
+              }
+            ]
+          },
+          {
+            "title": "Personal spending display",
+            "description": "Hidden expired budgets and corrected available-balance layout.",
+            "issues": [
+              {
+                "key": "EPMCDME-17494",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17494"
+              }
+            ]
+          },
+          {
+            "title": "GitLab tool validation feedback",
+            "description": "Replaced an internal validation error with a clear response for unsupported repository origins.",
+            "issues": [
+              {
+                "key": "EPMCDME-17331",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17331"
+              }
+            ]
+          },
+          {
+            "title": "Marketplace assistant unpublishing",
+            "description": "Fixed failures when unpublishing assistants while marketplace management is disabled.",
+            "issues": [
+              {
+                "key": "EPMCDME-17100",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-17100"
+              }
+            ]
+          },
+          {
+            "title": "Spend-value precision",
+            "description": "Standardized spend-value decimal precision across Platform, CLI, and Premium Models.",
+            "issues": [
+              {
+                "key": "EPMCDME-16899",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16899"
+              }
+            ]
+          },
+          {
+            "title": "Workflow save validation",
+            "description": "Corrected handling of script-step owner-integration warnings.",
+            "issues": [
+              {
+                "key": "EPMCDME-16485",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16485"
+              }
+            ]
+          },
+          {
+            "title": "Confluence agent attachments",
+            "description": "Fixed uploading agent-generated JSON files through Confluence integrations.",
+            "issues": [
+              {
+                "key": "EPMCDME-16431",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16431"
+              }
+            ]
+          },
+          {
+            "title": "Assistant creation flow",
+            "description": "Prevented an “Unsaved changes” prompt when no changes were made.",
+            "issues": [
+              {
+                "key": "EPMCDME-16413",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16413"
+              }
+            ]
+          },
+          {
+            "title": "Workflow editor values",
+            "description": "Allowed valid 0 and false values in required Tool and Custom node fields.",
+            "issues": [
+              {
+                "key": "EPMCDME-16199",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16199"
+              }
+            ]
+          },
+          {
+            "title": "Outlook integration testing",
+            "description": "Fixed malformed Microsoft login URL validation during integration tests.",
+            "issues": [
+              {
+                "key": "EPMCDME-14087",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-14087"
+              }
+            ]
+          },
+          {
+            "title": "Workflow card availability",
+            "description": "Fixed a workflow card that appeared in the list but could not be opened.",
+            "issues": [
+              {
+                "key": "EPMCDME-13492",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-13492"
+              }
+            ]
+          },
+          {
+            "title": "Azure DevOps Wiki health checks",
+            "description": "Ensured health checks use the integration selected in the UI.",
+            "issues": [
+              {
+                "key": "EPMCDME-9989",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-9989"
+              }
+            ]
+          },
+          {
+            "title": "Accessibility of conversation controls",
+            "description": "Improved hover-state contrast for the Delete All Conversations button.",
+            "issues": [
+              {
+                "key": "EPMCDME-8578",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-8578"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.70.0",
     "date": "2026-11-23",
     "sections": [
