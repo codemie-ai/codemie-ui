@@ -43,16 +43,6 @@
                 "link": "https://jiraeu.epam.com/browse/EPMCDME-16457"
               }
             ]
-          },
-          {
-            "title": "Marketplace creator visibility",
-            "description": "Marketplace Cleanup now displays each assistant’s actual creator.",
-            "issues": []
-          },
-          {
-            "title": "Container-image compatibility improvements",
-            "description": "Improved image compatibility with CRI-O and OpenShift environments.",
-            "issues": []
           }
         ]
       },
@@ -62,6 +52,11 @@
           {
             "title": "Security hardening and dependency remediation",
             "description": "Strengthened access controls, improved error handling, and remediated security-related dependencies across the platform.",
+            "issues": []
+          },
+          {
+            "title": "Container-image compatibility improvements",
+            "description": "Improved image compatibility with CRI-O and OpenShift environments.",
             "issues": []
           },
           {
@@ -252,6 +247,17 @@
                 "key": "EPMCDME-8578",
                 "type": "BUG",
                 "link": "https://jiraeu.epam.com/browse/EPMCDME-8578"
+              }
+            ]
+          },
+          {
+            "title": "Users Management pagination controls",
+            "description": "Restored the page-size selector when filtered user results fit on a single page.",
+            "issues": [
+              {
+                "key": "EPMCDME-16491",
+                "type": "BUG",
+                "link": "https://jiraeu.epam.com/browse/EPMCDME-16491"
               }
             ]
           }
