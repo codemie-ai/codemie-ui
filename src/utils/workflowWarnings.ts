@@ -15,6 +15,8 @@
 import toaster from '@/utils/toaster'
 import { isContractWarning } from '@/utils/workflowEditor/helpers/contractProtocol'
 
+export const OWNER_INTEGRATION_KIND = 'tool_access_owner_integration'
+
 export interface ConsumerSlotWarning {
   kind: 'consumer_slot'
   tool_name: string
@@ -22,7 +24,7 @@ export interface ConsumerSlotWarning {
 }
 
 export interface ScriptStepOwnerIntegrationWarning {
-  kind: 'script_step_owner_integration'
+  kind: typeof OWNER_INTEGRATION_KIND
   step_id: string
   tool_name: string
   integration_alias: string
@@ -47,7 +49,7 @@ export interface FormattedWarning {
 const MAX_LISTED_TOOLS = 3
 
 /** `script_step_owner_integration` is the legacy kind; the backend emits `tool_access_owner_integration`. */
-const OWNER_INTEGRATION_KINDS = ['script_step_owner_integration', 'tool_access_owner_integration']
+const OWNER_INTEGRATION_KINDS = ['script_step_owner_integration', OWNER_INTEGRATION_KIND]
 
 const isObject = (value: unknown): value is Record<string, any> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -65,7 +67,7 @@ export const normalizeWarnings = (raw?: unknown[]): WorkflowWarning[] => {
 }
 
 export const formatWarning = (warning: WorkflowWarning): FormattedWarning => {
-  if (warning.kind === 'script_step_owner_integration') {
+  if (OWNER_INTEGRATION_KINDS.includes(warning.kind)) {
     const w = warning as ScriptStepOwnerIntegrationWarning
     return { message: w.message, highlight: { stepId: w.step_id, toolName: w.tool_name } }
   }
@@ -90,7 +92,8 @@ const notifyConsumerSlots = (warnings: WorkflowWarning[], prefixSaved?: boolean)
 }
 
 const notifyScriptOwnerIntegration = (warnings: WorkflowWarning[], prefixSaved?: boolean) => {
-  const names = (warnings as ScriptStepOwnerIntegrationWarning[]).map((w) => w.tool_name)
+  const toolNames = (warnings as ScriptStepOwnerIntegrationWarning[]).map((w) => w.tool_name)
+  const names = [...new Set(toolNames.filter(Boolean))]
   const listed = names.slice(0, MAX_LISTED_TOOLS).join('; ')
   const rest = names.length - MAX_LISTED_TOOLS
   const more = rest > 0 ? ` and ${rest} more` : ''

@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "branch": "EPMCDME-16485_fix-workflow-owner-integration-warning-kind",
+  "head": "5d59fcf36827a7112c94199d28f4f462927c3444",
+  "runner": "npm",
+  "started_at": "2026-11-17T16:41:53Z",
+  "completed_at": "2026-11-17T16:56:00Z",
+  "status": "PASSED",
+  "drift_detected": false,
+  "gates": [
+    {
+      "id": "lint",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 31000,
+      "command": "npm run lint",
+      "exit_code": 0
+    },
+    {
+      "id": "typecheck",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 23000,
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "unit-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 248000,
+      "command": "npm run test:unit:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "integration-tests",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 137000,
+      "command": "npm run test:integration:slnt",
+      "exit_code": 0
+    },
+    {
+      "id": "secrets",
+      "source": "guide",
+      "status": "PASS",
+      "duration_ms": 46000,
+      "command": "npm run secrets:check",
+      "exit_code": 0
+    },
+    {
+      "id": "license-headers",
+      "source": "hook",
+      "status": "PASS",
+      "duration_ms": 500,
+      "command": "npm run license-headers:check",
+      "exit_code": 0
+    },
+    {
+      "id": "sonar",
+      "source": "hook",
+      "status": "SKIPPED",
+      "duration_ms": 0,
+      "command": "npm run sonar-local",
+      "notes": "SONAR_TOKEN unset; set it to run locally; CI settles this"
+    }
+  ],
+  "failures": {}
+}

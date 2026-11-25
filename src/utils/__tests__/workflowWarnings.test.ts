@@ -110,6 +110,71 @@ describe('notifyAboutWarnings', () => {
     )
   })
 
+  describe('tool_access_owner_integration', () => {
+    const owner = (tool_name: string, step_id = 'run_script') => ({
+      kind: 'tool_access_owner_integration',
+      tool_name,
+      step_id,
+      integration_alias: 'alias',
+      message: 'raw',
+    })
+    const TEXT =
+      "Script steps run these tools under the workflow author's integration for everyone who runs the workflow: "
+
+    it('shows the formatted owner-integration toast with the Saved prefix', () => {
+      notifyAboutWarnings({ warnings: [owner('generic_jira_tool')] }, { prefixSaved: true })
+
+      expect(toaster.warning).toHaveBeenCalledTimes(1)
+      expect(toaster.warning).toHaveBeenCalledWith(`Saved. ${TEXT}generic_jira_tool.`, {
+        duration: 8000,
+      })
+    })
+
+    it('omits the Saved prefix when not requested', () => {
+      notifyAboutWarnings({ warnings: [owner('generic_jira_tool')] })
+
+      expect(toaster.warning).toHaveBeenCalledWith(`${TEXT}generic_jira_tool.`, { duration: 8000 })
+    })
+
+    it('lists a tool once when several steps use it', () => {
+      notifyAboutWarnings({
+        warnings: [owner('generic_jira_tool', 'a'), owner('generic_jira_tool', 'b')],
+      })
+
+      expect(toaster.warning).toHaveBeenCalledTimes(1)
+      expect(toaster.warning).toHaveBeenCalledWith(`${TEXT}generic_jira_tool.`, { duration: 8000 })
+    })
+
+    it('does not add "and N more" when duplicates collapse to few tools', () => {
+      notifyAboutWarnings({
+        warnings: [owner('a', '1'), owner('b', '1'), owner('a', '2'), owner('b', '2')],
+      })
+
+      expect(toaster.warning).toHaveBeenCalledWith(`${TEXT}a; b.`, { duration: 8000 })
+    })
+
+    it('counts only unique tools in "and N more"', () => {
+      notifyAboutWarnings({
+        warnings: [owner('a'), owner('b'), owner('c'), owner('d')],
+      })
+
+      expect(toaster.warning).toHaveBeenCalledWith(`${TEXT}a; b; c and 1 more.`, {
+        duration: 8000,
+      })
+    })
+
+    it('shows separate toasts alongside consumer slot warnings', () => {
+      notifyAboutWarnings({
+        warnings: [
+          { kind: 'consumer_slot', tool_name: 'x', credential_type: 'Jira' },
+          owner('generic_jira_tool'),
+        ],
+      })
+
+      expect(toaster.warning).toHaveBeenCalledTimes(2)
+    })
+  })
+
   it('says nothing when the save carried no warnings', () => {
     notifyAboutWarnings({ warnings: [] })
     notifyAboutWarnings(undefined)

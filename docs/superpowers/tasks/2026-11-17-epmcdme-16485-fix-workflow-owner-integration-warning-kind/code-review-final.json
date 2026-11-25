@@ -1,0 +1,61 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "User approved; 0 findings"
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "User approved; 0 findings"
+    }
+  ],
+  "reviewed_head": "5d59fcf36827a7112c94199d28f4f462927c3444",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "No spec/story was available (no-spec round), so confidence is capped at low. The edge-case lens's one report (empty tool_name leaving a dangling colon) was dismissed: the backend always emits tool_name per warning, so it is cosmetic and unreachable in practice. 0 deferred, 1 dismissed.",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [
+    {
+      "kind": "commit-format",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    },
+    {
+      "kind": "code-quality",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    },
+    {
+      "kind": "security",
+      "status": "na",
+      "notes": "Standards audit not expected for this profile."
+    }
+  ],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "No spec/story was available (no-spec round), so confidence is capped at low. The edge-case lens's one report (empty tool_name leaving a dangling colon) was dismissed: the backend always emits tool_name per warning, so it is cosmetic and unreachable in practice. 0 deferred, 1 dismissed.",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

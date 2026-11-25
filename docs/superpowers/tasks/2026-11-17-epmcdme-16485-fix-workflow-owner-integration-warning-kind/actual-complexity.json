@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "generated": "2026-11-17T00:00:00Z",
+  "dimensions": {
+    "component_scope":      { "score": 1, "label": "XS" },
+    "requirements_clarity": { "score": 1, "label": "XS" },
+    "technical_risk":       { "score": 1, "label": "XS" },
+    "file_change_estimate": { "score": 2, "label": "S" },
+    "dependencies":         { "score": 1, "label": "XS" },
+    "affected_layers":      { "score": 1, "label": "XS" }
+  },
+  "total": 7,
+  "size": "XS",
+  "band_range": "6-9",
+  "files_changed": 2,
+  "routing": "writing-plans",
+  "key_reasoning": [
+    { "dimension": "file_change_estimate", "reason": "Two files: the warnings util workflowWarnings.ts and its unit test; fully localized in src/utils." },
+    { "dimension": "technical_risk", "reason": "Single constant (OWNER_INTEGRATION_KIND) and toast-routing fix in a pure util; no security, performance or schema implications; trivial rollback." }
+  ],
+  "red_flags_applied": [],
+  "split_recommendation": null
+}
