@@ -986,6 +986,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
             icon: <AiGenerateSvg className="w-[18px] h-[18px]" />,
             onClick: () => openModelOverrides([user]),
             hidden: !isUserModelOverrideEnabled,
+            disabled: selected.length > 1 || (selected.length === 1 && selected[0].id !== user.id),
           }
         )
 
@@ -1028,6 +1029,7 @@ const ProjectMembersManager: FC<ProjectMembersManagerProps> = ({
       canManageBudgets,
       modelOverrideEnabled,
       isUserModelOverrideEnabled,
+      selected,
     ]
   )
 

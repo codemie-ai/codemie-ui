@@ -1,0 +1,61 @@
+{
+  "schema": "sdlc-factory/code-review-final@1",
+  "passed": true,
+  "decision": "approve",
+  "gate_decision": {
+    "gate": "code-review.final",
+    "decision": "approve",
+    "source": "hitl",
+    "rationale": "Fix matches requested per-row disabled behavior; user approved after direct review of the applied change."
+  },
+  "gates": [
+    {
+      "gate": "code-review.final",
+      "decision": "request-changes",
+      "source": "hitl",
+      "rationale": "User requires per-row disabled logic, not a pure selected.length>1 rule: when exactly one user is selected, the context menu on that SAME selected user's row must keep Override models enabled; opening the context menu on a DIFFERENT (unselected) row while one user is selected must show it disabled. Review itself found 0 blocking issues; this is a behavior-spec change requested directly by the user, not a reviewer finding."
+    },
+    {
+      "gate": "code-review.final",
+      "decision": "approve",
+      "source": "hitl",
+      "rationale": "Fix matches requested per-row disabled behavior; user approved after direct review of the applied change."
+    }
+  ],
+  "reviewed_head": "9562bc96ba8544f1b0f1c86c75177184efe57ea5",
+  "rounds": [
+    "final"
+  ],
+  "rationale": "No story/spec artifact existed so acceptance ran in no-spec mode (confidence capped at low). The edge-case lens's only two candidates were resolved in review: one contradicted AC5's explicit blanket-disable requirement and was dismissed as intended-per-spec; the other flagged that 'Override budgets' and 'Unassign from Project' share the same pre-existing single-user bug this change fixes for 'Override models', but that was out of this diff's scope and is deferred (1 deferred, 1 dismissed, 0 advisory).",
+  "confidence": "low",
+  "check_confidence": null,
+  "risk_flags": [],
+  "open": 0,
+  "closed": {
+    "fixed": 0,
+    "moot": 0,
+    "decided": 0,
+    "wont_fix": 0
+  },
+  "findings": [],
+  "deferred": [
+    {
+      "id": "DF-001",
+      "severity": "major",
+      "file": "src/pages/settings/administration/projectsManagement/ProjectMembersManager.tsx",
+      "line": 977,
+      "title": "Override budgets / Unassign act on one row during multi-select",
+      "problem": "The row context menu's 'Override budgets' and 'Unassign from Project' items silently act on only the clicked row while multiple users are checked, the same bug pattern fixed here for 'Override models'.",
+      "preexisting": "Untouched by this diff (only the Override-models disabled flag was added); EPMCDME-17878 scoped the fix to Override models only."
+    }
+  ],
+  "coverage_graded_at": "final",
+  "business_review": [],
+  "standards_review": [],
+  "final_round": {
+    "decision": "approve",
+    "rationale": "No story/spec artifact existed so acceptance ran in no-spec mode (confidence capped at low). The edge-case lens's only two candidates were resolved in review: one contradicted AC5's explicit blanket-disable requirement and was dismissed as intended-per-spec; the other flagged that 'Override budgets' and 'Unassign from Project' share the same pre-existing single-user bug this change fixes for 'Override models', but that was out of this diff's scope and is deferred (1 deferred, 1 dismissed, 0 advisory).",
+    "confidence": "low",
+    "risk_flags": []
+  }
+}

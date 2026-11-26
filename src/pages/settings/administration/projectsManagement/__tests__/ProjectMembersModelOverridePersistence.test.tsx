@@ -402,6 +402,66 @@ describe('ProjectMembersManager — model override persistence', () => {
     expect(screen.queryByTestId('model-override-modal')).not.toBeInTheDocument()
   })
 
+  it("gates the row context menu's Override models item on whether the row matches the single selection", async () => {
+    const renderTwoUsers = () => {
+      userStore.getUsers = vi
+        .fn()
+        .mockResolvedValue(
+          usersResponse([
+            buildUser('u-1', 'Custom User', 'custom@epam.com'),
+            buildUser('u-2', 'Project User', 'project@epam.com'),
+          ])
+        )
+      return render(<ProjectMembersManager project={mockProject} isUserModelOverrideEnabled />)
+    }
+
+    // Zero selected: stays enabled for any row (AC5's zero-selection path).
+    renderTwoUsers()
+    await screen.findByText('Custom User')
+    await screen.findByText('Project User')
+    await openOverrideModalForRow('Custom User')
+    cleanup()
+
+    // One selected, menu opened on that same row: stays enabled (AC5's single-user path).
+    {
+      const { container } = renderTwoUsers()
+      await screen.findByText('Custom User')
+      await screen.findByText('Project User')
+      fireEvent.click(getRowCheckboxes(container)[0])
+      await openOverrideModalForRow('Custom User')
+      cleanup()
+    }
+
+    // One selected, menu opened on a different row: disabled.
+    {
+      const { container } = renderTwoUsers()
+      await screen.findByText('Custom User')
+      await screen.findByText('Project User')
+      fireEvent.click(getRowCheckboxes(container)[0])
+      openUserRowMenu('Project User')
+      const overrideItem = await screen.findByText('Override models')
+      expect(overrideItem.closest('button')).toBeDisabled()
+      fireEvent.click(overrideItem)
+      expect(screen.queryByTestId('model-override-modal')).not.toBeInTheDocument()
+      cleanup()
+    }
+
+    // More than one selected: disabled regardless of row (unchanged from the prior fix).
+    {
+      const { container } = renderTwoUsers()
+      await screen.findByText('Custom User')
+      await screen.findByText('Project User')
+      const checkboxes = getRowCheckboxes(container)
+      fireEvent.click(checkboxes[0])
+      fireEvent.click(checkboxes[1])
+      openUserRowMenu('Custom User')
+      const overrideItem = await screen.findByText('Override models')
+      expect(overrideItem.closest('button')).toBeDisabled()
+      fireEvent.click(overrideItem)
+      expect(screen.queryByTestId('model-override-modal')).not.toBeInTheDocument()
+    }
+  })
+
   it('hides the Model Settings filter from users who cannot manage the project', async () => {
     userStore.user = { userId: 'member-1', isAdmin: false } as never
     userStore.getUsers = vi

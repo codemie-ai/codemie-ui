@@ -1,0 +1,14 @@
+{
+  "status": "PASSED",
+  "branch": "EPMCDME-17878_fix-bulk-override-context-menu",
+  "merge_base": "878ca6e68",
+  "gates": [
+    { "name": "typecheck", "command": "npm run typecheck", "result": "PASSED" },
+    { "name": "lint", "command": "npm run lint", "result": "PASSED" },
+    { "name": "test:unit", "command": "npm run test:unit", "result": "PASSED", "detail": "1001 test files passed, 10913 tests passed, 1 skipped" },
+    { "name": "build", "command": "npm run build", "result": "PASSED" },
+    { "name": "test-harness", "command": "uvx codemie-test-harness run sanity-ui -n 2", "result": "PASSED", "detail": "90 passed, 1 rerun, 0 failed, 0 errors in 1627.52s (0:27:07); run with reduced parallelism (-n 2) after an earlier -n 8 run showed overload-related failures in unrelated areas" }
+  ],
+  "run_by": "manual foreground run, full re-run from scratch per explicit instruction",
+  "generated": "2026-11-25T17:05:00Z"
+}
